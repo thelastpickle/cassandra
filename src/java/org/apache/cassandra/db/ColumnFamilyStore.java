@@ -1235,7 +1235,7 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean
      *  tombstones that are no longer relevant.
      *  The returned column family won't be thread safe.
      */
-    ColumnFamily filterColumnFamily(ColumnFamily cached, QueryFilter filter, int gcBefore)
+    public ColumnFamily filterColumnFamily(ColumnFamily cached, QueryFilter filter, int gcBefore)
     {
         ColumnFamily cf = cached.cloneMeShallow(ArrayBackedSortedColumns.factory(), filter.filter.isReversed());
         OnDiskAtomIterator ci = filter.getMemtableColumnIterator(cached, null);

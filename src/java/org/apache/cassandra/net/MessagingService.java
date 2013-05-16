@@ -119,6 +119,7 @@ public final class MessagingService implements MessagingServiceMBean
         UNUSED_1,
         UNUSED_2,
         UNUSED_3,
+        FILTERED_RANGE_SLICE,
         ;
         // remember to add new verbs at the end, since we serialize by ordinal
     }
@@ -277,7 +278,8 @@ public final class MessagingService implements MessagingServiceMBean
                                                                    Verb.READ_REPAIR,
                                                                    Verb.READ,
                                                                    Verb.RANGE_SLICE,
-                                                                   Verb.REQUEST_RESPONSE);
+                                                                   Verb.REQUEST_RESPONSE,
+                                                                   Verb.FILTERED_RANGE_SLICE);
 
     // total dropped message counts for server lifetime
     private final Map<Verb, DroppedMessageMetrics> droppedMessages = new EnumMap<Verb, DroppedMessageMetrics>(Verb.class);

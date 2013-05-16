@@ -69,7 +69,7 @@ public class StorageProxy implements StorageProxyMBean
 {
     public static final String MBEAN_NAME = "org.apache.cassandra.db:type=StorageProxy";
     private static final Logger logger = LoggerFactory.getLogger(StorageProxy.class);
-    private static final boolean OPTIMIZE_LOCAL_REQUESTS = true; // set to false to test messagingservice path on single node
+    protected static final boolean OPTIMIZE_LOCAL_REQUESTS = true; // set to false to test messagingservice path on single node
 
     public static final String UNREACHABLE = "UNREACHABLE";
 
@@ -90,10 +90,10 @@ public class StorageProxy implements StorageProxyMBean
     });
     private static final AtomicLong totalHints = new AtomicLong();
     private static final ClientRequestMetrics readMetrics = new ClientRequestMetrics("Read");
-    private static final ClientRequestMetrics rangeMetrics = new ClientRequestMetrics("RangeSlice");
+    protected static final ClientRequestMetrics rangeMetrics = new ClientRequestMetrics("RangeSlice");
     private static final ClientRequestMetrics writeMetrics = new ClientRequestMetrics("Write");
 
-    private StorageProxy() {}
+    protected StorageProxy() {}
 
     static
     {
@@ -1079,19 +1079,19 @@ public class StorageProxy implements StorageProxyMBean
         }
     }
 
-    private static List<InetAddress> getLiveSortedEndpoints(Table table, ByteBuffer key)
+    protected static List<InetAddress> getLiveSortedEndpoints(Table table, ByteBuffer key)
     {
         return getLiveSortedEndpoints(table, StorageService.instance.getPartitioner().decorateKey(key));
     }
 
-    private static List<InetAddress> getLiveSortedEndpoints(Table table, RingPosition pos)
+    protected static List<InetAddress> getLiveSortedEndpoints(Table table, RingPosition pos)
     {
         List<InetAddress> liveEndpoints = StorageService.instance.getLiveNaturalEndpoints(table, pos);
         DatabaseDescriptor.getEndpointSnitch().sortByProximity(FBUtilities.getBroadcastAddress(), liveEndpoints);
         return liveEndpoints;
     }
 
-    private static List<InetAddress> intersection(List<InetAddress> l1, List<InetAddress> l2)
+    public static List<InetAddress> intersection(List<InetAddress> l1, List<InetAddress> l2)
     {
         // Note: we don't use Guava Sets.intersection() for 3 reasons:
         //   1) retainAll would be inefficient if l1 and l2 are large but in practice both are the replicas for a range and
@@ -1342,7 +1342,7 @@ public class StorageProxy implements StorageProxyMBean
      * Compute all ranges we're going to query, in sorted order. Nodes can be replica destinations for many ranges,
      * so we need to restrict each scan to the specific range we want, or else we'd get duplicate results.
      */
-    static <T extends RingPosition> List<AbstractBounds<T>> getRestrictedRanges(final AbstractBounds<T> queryRange)
+    protected static <T extends RingPosition> List<AbstractBounds<T>> getRestrictedRanges(final AbstractBounds<T> queryRange)
     {
         // special case for bounds containing exactly 1 (non-minimum) token
         if (queryRange instanceof Bounds && queryRange.left.equals(queryRange.right) && !queryRange.left.isMinimum(StorageService.getPartitioner()))
@@ -1555,7 +1555,7 @@ public class StorageProxy implements StorageProxyMBean
     /**
      * A Runnable that aborts if it doesn't start running before it times out
      */
-    private static abstract class DroppableRunnable implements Runnable
+    public static abstract class DroppableRunnable implements Runnable
     {
         private final long constructionTime = System.currentTimeMillis();
         private final MessagingService.Verb verb;

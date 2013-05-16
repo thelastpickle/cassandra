@@ -40,10 +40,10 @@ public class SSTableScanner implements ICompactionScanner
     protected final RandomAccessReader dfile;
     protected final RandomAccessReader ifile;
     public final SSTableReader sstable;
-    private OnDiskAtomIterator row;
+    protected OnDiskAtomIterator row;
     protected boolean exhausted = false;
     protected Iterator<OnDiskAtomIterator> iterator;
-    private final QueryFilter filter;
+    protected final QueryFilter filter;
 
     /**
      * @param sstable SSTable to scan.
@@ -61,7 +61,7 @@ public class SSTableScanner implements ICompactionScanner
      * @param sstable SSTable to scan.
      * @param filter filter to use when scanning the columns
      */
-    SSTableScanner(SSTableReader sstable, QueryFilter filter)
+    protected SSTableScanner(SSTableReader sstable, QueryFilter filter)
     {
         this.dfile = sstable.openDataReader(false);
         this.ifile = sstable.openIndexReader(false);
