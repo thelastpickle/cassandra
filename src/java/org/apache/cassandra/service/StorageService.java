@@ -336,7 +336,15 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         {
             throw new IllegalStateException("No configured daemon");
         }
-        daemon.nativeServer.start();
+        
+        try
+        {
+            daemon.nativeServer.start();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Error starting native transport: " + e.getMessage());
+        }
     }
 
     public void stopNativeTransport()
@@ -387,16 +395,14 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         try
         {
             // sleep a while to allow gossip to warm up (the other nodes need to know about this one before they can reply).
-            boolean isUp = false;
-            while (!isUp)
+            outer:
+            while (true)
             {
                 Thread.sleep(1000);
                 for (InetAddress address : Gossiper.instance.getLiveMembers())
                 {
                     if (!Gossiper.instance.isFatClient(address))
-                    {
-                        isUp = true;
-                    }
+                        break outer;
                 }
             }
 
@@ -568,7 +574,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         appStates.put(ApplicationState.NET_VERSION, valueFactory.networkVersion());
         appStates.put(ApplicationState.HOST_ID, valueFactory.hostId(SystemTable.getLocalHostId()));
         appStates.put(ApplicationState.RPC_ADDRESS, valueFactory.rpcaddress(DatabaseDescriptor.getRpcAddress()));
-        if (0 != DatabaseDescriptor.getReplaceTokens().size())
+        if (DatabaseDescriptor.isReplacing())
             appStates.put(ApplicationState.STATUS, valueFactory.hibernate(true));
         appStates.put(ApplicationState.RELEASE_VERSION, valueFactory.releaseVersion());
         Gossiper.instance.register(this);
@@ -649,7 +655,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             if (logger.isDebugEnabled())
                 logger.debug("... got ring + schema info");
 
-            if (DatabaseDescriptor.getReplaceTokens().size() == 0)
+            if (!DatabaseDescriptor.isReplacing())
             {
                 if (tokenMetadata.isMember(FBUtilities.getBroadcastAddress()))
                 {
@@ -661,6 +667,8 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             }
             else
             {
+                if (DatabaseDescriptor.getReplaceTokens().size() != 0 && DatabaseDescriptor.getReplaceNode() != null)
+                    throw new UnsupportedOperationException("You cannot specify both replace_token and replace_node, choose one or the other");
                 try
                 {
                     // Sleeping additionally to make sure that the server actually is not alive
@@ -672,8 +680,19 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                     throw new AssertionError(e);
                 }
                 tokens = new ArrayList<Token>();
-                for (String token : DatabaseDescriptor.getReplaceTokens())
-                    tokens.add(StorageService.getPartitioner().getTokenFactory().fromString(token));
+                if (DatabaseDescriptor.getReplaceTokens().size() !=0)
+                {
+                    for (String token : DatabaseDescriptor.getReplaceTokens())
+                        tokens.add(StorageService.getPartitioner().getTokenFactory().fromString(token));
+                }
+                else
+                {
+                    assert DatabaseDescriptor.getReplaceNode() != null;
+                    InetAddress endpoint = tokenMetadata.getEndpointForHostId(DatabaseDescriptor.getReplaceNode());
+                    if (endpoint == null)
+                        throw new UnsupportedOperationException("Cannot replace host id " + DatabaseDescriptor.getReplaceNode() + " because it does not exist!");
+                    tokens = tokenMetadata.getTokens(endpoint);
+                }
 
                 // check for operator errors...
                 for (Token token : tokens)
@@ -684,6 +703,10 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                         if (Gossiper.instance.getEndpointStateForEndpoint(existing).getUpdateTimestamp() > (System.currentTimeMillis() - delay))
                             throw new UnsupportedOperationException("Cannnot replace a token for a Live node... ");
                         current.add(existing);
+                    }
+                    else
+                    {
+                        throw new UnsupportedOperationException("Cannot replace token " + token + " which does not exist!");
                     }
                 }
 
@@ -897,7 +920,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     {
         isBootstrapMode = true;
         SystemTable.updateTokens(tokens); // DON'T use setToken, that makes us part of the ring locally which is incorrect until we are done bootstrapping
-        if (0 == DatabaseDescriptor.getReplaceTokens().size())
+        if (!DatabaseDescriptor.isReplacing())
         {
             // if not an existing token then bootstrap
             // order is important here, the gossiper can fire in between adding these two states.  It's ok to send TOKENS without STATUS, but *not* vice versa.
@@ -920,6 +943,8 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             tokenMetadata.updateNormalTokens(tokens, FBUtilities.getBroadcastAddress());
         }
         Tracing.instance();
+        if (!Gossiper.instance.seenAnySeed())
+            throw new IllegalStateException("Unable to contact any seeds!");
         setMode(Mode.JOINING, "Starting to bootstrap...", true);
         new BootStrapper(FBUtilities.getBroadcastAddress(), tokens, tokenMetadata).bootstrap(); // handles token update
         logger.info("Bootstrap completed! for the tokens {}", tokens);
@@ -1072,7 +1097,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
      */
     public List<TokenRange> describeRing(String keyspace) throws InvalidRequestException
     {
-        if (keyspace == null || !Schema.instance.getNonSystemTables().contains(keyspace))
+        if (keyspace == null || Table.open(keyspace).getReplicationStrategy() instanceof LocalStrategy)
             throw new InvalidRequestException("There is no ring for the keyspace: " + keyspace);
 
         List<TokenRange> ranges = new ArrayList<TokenRange>();
@@ -1326,20 +1351,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             logger.debug("Node " + endpoint + " state normal, token " + tokens);
 
         if (tokenMetadata.isMember(endpoint))
-        {
             logger.info("Node " + endpoint + " state jump to normal");
-
-            if (!isClientMode)
-            {
-                for (IEndpointLifecycleSubscriber subscriber : lifecycleSubscribers)
-                    subscriber.onUp(endpoint);
-            }
-        }
-        else if (!isClientMode)
-        {
-            for (IEndpointLifecycleSubscriber subscriber : lifecycleSubscribers)
-                subscriber.onJoinCluster(endpoint);
-        }
 
         // Order Matters, TM.updateHostID() should be called before TM.updateNormalToken(), (see CASSANDRA-4300).
         if (Gossiper.instance.usesHostId(endpoint))
@@ -1642,12 +1654,10 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                 return Long.parseLong(pieces[2]);
             else
                 return 0L;
-        } else
+        }
+        else
         {
-            if (VersionedValue.STATUS_LEFT.equals(pieces[0]))
-                return Long.parseLong(pieces[1]);
-            else
-                return Long.parseLong(pieces[2]);
+            return Long.parseLong(pieces[2]);
         }
     }
 
@@ -1951,8 +1961,20 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
     public void onAlive(InetAddress endpoint, EndpointState state)
     {
-        if (!isClientMode && getTokenMetadata().isMember(endpoint))
+        if (isClientMode)
+            return;
+
+        if (tokenMetadata.isMember(endpoint))
+        {
             HintedHandOffManager.instance.scheduleHintDelivery(endpoint);
+            for (IEndpointLifecycleSubscriber subscriber : lifecycleSubscribers)
+                subscriber.onUp(endpoint);
+        }
+        else
+        {
+            for (IEndpointLifecycleSubscriber subscriber : lifecycleSubscribers)
+                subscriber.onJoinCluster(endpoint);
+        }
     }
 
     public void onRemove(InetAddress endpoint)
@@ -2141,7 +2163,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
     public void forceTableCompaction(String tableName, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
     {
-        for (ColumnFamilyStore cfStore : getValidColumnFamilies(false, false, tableName, columnFamilies))
+        for (ColumnFamilyStore cfStore : getValidColumnFamilies(true, false, tableName, columnFamilies))
         {
             cfStore.forceMajorCompaction();
         }

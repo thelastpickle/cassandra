@@ -32,7 +32,7 @@ exit 1
 from __future__ import with_statement
 
 description = "CQL Shell for Apache Cassandra"
-version = "3.0.1"
+version = "3.1.7"
 
 from StringIO import StringIO
 from itertools import groupby
@@ -118,8 +118,19 @@ from cqlshlib.formatting import format_by_type
 from cqlshlib.util import trim_if_present
 from cqlshlib.tracing import print_trace_session
 
-CONFIG_FILE = os.path.expanduser(os.path.join('~', '.cqlshrc'))
-HISTORY = os.path.expanduser(os.path.join('~', '.cqlsh_history'))
+HISTORY_DIR = os.path.expanduser(os.path.join('~', '.cassandra'))
+CONFIG_FILE = os.path.join(HISTORY_DIR, 'cqlshrc')
+HISTORY = os.path.join(HISTORY_DIR, 'cqlsh_history')
+if not os.path.exists(HISTORY_DIR):
+    os.mkdir(HISTORY_DIR)
+
+OLD_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.cqlshrc'))
+if os.path.exists(OLD_CONFIG_FILE):
+    os.rename(OLD_CONFIG_FILE, CONFIG_FILE)
+OLD_HISTORY = os.path.expanduser(os.path.join('~', '.cqlsh_history'))
+if os.path.exists(OLD_HISTORY):
+    os.rename(OLD_HISTORY, HISTORY)
+
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 9160
 DEFAULT_CQLVER = '3'
@@ -129,7 +140,7 @@ DEFAULT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S%z'
 DEFAULT_FLOAT_PRECISION = 5
 DEFAULT_SELECT_LIMIT = 10000
 
-if readline is not None and 'libedit' in readline.__doc__:
+if readline is not None and readline.__doc__ is not None and 'libedit' in readline.__doc__:
     DEFAULT_COMPLETEKEY = '\t'
 else:
     DEFAULT_COMPLETEKEY = 'tab'
@@ -188,6 +199,7 @@ my_commands_ending_with_newline = (
     'capture',
     'debug',
     'tracing',
+    'expand',
     'exit',
     'quit'
 )
@@ -214,6 +226,7 @@ cqlsh_extra_syntax_rules = r'''
                    | <debugCommand>
                    | <helpCommand>
                    | <tracingCommand>
+                   | <expandCommand>
                    | <exitCommand>
                    ;
 
@@ -279,6 +292,9 @@ cqlsh_extra_syntax_rules = r'''
                 ;
 
 <tracingCommand> ::= "TRACING" ( switch=( "ON" | "OFF" ) )?
+                   ;
+
+<expandCommand> ::= "EXPAND" ( switch=( "ON" | "OFF" ) )?
                    ;
 
 <exitCommand> ::= "exit" | "quit"
@@ -448,9 +464,12 @@ def describe_interval(seconds):
     return words
 
 class Shell(cmd.Cmd):
-    default_prompt  = "cqlsh> "
+    custom_prompt = os.getenv('CQLSH_PROMPT', '')
+    if custom_prompt is not '':
+        custom_prompt += "\n"
+    default_prompt = custom_prompt + "cqlsh> "
     continue_prompt = "   ... "
-    keyspace_prompt          = "cqlsh:%s> "
+    keyspace_prompt = custom_prompt + "cqlsh:%s> "
     keyspace_continue_prompt = "%s    ... "
     num_retries = 4
     show_line_nums = False
@@ -464,7 +483,8 @@ class Shell(cmd.Cmd):
     def __init__(self, hostname, port, transport_factory, color=False,
                  username=None, password=None, encoding=None, stdin=None, tty=True,
                  completekey=DEFAULT_COMPLETEKEY, use_conn=None,
-                 cqlver=DEFAULT_CQLVER, keyspace=None, tracing_enabled=False,
+                 cqlver=DEFAULT_CQLVER, keyspace=None,
+                 tracing_enabled=False, expand_enabled=False,
                  display_time_format=DEFAULT_TIME_FORMAT,
                  display_float_precision=DEFAULT_FLOAT_PRECISION):
         cmd.Cmd.__init__(self, completekey=completekey)
@@ -475,6 +495,7 @@ class Shell(cmd.Cmd):
         self.password = password
         self.keyspace = keyspace
         self.tracing_enabled = tracing_enabled
+        self.expand_enabled = expand_enabled
         if use_conn is not None:
             self.conn = use_conn
         else:
@@ -557,6 +578,17 @@ class Shell(cmd.Cmd):
     def myformat_colname(self, name, nametype):
         return self.myformat_value(name, nametype, colormap=COLUMN_NAME_COLORS)
 
+    # cql/cursor.py:Cursor.decode_row() function, modified to not turn '' into None.
+    def decode_row(self, cursor, row):
+        values = []
+        bytevals = cursor.columnvalues(row)
+        for val, vtype, nameinfo in zip(bytevals, cursor.column_types, cursor.name_info):
+            if val == '':
+                values.append(val)
+            else:
+                values.append(cursor.decoder.decode_value(val, vtype, nameinfo[0]))
+        return values
+
     def report_connection(self):
         self.show_host()
         self.show_version()
@@ -614,7 +646,7 @@ class Shell(cmd.Cmd):
                 'cql': result['cql_version'],
             }
         self.connection_versions = vers
-        self.cass_ver_tuple = tuple(map(int, vers['build'].split('-', 1)[0].split('.', 2)))
+        self.cass_ver_tuple = tuple(map(int, vers['build'].split('-', 1)[0].split('.')[:3]))
 
     def get_connection_versions_fallback(self):
         if self.cqlver_atleast(3):
@@ -669,12 +701,14 @@ class Shell(cmd.Cmd):
         return [c.name for c in self.get_columnfamilies(ksname)]
 
     def get_index_names(self, ksname=None):
-        indnames = []
-        for c in self.get_columnfamilies(ksname):
-            for md in c.column_metadata:
-                if md.index_name is not None:
-                    indnames.append(md.index_name)
-        return indnames
+        cols = []
+        if self.cqlver_atleast(3) and not self.is_cql3_beta():
+            for cfname in self.get_columnfamily_names_cql3(ksname=ksname):
+                cols.extend(self.get_columnfamily_layout(ksname, cfname).columns)
+        else:
+            for cf in self.get_columnfamilies(ksname):
+                cols.extend(cf.column_metadata)
+        return [col.index_name for col in cols if col.index_name is not None]
 
     def filterable_column_names(self, cfdef):
         filterable = set()
@@ -823,7 +857,7 @@ class Shell(cmd.Cmd):
             else:
                 old_completer = readline.get_completer()
                 readline.set_completer(self.complete)
-                if 'libedit' in readline.__doc__:
+                if readline.__doc__ is not None and 'libedit' in readline.__doc__:
                     readline.parse_and_bind("bind -e")
                     readline.parse_and_bind("bind '" + self.completekey + "' rl_complete")
                 else:
@@ -962,7 +996,10 @@ class Shell(cmd.Cmd):
     def do_use(self, parsed):
         ksname = parsed.get_binding('ksname')
         if self.perform_statement_untraced(parsed.extract_orig()):
-            self.current_keyspace = self.cql_unprotect_name(ksname)
+            if ksname[0] == '"' and ksname[-1] == '"':
+                self.current_keyspace = self.cql_unprotect_name(ksname)
+            else:
+                self.current_keyspace = ksname.lower()
 
     def do_select(self, parsed):
         ksname = parsed.get_binding('ksname')
@@ -1100,8 +1137,11 @@ class Shell(cmd.Cmd):
         colnames = [d[0] for d in cursor.description]
         colnames_t = [(name, self.get_nametype(cursor, n)) for (n, name) in enumerate(colnames)]
         formatted_names = [self.myformat_colname(name, nametype) for (name, nametype) in colnames_t]
-        formatted_values = [map(self.myformat_value, row, cursor.column_types) for row in cursor]
-        self.print_formatted_result(formatted_names, formatted_values)
+        formatted_values = [map(self.myformat_value, self.decode_row(cursor, row), cursor.column_types) for row in cursor.result]
+        if self.expand_enabled:
+            self.print_formatted_result_vertically(formatted_names, formatted_values)
+        else:
+            self.print_formatted_result(formatted_names, formatted_values)
 
     def print_formatted_result(self, formatted_names, formatted_values):
         # determine column widths
@@ -1120,12 +1160,27 @@ class Shell(cmd.Cmd):
             line = ' | '.join(col.rjust(w, color=self.color) for (col, w) in zip(row, widths))
             self.writeresult(' ' + line)
 
+    def print_formatted_result_vertically(self, formatted_names, formatted_values):
+        max_col_width = max([n.displaywidth for n in formatted_names])
+        max_val_width = max([n.displaywidth for row in formatted_values for n in row])
+
+        # for each row returned, list all the column-value pairs
+        for row_id, row in enumerate(formatted_values):
+            self.writeresult("@ Row %d" % (row_id + 1))
+            self.writeresult('-%s-' % '-+-'.join(['-' * max_col_width, '-' * max_val_width]))
+            for field_id, field in enumerate(row):
+                column = formatted_names[field_id].ljust(max_col_width, color=self.color)
+                value = field.ljust(field.displaywidth, color=self.color)
+                self.writeresult(' ' + " | ".join([column, value]))
+            self.writeresult('')
+
     def print_dynamic_result(self, cursor):
-        for row in cursor:
+        for row in cursor.result:
+            cursor.fetchone()
             colnames = [d[0] for d in cursor.description]
             colnames_t = [(name, self.get_nametype(cursor, n)) for (n, name) in enumerate(colnames)]
             colnames = [self.myformat_colname(name, nametype) for (name, nametype) in colnames_t]
-            colvals = map(self.myformat_value, row, cursor.column_types)
+            colvals = map(self.myformat_value, self.decode_row(cursor, row), cursor.column_types)
             line = ' | '.join('%s,%s' % (n.coloredval, v.coloredval) for (n, v) in zip(colnames, colvals))
             self.writeresult(' ' + line)
 
@@ -1395,17 +1450,21 @@ class Shell(cmd.Cmd):
                     optval = '{%s}' % ', '.join(['%s: %s' % (self.cql_protect_value(k),
                                                              self.cql_protect_value(v))
                                                  for (k, v) in optval.items()])
-                    if optval == '{}':
-                        continue
                 out.write(" %s\n  %s=%s" % (joiner, optname, optval))
                 joiner = 'AND'
         out.write(";\n")
 
         for col in indexed_columns:
             out.write('\n')
-            # guess CQL can't represent index_type or index_options
-            out.write('CREATE INDEX %s ON %s (%s);\n'
-                         % (col.index_name, cfname, self.cql_protect_name(col.name)))
+            if col.index_type != 'CUSTOM':
+                out.write('CREATE INDEX %s ON %s (%s);\n'
+                             % (col.index_name, cfname, self.cql_protect_name(col.name)))
+            else:
+                out.write("CREATE CUSTOM INDEX %s ON %s (%s) USING '%s';\n"
+                             % (col.index_name,
+                                cfname,
+                                self.cql_protect_name(col.name),
+                                col.index_options[u'class_name']))
 
     def describe_keyspaces(self):
         print
@@ -1648,12 +1707,18 @@ class Shell(cmd.Cmd):
     def do_import_row(self, columns, nullval, layout, row):
         rowmap = {}
         for name, value in zip(columns, row):
+            type = layout.get_column(name).cqltype
+            if issubclass(type, ReversedType):
+                type = type.subtypes[0]
+            cqltype = type.cql_parameterized_type()
+
             if value != nullval:
-                type = layout.get_column(name).cqltype.cql_parameterized_type()
-                if type in ('ascii', 'text', 'timestamp', 'inet'):
+                if cqltype in ('ascii', 'text', 'timestamp', 'inet'):
                     rowmap[name] = self.cql_protect_value(value)
                 else:
                     rowmap[name] = value
+            elif name in layout.column_aliases and not type.empty_binary_ok:
+                rowmap[name] = 'blobAs%s(0x)' % cqltype.title()
             else:
                 rowmap[name] = 'null'
         return self.do_import_insert(layout, rowmap)
@@ -1975,6 +2040,48 @@ class Shell(cmd.Cmd):
                 return
             self.tracing_enabled = False
             print 'Disabled tracing.'
+
+    def do_expand(self, parsed):
+        """
+        EXPAND [cqlsh]
+
+          Enables or disables expanded (vertical) output.
+
+        EXPAND ON
+
+          Enables expanded (vertical) output.
+
+        EXPAND OFF
+
+          Disables expanded (vertical) output.
+
+        EXPAND
+
+          EXPAND with no arguments shows the current value of expand setting.
+        """
+        switch = parsed.get_binding('switch')
+        if switch is None:
+            if self.expand_enabled:
+                print "Expanded output is currently enabled. Use EXPAND OFF to disable"
+            else:
+                print "Expanded output is currently disabled. Use EXPAND ON to enable."
+            return
+
+        if switch.upper() == 'ON':
+            if self.expand_enabled:
+                self.printerr('Expanded output is already enabled. '
+                              'Use EXPAND OFF to disable.')
+                return
+            self.expand_enabled = True
+            print 'Now printing expanded output'
+            return
+
+        if switch.upper() == 'OFF':
+            if not self.expand_enabled:
+                self.printerr('Expanded output is not enabled.')
+                return
+            self.expand_enabled = False
+            print 'Disabled expanded output.'
 
     def do_consistency(self, parsed):
         """

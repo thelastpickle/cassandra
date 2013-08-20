@@ -40,8 +40,6 @@ import org.apache.cassandra.transport.messages.ResultMessage;
  */
 public abstract class ModificationStatement extends CFStatement implements CQLStatement
 {
-    public static final ConsistencyLevel defaultConsistency = ConsistencyLevel.ONE;
-
     public static enum Type
     {
         LOGGED, UNLOGGED, COUNTER
@@ -87,10 +85,12 @@ public abstract class ModificationStatement extends CFStatement implements CQLSt
 
         validateConsistency(cl);
 
-        Collection<? extends IMutation> mutations = getMutations(variables, false, cl, queryState.getTimestamp());
-
         // The type should have been set by now or we have a bug
         assert type != null;
+
+        Collection<? extends IMutation> mutations = getMutations(variables, false, cl, queryState.getTimestamp());
+        if (mutations.isEmpty())
+            return null;
 
         switch (type)
         {

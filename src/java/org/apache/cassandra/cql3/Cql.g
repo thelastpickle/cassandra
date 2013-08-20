@@ -451,16 +451,16 @@ cfamOrdering[CreateColumnFamilyStatement.RawStatement expr]
     ;
 
 /**
- * CREATE INDEX [indexName] ON columnFamily (columnName);
+ * CREATE INDEX [indexName] ON <columnFamily> (<columnName>);
+ * CREATE CUSTOM INDEX [indexName] ON <columnFamily> (<columnName>) USING <indexClass>;
  */
 createIndexStatement returns [CreateIndexStatement expr]
     @init {
         boolean isCustom = false;
-        IndexPropDefs props = new IndexPropDefs();
     }
     : K_CREATE (K_CUSTOM { isCustom = true; })? K_INDEX (idxName=IDENT)? K_ON cf=columnFamilyName '(' id=cident ')'
-        ( K_WITH properties[props] )?
-      { $expr = new CreateIndexStatement(cf, $idxName.text, id, isCustom, props); }
+        ( K_USING cls=STRING_LITERAL )?
+      { $expr = new CreateIndexStatement(cf, $idxName.text, id, isCustom, $cls.text); }
     ;
 
 /**
@@ -799,7 +799,7 @@ relation[List<Relation> clauses]
                 $clauses.add(new Relation(id, type, t, true));
         }
     | name=cident K_IN { Relation rel = Relation.createInRelation($name.id); }
-       '(' f1=term { rel.addInValue(f1); } (',' fN=term { rel.addInValue(fN); } )* ')' { $clauses.add(rel); }
+       '(' ( f1=term { rel.addInValue(f1); } (',' fN=term { rel.addInValue(fN); } )* )? ')' { $clauses.add(rel); }
     ;
 
 comparatorType returns [CQL3Type t]

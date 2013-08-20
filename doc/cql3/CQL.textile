@@ -1,6 +1,6 @@
 <link rel="StyleSheet" href="CQL.css" type="text/css" media="screen">
 
-h1. Cassandra Query Language (CQL) v3.0.2
+h1. Cassandra Query Language (CQL) v3.0.5
 
 
  <span id="tableOfContents">
@@ -61,9 +61,13 @@ h3. Comments
 
 A comment in CQL is a line beginning by either double dashes (@--@) or double slash (@//@).
 
+Multi-line comments are also supported through enclosure withing @/*@ and @*/@ (but nesting is not supported).
+
 bc(sample). 
 -- This is a comment
 // This is a comment too
+/* This is
+   a multiline comment */
 
 h3(#statements). Statements
 
@@ -392,14 +396,14 @@ h3(#createIndexStmt). CREATE INDEX
 __Syntax:__
 
 bc(syntax). <create-index-stmt> ::= CREATE ( CUSTOM )? INDEX <identifier>? ON <tablename> '(' <identifier> ')'
-                                        ( WITH <properties> )?
+                                        ( USING <string> )?
 
 __Sample:__
 
 bc(sample). 
 CREATE INDEX userIndex ON NerdMovies (user);
 CREATE INDEX ON Mutants (abilityId);
-CREATE CUSTOM INDEX ON users (email) WITH options = {'class': 'path.to.the.IndexClass'};
+CREATE CUSTOM INDEX ON users (email) USING 'path.to.the.IndexClass';
 
 The @CREATE INDEX@ statement is used to create a new (automatic) secondary index for a given (existing) column in a given table. A name for the index itself can be specified before the @ON@ keyword, if desired. If data already exists for the column, it will be indexed during the execution of this statement. After the index is created, new data for the column is indexed automatically at insertion time.
 
@@ -465,7 +469,7 @@ bc(syntax)..
                | <identifier> '[' <term> ']' '=' <term>
 
 <where-clause> ::= <identifier> '=' <term>
-                 | <identifier> IN '(' <term> ( ',' <term> )* ')'
+                 | <identifier> IN '(' ( <term> ( ',' <term> )* )? ')'
 
 <option> ::= TIMESTAMP <integer>
            | TTL <integer>
@@ -511,7 +515,7 @@ bc(syntax)..
 <selection> ::= <identifier> ( '[' <term> ']' )?
 
 <where-clause> ::= <identifier> '=' <term>
-                 | <identifier> IN '(' <term> ( ',' <term> )* ')'
+                 | <identifier> IN '(' ( <term> ( ',' <term> )* )? ')'
 p. 
 __Sample:__
 
@@ -593,7 +597,7 @@ bc(syntax)..
 <where-clause> ::= <relation> ( "AND" <relation> )*
 
 <relation> ::= <identifier> ("=" | "<" | ">" | "<=" | ">=") <term>
-             | <identifier> IN '(' <term> ( ',' <term>)* ')'
+             | <identifier> IN '(' ( <term> ( ',' <term>)* )? ')'
              | TOKEN '(' <identifier> ')' ("=" | "<" | ">" | "<=" | ">=") (<term> | TOKEN '( <term> ')' )
 
 <order-by> ::= <ordering> ( ',' <odering> )*
@@ -607,8 +611,8 @@ SELECT name, occupation FROM users WHERE userid IN (199, 200, 207);
 SELECT time, value
 FROM events
 WHERE event_type = 'myEvent'
-  AND time > 2011-02-03
-  AND time <= 2012-01-01
+  AND time > '2011-02-03'
+  AND time <= '2012-01-01'
 
 SELECT COUNT(*) FROM users;
 p. 
@@ -626,7 +630,7 @@ h4(#selectWhere). @<where-clause>@
 
 The @<where-clause>@ specifies which rows must be queried. It is composed of relations on the columns that are part of the @PRIMARY KEY@ and/or have a "secondary index":#createIndexStmt defined on them.
 
-Not all relations are allowed in a query. For instance, non-equal relations (where @IN@ is considered as an equal relation) on a partition key is only supported if the partitioner for the keyspace is an ordered one. Moreover, for a given partition key, the clustering keys induce an ordering of rows and relations on them is restricted to the relations that allow to select a *contiguous* (for the ordering) set of rows. For instance, given
+Not all relations are allowed in a query. For instance, non-equal relations (where @IN@ is considered as an equal relation) on a partition key are not supported (but see the use of the @TOKEN@ method below to do non-equal queries on the partition key). Moreover, for a given partition key, the clustering keys induce an ordering of rows and relations on them is restricted to the relations that allow to select a *contiguous* (for the ordering) set of rows. For instance, given
 
 bc(sample). 
 CREATE TABLE posts (
@@ -642,15 +646,15 @@ CREATE TABLE posts (
 The following query is allowed:
 
 bc(sample). 
-SELECT entry_title, content FROM posts WHERE userid='john doe' AND blog_title='John's Blog' AND posted_at >= 2012-01-01 AND posted_at < 2012-01-31
+SELECT entry_title, content FROM posts WHERE userid='john doe' AND blog_title='John's Blog' AND posted_at >= '2012-01-01' AND posted_at < '2012-01-31'
 
 But the following one is not, as it does not select a contiguous set of rows (and we suppose no secondary indexes are set):
 
 bc(sample). 
 // Needs a blog_title to be set to select ranges of posted_at
-SELECT entry_title, content FROM posts WHERE userid='john doe' AND posted_at >= 2012-01-01 AND posted_at < 2012-01-31
+SELECT entry_title, content FROM posts WHERE userid='john doe' AND posted_at >= '2012-01-01' AND posted_at < '2012-01-31'
 
-When specifying relations, the @TOKEN@ function can be used on the @PARTITION KEY@ column to query. In that case, rows will be selected based on the token of their @PARTITION_KEY@ rather than on the value (note that the token of a key depends on the partitioner in use, and that in particular the RandomPartitioner won't yeld a meaningful order). Example:
+When specifying relations, the @TOKEN@ function can be used on the @PARTITION KEY@ column to query. In that case, rows will be selected based on the token of their @PARTITION_KEY@ rather than on the value. Note that the token of a key depends on the partitioner in use, and that in particular the RandomPartitioner won't yeld a meaningful order. Also note that ordering partitioners always order token values by bytes (so even if the partition key is of type int, @token(-1) > token(0)@ in particular). Example:
 
 bc(sample). 
 SELECT * FROM posts WHERE token(userid) > token('tom') AND token(userid) < token('bob')
@@ -976,9 +980,9 @@ CQL distinguishes between _reserved_ and _non-reserved_ keywords. Reserved keywo
 | @BOOLEAN@      | no  |
 | @BY@           | yes |
 | @CLUSTERING@   | no  |
-| @COLUMNFAMLY@  | yes |
+| @COLUMNFAMILY@ | yes |
 | @COMPACT@      | no  |
-| @CONSITENCY@   | no  |
+| @CONSISTENCY@  | no  |
 | @COUNT@        | no  |
 | @COUNTER@      | no  |
 | @CREATE@       | yes |
@@ -1047,6 +1051,15 @@ CQL distinguishes between _reserved_ and _non-reserved_ keywords. Reserved keywo
 h2(#changes). Changes
 
 The following describes the addition/changes brought for each version of CQL.
+
+h3. 3.0.5
+
+* @SELECT@, @UPDATE@, and @DELETE@ statements now allow empty @IN@ relations (see "CASSANDRA-5626":https://issues.apache.org/jira/browse/CASSANDRA-5626).
+
+h3. 3.0.4
+
+* Updated the syntax for custom "secondary indexes":#createIndexStmt.
+* Non-equal condition on the partition key are now never supported, even for ordering partitioner as this was not correct (the order was *not* the one of the type of the partition key). Instead, the @token@ method should always be used for range queries on the partition key (see "WHERE clauses":#selectWhere).
 
 h3. 3.0.3
 

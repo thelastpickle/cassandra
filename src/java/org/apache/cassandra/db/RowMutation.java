@@ -95,26 +95,38 @@ public class RowMutation implements IMutation
     }
 
     /**
-     * Returns mutation representing a Hints to be sent to <code>address</code>
-     * as soon as it becomes available.  See HintedHandoffManager for more details.
+     * Returns mutation representing a Hint to be sent to <code>targetId</code>
+     * as soon as it becomes available. See HintedHandoffManager for more details.
      */
-    public static RowMutation hintFor(RowMutation mutation, UUID targetId) throws IOException
+    public RowMutation toHint(int ttl, UUID targetId) throws IOException
     {
+        assert ttl > 0;
+
         RowMutation rm = new RowMutation(Table.SYSTEM_KS, UUIDType.instance.decompose(targetId));
         UUID hintId = UUIDGen.getTimeUUID();
-
-        // determine the TTL for the RowMutation
-        // this is set at the smallest GCGraceSeconds for any of the CFs in the RM
-        // this ensures that deletes aren't "undone" by delivery of an old hint
-        int ttl = Integer.MAX_VALUE;
-        for (ColumnFamily cf : mutation.getColumnFamilies())
-            ttl = Math.min(ttl, cf.metadata().getGcGraceSeconds());
-
         // serialize the hint with id and version as a composite column name
-        QueryPath path = new QueryPath(SystemTable.HINTS_CF, null, HintedHandOffManager.comparator.decompose(hintId, MessagingService.current_version));
-        rm.add(path, ByteBuffer.wrap(FBUtilities.serialize(mutation, serializer, MessagingService.current_version)), System.currentTimeMillis(), ttl);
+        QueryPath path = new QueryPath(SystemTable.HINTS_CF,
+                                       null,
+                                       HintedHandOffManager.comparator.decompose(hintId, MessagingService.current_version));
+        rm.add(path,
+               ByteBuffer.wrap(FBUtilities.serialize(this, serializer, MessagingService.current_version)),
+               System.currentTimeMillis(),
+               ttl);
 
         return rm;
+    }
+
+    /*
+     * determine the TTL for the hint RowMutation
+     * this is set at the smallest GCGraceSeconds for any of the CFs in the RM
+     * this ensures that deletes aren't "undone" by delivery of an old hint
+     */
+    public int calculateHintTTL()
+    {
+        int ttl = Integer.MAX_VALUE;
+        for (ColumnFamily cf : getColumnFamilies())
+            ttl = Math.min(ttl, cf.metadata().getGcGraceSeconds());
+        return ttl;
     }
 
     /*
@@ -137,7 +149,11 @@ public class RowMutation implements IMutation
      */
     public ColumnFamily addOrGet(String cfName)
     {
-        CFMetaData cfm = Schema.instance.getCFMetaData(table, cfName);
+        return addOrGet(Schema.instance.getCFMetaData(table, cfName));
+    }
+
+    public ColumnFamily addOrGet(CFMetaData cfm)
+    {
         ColumnFamily cf = modifications.get(cfm.cfId);
         if (cf == null)
         {
@@ -254,7 +270,8 @@ public class RowMutation implements IMutation
      */
     public void apply()
     {
-        KSMetaData ksm = Schema.instance.getTableDefinition(getTable());
+        KSMetaData ksm = Schema.instance.getTableDefinition(table);
+        assert ksm != null : "Attempting to mutate non-existant keyspace " + table;
         Table.open(table).apply(this, ksm.durableWrites);
     }
 
@@ -341,6 +358,15 @@ public class RowMutation implements IMutation
         {
             delete(new QueryPath(cfName, del.super_column), del.timestamp);
         }
+    }
+
+    public RowMutation without(UUID cfId)
+    {
+        RowMutation rm = new RowMutation(table, key);
+        for (Map.Entry<UUID, ColumnFamily> entry : modifications.entrySet())
+            if (!entry.getKey().equals(cfId))
+                rm.add(entry.getValue());
+        return rm;
     }
 
     public static class RowMutationSerializer implements IVersionedSerializer<RowMutation>

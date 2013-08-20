@@ -21,11 +21,9 @@ package org.apache.cassandra.hadoop;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.google.common.collect.Maps;
 import org.apache.cassandra.io.compress.CompressionParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,11 +38,8 @@ import org.apache.thrift.TBase;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
-import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
-
-import javax.security.auth.login.LoginException;
 
 
 public class ConfigHelper
@@ -74,10 +69,10 @@ public class ConfigHelper
     private static final String WRITE_CONSISTENCY_LEVEL = "cassandra.consistencylevel.write";
     private static final String OUTPUT_COMPRESSION_CLASS = "cassandra.output.compression.class";
     private static final String OUTPUT_COMPRESSION_CHUNK_LENGTH = "cassandra.output.compression.length";
+
     private static final String INPUT_TRANSPORT_FACTORY_CLASS = "cassandra.input.transport.factory.class";
     private static final String OUTPUT_TRANSPORT_FACTORY_CLASS = "cassandra.output.transport.factory.class";
     private static final String THRIFT_FRAMED_TRANSPORT_SIZE_IN_MB = "cassandra.thrift.framed.size_mb";
-    private static final String THRIFT_MAX_MESSAGE_LENGTH_IN_MB = "cassandra.thrift.message.max_size_mb";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigHelper.class);
 
@@ -390,9 +385,19 @@ public class ConfigHelper
         return conf.get(READ_CONSISTENCY_LEVEL, "ONE");
     }
 
+    public static void setReadConsistencyLevel(Configuration conf, String consistencyLevel)
+    {
+        conf.set(READ_CONSISTENCY_LEVEL, consistencyLevel);
+    }
+
     public static String getWriteConsistencyLevel(Configuration conf)
     {
         return conf.get(WRITE_CONSISTENCY_LEVEL, "ONE");
+    }
+
+    public static void setWriteConsistencyLevel(Configuration conf, String consistencyLevel)
+    {
+        conf.set(WRITE_CONSISTENCY_LEVEL, consistencyLevel);
     }
 
     public static int getInputRpcPort(Configuration conf)
@@ -496,25 +501,11 @@ public class ConfigHelper
 
     /**
      * @param conf The configuration to use.
-     * @return Value (converts MBs to Bytes) set by {@link setThriftFramedTransportSizeInMb(Configuration, int)} or default of 15MB
+     * @return Value (converts MBs to Bytes) set by {@link #setThriftFramedTransportSizeInMb(Configuration, int)} or default of 15MB
      */
     public static int getThriftFramedTransportSize(Configuration conf)
     {
         return conf.getInt(THRIFT_FRAMED_TRANSPORT_SIZE_IN_MB, 15) * 1024 * 1024; // 15MB is default in Cassandra
-    }
-
-    public static void setThriftMaxMessageLengthInMb(Configuration conf, int maxMessageSizeInMB)
-    {
-        conf.setInt(THRIFT_MAX_MESSAGE_LENGTH_IN_MB, maxMessageSizeInMB);
-    }
-
-    /**
-     * @param conf The configuration to use.
-     * @return Value (converts MBs to Bytes) set by {@link setThriftMaxMessageLengthInMb(Configuration, int)} or default of 16MB
-     */
-    public static int getThriftMaxMessageLength(Configuration conf)
-    {
-        return conf.getInt(THRIFT_MAX_MESSAGE_LENGTH_IN_MB, 16) * 1024 * 1024; // 16MB is default in Cassandra
     }
 
     public static CompressionParameters getOutputCompressionParamaters(Configuration conf)
@@ -576,41 +567,27 @@ public class ConfigHelper
     {
         try
         {
-            TSocket socket = new TSocket(host, port);
-            TTransport transport = getInputTransportFactory(conf).openTransport(socket, conf);
-            return new Cassandra.Client(new TBinaryProtocol(transport, getThriftMaxMessageLength(conf)));
+            TTransport transport = getClientTransportFactory(conf).openTransport(host, port, conf);
+            return new Cassandra.Client(new TBinaryProtocol(transport, true, true));
         }
-        catch (LoginException e)
-        {
-            throw new IOException("Unable to login to server " + host + ":" + port, e);
-        }
-        catch (TTransportException e)
+        catch (Exception e)
         {
             throw new IOException("Unable to connect to server " + host + ":" + port, e);
         }
     }
 
-    public static ITransportFactory getInputTransportFactory(Configuration conf)
+    public static ITransportFactory getClientTransportFactory(Configuration conf)
     {
-        return getTransportFactory(conf.get(INPUT_TRANSPORT_FACTORY_CLASS, TFramedTransportFactory.class.getName()));
+        String factoryClassName = conf.get(
+                ITransportFactory.PROPERTY_KEY,
+                TFramedTransportFactory.class.getName());
+        ITransportFactory factory = getClientTransportFactory(factoryClassName);
+        Map<String, String> options = getOptions(conf, factory.supportedOptions());
+        factory.setOptions(options);
+        return factory;
     }
 
-    public static void setInputTransportFactoryClass(Configuration conf, String classname)
-    {
-        conf.set(INPUT_TRANSPORT_FACTORY_CLASS, classname);
-    }
-
-    public static ITransportFactory getOutputTransportFactory(Configuration conf)
-    {
-        return getTransportFactory(conf.get(OUTPUT_TRANSPORT_FACTORY_CLASS, TFramedTransportFactory.class.getName()));
-    }
-
-    public static void setOutputTransportFactoryClass(Configuration conf, String classname)
-    {
-        conf.set(OUTPUT_TRANSPORT_FACTORY_CLASS, classname);
-    }
-
-    private static ITransportFactory getTransportFactory(String factoryClassName) {
+    private static ITransportFactory getClientTransportFactory(String factoryClassName) {
         try
         {
             return (ITransportFactory) Class.forName(factoryClassName).newInstance();
@@ -619,5 +596,15 @@ public class ConfigHelper
         {
             throw new RuntimeException("Failed to instantiate transport factory:" + factoryClassName, e);
         }
+    }
+    private static Map<String, String> getOptions(Configuration conf, Set<String> supportedOptions) {
+        Map<String, String> options = Maps.newHashMap();
+        for (String optionKey : supportedOptions)
+        {
+            String optionValue = conf.get(optionKey);
+            if (optionValue != null)
+                options.put(optionKey, optionValue);
+        }
+        return options;
     }
 }

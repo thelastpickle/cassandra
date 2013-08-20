@@ -153,7 +153,7 @@ class TestCqlshOutput(BaseTestCase):
              MMMMM
             -------
 
-                 4
+                 5
                  G
 
             """),
@@ -371,7 +371,7 @@ class TestCqlshOutput(BaseTestCase):
         self.assertCqlverQueriesGiveColoredOutput((
             ('''select intcol, bigintcol, varintcol \
                   from has_all_types \
-                 where num in (0, 1, 2, 3);''', """
+                 where num in (0, 1, 2, 3, 4);''', """
              intcol      | bigintcol            | varintcol
              MMMMMM        MMMMMMMMM              MMMMMMMMM
             -------------+----------------------+-----------------------------
@@ -384,12 +384,12 @@ class TestCqlshOutput(BaseTestCase):
              GGGGGGGGGGG   GGGGGGGGGGGGGGGGGGGG   GGGGGGGGGGGGGGGGGGGGGGGGGGG
              -2147483648 | -9223372036854775808 | -10000000000000000000000000
              GGGGGGGGGGG   GGGGGGGGGGGGGGGGGGGG   GGGGGGGGGGGGGGGGGGGGGGGGGGG
-
+                         |                      |
             """),
 
             ('''select decimalcol, doublecol, floatcol \
                   from has_all_types \
-                 where num in (0, 1, 2, 3);''', """
+                 where num in (0, 1, 2, 3, 4);''', """
              decimalcol       | doublecol | floatcol
              MMMMMMMMMM         MMMMMMMMM   MMMMMMMM
             ------------------+-----------+----------
@@ -402,7 +402,7 @@ class TestCqlshOutput(BaseTestCase):
              GGGGGGGGGGGGGGGG     GGGGGGG      GGGGG
              10.0000000000000 |   -1004.1 |    1e+08
              GGGGGGGGGGGGGGGG     GGGGGGG      GGGGG
-
+                              |           |
             """),
         ), cqlver=(2, 3))
 
@@ -636,14 +636,14 @@ class TestCqlshOutput(BaseTestCase):
         ), cqlver=(2, 3))
 
     def test_prompt(self):
-        with testrun_cqlsh(tty=True, keyspace=None, cqlver=2) as c:
+        with testrun_cqlsh(tty=True, keyspace=None, cqlver=3) as c:
             self.assertEqual(c.output_header.splitlines()[-1], 'cqlsh> ')
 
             c.send('\n')
             output = c.read_to_next_prompt().replace('\r\n', '\n')
             self.assertEqual(output, '\ncqlsh> ')
 
-            cmd = "USE '%s';\n" % get_test_keyspace().replace("'", "''")
+            cmd = 'USE "%s";\n' % get_test_keyspace().replace('"', '""')
             c.send(cmd)
             output = c.read_to_next_prompt().replace('\r\n', '\n')
             self.assertEqual(output, '%scqlsh:%s> ' % (cmd, get_test_keyspace()))
@@ -655,10 +655,10 @@ class TestCqlshOutput(BaseTestCase):
             c.send('use NONEXISTENTKEYSPACE;\n')
             outputlines = c.read_to_next_prompt().splitlines()
             self.assertEqual(outputlines[0], 'use NONEXISTENTKEYSPACE;')
-            self.assertEqual(outputlines[3], 'cqlsh:system> ')
+            self.assertEqual(outputlines[2], 'cqlsh:system> ')
             midline = ColoredText(outputlines[1])
             self.assertEqual(midline.plain(),
-                             "Bad Request: Keyspace 'NONEXISTENTKEYSPACE' does not exist")
+                             "Bad Request: Keyspace 'nonexistentkeyspace' does not exist")
             self.assertColorFromTags(midline,
                              "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
 

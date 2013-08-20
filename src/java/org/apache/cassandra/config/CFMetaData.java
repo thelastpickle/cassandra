@@ -136,8 +136,6 @@ public final class CFMetaData
                                                                        + "value_alias text,"
                                                                        + "column_aliases text,"
                                                                        + "compaction_strategy_options text,"
-                                                                       + "default_read_consistency text,"
-                                                                       + "default_write_consistency text,"
                                                                        + "PRIMARY KEY (keyspace_name, columnfamily_name)"
                                                                        + ") WITH COMMENT='ColumnFamily definitions' AND gc_grace_seconds=8640");
 
@@ -1292,9 +1290,10 @@ public final class CFMetaData
     public RowMutation dropFromSchema(long timestamp)
     {
         RowMutation rm = new RowMutation(Table.SYSTEM_KS, SystemTable.getSchemaKSKey(ksName));
-        ColumnFamily cf = rm.addOrGet(SystemTable.SCHEMA_COLUMNFAMILIES_CF);
+        ColumnFamily cf = rm.addOrGet(SchemaColumnFamiliesCf);
         int ldt = (int) (System.currentTimeMillis() / 1000);
 
+        cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, ""));
         cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, "id"));
         cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, "type"));
         cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, "comparator"));
@@ -1337,14 +1336,14 @@ public final class CFMetaData
     {
         // For property that can be null (and can be changed), we insert tombstones, to make sure
         // we don't keep a property the user has removed
-        ColumnFamily cf = rm.addOrGet(SystemTable.SCHEMA_COLUMNFAMILIES_CF);
+        ColumnFamily cf = rm.addOrGet(SchemaColumnFamiliesCf);
         int ldt = (int) (System.currentTimeMillis() / 1000);
 
         Integer oldId = Schema.instance.convertNewCfId(cfId);
-
         if (oldId != null) // keep old ids (see CASSANDRA-3794 for details)
             cf.addColumn(Column.create(oldId, timestamp, cfName, "id"));
 
+        cf.addColumn(Column.create("", timestamp, cfName, ""));
         cf.addColumn(Column.create(cfType.toString(), timestamp, cfName, "type"));
         cf.addColumn(Column.create(comparator.toString(), timestamp, cfName, "comparator"));
         if (subcolumnComparator != null)

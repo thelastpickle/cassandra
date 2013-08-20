@@ -72,6 +72,16 @@ public class FunctionCall extends Term.NonTerminal
         return fun.execute(buffers);
     }
 
+    public boolean containsBindMarker()
+    {
+        for (Term t : terms)
+        {
+            if (t.containsBindMarker())
+                return true;
+        }
+        return false;
+    }
+
     private static Term.Terminal makeTerminal(Function fun, ByteBuffer result) throws InvalidRequestException
     {
         if (!(fun.returnType() instanceof CollectionType))
@@ -111,7 +121,9 @@ public class FunctionCall extends Term.NonTerminal
                 parameters.add(t);
             }
 
-            return allTerminal
+            // If all parameters are terminal and the function is pure, we can
+            // evaluate it now, otherwise we'd have to wait execution time
+            return allTerminal && fun.isPure()
                 ? makeTerminal(fun, execute(fun, parameters))
                 : new FunctionCall(fun, parameters);
         }

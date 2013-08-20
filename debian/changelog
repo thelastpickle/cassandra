@@ -1,8 +1,26 @@
+cassandra (1.2.8) unstable; urgency=low
+
+  * New release
+
+ -- Eric Evans <eevans@apache.org>  Sat, 27 Jul 2013 19:35:16 -0400
+
+cassandra (1.2.7) unstable; urgency=low
+
+  * New release
+
+ -- Sylvain Lebresne <slebresne@apache.org>  Tue, 23 Jul 2013 15:42:51 +0200
+
+cassandra (1.2.6) unstable; urgency=low
+
+  * New release
+
+ -- Sylvain Lebresne <slebresne@apache.org>  Fri, 21 Jun 2013 18:58:24 +0200
+
 cassandra (1.2.5) unstable; urgency=low
 
   * New release
 
- -- Sylvain Lebresne <slebresne@apache.org>  Fri, 03 May 2013 17:52:01 +0200
+ -- Sylvain Lebresne <slebresne@apache.org>  Wed, 15 May 2013 15:20:01 +0200
 
 cassandra (1.2.4) unstable; urgency=low
 

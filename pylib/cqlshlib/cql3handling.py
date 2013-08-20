@@ -223,7 +223,7 @@ JUNK ::= /([ \t\r\f\v]+|(--|[/][/])[^\n\r]*([\n\r]|$)|[/][*].*?[*][/])/ ;
 
 <unclosedString>  ::= /'([^']|'')*/ ;
 <unclosedName>    ::= /"([^"]|"")*/ ;
-<unclosedComment> ::= /[/][*][^\n]*$/ ;
+<unclosedComment> ::= /[/][*].*$/ ;
 
 <term> ::= <stringLiteral>
          | <integer>
@@ -503,10 +503,6 @@ def cf_new_prop_val_completer(ctxt, cass):
     if this_opt in ('min_compaction_threshold', 'max_compaction_threshold',
                     'gc_grace_seconds'):
         return [Hint('<integer>')]
-    if this_opt == 'default_read_consistency':
-        return [cl for cl in CqlRuleSet.consistency_levels if cl != 'ANY']
-    if this_opt == 'default_write_consistency':
-        return CqlRuleSet.consistency_levels
     return [Hint('<option_value>')]
 
 def cf_new_prop_val_mapkey_completer(ctxt, cass):
@@ -986,8 +982,8 @@ syntax_rules += r'''
 <batchStatement> ::= "BEGIN" ( "UNLOGGED" | "COUNTER" )? "BATCH"
                         ( "USING" [batchopt]=<usingOption>
                                   ( "AND" [batchopt]=<usingOption> )* )?
-                        [batchstmt]=<batchStatementMember> ";"
-                            ( [batchstmt]=<batchStatementMember> ";" )*
+                        [batchstmt]=<batchStatementMember> ";"?
+                            ( [batchstmt]=<batchStatementMember> ";"? )*
                      "APPLY" "BATCH"
                    ;
 <batchStatementMember> ::= <insertStatement>
@@ -1204,7 +1200,7 @@ def create_cf_composite_primary_key_comma_completer(ctxt, cass):
 syntax_rules += r'''
 <createIndexStatement> ::= "CREATE" "CUSTOM"? "INDEX" indexname=<identifier>? "ON"
                                cf=<columnFamilyName> "(" col=<cident> ")"
-                               ( "WITH" "options = {'class': " <stringLiteral> "}" )?
+                               ( "USING" <stringLiteral> )?
                          ;
 '''
 
@@ -1239,6 +1235,8 @@ syntax_rules += r'''
                       | "ADD" newcol=<cident> <storageType>
                       | "DROP" existcol=<cident>
                       | "WITH" <cfamProperty> ( "AND" <cfamProperty> )*
+                      | "RENAME" existcol=<cident> "TO" newcol=<cident>
+                         ( "AND" existcol=<cident> "TO" newcol=<cident> )*
                       ;
 '''
 
@@ -1393,6 +1391,8 @@ CqlRuleSet.append_rules(syntax_rules)
 
 class CqlColumnDef:
     index_name = None
+    index_type = None
+    index_options = {}
 
     def __init__(self, name, cqltype):
         self.name = name
@@ -1407,6 +1407,9 @@ class CqlColumnDef:
             colname = layout[u'column']
         c = cls(colname, lookup_casstype(layout[u'validator']))
         c.index_name = layout[u'index_name']
+        c.index_type = layout[u'index_type']
+        if c.index_type == 'CUSTOM':
+            c.index_options = json.loads(layout[u'index_options'])
         return c
 
     def __str__(self):

@@ -17,20 +17,21 @@
  */
 package org.apache.cassandra.tools;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.management.MemoryUsage;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.cli.*;
 import org.yaml.snakeyaml.Loader;
 import org.yaml.snakeyaml.TypeDescription;
@@ -55,6 +56,7 @@ import org.apache.cassandra.utils.Pair;
 
 public class NodeCmd
 {
+    private static final String HISTORYFILE = "nodetool.history";
     private static final Pair<String, String> SNAPSHOT_COLUMNFAMILY_OPT = Pair.create("cf", "column-family");
     private static final Pair<String, String> HOST_OPT = Pair.create("h", "host");
     private static final Pair<String, String> PORT_OPT = Pair.create("p", "port");
@@ -118,6 +120,8 @@ public class NodeCmd
         ENABLETHRIFT,
         FLUSH,
         GETCOMPACTIONTHRESHOLD,
+        GETCOMPACTIONTHROUGHPUT,
+        GETSTREAMTHROUGHPUT,
         GETENDPOINTS,
         GETSSTABLES,
         GOSSIPINFO,
@@ -170,6 +174,14 @@ public class NodeCmd
         StringBuilder header = new StringBuilder(512);
         header.append("\nAvailable commands\n");
         final NodeToolHelp ntHelp = loadHelp();
+        Collections.sort(ntHelp.commands, new Comparator<NodeToolHelp.NodeToolCommand>() 
+        {
+            @Override
+            public int compare(NodeToolHelp.NodeToolCommand o1, NodeToolHelp.NodeToolCommand o2) 
+            {
+                return o1.name.compareTo(o2.name);
+            }
+        });
         for(NodeToolHelp.NodeToolCommand cmd : ntHelp.commands)
             addCmdHelp(header, cmd);
         String usage = String.format("java %s --host <arg> <command>%n", NodeCmd.class.getName());
@@ -558,6 +570,7 @@ public class NodeCmd
         outs.printf("%-17s: %s%n", "ID", probe.getLocalHostId());
         outs.printf("%-17s: %s%n", "Gossip active", gossipInitialized);
         outs.printf("%-17s: %s%n", "Thrift active", probe.isThriftServerRunning());
+        outs.printf("%-17s: %s%n", "Native Transport active", probe.isNativeTransportRunning());
         outs.printf("%-17s: %s%n", "Load", probe.getLoadString());
         if (gossipInitialized)
             outs.printf("%-17s: %s%n", "Generation No", probe.getCurrentGenerationNumber());
@@ -667,6 +680,8 @@ public class NodeCmd
                 outs.printf("   Error retrieving file data for %s%n", host);
             }
         }
+        
+        outs.printf("Read Repair Statistics:%nAttempted: %d%nMismatch (Blocking): %d%nMismatch (Background): %d%n", probe.getReadRepairAttempted(), probe.getReadRepairRepairedBlocking(), probe.getReadRepairRepairedBackground());
 
         MessagingServiceMBean ms = probe.msProxy;
         outs.printf("%-25s", "Pool Name");
@@ -719,6 +734,39 @@ public class NodeCmd
                         : String.format("%dh%02dm%02ds", remainingTimeInSecs / 3600, (remainingTimeInSecs % 3600) / 60, (remainingTimeInSecs % 60));
 
         outs.printf("%25s%10s%n", "Active compaction remaining time : ", remainingTime);
+    }
+
+    /**
+     * Print the compaction threshold
+     *
+     * @param outs the stream to write to
+     */
+    public void printCompactionThreshold(PrintStream outs, String ks, String cf)
+    {
+        ColumnFamilyStoreMBean cfsProxy = probe.getCfsProxy(ks, cf);
+        outs.println("Current compaction thresholds for " + ks + "/" + cf + ": \n" +
+                     " min = " + cfsProxy.getMinimumCompactionThreshold() + ", " +
+                     " max = " + cfsProxy.getMaximumCompactionThreshold());
+    }
+
+    /**
+     * Print the compaction throughput
+     *
+     * @param outs the stream to write to
+     */
+    public void printCompactionThroughput(PrintStream outs)
+    {
+        outs.println("Current compaction throughput: " + probe.getCompactionThroughput() + " MB/s");
+    }
+
+    /**
+     * Print the stream throughput
+     *
+     * @param outs the stream to write to
+     */
+    public void printStreamThroughput(PrintStream outs)
+    {
+        outs.println("Current stream throughput: " + probe.getStreamThroughput() + " MB/s");
     }
 
     public void printColumnFamilyStats(PrintStream outs)
@@ -1026,6 +1074,8 @@ public class NodeCmd
         }
         try
         {
+            //print history here after we've already determined we can reasonably call cassandra
+            printHistory(args, cmd);
             NodeCommand command = null;
 
             try
@@ -1036,7 +1086,6 @@ public class NodeCmd
             {
                 badUse(e.getMessage());
             }
-
 
             NodeCmd nodeCmd = new NodeCmd(probe);
 
@@ -1178,8 +1227,11 @@ public class NodeCmd
 
                 case GETCOMPACTIONTHRESHOLD :
                     if (arguments.length != 2) { badUse("getcompactionthreshold requires ks and cf args."); }
-                    probe.getCompactionThreshold(System.out, arguments[0], arguments[1]);
+                    nodeCmd.printCompactionThreshold(System.out, arguments[0], arguments[1]);
                     break;
+
+                case GETCOMPACTIONTHROUGHPUT : nodeCmd.printCompactionThroughput(System.out); break;
+                case GETSTREAMTHROUGHPUT : nodeCmd.printStreamThroughput(System.out); break;
 
                 case CFHISTOGRAMS :
                     if (arguments.length != 2) { badUse("cfhistograms requires ks and cf args"); }
@@ -1281,6 +1333,34 @@ public class NodeCmd
         System.exit(probe.isFailed() ? 1 : 0);
     }
 
+    private static void printHistory(String[] args, ToolCommandLine cmd)
+    {
+        //don't bother to print if no args passed (meaning, nodetool is just printing out the sub-commands list)
+        if (args.length == 0)
+            return;
+        String cmdLine = Joiner.on(" ").skipNulls().join(args);
+        final String password = cmd.getOptionValue(PASSWORD_OPT.left);
+        if (password != null)
+            cmdLine = cmdLine.replace(password, "<hidden>");
+
+        FileWriter writer = null;
+        try
+        {
+            final String outputDir = FBUtilities.getToolsOutputDirectory().getCanonicalPath();
+            writer = new FileWriter(new File(outputDir, HISTORYFILE), true);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
+            writer.append(sdf.format(new Date()) + ": " + cmdLine + "\n");
+        }
+        catch (IOException ioe)
+        {
+            //quietly ignore any errors about not being able to write out history
+        }
+        finally
+        {
+            FileUtils.closeQuietly(writer);
+        }
+    }
+
     private static Throwable findInnermostThrowable(Throwable ex)
     {
         Throwable inner = ex.getCause();
@@ -1344,7 +1424,7 @@ public class NodeCmd
     private static void handleSnapshots(NodeCommand nc, String tag, String[] cmdArgs, String columnFamily, NodeProbe probe) throws InterruptedException, IOException
     {
         String[] keyspaces = Arrays.copyOfRange(cmdArgs, 0, cmdArgs.length);
-        System.out.print("Requested snapshot for: ");
+        System.out.print("Requested " + ((nc == NodeCommand.SNAPSHOT) ? "creating" : "clearing") + " snapshot for: ");
         if ( keyspaces.length > 0 )
         {
           for (int i = 0; i < keyspaces.length; i++)

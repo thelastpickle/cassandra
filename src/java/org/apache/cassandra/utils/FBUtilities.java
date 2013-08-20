@@ -37,10 +37,13 @@ import java.util.concurrent.TimeoutException;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.AbstractIterator;
+import org.apache.cassandra.io.util.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.cassandra.auth.IAuthenticator;
+import org.apache.cassandra.auth.IAuthorizer;
 import org.apache.cassandra.cache.IRowCacheProvider;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -394,6 +397,20 @@ public class FBUtilities
         return FBUtilities.construct(partitionerClassName, "partitioner");
     }
 
+    public static IAuthorizer newAuthorizer(String className) throws ConfigurationException
+    {
+        if (!className.contains("."))
+            className = "org.apache.cassandra.auth." + className;
+        return FBUtilities.construct(className, "authorizer");
+    }
+
+    public static IAuthenticator newAuthenticator(String className) throws ConfigurationException
+    {
+        if (!className.contains("."))
+            className = "org.apache.cassandra.auth." + className;
+        return FBUtilities.construct(className, "authenticator");
+    }
+
     /**
      * @return The Class for the given name.
      * @param classname Fully qualified classname.
@@ -602,5 +619,12 @@ public class FBUtilities
                : String.format("Final buffer length %s to accommodate data size of %s (predicted %s) for %s",
                                buffer.getData().length, buffer.getLength(), size, object);
         return buffer.getData();
+    }
+
+    public static File getToolsOutputDirectory()
+    {
+        File historyDir = new File(System.getProperty("user.home"), ".cassandra");
+        FileUtils.createDirectory(historyDir);
+        return historyDir;
     }
 }

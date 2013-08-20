@@ -147,9 +147,10 @@ public class ColumnDefinition
      */
     public void deleteFromSchema(RowMutation rm, String cfName, AbstractType<?> comparator, long timestamp)
     {
-        ColumnFamily cf = rm.addOrGet(SystemTable.SCHEMA_COLUMNS_CF);
+        ColumnFamily cf = rm.addOrGet(CFMetaData.SchemaColumnsCf);
         int ldt = (int) (System.currentTimeMillis() / 1000);
 
+        cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, comparator.getString(name), ""));
         cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, comparator.getString(name), "validator"));
         cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, comparator.getString(name), "index_type"));
         cf.addColumn(DeletedColumn.create(ldt, timestamp, cfName, comparator.getString(name), "index_options"));
@@ -159,9 +160,10 @@ public class ColumnDefinition
 
     public void toSchema(RowMutation rm, String cfName, AbstractType<?> comparator, long timestamp)
     {
-        ColumnFamily cf = rm.addOrGet(SystemTable.SCHEMA_COLUMNS_CF);
+        ColumnFamily cf = rm.addOrGet(CFMetaData.SchemaColumnsCf);
         int ldt = (int) (System.currentTimeMillis() / 1000);
 
+        cf.addColumn(Column.create("", timestamp, cfName, comparator.getString(name), ""));
         cf.addColumn(Column.create(validator.toString(), timestamp, cfName, comparator.getString(name), "validator"));
         cf.addColumn(index_type == null ? DeletedColumn.create(ldt, timestamp, cfName, comparator.getString(name), "index_type")
                                         : Column.create(index_type.toString(), timestamp, cfName, comparator.getString(name), "index_type"));
