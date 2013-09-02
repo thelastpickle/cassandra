@@ -187,9 +187,9 @@ public class NodeProbe
         ssProxy.forceTableCleanup(tableName, columnFamilies);
     }
 
-    public void scrub(String tableName, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
+    public void scrub(boolean disableSnapshot, String tableName, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
     {
-        ssProxy.scrub(tableName, columnFamilies);
+        ssProxy.scrub(disableSnapshot, tableName, columnFamilies);
     }
 
     public void upgradeSSTables(String tableName, boolean excludeCurrentVersion, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
@@ -669,6 +669,16 @@ public class NodeProbe
     public List<String> getKeyspaces()
     {
         return ssProxy.getKeyspaces();
+    }
+
+    public String getClusterName()
+    {
+        return ssProxy.getClusterName();
+    }
+
+    public String getPartitioner()
+    {
+        return ssProxy.getPartitionerName();
     }
 
     public void disableHintedHandoff()

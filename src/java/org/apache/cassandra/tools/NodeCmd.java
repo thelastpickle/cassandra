@@ -70,6 +70,7 @@ public class NodeCmd
     private static final Pair<String, String> START_TOKEN_OPT = Pair.create("st", "start-token");
     private static final Pair<String, String> END_TOKEN_OPT = Pair.create("et", "end-token");
     private static final Pair<String, String> UPGRADE_ALL_SSTABLE_OPT = Pair.create("a", "include-all-sstables");
+    private static final Pair<String, String> NO_SNAPSHOT = Pair.create("ns", "no-snapshot");
 
     private static final String DEFAULT_HOST = "127.0.0.1";
     private static final int DEFAULT_PORT = 7199;
@@ -93,6 +94,7 @@ public class NodeCmd
         options.addOption(START_TOKEN_OPT, true, "token at which repair range starts");
         options.addOption(END_TOKEN_OPT, true, "token at which repair range ends");
         options.addOption(UPGRADE_ALL_SSTABLE_OPT, false, "includes sstables that are already on the most recent version during upgradesstables");
+        options.addOption(NO_SNAPSHOT, false, "disables snapshot creation for scrub");
     }
 
     public NodeCmd(NodeProbe probe)
@@ -109,6 +111,7 @@ public class NodeCmd
         COMPACT,
         COMPACTIONSTATS,
         DECOMMISSION,
+        DESCRIBECLUSTER,
         DISABLEBINARY,
         DISABLEGOSSIP,
         DISABLEHANDOFF,
@@ -769,6 +772,29 @@ public class NodeCmd
         outs.println("Current stream throughput: " + probe.getStreamThroughput() + " MB/s");
     }
 
+    /**
+     * Print the name, snitch, partitioner and schema version(s) of a cluster
+     *
+     * @param outs Output stream
+     * @param host Server address
+     */
+    public void printClusterDescription(PrintStream outs, String host)
+    {
+        // display cluster name, snitch and partitioner
+        outs.println("Cluster Information:");
+        outs.println("\tName: " + probe.getClusterName());
+        outs.println("\tSnitch: " + probe.getEndpointSnitchInfoProxy().getSnitchName());
+        outs.println("\tPartitioner: " + probe.getPartitioner());
+
+        // display schema version for each node
+        outs.println("\tSchema versions:");
+        Map<String, List<String>> schemaVersions = probe.getSpProxy().getSchemaVersions();
+        for (String version : schemaVersions.keySet())
+        {
+            outs.println(String.format("\t\t%s: %s%n", version, schemaVersions.get(version)));
+        }
+    }
+
     public void printColumnFamilyStats(PrintStream outs)
     {
         Map <String, List <ColumnFamilyStoreMBean>> cfstoreMap = new HashMap <String, List <ColumnFamilyStoreMBean>>();
@@ -866,6 +892,7 @@ public class NodeCmd
                 }
                 outs.println("\t\tSpace used (live): " + cfstore.getLiveDiskSpaceUsed());
                 outs.println("\t\tSpace used (total): " + cfstore.getTotalDiskSpaceUsed());
+                outs.println("\t\tSSTable Compression Ratio: " + cfstore.getCompressionRatio());
                 outs.println("\t\tNumber of Keys (estimate): " + cfstore.estimateKeys());
                 outs.println("\t\tMemtable Columns Count: " + cfstore.getMemtableColumnsCount());
                 outs.println("\t\tMemtable Data Size: " + cfstore.getMemtableDataSize());
@@ -1107,6 +1134,7 @@ public class NodeCmd
                 case TPSTATS         : nodeCmd.printThreadPoolStats(System.out); break;
                 case VERSION         : nodeCmd.printReleaseVersion(System.out); break;
                 case COMPACTIONSTATS : nodeCmd.printCompactionStats(System.out); break;
+                case DESCRIBECLUSTER : nodeCmd.printClusterDescription(System.out, host); break;
                 case DISABLEBINARY   : probe.stopNativeTransport(); break;
                 case ENABLEBINARY    : probe.startNativeTransport(); break;
                 case STATUSBINARY    : nodeCmd.printIsNativeTransportRunning(System.out); break;
@@ -1497,7 +1525,8 @@ public class NodeCmd
                     catch (ExecutionException ee) { err(ee, "Error occurred during cleanup"); }
                     break;
                 case SCRUB :
-                    try { probe.scrub(keyspace, columnFamilies); }
+                    boolean disableSnapshot = cmd.hasOption(NO_SNAPSHOT.left);
+                    try { probe.scrub(disableSnapshot, keyspace, columnFamilies); }
                     catch (ExecutionException ee) { err(ee, "Error occurred while scrubbing keyspace " + keyspace); }
                     break;
                 case UPGRADESSTABLES :

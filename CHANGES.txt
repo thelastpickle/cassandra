@@ -1,3 +1,14 @@
+1.2.10
+ * Allow local batchlog writes for CL.ANY (CASSANDRA-5967)
+ * Optimize name query performance in wide rows (CASSANDRA-5966)
+ * Upgrade metrics-core to version 2.2.0 (CASSANDRA-5947)
+ * Add snitch, schema version, cluster, partitioner to JMX (CASSANDRA-5881)
+ * Fix CqlRecordWriter with composite keys (CASSANDRA-5949)
+ * Allow disabling SlabAllocator (CASSANDRA-5935)
+ * Make user-defined compaction JMX blocking (CASSANDRA-4952)
+ * Fix streaming does not transfer wrapped range (CASSANDRA-5948)
+
+
 1.2.9
  * Fix getBloomFilterDiskSpaceUsed for AlwaysPresentFilter (CASSANDRA-5900)
  * migrate 1.1 schema_columnfamilies.key_alias column to key_aliases
@@ -22,6 +33,13 @@
    (CASSANDRA-5856)
  * Don't announce schema version until we've loaded the changes locally
    (CASSANDRA-5904)
+ * Add -no-snapshot option to scrub (CASSANDRA-5891)
+ * Fix to support off heap bloom filters size greater than 2 GB (CASSANDRA-5903)
+ * Properly handle parsing huge map and set literals (CASSANDRA-5893)
+ * Fix LCS L0 compaction may overlap in L1 (CASSANDRA-5907)
+ * New sstablesplit tool to split large sstables offline (CASSANDRA-4766)
+ * Fix potential deadlock in native protocol server (CASSANDRA-5926)
+ * Disallow incompatible type change in CQL3 (CASSANDRA-5882)
 Merged from 1.1:
  * Correctly validate sparse composite cells in scrub (CASSANDRA-5855)
 

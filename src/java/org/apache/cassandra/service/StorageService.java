@@ -2149,10 +2149,10 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         }
     }
 
-    public void scrub(String tableName, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
+    public void scrub(boolean disableSnapshot, String tableName, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
     {
         for (ColumnFamilyStore cfStore : getValidColumnFamilies(false, false, tableName, columnFamilies))
-            cfStore.scrub();
+            cfStore.scrub(disableSnapshot);
     }
 
     public void upgradeSSTables(String tableName, boolean excludeCurrentVersion, String... columnFamilies) throws IOException, ExecutionException, InterruptedException
@@ -3921,5 +3921,17 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     public void disableScheduledRangeXfers()
     {
         rangeXferExecutor.tearDown();
+    }
+
+    /** Returns the name of the cluster */
+    public String getClusterName()
+    {
+        return DatabaseDescriptor.getClusterName();
+    }
+
+    /** Returns the cluster partitioner */
+    public String getPartitionerName()
+    {
+        return DatabaseDescriptor.getPartitionerName();
     }
 }
