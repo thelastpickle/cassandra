@@ -182,22 +182,10 @@ public class SSTableExport
             boolean failedValidate = false;
             RangeTombstone rt = (RangeTombstone)column;
 
-            //System.out.println("derializing tombstone in export... p: " + rt.min.position() + " r:" + rt.min.remaining());
             try {
                 rt.validateFields(cfMetaData);
             } catch(Exception ex){
                 failedValidate = true;
-                /*
-                CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-                try {
-                    CharBuffer b = decoder.onMalformedInput(CodingErrorAction.IGNORE).decode(rt.min);
-                    System.out.println("DECODE NAME:["+b.toString()+"]");
-                    b = decoder.onMalformedInput(CodingErrorAction.IGNORE).decode(rt.min);
-                    System.out.println("DECODE value:["+b.toString()+"]");
-                } catch (Exception ex1){
-                    ex1.printStackTrace();
-                }
-                */
             }
             ArrayList<Object> serializedColumn;
             if ( failedValidate ) {

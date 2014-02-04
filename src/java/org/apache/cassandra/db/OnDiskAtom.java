@@ -87,7 +87,6 @@ public interface OnDiskAtom
 
                 int b = dis.readUnsignedByte();
                 if ((b & ColumnSerializer.RANGE_TOMBSTONE_MASK) != 0) {
-                    //System.out.println("derializing tombstone... p: " + name.position() + " r:" + name.remaining());
                     return RangeTombstone.serializer.deserializeBody(dis, name, version);
                 }
                 else
