@@ -21,6 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.apache.commons.cli.*;
@@ -174,13 +179,41 @@ public class SSTableExport
         else
         {
             assert column instanceof RangeTombstone;
+            boolean failedValidate = false;
             RangeTombstone rt = (RangeTombstone)column;
-            ArrayList<Object> serializedColumn = new ArrayList<Object>();
-            serializedColumn.add(comparator.getString(rt.min));
-            serializedColumn.add(comparator.getString(rt.max));
-            serializedColumn.add(rt.data.markedForDeleteAt);
-            serializedColumn.add("t");
-            serializedColumn.add(rt.data.localDeletionTime);
+
+            //System.out.println("derializing tombstone in export... p: " + rt.min.position() + " r:" + rt.min.remaining());
+            try {
+                rt.validateFields(cfMetaData);
+            } catch(Exception ex){
+                failedValidate = true;
+                /*
+                CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+                try {
+                    CharBuffer b = decoder.onMalformedInput(CodingErrorAction.IGNORE).decode(rt.min);
+                    System.out.println("DECODE NAME:["+b.toString()+"]");
+                    b = decoder.onMalformedInput(CodingErrorAction.IGNORE).decode(rt.min);
+                    System.out.println("DECODE value:["+b.toString()+"]");
+                } catch (Exception ex1){
+                    ex1.printStackTrace();
+                }
+                */
+            }
+            ArrayList<Object> serializedColumn;
+            if ( failedValidate ) {
+                long yesterday = (System.currentTimeMillis() - (86400*1000));
+                DeletedColumn dc = new DeletedColumn(ByteBufferUtil.bytes(Character.MIN_VALUE), (int)(yesterday / 1000), (yesterday * 1000));
+                serializedColumn = new ArrayList(serializeColumn(dc, comparator, cfMetaData));
+
+            } else {
+                serializedColumn = new ArrayList<Object>();
+                serializedColumn.add(comparator.getString(rt.min));
+                serializedColumn.add(comparator.getString(rt.max));
+                serializedColumn.add(rt.data.markedForDeleteAt);
+                serializedColumn.add("t");
+                serializedColumn.add(rt.data.localDeletionTime);
+            }
+
             return serializedColumn;
         }
     }

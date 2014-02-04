@@ -86,8 +86,10 @@ public interface OnDiskAtom
                     throw ColumnSerializer.CorruptColumnException.create(dis, name);
 
                 int b = dis.readUnsignedByte();
-                if ((b & ColumnSerializer.RANGE_TOMBSTONE_MASK) != 0)
+                if ((b & ColumnSerializer.RANGE_TOMBSTONE_MASK) != 0) {
+                    //System.out.println("derializing tombstone... p: " + name.position() + " r:" + name.remaining());
                     return RangeTombstone.serializer.deserializeBody(dis, name, version);
+                }
                 else
                     return ((ColumnSerializer)columnSerializer).deserializeColumnBody(dis, name, b, flag, expireBefore);
             }
