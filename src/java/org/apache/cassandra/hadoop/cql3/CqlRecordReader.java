@@ -41,16 +41,18 @@ import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnMetadata;
 import com.datastax.driver.core.LocalDate;
 import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.Token;
 import com.datastax.driver.core.TupleValue;
 import com.datastax.driver.core.UDTValue;
 import com.google.common.reflect.TypeToken;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.HadoopCompat;
@@ -72,8 +74,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
  * {@code
  * Row as C* java driver CQL result set row
  * 1) select clause must include partition key columns (to calculate the progress based on the actual CF row processed)
- * 2) where clause must include token(partition_key1, ...  , partition_keyn) > ? and 
- *       token(partition_key1, ... , partition_keyn) <= ?  (in the right order) 
+ * 2) where clause must include token(partition_key1, ...  , partition_keyn) > ? and
+ *       token(partition_key1, ... , partition_keyn) <= ?  (in the right order)
  * }
  */
 public class CqlRecordReader extends RecordReader<Long, Row>
@@ -252,11 +254,11 @@ public class CqlRecordReader extends RecordReader<Long, Row>
         return nativeProtocolVersion;
     }
 
-    /** CQL row iterator 
-     *  Input cql query  
+    /** CQL row iterator
+     *  Input cql query
      *  1) select clause must include key columns (if we use partition key based row count)
-     *  2) where clause must include token(partition_key1 ... partition_keyn) > ? and 
-     *     token(partition_key1 ... partition_keyn) <= ? 
+     *  2) where clause must include token(partition_key1 ... partition_keyn) > ? and
+     *     token(partition_key1 ... partition_keyn) <= ?
      */
     private class RowIterator extends AbstractIterator<Pair<Long, Row>>
     {
@@ -267,11 +269,41 @@ public class CqlRecordReader extends RecordReader<Long, Row>
 
         public RowIterator()
         {
-            AbstractType type = partitioner.getTokenValidator();
-            ResultSet rs = session.execute(cqlQuery, type.compose(type.fromString(split.getStartToken())), type.compose(type.fromString(split.getEndToken())) );
-            for (ColumnMetadata meta : cluster.getMetadata().getKeyspace(quote(keyspace)).getTable(quote(cfName)).getPartitionKey())
-                partitionBoundColumns.put(meta.getName(), Boolean.TRUE);
-            rows = rs.iterator();
+            final Token.TokenFactory factory = partitioner.getTokenFactory();
+
+            final AbstractType type = partitioner.getTokenValidator();
+            rows = new Iterator<Row>()
+            {
+                protected final Iterator<Range<Token>> tokenRanges = split.getTokenRanges().iterator();
+                protected Iterator<Row> rangeRows = Collections.emptyIterator();
+                public boolean hasNext()
+                {
+                    while (!rangeRows.hasNext() && tokenRanges.hasNext())
+                    {
+                        Range<Token> range = tokenRanges.next();
+                        Object startToken = type.compose(factory.toByteArray(range.left));
+                        Object endToken = type.compose(factory.toByteArray(range.right));
+                        ResultSet rs = session.execute(cqlQuery, startToken, endToken);
+                        if (partitionBoundColumns.isEmpty())
+                        {
+                            KeyspaceMetadata keyspaceMeta = cluster.getMetadata().getKeyspace(quote(keyspace));
+                            TableMetadata tableMeta = keyspaceMeta.getTable(quote(cfName));
+                            for (ColumnMetadata meta : tableMeta.getPartitionKey())
+                                partitionBoundColumns.put(meta.getName(), Boolean.TRUE);
+                        }
+                        rangeRows = rs.iterator();
+                    }
+                    return rangeRows.hasNext();
+                }
+                public Row next()
+                {
+                    return rangeRows.next();
+                }
+                public void remove()
+                {
+                    throw new UnsupportedOperationException("remove");
+                }
+            };
         }
 
         protected Pair<Long, Row> computeNext()
@@ -280,7 +312,7 @@ public class CqlRecordReader extends RecordReader<Long, Row>
                 return endOfData();
 
             Row row = rows.next();
-            Map<String, ByteBuffer> keyColumns = new HashMap<String, ByteBuffer>(partitionBoundColumns.size()); 
+            Map<String, ByteBuffer> keyColumns = new HashMap<String, ByteBuffer>(partitionBoundColumns.size());
             for (String column : partitionBoundColumns.keySet())
                 keyColumns.put(column, row.getBytesUnsafe(column));
 
@@ -684,19 +716,19 @@ public class CqlRecordReader extends RecordReader<Long, Row>
         }
 
         @Override
-        public Token getToken(int i)
+        public com.datastax.driver.core.Token getToken(int i)
         {
             return row.getToken(i);
         }
 
         @Override
-        public Token getToken(String name)
+        public com.datastax.driver.core.Token getToken(String name)
         {
             return row.getToken(name);
         }
 
         @Override
-        public Token getPartitionKeyToken()
+        public com.datastax.driver.core.Token getPartitionKeyToken()
         {
             return row.getPartitionKeyToken();
         }

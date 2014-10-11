@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.toMap;
 /**
  * Hadoop InputFormat allowing map/reduce against Cassandra rows within one ColumnFamily.
  *
- * At minimum, you need to set the KS and CF in your Hadoop job Configuration.  
+ * At minimum, you need to set the KS and CF in your Hadoop job Configuration.
  * The ConfigHelper class is provided to make this
  * simple:
  *   ConfigHelper.setInputColumnFamily
@@ -61,10 +61,10 @@ import static java.util.stream.Collectors.toMap;
  *   If no value is provided for InputSplitSizeInMb, we default to using InputSplitSize.
  *
  *   CQLConfigHelper.setInputCQLPageRowSize. The default page row size is 1000. You
- *   should set it to "as big as possible, but no bigger." It set the LIMIT for the CQL 
+ *   should set it to "as big as possible, but no bigger." It set the LIMIT for the CQL
  *   query, so you need set it big enough to minimize the network overhead, and also
  *   not too big to avoid out of memory issue.
- *   
+ *
  *   other native protocol connection parameters in CqlConfigHelper
  */
 public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row>
@@ -126,12 +126,12 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
 
         // canonical ranges, split into pieces, fetching the splits in parallel
         ExecutorService executor = new ThreadPoolExecutor(0, 128, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-        List<org.apache.hadoop.mapreduce.InputSplit> splits = new ArrayList<>();
+        List<ColumnFamilySplit> splits = new ArrayList<>();
 
         try (Cluster cluster = CqlConfigHelper.getInputCluster(ConfigHelper.getInputInitialAddress(conf).split(","), conf);
              Session session = cluster.connect())
         {
-            List<Future<List<org.apache.hadoop.mapreduce.InputSplit>>> splitfutures = new ArrayList<>();
+            List<Future<List<ColumnFamilySplit>>> splitfutures = new ArrayList<>();
             KeyRange jobKeyRange = ConfigHelper.getInputKeyRange(conf);
             Range<Token> jobRange = null;
             if (jobKeyRange != null)
@@ -185,7 +185,7 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
             }
 
             // wait until we have all the results back
-            for (Future<List<org.apache.hadoop.mapreduce.InputSplit>> futureInputSplits : splitfutures)
+            for (Future<List<ColumnFamilySplit>> futureInputSplits : splitfutures)
             {
                 try
                 {
@@ -203,8 +203,83 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         }
 
         assert splits.size() > 0;
-        Collections.shuffle(splits, new Random(System.nanoTime()));
-        return splits;
+        List<org.apache.hadoop.mapreduce.InputSplit> result = collectSplits(splits, conf);
+        Collections.shuffle(result, new Random(System.nanoTime()));
+        return result;
+    }
+
+    /** With vnodes the list of splits we get from system.size_estimates
+     *  is significantly longer and each split often so small the throughput of hadoop jobs suffer.
+     * CASSANDRA-6091
+     *
+     * This method merges back together all splits that have equal location sets
+     *  up to split sizes as configured by ConfigHelper.INPUT_SPLIT_SIZE_CONFIG
+     */
+    static List<org.apache.hadoop.mapreduce.InputSplit> collectSplits(List<ColumnFamilySplit> splits, Configuration conf)
+    {
+        List<org.apache.hadoop.mapreduce.InputSplit> result = new ArrayList<>();
+        Map<Set<String>,TreeSet<ColumnFamilySplit>> splitsPerDataNodes = new HashMap<>();
+        int splitsize = ConfigHelper.getInputSplitSize(conf);
+        for (ColumnFamilySplit split : splits)
+        {
+            String[] locations = split.getLocations();
+            Set<String> dataNodes = Collections.unmodifiableSet(new TreeSet<>(Arrays.asList(locations)));
+            if (!splitsPerDataNodes.containsKey(dataNodes))
+                splitsPerDataNodes.put(dataNodes, new TreeSet<>(new SplitComparator()));
+
+            splitsPerDataNodes.get(dataNodes).add(split);
+        }
+        for (TreeSet<ColumnFamilySplit> set : splitsPerDataNodes.values())
+        {
+            List<ColumnFamilySplit> list = new ArrayList<>();
+            Iterator<ColumnFamilySplit> it = set.iterator();
+            while (it.hasNext())
+            {
+                ColumnFamilySplit next = it.next();
+
+                if (list.isEmpty())
+                {
+                    list.add(next);
+                }
+                else
+                {
+                    ColumnFamilySplit prev = list.get(list.size()-1);
+                    assert Arrays.asList(prev.getLocations()).equals(Arrays.asList(next.getLocations()));
+
+                    assert 0 > prev.getTokenRanges().get(0).compareTo(next.getTokenRanges().get(0));
+                    assert !prev.getTokenRanges().get(prev.getTokenRanges().size()-1).intersects(next.getTokenRanges().get(0));
+
+                    long joinedLength = prev.getLength() + next.getLength();
+                    if (splitsize >= joinedLength)
+                    {
+                        List<Range<Token>> l = new ArrayList<>(prev.getTokenRanges());
+                        l.addAll(next.getTokenRanges());
+
+                        ColumnFamilySplit joined = new ColumnFamilySplit(
+                                l,
+                                joinedLength,
+                                prev.getLocations(),
+                                ConfigHelper.getInputPartitioner(conf).getClass().getName());
+
+                        list.set(list.size()-1, joined);
+                    }
+                    else
+                    {
+                        list.add(next);
+                    }
+                }
+            }
+            result.addAll(list);
+        }
+        return result;
+    }
+
+    private static class SplitComparator implements Comparator<ColumnFamilySplit>
+    {
+        public int compare(ColumnFamilySplit o1, ColumnFamilySplit o2)
+        {
+            return o1.getTokenRanges().get(0).compareTo(o2.getTokenRanges().get(0));
+        }
     }
 
     private TokenRange rangeToTokenRange(Metadata metadata, Range<Token> range)
@@ -293,7 +368,7 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
      * Gets a token tokenRange and splits it up according to the suggested
      * size into input splits that Hadoop can use.
      */
-    class SplitCallable implements Callable<List<org.apache.hadoop.mapreduce.InputSplit>>
+    class SplitCallable implements Callable<List<ColumnFamilySplit>>
     {
 
         private final TokenRange tokenRange;
@@ -309,38 +384,30 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
             this.session = session;
         }
 
-        public List<org.apache.hadoop.mapreduce.InputSplit> call() throws Exception
+        public List<ColumnFamilySplit> call() throws Exception
         {
-            ArrayList<org.apache.hadoop.mapreduce.InputSplit> splits = new ArrayList<>();
+            ArrayList<ColumnFamilySplit> splits = new ArrayList<>();
             Map<TokenRange, Long> subSplits;
             subSplits = getSubSplits(keyspace, cfName, tokenRange, conf, session);
             // turn the sub-ranges into InputSplits
             String[] endpoints = new String[hosts.size()];
+            String partitionerClassname = partitioner.getClass().getName();
 
             // hadoop needs hostname, not ip
             int endpointIndex = 0;
             for (Host endpoint : hosts)
                 endpoints[endpointIndex++] = endpoint.getAddress().getHostName();
 
-            boolean partitionerIsOpp = partitioner instanceof OrderPreservingPartitioner || partitioner instanceof ByteOrderedPartitioner;
-
-            for (Map.Entry<TokenRange, Long> subSplitEntry : subSplits.entrySet())
+            for (TokenRange subSplit : subSplits.keySet())
             {
-                List<TokenRange> ranges = subSplitEntry.getKey().unwrap();
-                for (TokenRange subrange : ranges)
-                {
-                    ColumnFamilySplit split =
-                            new ColumnFamilySplit(
-                                    partitionerIsOpp ?
-                                            subrange.getStart().toString().substring(2) : subrange.getStart().toString(),
-                                    partitionerIsOpp ?
-                                            subrange.getEnd().toString().substring(2) : subrange.getEnd().toString(),
-                                    subSplitEntry.getValue(),
-                                    endpoints);
+                List<Range<Token>> ranges = ColumnFamilySplit.toRangeTokens(subSplit.unwrap(), partitionerClassname);
 
-                    logger.trace("adding {}", split);
-                    splits.add(split);
-                }
+                ColumnFamilySplit split = new ColumnFamilySplit(ranges,
+                                                                subSplits.get(subSplit),
+                                                                endpoints,
+                                                                partitionerClassname);
+                logger.debug("adding " + split);
+                splits.add(split);
             }
             return splits;
         }
