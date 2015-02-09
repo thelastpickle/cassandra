@@ -143,19 +143,29 @@ public class LeveledManifest
         JsonNode rootNode = m.readValue(manifestFile, JsonNode.class);
         JsonNode generations = rootNode.get("generations");
         assert generations.isArray();
+        Map<Integer, SSTableReader> sstableMap = new HashMap<Integer, SSTableReader>();
+        for (SSTableReader ssTableReader : sstables)
+        {
+            sstableMap.put(ssTableReader.descriptor.generation, ssTableReader);
+        }
         for (JsonNode generation : generations)
         {
             int level = generation.get("generation").getIntValue();
             JsonNode generationValues = generation.get("members");
             for (JsonNode generationValue : generationValues)
             {
-                for (SSTableReader ssTableReader : sstables)
+                SSTableReader ssTableReader = sstableMap.get(generationValue.getIntValue());
+                if (ssTableReader == null)
                 {
-                    if (ssTableReader.descriptor.generation == generationValue.getIntValue())
-                    {
-                        logger.debug("Loading {} at L{}", ssTableReader, level);
-                        manifest.add(ssTableReader, level);
-                    }
+                    logger.warn("Unknown SSTable Generation {} at level {} in manifest file {}",
+                            generationValue.getIntValue(),
+                            level,
+                            manifestFile);
+                }
+                else
+                {
+                    logger.debug("Loading {} at L{}", ssTableReader, level);
+                    manifest.add(ssTableReader, level);
                 }
             }
         }
