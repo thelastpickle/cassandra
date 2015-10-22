@@ -17,9 +17,10 @@
  */
 package org.apache.cassandra.tools;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.EnumSet;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,7 +31,7 @@ import org.apache.cassandra.db.Directories;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
-import org.apache.cassandra.io.sstable.metadata.*;
+import org.apache.cassandra.io.sstable.SSTableMetadata;
 import org.apache.cassandra.utils.FBUtilities;
 
 /**
@@ -76,33 +77,43 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
                     continue;
 
                 Descriptor descriptor = entry.getKey();
-
-                Map<MetadataType, MetadataComponent> metadata
-                        = descriptor.getMetadataSerializer().deserialize(descriptor, EnumSet.allOf(MetadataType.class));
-
-                StatsMetadata stats = (StatsMetadata) metadata.get(MetadataType.STATS);
+                SSTableMetadata stats = SSTableMetadata.serializer.deserialize(descriptor).left;
 
                 if (4 == args.length && "csv".equalsIgnoreCase(args[3])) {
                     out.printf(
-                            "%s,%s,%s,%s,%s,%s%n",
+                            "%s,%s,%s,%s,%s,%s,%s,%s%n",
                             FBUtilities.getBroadcastAddress().getHostName(),
                             descriptor.baseFilename(),
+                            new File(descriptor.filenameFor(Component.DATA)).length(),
                             stats.getEstimatedDroppableTombstoneRatio(gcBefore),
                             stats.minTimestamp,
                             stats.maxTimestamp,
+                            Integer.MAX_VALUE == stats.maxLocalDeletionTime ? "n"   : "y",
                             stats.maxLocalDeletionTime);
 
                 } else {
                     out.println();
+
+                    out.printf("SSTable: %s%n", descriptor.baseFilename());
+                    out.printf("SSTable size: %skb%n", new File(descriptor.filenameFor(Component.DATA)).length()/1000);
 
                     out.printf(
                             "Estimated droppable tombstones: %s%n",
                             stats.getEstimatedDroppableTombstoneRatio(gcBefore));
 
                     out.println();
-                    out.printf("Minimum timestamp: %s%n", stats.minTimestamp);
-                    out.printf("Maximum timestamp: %s%n", stats.maxTimestamp);
-                    out.printf("SSTable max local deletion time: %s%n", stats.maxLocalDeletionTime);
+
+                    out.printf("Minimum timestamp: %s - %s%n",
+                            stats.minTimestamp,
+                            new Date(stats.minTimestamp/1000).toString());
+
+                    out.printf("Maximum timestamp: %s - %s%n",
+                            stats.maxTimestamp,
+                            new Date(stats.maxTimestamp/1000).toString());
+
+                    out.printf("SSTable max local deletion time: %s - %s%n",
+                            stats.maxLocalDeletionTime,
+                            new Date(stats.maxLocalDeletionTime*1000L).toString());
                 }
             }
         }
