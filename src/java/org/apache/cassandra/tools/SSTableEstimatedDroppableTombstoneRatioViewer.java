@@ -225,7 +225,9 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
                     "t",
                     TIMESTAMP_OPTION,
                     true,
-                    "the timestamp in seconds in the future the estimated droppable tombstones ratio will be calculated off");
+                    "the timestamp in seconds in the future. "
+                            + "sstables with a max local deletion time older than this are marked for deletion."
+                            + "estimated droppable tombstones ratio is also calculated off this.");
 
             return options;
         }
