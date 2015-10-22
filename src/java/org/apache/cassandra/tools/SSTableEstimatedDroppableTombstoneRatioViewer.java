@@ -32,44 +32,52 @@ import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
 import org.apache.cassandra.io.sstable.SSTableMetadata;
+import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.cassandra.utils.FBUtilities;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.ParseException;
 
 /**
  * Shows the EstimatedDroppableTombstoneRatio from a sstable metadata
  */
 public class SSTableEstimatedDroppableTombstoneRatioViewer
 {
+    static
+    {
+        CassandraDaemon.initLog4j();
+    }
+
+    private static final String TOOL_NAME = "sstabletombstonesestimate";
+    private static final String VERBOSE_OPTION  = "verbose";
+    private static final String HELP_OPTION  = "help";
+    private static final String CSV_OPTION  = "csv";
+    private static final String TIMESTAMP_OPTION  = "timestamp";
+
     /**
      * @param args a timestamp in seconds to base gcBefore off, and a list of sstables whose metadata we're interested in
      */
     public static void main(String[] args) throws IOException
     {
+        Options options = Options.parseArgs(args);
         PrintStream out = System.out;
-        if (args.length < 3)
-        {
-            out.println("Usage: sstabletombstonesestimate <keyspace> <table> <timestamp_in_seconds> [csv]");
-            out.println();
-            out.println("timestamp_in_seconds is the timestamp in the future the estimated droppable tombstones ratio will be calculated off");
-            out.println();
-            out.println("Outputted format will be");
-            out.println(" host, sstable, Estimated droppable tombstones, Minimum timestamp, Maximum timestamp, max local deletion time");
-            System.exit(1);
-        }
-
-        int gcBefore = Integer.parseInt(args[2]);
 
         // load keyspace descriptions.
         DatabaseDescriptor.loadSchemas(false);
 
-        if (Schema.instance.getCFMetaData(args[0], args[1]) == null)
+        if (Schema.instance.getCFMetaData(options.keyspaceName, options.cfName) == null)
         {
-            out.println(String.format("Unknown keyspace/columnFamily %s.%s", args[0], args[1]));
+            out.println(String.format("Unknown keyspace/table %s.%s", options.keyspaceName, options.cfName));
         }
         else
         {
-            Keyspace keyspace = Keyspace.openWithoutSSTables(args[0]);
-            ColumnFamilyStore cfs = keyspace.getColumnFamilyStore(args[1]);
+            Keyspace keyspace = Keyspace.openWithoutSSTables(options.keyspaceName);
+            ColumnFamilyStore cfs = keyspace.getColumnFamilyStore(options.cfName);
             Directories.SSTableLister lister = cfs.directories.sstableLister().skipTemporary(true);
+
+            long deletableBytes = 0;
 
             for (Map.Entry<Descriptor, Set<Component>> entry : lister.list().entrySet())
             {
@@ -79,44 +87,162 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
                 Descriptor descriptor = entry.getKey();
                 SSTableMetadata stats = SSTableMetadata.serializer.deserialize(descriptor).left;
 
-                if (4 == args.length && "csv".equalsIgnoreCase(args[3])) {
-                    out.printf(
-                            "%s,%s,%s,%s,%s,%s,%s,%s%n",
-                            FBUtilities.getBroadcastAddress().getHostName(),
-                            descriptor.baseFilename(),
-                            new File(descriptor.filenameFor(Component.DATA)).length(),
-                            stats.getEstimatedDroppableTombstoneRatio(gcBefore),
-                            stats.minTimestamp,
-                            stats.maxTimestamp,
-                            Integer.MAX_VALUE == stats.maxLocalDeletionTime ? "n"   : "y",
-                            stats.maxLocalDeletionTime);
+                boolean fullyExpired = cfs.metadata.getGcGraceSeconds() + stats.maxLocalDeletionTime <= options.timestamp;
 
-                } else {
-                    out.println();
+                if (fullyExpired)
+                    deletableBytes += new File(descriptor.filenameFor(Component.DATA)).length();
 
-                    out.printf("SSTable: %s%n", descriptor.baseFilename());
-                    out.printf("SSTable size: %skb%n", new File(descriptor.filenameFor(Component.DATA)).length()/1000);
+                if (options.verbose || fullyExpired)
+                {
+                    if (options.csv) {
+                        out.printf(
+                                "%n%s,%s,%s,%s,%s,%s,%s,%s,%s",
+                                FBUtilities.getBroadcastAddress().getHostName(),
+                                descriptor.baseFilename(),
+                                new File(descriptor.filenameFor(Component.DATA)).length(),
+                                stats.getEstimatedDroppableTombstoneRatio(options.timestamp),
+                                stats.minTimestamp,
+                                stats.maxTimestamp,
+                                Integer.MAX_VALUE == stats.maxLocalDeletionTime ? "n" : "y",
+                                stats.maxLocalDeletionTime,
+                                fullyExpired ? "y" : "n");
 
-                    out.printf(
-                            "Estimated droppable tombstones: %s%n",
-                            stats.getEstimatedDroppableTombstoneRatio(gcBefore));
+                    }
+                    else
+                    {
+                        out.printf("%nSSTable: %s%n", descriptor.baseFilename());
+                        out.printf("SSTable size: %skb%n", new File(descriptor.filenameFor(Component.DATA)).length()/1000);
 
-                    out.println();
+                        out.printf(
+                                "Estimated droppable tombstones: %s%n%n",
+                                stats.getEstimatedDroppableTombstoneRatio(options.timestamp));
 
-                    out.printf("Minimum timestamp: %s - %s%n",
-                            stats.minTimestamp,
-                            new Date(stats.minTimestamp/1000).toString());
+                        out.printf("Minimum timestamp: %s - %s%n",
+                                stats.minTimestamp,
+                                new Date(stats.minTimestamp/1000).toString());
 
-                    out.printf("Maximum timestamp: %s - %s%n",
-                            stats.maxTimestamp,
-                            new Date(stats.maxTimestamp/1000).toString());
+                        out.printf("Maximum timestamp: %s - %s%n",
+                                stats.maxTimestamp,
+                                new Date(stats.maxTimestamp/1000).toString());
 
-                    out.printf("SSTable max local deletion time: %s - %s%n",
-                            stats.maxLocalDeletionTime,
-                            new Date(stats.maxLocalDeletionTime*1000L).toString());
+                        out.printf("SSTable max local deletion time: %s - %s%n",
+                                stats.maxLocalDeletionTime,
+                                new Date(stats.maxLocalDeletionTime*1000L).toString());
+
+                        if (options.verbose && fullyExpired)
+                            out.println("Eligible for removal");
+
+                    }
                 }
             }
+            if (options.verbose || !options.csv)
+                out.printf("%n%n  ### %s kb of sstables can be deleted ###%n", deletableBytes / 1000);
         }
         System.exit(0); // We need that to stop non daemonized threads
+    }
+
+    private static class Options
+    {
+        public final String keyspaceName;
+        public final String cfName;
+
+        public boolean csv;
+        public boolean verbose;
+        public int timestamp;
+
+        private Options(String keyspaceName, String cfName)
+        {
+            this.keyspaceName = keyspaceName;
+            this.cfName = cfName;
+        }
+
+        public static Options parseArgs(String cmdArgs[])
+        {
+            CommandLineParser parser = new GnuParser();
+            BulkLoader.CmdLineOptions options = getCmdLineOptions();
+            try
+            {
+                CommandLine cmd = parser.parse(options, cmdArgs, false);
+
+                if (cmd.hasOption(HELP_OPTION))
+                {
+                    printUsage(options);
+                    System.exit(0);
+                }
+
+                String[] args = cmd.getArgs();
+                if (args.length != 2)
+                {
+                    String msg = args.length < 2 ? "Missing arguments" : "Too many arguments";
+                    System.err.println(msg);
+                    printUsage(options);
+                    System.exit(1);
+                }
+
+                String keyspaceName = args[0];
+                String cfName = args[1];
+
+                Options opts = new Options(keyspaceName, cfName);
+
+                opts.csv = cmd.hasOption(CSV_OPTION);
+                opts.verbose = cmd.hasOption(VERBOSE_OPTION);
+
+                opts.timestamp = cmd.hasOption(TIMESTAMP_OPTION)
+                        ? Integer.parseInt(cmd.getOptionValue(TIMESTAMP_OPTION))
+                        : (int) System.currentTimeMillis() / 1000;
+
+                return opts;
+            }
+            catch (ParseException e)
+            {
+                errorMsg(e.getMessage(), options);
+                return null;
+            }
+        }
+
+        private static void errorMsg(String msg, BulkLoader.CmdLineOptions options)
+        {
+            System.err.println(msg);
+            printUsage(options);
+            System.exit(1);
+        }
+
+        private static BulkLoader.CmdLineOptions getCmdLineOptions()
+        {
+            BulkLoader.CmdLineOptions options = new BulkLoader.CmdLineOptions();
+            options.addOption("v",  VERBOSE_OPTION, "verbose output");
+            options.addOption("h",  HELP_OPTION, "display this help message");
+
+            options.addOption(
+                    "c",
+                    CSV_OPTION,
+                    "output in the csv format:"
+                            + " host, sstable, estimated droppable tombstones,"
+                            + " minimum timestamp, maximum timestamp,"
+                            + " max local deletion time");
+
+            options.addOption(
+                    "t",
+                    TIMESTAMP_OPTION,
+                    true,
+                    "the timestamp in seconds in the future the estimated droppable tombstones ratio will be calculated off");
+
+            return options;
+        }
+
+        public static void printUsage(BulkLoader.CmdLineOptions options)
+        {
+            String usage = String.format("%s [options] <keyspace> <table>", TOOL_NAME);
+            StringBuilder header = new StringBuilder();
+            header.append("--\n");
+
+            header.append("Use " + TOOL_NAME + " to investigate what impact on disk storage different TTL "
+                    + "and/or gc_grace_seconds values would have, or how successful we would be if we can manually "
+                    + "purge data pretending that it had a shorter TTL than it really did." );
+
+            header.append("\n--\n");
+            header.append("Options are:");
+            new HelpFormatter().printHelp(usage, header.toString(), options, "");
+        }
     }
 }
