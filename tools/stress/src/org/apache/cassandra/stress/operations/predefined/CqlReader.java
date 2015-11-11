@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.cassandra.stress.generate.PartitionGenerator;
 import org.apache.cassandra.stress.generate.SeedManager;
@@ -34,6 +35,7 @@ import org.apache.cassandra.stress.util.Timer;
 
 public class CqlReader extends CqlOperation<ByteBuffer[][]>
 {
+    private static final Random RANDOM = new Random();
 
     public CqlReader(Timer timer, PartitionGenerator generator, SeedManager seedManager, StressSettings settings)
     {
@@ -59,7 +61,9 @@ public class CqlReader extends CqlOperation<ByteBuffer[][]>
             }
         }
 
-        query.append(" FROM ").append(wrapInQuotes(type.table));
+        query.append(" FROM ")
+                .append(wrapInQuotes(type.table + RANDOM.nextInt(settings.schema.standardCqlTableCount)));
+
         query.append(" WHERE KEY=?");
         return query.toString();
     }

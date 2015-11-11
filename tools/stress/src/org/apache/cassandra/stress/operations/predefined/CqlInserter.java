@@ -24,6 +24,7 @@ package org.apache.cassandra.stress.operations.predefined;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.cassandra.stress.generate.PartitionGenerator;
 import org.apache.cassandra.stress.generate.SeedManager;
@@ -33,6 +34,7 @@ import org.apache.cassandra.stress.util.Timer;
 
 public class CqlInserter extends CqlOperation<Integer>
 {
+    private static final Random RANDOM = new Random();
 
     public CqlInserter(Timer timer, PartitionGenerator generator, SeedManager seedManager, StressSettings settings)
     {
@@ -42,7 +44,9 @@ public class CqlInserter extends CqlOperation<Integer>
     @Override
     protected String buildQuery()
     {
-        StringBuilder query = new StringBuilder("UPDATE ").append(wrapInQuotes(type.table));
+        StringBuilder query = new StringBuilder("UPDATE ")
+                .append(wrapInQuotes(type.table + RANDOM.nextInt(settings.schema.standardCqlTableCount)));
+
         if (settings.columns.timestamp != null)
             query.append(" USING TIMESTAMP ").append(settings.columns.timestamp);
 

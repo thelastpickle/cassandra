@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,16 +7,16 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- * 
+ *
  */
 package org.apache.cassandra.stress.settings;
 
@@ -28,7 +28,6 @@ import java.util.*;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import org.apache.cassandra.stress.util.JavaDriverClient;
 import org.apache.cassandra.thrift.*;
-import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.utils.ByteBufferUtil;
 
 public class SettingsSchema implements Serializable
@@ -43,6 +42,7 @@ public class SettingsSchema implements Serializable
     private final String compactionStrategy;
     private final Map<String, String> compactionStrategyOptions;
     public final String keyspace;
+    public final int standardCqlTableCount = 1500;
 
     public SettingsSchema(Options options, SettingsCommand command)
     {
@@ -86,7 +86,9 @@ public class SettingsSchema implements Serializable
             client.execute("USE \""+keyspace+"\"", org.apache.cassandra.db.ConsistencyLevel.LOCAL_ONE);
 
             //Add standard1 and counter1
-            client.execute(createStandard1StatementCQL3(settings), org.apache.cassandra.db.ConsistencyLevel.LOCAL_ONE);
+            for (String cql : createStandard1StatementCQL3(settings).split(";\n"))
+                client.execute(cql, org.apache.cassandra.db.ConsistencyLevel.LOCAL_ONE);
+
             client.execute(createCounter1StatementCQL3(settings), org.apache.cassandra.db.ConsistencyLevel.LOCAL_ONE);
 
             System.out.println(String.format("Created keyspaces. Sleeping %ss for propagation.", settings.node.nodes.size()));
@@ -134,42 +136,42 @@ public class SettingsSchema implements Serializable
 
     String createStandard1StatementCQL3(StressSettings settings)
     {
-
         StringBuilder b = new StringBuilder();
-
-        b.append("CREATE TABLE IF NOT EXISTS ")
-         .append("standard1 (key blob PRIMARY KEY ");
-
-        try
+        for (int i = 0 ; i < standardCqlTableCount ; ++i)
         {
-            for (ByteBuffer name : settings.columns.names)
-                b.append("\n, \"").append(ByteBufferUtil.string(name)).append("\" blob");
-        }
-        catch (CharacterCodingException e)
-        {
-            throw new RuntimeException(e);
-        }
+            b.append("CREATE TABLE IF NOT EXISTS ")
+             .append("standard" + i + " (key blob PRIMARY KEY ");
 
-        //Compression
-        b.append(") WITH COMPACT STORAGE AND compression = {");
-        if (compression != null)
-            b.append("'sstable_compression' : '").append(compression).append("'");
+            try
+            {
+                for (ByteBuffer name : settings.columns.names)
+                    b.append("\n, \"").append(ByteBufferUtil.string(name)).append("\" blob");
+            }
+            catch (CharacterCodingException e)
+            {
+                throw new RuntimeException(e);
+            }
 
-        b.append("}");
-
-        //Compaction
-        if (compactionStrategy != null)
-        {
-            b.append(" AND compaction = { 'class' : '").append(compactionStrategy).append("'");
-
-            for (Map.Entry<String, String> entry : compactionStrategyOptions.entrySet())
-                b.append(", '").append(entry.getKey()).append("' : '").append(entry.getValue()).append("'");
+            //Compression
+            b.append(") WITH COMPACT STORAGE AND compression = {");
+            if (compression != null)
+                b.append("'sstable_compression' : '").append(compression).append("'");
 
             b.append("}");
+
+            //Compaction
+            if (compactionStrategy != null)
+            {
+                b.append(" AND compaction = { 'class' : '").append(compactionStrategy).append("'");
+
+                for (Map.Entry<String, String> entry : compactionStrategyOptions.entrySet())
+                    b.append(", '").append(entry.getKey()).append("' : '").append(entry.getValue()).append("'");
+
+                b.append("}");
+            }
+
+            b.append(";\n");
         }
-
-        b.append(";\n");
-
         return b.toString();
     }
 
@@ -179,7 +181,7 @@ public class SettingsSchema implements Serializable
         StringBuilder b = new StringBuilder();
 
         b.append("CREATE TABLE IF NOT EXISTS ")
-         .append("counter1 (key blob PRIMARY KEY,");
+         .append("counter (key blob PRIMARY KEY,");
 
         try
         {

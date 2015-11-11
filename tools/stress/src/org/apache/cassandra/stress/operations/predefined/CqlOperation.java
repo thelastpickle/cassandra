@@ -88,7 +88,8 @@ public abstract class CqlOperation<V> extends PredefinedOperation
             final String query;
             Object qobj = getCqlCache();
             if (qobj == null)
-                storeCqlCache(query = buildQuery());
+                query = buildQuery();
+                //storeCqlCache(query = buildQuery());
             else
                 query = qobj.toString();
 
