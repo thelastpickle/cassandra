@@ -21,14 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Date;
-import java.util.Map;
-import java.util.Set;
 
-import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.config.Schema;
-import org.apache.cassandra.db.ColumnFamilyStore;
-import org.apache.cassandra.db.Directories;
-import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
 import org.apache.cassandra.io.sstable.SSTableMetadata;
@@ -65,29 +58,32 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
         PrintStream out = System.out;
 
         // load keyspace descriptions.
-        DatabaseDescriptor.loadSchemas(false);
+//        DatabaseDescriptor.loadSchemas(false);
 
-        if (Schema.instance.getCFMetaData(options.keyspaceName, options.cfName) == null)
-        {
-            out.println(String.format("Unknown keyspace/table %s.%s", options.keyspaceName, options.cfName));
-        }
-        else
-        {
-            Keyspace keyspace = Keyspace.openWithoutSSTables(options.keyspaceName);
-            ColumnFamilyStore cfs = keyspace.getColumnFamilyStore(options.cfName);
-            Directories.SSTableLister lister = cfs.directories.sstableLister().skipTemporary(true);
+//        if (Schema.instance.getCFMetaData(options.keyspaceName, options.cfName) == null)
+//        {
+//            out.println(String.format("Unknown keyspace/table %s.%s", options.keyspaceName, options.cfName));
+//        }
+//        else
+//        {
+//            Keyspace keyspace = Keyspace.openWithoutSSTables(options.keyspaceName);
+//            ColumnFamilyStore cfs = keyspace.getColumnFamilyStore(options.cfName);
+            //Directories.SSTableLister lister = cfs.directories.sstableLister().skipTemporary(true);
 
             long deletableBytes = 0;
 
-            for (Map.Entry<Descriptor, Set<Component>> entry : lister.list().entrySet())
+            for (String fname : options.files)
+//            for (Map.Entry<Descriptor, Set<Component>> entry : lister.list().entrySet())
             {
-                if (!entry.getValue().contains(Component.DATA))
-                    continue;
-
-                Descriptor descriptor = entry.getKey();
+                Descriptor descriptor = Descriptor.fromFilename(fname);
+//                if (!entry.getValue().contains(Component.DATA))
+//                    continue;
+//
+//                Descriptor descriptor = entry.getKey();
                 SSTableMetadata stats = SSTableMetadata.serializer.deserialize(descriptor).left;
 
-                boolean fullyExpired = cfs.metadata.getGcGraceSeconds() + stats.maxLocalDeletionTime <= options.timestamp;
+//                boolean fullyExpired = cfs.metadata.getGcGraceSeconds() + stats.maxLocalDeletionTime <= options.timestamp;
+                boolean fullyExpired = 86400 + stats.maxLocalDeletionTime <= options.timestamp;
 
                 if (fullyExpired)
                     deletableBytes += new File(descriptor.filenameFor(Component.DATA)).length();
@@ -137,23 +133,25 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
             }
             if (options.verbose || !options.csv)
                 out.printf("%n%n  ### %s kb of sstables can be deleted ###%n", deletableBytes / 1000);
-        }
+//        }
         System.exit(0); // We need that to stop non daemonized threads
     }
 
     private static class Options
     {
-        public final String keyspaceName;
-        public final String cfName;
+//        public final String keyspaceName;
+//        public final String cfName;
+        public final String[] files;
 
         public boolean csv;
         public boolean verbose;
         public int timestamp;
 
-        private Options(String keyspaceName, String cfName)
+        private Options(String[] files)
         {
-            this.keyspaceName = keyspaceName;
-            this.cfName = cfName;
+//            this.keyspaceName = keyspaceName;
+//            this.cfName = cfName;
+            this.files = files;
         }
 
         public static Options parseArgs(String cmdArgs[])
@@ -171,7 +169,7 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
                 }
 
                 String[] args = cmd.getArgs();
-                if (args.length != 2)
+                if (args.length == 0)
                 {
                     String msg = args.length < 2 ? "Missing arguments" : "Too many arguments";
                     System.err.println(msg);
@@ -179,10 +177,11 @@ public class SSTableEstimatedDroppableTombstoneRatioViewer
                     System.exit(1);
                 }
 
-                String keyspaceName = args[0];
-                String cfName = args[1];
+//                String keyspaceName = args[0];
+//                String cfName = args[1];
 
-                Options opts = new Options(keyspaceName, cfName);
+                //Options opts = new Options(keyspaceName, cfName);
+                Options opts = new Options(args);
 
                 opts.csv = cmd.hasOption(CSV_OPTION);
                 opts.verbose = cmd.hasOption(VERBOSE_OPTION);
