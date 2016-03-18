@@ -137,6 +137,10 @@ public class Auth
         if (DatabaseDescriptor.getAuthenticator() instanceof AllowAllAuthenticator)
             return;
 
+        // Auth.setup() can be called twice (if node was started with join_ring=false)
+        if (null != selectUserStatement)
+            return;
+
         setupAuthKeyspace();
         setupUsersTable();
 
@@ -144,7 +148,7 @@ public class Auth
         DatabaseDescriptor.getAuthorizer().setup();
 
         // register a custom MigrationListener for permissions cleanup after dropped keyspaces/cfs.
-        MigrationManager.instance.register(new MigrationListener());
+         MigrationManager.instance.register(new MigrationListener());
 
         // the delay is here to give the node some time to see its peers - to reduce
         // "Skipped default superuser setup: some nodes were not ready" log spam.
