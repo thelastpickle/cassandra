@@ -677,6 +677,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                 states.add(Pair.create(ApplicationState.STATUS, valueFactory.hibernate(true)));
                 Gossiper.instance.addLocalApplicationStates(states);
             }
+            doAuthSetup();
             logger.info("Not joining ring as requested. Use JMX (StorageService->joinRing()) to initiate ring joining");
         }
     }
@@ -995,7 +996,9 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         DatabaseDescriptor.getRoleManager().setup();
         DatabaseDescriptor.getAuthenticator().setup();
         DatabaseDescriptor.getAuthorizer().setup();
-        MigrationManager.instance.register(new AuthMigrationListener());
+
+        MigrationManager.instance.unregister(AuthMigrationListener.instance);
+        MigrationManager.instance.register(AuthMigrationListener.instance);
     }
 
     private void maybeAddKeyspace(KeyspaceMetadata ksm)

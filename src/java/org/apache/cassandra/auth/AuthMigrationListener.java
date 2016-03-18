@@ -28,6 +28,12 @@ import org.apache.cassandra.service.MigrationListener;
  */
 public class AuthMigrationListener extends MigrationListener
 {
+    public static final AuthMigrationListener instance = new AuthMigrationListener();
+
+    private AuthMigrationListener()
+    {
+    }
+
     public void onDropKeyspace(String ksName)
     {
         DatabaseDescriptor.getAuthorizer().revokeAllOn(DataResource.keyspace(ksName));
