@@ -138,6 +138,10 @@ public class Auth
         if (DatabaseDescriptor.getAuthenticator() instanceof AllowAllAuthenticator)
             return;
 
+        // Auth.setup() can be called twice (if node was started with join_ring=false)
+        if (null != selectUserStatement)
+            return;
+
         setupAuthKeyspace();
         setupTable(USERS_CF, USERS_CF_SCHEMA);
 
