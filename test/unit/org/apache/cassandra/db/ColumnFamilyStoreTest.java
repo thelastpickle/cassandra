@@ -246,6 +246,40 @@ public class ColumnFamilyStoreTest
     }
 
     @Test
+    public void testFilterWithNulledCF() throws Exception
+    {
+        Keyspace keyspace = Keyspace.open(KEYSPACE1);
+        ColumnFamilyStore cfs = keyspace.getColumnFamilyStore(CF_STANDARD1);
+        ColumnFamily cf = ArrayBackedSortedColumns.factory.create(cfs.metadata);
+        cf.delete(new DeletionInfo(new DeletionTime(0, 0)));
+        final Row row = new Row(Util.dk("key1"), cf);
+
+        ColumnFamilyStore.AbstractScanIterator iterator = new ColumnFamilyStore.AbstractScanIterator()
+        {
+            Iterator<Row> it = Collections.singletonList(row).iterator();
+
+            protected Row computeNext()
+            {
+                return it.hasNext() ? it.next() : endOfData();
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        ExtendedFilter filter = ExtendedFilter.create(
+                cfs,
+                DataRange.allData(DatabaseDescriptor.getPartitioner()), null, 1, true, System.currentTimeMillis());
+
+        List<Row> list = cfs.filter(iterator, filter);
+        assert 1 == list.size();
+        assert list.get(0).key == row.key;
+        assert null == list.get(0).cf;
+    }
+
+    @Test
     public void testFilterWithNullCF() throws Exception
     {
         Keyspace keyspace = Keyspace.open(KEYSPACE1);
@@ -364,7 +398,7 @@ public class ColumnFamilyStoreTest
         key = new String(rows.get(0).key.getKey().array(), rows.get(0).key.getKey().position(), rows.get(0).key.getKey().remaining());
         assert "k3".equals( key );
 
-        assertFalse(rows.get(0).cf.hasColumns());
+        assertNull(rows.get(0).cf);
 
         // query with index hit but rejected by secondary clause, with a small enough count that just checking count
         // doesn't tell the scan loop that it's done
@@ -2280,7 +2314,9 @@ public class ColumnFamilyStoreTest
                                            false);
         assertSame("unexpected number of rows ", 1, rows.size());
         Row row = rows.get(0);
-        Collection<Cell> cols = !filter.isReversed() ? row.cf.getSortedColumns() : row.cf.getReverseSortedColumns();
+        Collection<Cell> cols = row.cf == null
+                ? Collections.<Cell>emptySet()
+                : !filter.isReversed() ? row.cf.getSortedColumns() : row.cf.getReverseSortedColumns();
         // printRow(cfs, new String(row.key.key.array()), cols);
         String[] returnedColsNames = Iterables.toArray(Iterables.transform(cols, new Function<Cell, String>()
         {

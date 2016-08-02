@@ -2348,7 +2348,7 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean
 
                 // remove purgable tombstones from result - see CASSANDRA-11427
                 if (data != null)
-                    data.purgeTombstones(gcBefore(filter.timestamp));
+                    data = removeDeletedCF(data, gcBefore(filter.timestamp));
 
                 rows.add(new Row(rawRow.key, data));
                 if (!ignoreTombstonedPartitions || !data.hasOnlyTombstones(filter.timestamp))
