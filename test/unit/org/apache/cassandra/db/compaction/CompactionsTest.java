@@ -95,7 +95,9 @@ public class CompactionsTest extends SchemaLoader
         return store;
     }
 
-    private long populate(String ks, String cf, int startRowKey, int endRowKey, int ttl) {
+
+    public static long populate(String ks, String cf, int startRowKey, int endRowKey, int ttl)
+    {
         long timestamp = System.currentTimeMillis();
         for (int i = startRowKey; i <= endRowKey; i++)
         {
