@@ -107,10 +107,10 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
     private final List<IEndpointStateChangeSubscriber> subscribers = new CopyOnWriteArrayList<IEndpointStateChangeSubscriber>();
 
     /* live member set */
-    private final Set<InetAddressAndPort> liveEndpoints = new ConcurrentSkipListSet<>();
+    final Set<InetAddressAndPort> liveEndpoints = new ConcurrentSkipListSet<>();
 
     /* unreachable member set */
-    private final Map<InetAddressAndPort, Long> unreachableEndpoints = new ConcurrentHashMap<>();
+    final Map<InetAddressAndPort, Long> unreachableEndpoints = new ConcurrentHashMap<>();
 
     /* initial seeds for joining the cluster */
     @VisibleForTesting
@@ -123,17 +123,17 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
      * gossip. We will ignore any gossip regarding these endpoints for QUARANTINE_DELAY time
      * after removal to prevent nodes from falsely reincarnating during the time when removal
      * gossip gets propagated to all nodes */
-    private final Map<InetAddressAndPort, Long> justRemovedEndpoints = new ConcurrentHashMap<>();
+    final Map<InetAddressAndPort, Long> justRemovedEndpoints = new ConcurrentHashMap<>();
 
-    private final Map<InetAddressAndPort, Long> expireTimeEndpointMap = new ConcurrentHashMap<>();
+    final Map<InetAddressAndPort, Long> expireTimeEndpointMap = new ConcurrentHashMap<>();
 
-    private volatile boolean inShadowRound = false;
+    volatile boolean inShadowRound = false;
     // seeds gathered during shadow round that indicated to be in the shadow round phase as well
-    private final Set<InetAddressAndPort> seedsInShadowRound = new ConcurrentSkipListSet<>();
+    final Set<InetAddressAndPort> seedsInShadowRound = new ConcurrentSkipListSet<>();
     // endpoint states as gathered during shadow round
     private final Map<InetAddressAndPort, EndpointState> endpointShadowStateMap = new ConcurrentHashMap<>();
 
-    private volatile long lastProcessedMessageAt = System.currentTimeMillis();
+    volatile long lastProcessedMessageAt = System.currentTimeMillis();
 
     private class GossipTask implements Runnable
     {
@@ -380,6 +380,8 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         {
             markDead(endpoint, epState);
         }
+
+        GossiperEvent.convicted(this, endpoint, phi);
     }
 
     /**
@@ -397,6 +399,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         epState.getHeartBeatState().forceHighestPossibleVersionUnsafe();
         markDead(endpoint, epState);
         FailureDetector.instance.forceConviction(endpoint);
+        GossiperEvent.markedAsShutdown(this, endpoint);
     }
 
     /**
@@ -427,6 +430,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         quarantineEndpoint(endpoint);
         if (logger.isDebugEnabled())
             logger.debug("evicting {} from gossip", endpoint);
+        GossiperEvent.evictedFromMembership(this, endpoint);
     }
 
     /**
@@ -452,6 +456,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         MessagingService.instance().destroyConnectionPool(endpoint);
         if (logger.isDebugEnabled())
             logger.debug("removing endpoint {}", endpoint);
+        GossiperEvent.removedEndpoint(this, endpoint);
     }
 
     /**
@@ -473,6 +478,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
     private void quarantineEndpoint(InetAddressAndPort endpoint, long quarantineExpiration)
     {
         justRemovedEndpoints.put(endpoint, quarantineExpiration);
+        GossiperEvent.quarantinedEndpoint(this, endpoint, quarantineExpiration);
     }
 
     /**
@@ -484,6 +490,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         // remember, quarantineEndpoint will effectively already add QUARANTINE_DELAY, so this is 2x
         logger.debug("");
         quarantineEndpoint(endpoint, System.currentTimeMillis() + QUARANTINE_DELAY);
+        GossiperEvent.replacementQuarantine(this, endpoint);
     }
 
     /**
@@ -497,6 +504,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         removeEndpoint(endpoint);
         evictFromMembership(endpoint);
         replacementQuarantine(endpoint);
+        GossiperEvent.replacedEndpoint(this, endpoint);
     }
 
     /**
@@ -687,7 +695,10 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         if (firstSynSendAt == 0)
             firstSynSendAt = System.nanoTime();
         MessagingService.instance().sendOneWay(message, to);
-        return seeds.contains(to);
+
+        boolean isSeed = seeds.contains(to);
+        GossiperEvent.sendGossipDigestSyn(this, to);
+        return isSeed;
     }
 
     /* Sends a Gossip message to a live member and returns true if the recipient was a seed */
@@ -1022,6 +1033,8 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         };
 
         MessagingService.instance().sendRR(echoMessage, addr, echoHandler);
+
+        GossiperEvent.markedAlive(this, addr, localState);
     }
 
     @VisibleForTesting
@@ -1040,6 +1053,8 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
             subscriber.onAlive(addr, localState);
         if (logger.isTraceEnabled())
             logger.trace("Notified {}", subscribers);
+
+        GossiperEvent.realMarkedAlive(this, addr, localState);
     }
 
     @VisibleForTesting
@@ -1055,6 +1070,8 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
             subscriber.onDead(addr, localState);
         if (logger.isTraceEnabled())
             logger.trace("Notified {}", subscribers);
+
+        GossiperEvent.markedDead(this, addr, localState);
     }
 
     /**
@@ -1095,6 +1112,8 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         // check this at the end so nodes will learn about the endpoint
         if (isShutdown(ep))
             markAsShutdown(ep);
+
+        GossiperEvent.majorStateChangeHandled(this, ep, epState);
     }
 
     public boolean isAlive(InetAddressAndPort endpoint)
