@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
+import org.apache.cassandra.dht.BootstrapEvent;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
 
@@ -132,7 +133,9 @@ class ReplicationAwareTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
             }
         }
 
-        return ImmutableList.copyOf(unitToTokens.get(newUnit));
+        ImmutableList<Token> newTokens = ImmutableList.copyOf(unitToTokens.get(newUnit));
+        TokenAllocatorEvent.unitedAdded(this, numTokens, unitToTokens, sortedTokens, newTokens, newUnit);
+        return newTokens;
     }
 
     private Collection<Token> generateRandomTokens(Unit newUnit, int numTokens)
@@ -148,6 +151,7 @@ class ReplicationAwareTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
                 unitToTokens.put(newUnit, token);
             }
         }
+        TokenAllocatorEvent.randomTokensGenerated(this, numTokens, unitToTokens, sortedTokens, newUnit, tokens);
         return tokens;
     }
 
@@ -176,6 +180,7 @@ class ReplicationAwareTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
             curr = curr.next;
         } while (curr != first);
 
+        TokenAllocatorEvent.tokenInfosCreated(this, unitToTokens, first);
         return first;
     }
 
@@ -526,6 +531,7 @@ class ReplicationAwareTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
     {
         Collection<Token> tokens = unitToTokens.removeAll(n);
         sortedTokens.keySet().removeAll(tokens);
+        TokenAllocatorEvent.unitRemoved(this, n, unitToTokens, sortedTokens);
     }
 
     public int unitCount()
