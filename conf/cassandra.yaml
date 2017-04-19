@@ -1198,3 +1198,8 @@ audit_logging_options:
     # included_users:
     # excluded_users:
 
+# Diagnostic Events #
+# If enabled, diagnostic events can be helpful for troubleshooting operational issues. Emitted events contain details
+# on internal state and temporal relationships across events, accessible by native transport clients or by using
+# a local system table.
+diagnostic_events_enabled: true

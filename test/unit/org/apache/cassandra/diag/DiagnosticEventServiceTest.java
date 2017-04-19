@@ -36,6 +36,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(OrderedJUnit4ClassRunner.class)
 public class DiagnosticEventServiceTest
@@ -196,6 +197,15 @@ public class DiagnosticEventServiceTest
         DiagnosticEventService.publish(c);
 
         assertEquals(events, consumed);
+    }
+
+    @Test
+    public void testEnabled()
+    {
+        DatabaseDescriptor.setDiagnosticEventsEnabled(false);
+        DiagnosticEventService.subscribe(TestEvent1.class, (event) -> fail());
+        DiagnosticEventService.publish(new TestEvent1());
+        DatabaseDescriptor.setDiagnosticEventsEnabled(true);
     }
 
     private static class TestEvent1 extends DiagnosticEvent
