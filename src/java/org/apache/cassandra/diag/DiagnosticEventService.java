@@ -33,6 +33,8 @@ import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.cassandra.config.DatabaseDescriptor;
+
 /**
  * Service for publishing and consuming {@link DiagnosticEvent}s.
  */
@@ -54,6 +56,9 @@ public class DiagnosticEventService
      */
     public static void publish(DiagnosticEvent event)
     {
+        if (!DatabaseDescriptor.diagnosticEventsEnabled())
+            return;
+
         logger.trace("Publishing: {}", event);
 
         // event class + type
@@ -207,7 +212,29 @@ public class DiagnosticEventService
     }
 
     /**
-     * Returns a yet to be emitted single event represented by a {@link CompletableFuture}.
+     * Indicates if events are enabled for specified event class based on {@link DatabaseDescriptor#diagnosticEventsEnabled()}
+     * and {@link #hasSubscribers(Class)}.
+     * @param event DiagnosticEvent class implementation
+     */
+    public static <E extends DiagnosticEvent> boolean isEnabled(Class<E> event)
+    {
+        return DatabaseDescriptor.diagnosticEventsEnabled() && hasSubscribers(event);
+    }
+
+    /**
+     * Indicates if events are enabled for specified event class based on {@link DatabaseDescriptor#diagnosticEventsEnabled()}
+     * and {@link #hasSubscribers(Class, Enum)}.
+     * @param event DiagnosticEvent class implementation
+     * @param eventType Subscribed event type matched against {@link DiagnosticEvent#getType()}
+     */
+    public static <E extends DiagnosticEvent, T extends Enum<T>> boolean isEnabled(Class<E> event, T eventType)
+    {
+        return DatabaseDescriptor.diagnosticEventsEnabled() && hasSubscribers(event, eventType);
+    }
+
+    /**
+     * Returns a yet to be emitted single event represented by a {@link CompletableFuture}. Provided future will be
+     * completed once the event has been published.
      *
      * @param event DiagnosticEvent class implementation
      * @param type Matching event type as returned by {@link DiagnosticEvent#getType()}
