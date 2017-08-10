@@ -41,11 +41,13 @@ public final class TimeWindowCompactionStrategyOptions
     protected static final String COMPACTION_WINDOW_UNIT_KEY = "compaction_window_unit";
     protected static final String COMPACTION_WINDOW_SIZE_KEY = "compaction_window_size";
     protected static final String EXPIRED_SSTABLE_CHECK_FREQUENCY_SECONDS_KEY = "expired_sstable_check_frequency_seconds";
+    protected static final String SSTABLE_SIZE_OPTION = "sstable_size_in_mb";
 
     protected final int sstableWindowSize;
     protected final TimeUnit sstableWindowUnit;
     protected final TimeUnit timestampResolution;
     protected final long expiredSSTableCheckFrequency;
+    protected final int maxSSTableSizeInMB;
 
     SizeTieredCompactionStrategyOptions stcsOptions;
 
@@ -69,6 +71,9 @@ public final class TimeWindowCompactionStrategyOptions
         expiredSSTableCheckFrequency = TimeUnit.MILLISECONDS.convert(optionValue == null ? DEFAULT_EXPIRED_SSTABLE_CHECK_FREQUENCY_SECONDS : Long.parseLong(optionValue), TimeUnit.SECONDS);
 
         stcsOptions = new SizeTieredCompactionStrategyOptions(options);
+
+        optionValue = options.get(SSTABLE_SIZE_OPTION);
+        maxSSTableSizeInMB = optionValue == null ? Integer.MAX_VALUE : Integer.parseInt(optionValue);
     }
 
     public TimeWindowCompactionStrategyOptions()
@@ -78,6 +83,7 @@ public final class TimeWindowCompactionStrategyOptions
         sstableWindowSize = DEFAULT_COMPACTION_WINDOW_SIZE;
         expiredSSTableCheckFrequency = TimeUnit.MILLISECONDS.convert(DEFAULT_EXPIRED_SSTABLE_CHECK_FREQUENCY_SECONDS, TimeUnit.SECONDS);
         stcsOptions = new SizeTieredCompactionStrategyOptions();
+        maxSSTableSizeInMB = Integer.MAX_VALUE;
     }
 
     public static Map<String, String> validateOptions(Map<String, String> options, Map<String, String> uncheckedOptions) throws  ConfigurationException

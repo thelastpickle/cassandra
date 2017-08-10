@@ -59,14 +59,9 @@ public class TimeWindowCompactionStrategy extends AbstractCompactionStrategy
         super(cfs, options);
         this.estimatedRemainingTasks = 0;
         this.options = new TimeWindowCompactionStrategyOptions(options);
-        if (!options.containsKey(AbstractCompactionStrategy.TOMBSTONE_COMPACTION_INTERVAL_OPTION) && !options.containsKey(AbstractCompactionStrategy.TOMBSTONE_THRESHOLD_OPTION))
-        {
-            disableTombstoneCompactions = true;
-            logger.debug("Disabling tombstone compactions for TWCS");
-        }
-        else
-            logger.debug("Enabling tombstone compactions for TWCS");
 
+        if (this.options.maxSSTableSizeInMB != Integer.MAX_VALUE)
+            logger.warn("Enabling experimental feature of TTL sorted max sstable size on {} of {}MB", cfs.name, this.options.maxSSTableSizeInMB);
     }
 
     @Override
@@ -356,7 +351,7 @@ public class TimeWindowCompactionStrategy extends AbstractCompactionStrategy
 
     public long getMaxSSTableBytes()
     {
-        return Long.MAX_VALUE;
+        return options.maxSSTableSizeInMB * 1024L * 1024L;
     }
 
 
@@ -377,4 +372,11 @@ public class TimeWindowCompactionStrategy extends AbstractCompactionStrategy
                 cfs.getMinimumCompactionThreshold(),
                 cfs.getMaximumCompactionThreshold());
     }
+
+    @Override
+    public AbstractCompactionTask getCompactionTask(LifecycleTransaction txn, int gcBefore, long maxSSTableBytes)
+    {
+        return new TimeWindowCompactionTask(cfs, txn, gcBefore, getMaxSSTableBytes());
+    }
+
 }
