@@ -42,6 +42,7 @@ public class CompactionController implements AutoCloseable
 {
     private static final Logger logger = LoggerFactory.getLogger(CompactionController.class);
 
+
     public final ColumnFamilyStore cfs;
     private DataTracker.SSTableIntervalTree overlappingTree;
     private Refs<SSTableReader> overlappingSSTables;
@@ -65,6 +66,12 @@ public class CompactionController implements AutoCloseable
 
     void maybeRefreshOverlaps()
     {
+        if (ignoreOverlaps())
+        {
+            logger.debug("not refreshing overlaps - running with ignoreOverlaps activated");
+            return;
+        }
+
         for (SSTableReader reader : overlappingSSTables)
         {
             if (reader.isMarkedCompacted())
@@ -80,7 +87,7 @@ public class CompactionController implements AutoCloseable
         if (this.overlappingSSTables != null)
             overlappingSSTables.release();
 
-        if (compacting == null)
+        if (compacting == null || ignoreOverlaps())
             overlappingSSTables = Refs.tryRef(Collections.<SSTableReader>emptyList());
         else
             overlappingSSTables = cfs.getAndReferenceOverlappingSSTables(compacting);
@@ -89,7 +96,7 @@ public class CompactionController implements AutoCloseable
 
     public Set<SSTableReader> getFullyExpiredSSTables()
     {
-        return getFullyExpiredSSTables(cfs, compacting, overlappingSSTables, gcBefore);
+        return getFullyExpiredSSTables(cfs, compacting, overlappingSSTables, gcBefore, ignoreOverlaps());
     }
 
     /**
@@ -106,17 +113,36 @@ public class CompactionController implements AutoCloseable
      * @param compacting we take the drop-candidates from this set, it is usually the sstables included in the compaction
      * @param overlapping the sstables that overlap the ones in compacting.
      * @param gcBefore
+     * @param ignoreOverlaps don't check if data shadows/overlaps any data in other sstables
      * @return
      */
-    public static Set<SSTableReader> getFullyExpiredSSTables(ColumnFamilyStore cfStore, Iterable<SSTableReader> compacting, Iterable<SSTableReader> overlapping, int gcBefore)
+    public static Set<SSTableReader> getFullyExpiredSSTables(ColumnFamilyStore cfStore,
+                                                             Iterable<SSTableReader> compacting,
+                                                             Iterable<SSTableReader> overlapping,
+                                                             int gcBefore,
+                                                             boolean ignoreOverlaps)
     {
         logger.debug("Checking droppable sstables in {}", cfStore);
 
         if (compacting == null)
             return Collections.<SSTableReader>emptySet();
 
-        List<SSTableReader> candidates = new ArrayList<SSTableReader>();
+        if (ignoreOverlaps)
+        {
+            Set<SSTableReader> fullyExpired = new HashSet<>();
+            for (SSTableReader candidate : compacting)
+            {
+                if (candidate.getSSTableMetadata().maxLocalDeletionTime < gcBefore)
+                {
+                    fullyExpired.add(candidate);
+                    logger.debug("Dropping overlap ignored expired SSTable {} (maxLocalDeletionTime={}, gcBefore={})",
+                                 new Object[] {candidate, candidate.getSSTableMetadata().maxLocalDeletionTime, gcBefore});
+                }
+            }
+            return fullyExpired;
+        }
 
+        List<SSTableReader> candidates = new ArrayList<>();
         long minTimestamp = Long.MAX_VALUE;
 
         for (SSTableReader sstable : overlapping)
@@ -151,10 +177,18 @@ public class CompactionController implements AutoCloseable
             else
             {
                logger.debug("Dropping expired SSTable {} (maxLocalDeletionTime={}, gcBefore={})",
-                        candidate, candidate.getSSTableMetadata().maxLocalDeletionTime, gcBefore);
+                        new Object[] {candidate, candidate.getSSTableMetadata().maxLocalDeletionTime, gcBefore});
             }
         }
         return new HashSet<>(candidates);
+    }
+
+    public static Set<SSTableReader> getFullyExpiredSSTables(ColumnFamilyStore cfStore,
+                                                             Iterable<SSTableReader> compacting,
+                                                             Iterable<SSTableReader> overlapping,
+                                                             int gcBefore)
+    {
+        return getFullyExpiredSSTables(cfStore, compacting, overlapping, gcBefore, false);
     }
 
     public String getKeyspace()
@@ -192,5 +226,22 @@ public class CompactionController implements AutoCloseable
     public void close()
     {
         overlappingSSTables.release();
+    }
+
+    /**
+     * Is overlapped sstables ignored
+     *
+     * Control whether or not we are taking into account overlapping sstables when looking for fully expired sstables.
+     * In order to reduce the amount of work needed, we look for sstables that can be dropped instead of compacted.
+     * As a safeguard mechanism, for each time range of data in a sstable, we are checking globally to see if all data
+     * of this time range is fully expired before considering to drop the sstable.
+     * This strategy can retain for a long time a lot of sstables on disk (see CASSANDRA-13418) so this option
+     * control whether or not this check should be ignored.
+     *
+     * @return false by default
+     */
+    protected boolean ignoreOverlaps()
+    {
+        return false;
     }
 }
