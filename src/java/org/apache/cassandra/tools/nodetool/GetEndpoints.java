@@ -42,20 +42,26 @@ public class GetEndpoints extends NodeToolCmd
         String table = args.get(1);
         String key = args.get(2);
 
-        if (printPort)
+        try
         {
-            for (String endpoint : probe.getEndpointsWithPort(ks, table, key))
+            if (printPort)
             {
-                System.out.println(endpoint);
+                for (String endpoint : probe.getEndpointsWithPort(ks, table, key))
+                {
+                    System.out.println(endpoint);
+                }
+            }
+            else
+            {
+                for (InetAddress endpoint : probe.getEndpoints(ks, table, key))
+                {
+                    System.out.println(endpoint.getHostAddress());
+                }
             }
         }
-        else
+        catch (Exception ex)
         {
-            List<InetAddress> endpoints = probe.getEndpoints(ks, table, key);
-            for (InetAddress endpoint : endpoints)
-            {
-                System.out.println(endpoint.getHostAddress());
-            }
+            throw new RuntimeException("Error during endpoint retrieval: " + ex.getMessage(), ex);
         }
     }
 }
