@@ -356,7 +356,6 @@ public class Memory implements AutoCloseable
 
     public long size()
     {
-        assert peer != 0;
         return size;
     }
 
