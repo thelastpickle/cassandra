@@ -20,6 +20,7 @@ package org.apache.cassandra.locator;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +47,12 @@ import com.google.common.collect.Multimap;
  * This class also caches the Endpoints and invalidates the cache if there is a
  * change in the number of tokens.
  */
-public class NetworkTopologyStrategy extends AbstractNetworkTopologyStrategy
+public class EachDatacenterStrategy extends AbstractNetworkTopologyStrategy
 {
-    private static final Logger logger = LoggerFactory.getLogger(NetworkTopologyStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(EachDatacenterStrategy.class);
 
-    public NetworkTopologyStrategy(String keyspaceName, TokenMetadata tokenMetadata, IEndpointSnitch snitch, Map<String, String> configOptions) throws ConfigurationException
+    public EachDatacenterStrategy(String keyspaceName, TokenMetadata tokenMetadata, IEndpointSnitch snitch,
+            Map<String, String> configOptions) throws ConfigurationException
     {
         super(keyspaceName, tokenMetadata, snitch, configOptions);
         this.snitch = snitch;
@@ -60,15 +62,19 @@ public class NetworkTopologyStrategy extends AbstractNetworkTopologyStrategy
         {
             for (Entry<String, String> entry : configOptions.entrySet())
             {
-                String dc = entry.getKey();
-                if (dc.equalsIgnoreCase("replication_factor"))
-                    throw new ConfigurationException("replication_factor is an option for SimpleStrategy, not NetworkTopologyStrategy");
+                String rf = entry.getKey();
+                if (!rf.equalsIgnoreCase("replication_factor"))
+                    throw new ConfigurationException(
+                            "specific dc names should be used for NetworkTopologyStrategy, not EachDatacenterStrategy");
                 Integer replicas = Integer.valueOf(entry.getValue());
-                newDatacenters.put(dc, replicas);
+                Set<String> datacenterSet = tokenMetadata.getTopology().getDatacenterEndpoints().keySet();
+                for (String dc : datacenterSet) {
+                    newDatacenters.put(dc, replicas);
+                }
             }
         }
 
-        datacenters = Collections.unmodifiableMap(newDatacenters);
-        logger.trace("Configured datacenter replicas are {}", FBUtilities.toString(datacenters));
+        this.datacenters = Collections.unmodifiableMap(newDatacenters);
+        logger.trace("Configured datacenter replicas are {}", FBUtilities.toString(this.datacenters));
     }
 }
