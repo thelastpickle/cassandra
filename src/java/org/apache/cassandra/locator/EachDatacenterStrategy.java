@@ -28,10 +28,11 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.locator.TokenMetadata.Topology;
-import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.FBUtilities;
 
 import com.google.common.collect.Multimap;
+import org.apache.cassandra.dht.RingPosition;
+import org.apache.cassandra.service.StorageService;
 
 /**
  * <p>
@@ -47,19 +48,24 @@ import com.google.common.collect.Multimap;
  * </p>
  * <p>
  * This replication strategy is largely based off NetworkTopologyStrategy which it subclasses to ease compatibility with
- * the rest of the codebase (ConsistencyLevel.java, etc...)
+ * the rest of the codebase (eg ConsistencyLevel.java)
  * </p>
  */
-public class EachDatacenterStrategy extends NetworkTopologyStrategy
+public final class EachDatacenterStrategy extends NetworkTopologyStrategy
 {
-    private static final Logger logger = LoggerFactory.getLogger(EachDatacenterStrategy.class);
     public static final String REPLICATION_FACTOR_STRING = "each_replication_factor";
     public static final String EXCLUDED_DATACENTERS_STRING = "exclusions";
 
+    private static final Logger logger = LoggerFactory.getLogger(EachDatacenterStrategy.class);
+
     private final IEndpointSnitch snitch;
     private final Map<String, String> configOptions;
+    private final TokenMetadata tokenMetadata;
 
     private final AtomicReference<Map<String, Integer>> datacenters = new AtomicReference<>();
+
+    // track when the token range changes, signaling we need to rebuild the datacenter list
+    private volatile long lastInvalidatedVersion = -1;
 
     public EachDatacenterStrategy(String keyspaceName,
                                   TokenMetadata tokenMetadata,
@@ -69,8 +75,38 @@ public class EachDatacenterStrategy extends NetworkTopologyStrategy
         super(keyspaceName, tokenMetadata, snitch, Collections.<String, String> singletonMap(REPLICATION_FACTOR_STRING, configOptions.get(REPLICATION_FACTOR_STRING)));
         this.configOptions = configOptions;
         this.snitch = snitch;
+        this.tokenMetadata = tokenMetadata;
         validateOptions();
-        computeReplicationFactorPerDc(tokenMetadata.cloneOnlyTokenMap());
+        assert StorageService.instance.getTokenMetadata() == tokenMetadata;
+        updateReplicationFactorPerDc();
+    }
+
+    public ArrayList<InetAddress> getNaturalEndpoints(RingPosition searchPosition)
+    {
+        // tokenMetadata can have internally changed (ie ringVersion is incremented), and
+        //  the super method clears the cache and calls `calculateNaturalEndpoints(..)` with a cloned `tokenMetadata`.
+        // So we must first call `computeReplicationFactorPerDc(..)` with the real (original) `tokenMetadata`
+        //  to ensure datacenters gets updated appropriately.
+        updateReplicationFactorPerDc();
+        return super.getNaturalEndpoints(searchPosition);
+    }
+
+    /**
+     * Computes and saves the map of datacenters with the associated replication factor.
+     */
+    private Map<String, Integer> updateReplicationFactorPerDc()
+    {
+
+        long lastVersion = tokenMetadata.getRingVersion();
+        if (lastVersion > lastInvalidatedVersion)
+        {
+            Map<String, Integer> newDatacenters = computeReplicationFactorPerDc(tokenMetadata);
+            datacenters.set(newDatacenters);
+            lastInvalidatedVersion = lastVersion;
+            logger.info("Updated topology: configured datacenter replicas are {}", FBUtilities.toString(newDatacenters));
+            return newDatacenters;
+        }
+        return datacenters.get();
     }
 
     /**
@@ -86,7 +122,7 @@ public class EachDatacenterStrategy extends NetworkTopologyStrategy
         if (configOptions != null)
         {
             Integer replicas = Integer.valueOf(configOptions.get(REPLICATION_FACTOR_STRING));
-            Set<String> datacenterSet = tokenMetadata.getTopology().getDatacenterEndpoints().keySet();
+            Set<String> datacenterSet = tokenMetadata.cloneOnlyTokenMap().getTopology().getDatacenterEndpoints().keySet();
             for (String dc : datacenterSet)
             {
                 if (!getExcludedDatacenters().contains(dc))
@@ -94,9 +130,8 @@ public class EachDatacenterStrategy extends NetworkTopologyStrategy
             }
         }
 
-        datacenters.set(Collections.unmodifiableMap(newDatacenters));
         logger.trace("Configured datacenter replicas are {}", FBUtilities.toString(newDatacenters));
-        return newDatacenters;
+        return Collections.unmodifiableMap(newDatacenters);
     }
 
     private Collection<String> getExcludedDatacenters()
