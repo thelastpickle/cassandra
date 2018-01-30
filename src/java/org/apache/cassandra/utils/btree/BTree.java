@@ -20,6 +20,7 @@ package org.apache.cassandra.utils.btree;
 
 import java.util.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
@@ -751,7 +752,7 @@ public class BTree
 
     public static <V> Builder<V> builder(Comparator<? super V> comparator, int initialCapacity)
     {
-        return new Builder<>(comparator);
+        return new Builder<>(comparator, initialCapacity);
     }
 
     public static class Builder<V>
@@ -789,8 +790,16 @@ public class BTree
 
         protected Builder(Comparator<? super V> comparator, int initialCapacity)
         {
+            if (initialCapacity == 0)
+                initialCapacity = 16;
             this.comparator = comparator;
             this.values = new Object[initialCapacity];
+        }
+
+        @VisibleForTesting
+        public Builder()
+        {
+            this.values = new Object[16];
         }
 
         private Builder(Builder<V> builder)
@@ -826,6 +835,7 @@ public class BTree
         public void reuse(Comparator<? super V> comparator)
         {
             this.comparator = comparator;
+            Arrays.fill(values, null);
             count = 0;
             detected = true;
         }
