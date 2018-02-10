@@ -233,7 +233,11 @@ public class RangeTombstoneList implements Iterable<RangeTombstone>
         if (isEmpty())
             return -1;
 
-        int pos = Arrays.binarySearch(starts, 0, size, name, comparator);
+        ByteBuffer[] startsCopy = Arrays.copyOf(starts, size);
+        for (int i = 0; i < size; ++i)
+            startsCopy[i] = startsCopy[i].duplicate();
+
+        int pos = Arrays.binarySearch(startsCopy, 0, size, name, comparator);
         if (pos >= 0)
         {
             // We're exactly on an interval start. The one subtility is that we need to check if
