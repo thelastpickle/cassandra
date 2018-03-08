@@ -59,7 +59,7 @@ public class BootstrapEvent extends DiagnosticEvent
                                           int numTokens)
     {
         if (isEnabled(BootstrapEventType.BOOTSTRAP_USING_SPECIFIED_TOKENS))
-            DiagnosticEventService.publish(new BootstrapEvent(BootstrapEventType.BOOTSTRAP_USING_SPECIFIED_TOKENS,
+            DiagnosticEventService.instance().publish(new BootstrapEvent(BootstrapEventType.BOOTSTRAP_USING_SPECIFIED_TOKENS,
                                                               address,
                                                               null,
                                                               allocationKeyspace,
@@ -70,7 +70,7 @@ public class BootstrapEvent extends DiagnosticEvent
     public static void useRandomTokens(InetAddressAndPort address, TokenMetadata metadata, int numTokens, Collection<Token> tokens)
     {
         if (isEnabled(BootstrapEventType.BOOTSTRAP_USING_RANDOM_TOKENS))
-            DiagnosticEventService.publish(new BootstrapEvent(BootstrapEventType.BOOTSTRAP_USING_RANDOM_TOKENS,
+            DiagnosticEventService.instance().publish(new BootstrapEvent(BootstrapEventType.BOOTSTRAP_USING_RANDOM_TOKENS,
                                                               address,
                                                               metadata.cloneOnlyTokenMap(),
                                                               null,
@@ -82,7 +82,7 @@ public class BootstrapEvent extends DiagnosticEvent
                                        String allocationKeyspace, int numTokens, Collection<Token> tokens)
     {
         if (isEnabled(BootstrapEventType.TOKENS_ALLOCATED))
-            DiagnosticEventService.publish(new BootstrapEvent(BootstrapEventType.TOKENS_ALLOCATED,
+            DiagnosticEventService.instance().publish(new BootstrapEvent(BootstrapEventType.TOKENS_ALLOCATED,
                                                               address,
                                                               metadata.cloneOnlyTokenMap(),
                                                               allocationKeyspace,
@@ -92,7 +92,7 @@ public class BootstrapEvent extends DiagnosticEvent
 
     private static boolean isEnabled(BootstrapEventType type)
     {
-        return DiagnosticEventService.isEnabled(BootstrapEvent.class, type);
+        return DiagnosticEventService.instance().isEnabled(BootstrapEvent.class, type);
     }
 
     public enum BootstrapEventType

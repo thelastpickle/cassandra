@@ -75,13 +75,13 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
     public static <Unit> void noReplicationTokenAllocatorInstanciated(NoReplicationTokenAllocator<Unit> allocator)
     {
         if (isEnabled(TokenAllocatorEventType.NO_REPLICATION_AWARE_TOKEN_ALLOCATOR_INSTANCIATED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.NO_REPLICATION_AWARE_TOKEN_ALLOCATOR_INSTANCIATED, allocator, null, null, null, null, null, null, null));
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.NO_REPLICATION_AWARE_TOKEN_ALLOCATOR_INSTANCIATED, allocator, null, null, null, null, null, null, null));
     }
 
     public static <Unit> void replicationTokenAllocatorInstanciated(ReplicationAwareTokenAllocator<Unit> allocator)
     {
         if (isEnabled(TokenAllocatorEventType.REPLICATION_AWARE_TOKEN_ALLOCATOR_INSTANCIATED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.REPLICATION_AWARE_TOKEN_ALLOCATOR_INSTANCIATED, allocator, null, null, null,null, null, null, null));
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.REPLICATION_AWARE_TOKEN_ALLOCATOR_INSTANCIATED, allocator, null, null, null,null, null, null, null));
     }
 
     public static <Unit> void unitedAdded(TokenAllocatorBase<Unit> allocator, int numTokens,
@@ -89,7 +89,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                           List<Token> tokens, Unit unit)
     {
         if (isEnabled(TokenAllocatorEventType.UNIT_ADDED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_ADDED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_ADDED,
                                                                      allocator,
                                                                      numTokens,
                                                                      ImmutableList.copyOf(sortedUnits),
@@ -105,7 +105,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                           List<Token> tokens, Unit unit)
     {
         if (isEnabled(TokenAllocatorEventType.UNIT_ADDED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_ADDED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_ADDED,
                                                                      allocator,
                                                                      numTokens,
                                                                      null,
@@ -121,7 +121,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                           Queue<Weighted<UnitInfo>> sortedUnits, Map<Token, Unit> sortedTokens)
     {
         if (isEnabled(TokenAllocatorEventType.UNIT_REMOVED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_REMOVED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_REMOVED,
                                                                      allocator,
                                                                      null,
                                                                      ImmutableList.copyOf(sortedUnits),
@@ -136,7 +136,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                           Multimap<Unit, Token> unitToTokens, Map<Token, Unit> sortedTokens)
     {
         if (isEnabled(TokenAllocatorEventType.UNIT_REMOVED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_REMOVED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.UNIT_REMOVED,
                                                                      allocator,
                                                                      null,
                                                                      null,
@@ -151,7 +151,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                                 Map<Token, Unit> sortedTokens, TokenInfo<Unit> tokenInfo)
     {
         if (isEnabled(TokenAllocatorEventType.TOKEN_INFOS_CREATED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.TOKEN_INFOS_CREATED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.TOKEN_INFOS_CREATED,
                                                                      allocator,
                                                                      null,
                                                                      ImmutableList.copyOf(sortedUnits),
@@ -166,7 +166,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                                 TokenInfo<Unit> tokenInfo)
     {
         if (isEnabled(TokenAllocatorEventType.TOKEN_INFOS_CREATED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.TOKEN_INFOS_CREATED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.TOKEN_INFOS_CREATED,
                                                                      allocator,
                                                                      null,
                                                                      null,
@@ -183,7 +183,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                                     Set<Token> tokens)
     {
         if (isEnabled(TokenAllocatorEventType.RANDOM_TOKENS_GENERATED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.RANDOM_TOKENS_GENERATED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.RANDOM_TOKENS_GENERATED,
                                                                      allocator,
                                                                      numTokens,
                                                                      ImmutableList.copyOf(sortedUnits),
@@ -200,7 +200,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
                                                     Set<Token> tokens)
     {
         if (isEnabled(TokenAllocatorEventType.RANDOM_TOKENS_GENERATED))
-            DiagnosticEventService.publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.RANDOM_TOKENS_GENERATED,
+            DiagnosticEventService.instance().publish(new TokenAllocatorEvent<>(TokenAllocatorEventType.RANDOM_TOKENS_GENERATED,
                                                                      allocator,
                                                                      numTokens,
                                                                      null,
@@ -213,7 +213,7 @@ public class TokenAllocatorEvent<Unit> extends DiagnosticEvent
 
     private static boolean isEnabled(TokenAllocatorEventType type)
     {
-        return DiagnosticEventService.isEnabled(TokenAllocatorEvent.class, type);
+        return DiagnosticEventService.instance().isEnabled(TokenAllocatorEvent.class, type);
     }
 
     public enum TokenAllocatorEventType
