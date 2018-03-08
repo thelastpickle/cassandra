@@ -54,9 +54,9 @@ public class PendingRangeCalculatorServiceEvent extends DiagnosticEvent
     static void taskStarted(PendingRangeCalculatorService service,
                                    AtomicInteger taskCount)
     {
-        if (DiagnosticEventService.isEnabled(PendingRangeCalculatorServiceEvent.class,
+        if (DiagnosticEventService.instance().isEnabled(PendingRangeCalculatorServiceEvent.class,
                                              PendingRangeCalculatorServiceEventType.TASK_STARTED))
-            DiagnosticEventService.publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_STARTED,
+            DiagnosticEventService.instance().publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_STARTED,
                                                                                   service,
                                                                                   taskCount.get()));
     }
@@ -64,9 +64,9 @@ public class PendingRangeCalculatorServiceEvent extends DiagnosticEvent
     static void taskFinished(PendingRangeCalculatorService service,
                                     AtomicInteger taskCount)
     {
-        if (DiagnosticEventService.isEnabled(PendingRangeCalculatorServiceEvent.class,
+        if (DiagnosticEventService.instance().isEnabled(PendingRangeCalculatorServiceEvent.class,
                                              PendingRangeCalculatorServiceEventType.TASK_FINISHED_SUCCESSFULLY))
-            DiagnosticEventService.publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_FINISHED_SUCCESSFULLY,
+            DiagnosticEventService.instance().publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_FINISHED_SUCCESSFULLY,
                                                                                   service,
                                                                                   taskCount.get()));
     }
@@ -74,9 +74,9 @@ public class PendingRangeCalculatorServiceEvent extends DiagnosticEvent
     static void taskRejected(PendingRangeCalculatorService service,
                                     AtomicInteger taskCount)
     {
-        if (DiagnosticEventService.isEnabled(PendingRangeCalculatorServiceEvent.class,
+        if (DiagnosticEventService.instance().isEnabled(PendingRangeCalculatorServiceEvent.class,
                                              PendingRangeCalculatorServiceEventType.TASK_EXECUTION_REJECTED))
-            DiagnosticEventService.publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_EXECUTION_REJECTED,
+            DiagnosticEventService.instance().publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_EXECUTION_REJECTED,
                                                                                   service,
                                                                                   taskCount.get()));
     }
@@ -84,9 +84,9 @@ public class PendingRangeCalculatorServiceEvent extends DiagnosticEvent
     static void taskCountChanged(PendingRangeCalculatorService service,
                                     int taskCount)
     {
-        if (DiagnosticEventService.isEnabled(PendingRangeCalculatorServiceEvent.class,
+        if (DiagnosticEventService.instance().isEnabled(PendingRangeCalculatorServiceEvent.class,
                                              PendingRangeCalculatorServiceEventType.TASK_COUNT_CHANGED))
-            DiagnosticEventService.publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_COUNT_CHANGED,
+            DiagnosticEventService.instance().publish(new PendingRangeCalculatorServiceEvent(PendingRangeCalculatorServiceEventType.TASK_COUNT_CHANGED,
                                                                                   service,
                                                                                   taskCount));
     }

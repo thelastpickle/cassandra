@@ -84,7 +84,7 @@ public class HintEvent extends DiagnosticEvent
     public static void dispatcherCreated(HintsDispatcher dispatcher)
     {
         if (isEnabled(HintEventType.DISPATCHER_CREATED))
-            DiagnosticEventService.publish(new HintEvent(HintEventType.DISPATCHER_CREATED, dispatcher,
+            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_CREATED, dispatcher,
                     dispatcher.hostId, dispatcher.address,
                     null, null, null, null,
         0, 0, 0));
@@ -93,7 +93,7 @@ public class HintEvent extends DiagnosticEvent
     public static void dispatcherClosed(HintsDispatcher dispatcher)
     {
         if (isEnabled(HintEventType.DISPATCHER_CLOSED))
-            DiagnosticEventService.publish(new HintEvent(HintEventType.DISPATCHER_CLOSED, dispatcher,
+            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_CLOSED, dispatcher,
                     dispatcher.hostId, dispatcher.address,
                     null, null, null, null,
         0, 0, 0));
@@ -102,7 +102,7 @@ public class HintEvent extends DiagnosticEvent
     public static void dispatchPage(HintsDispatcher dispatcher, InputPosition pagePosition)
     {
         if (isEnabled(HintEventType.DISPATCHER_PAGE))
-            DiagnosticEventService.publish(new HintEvent(HintEventType.DISPATCHER_PAGE, dispatcher,
+            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_PAGE, dispatcher,
                     dispatcher.hostId, dispatcher.address,
                     null, null, null, pagePosition,
         0, 0, 0));
@@ -111,7 +111,7 @@ public class HintEvent extends DiagnosticEvent
     public static void abortRequested(HintsDispatcher dispatcher)
     {
         if (isEnabled(HintEventType.ABORT_REQUESTED))
-            DiagnosticEventService.publish(new HintEvent(HintEventType.ABORT_REQUESTED, dispatcher,
+            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.ABORT_REQUESTED, dispatcher,
                     dispatcher.hostId, dispatcher.address,
                     null, null, null, null,
         0, 0, 0));
@@ -120,7 +120,7 @@ public class HintEvent extends DiagnosticEvent
     public static void pageSuccessResult(HintsDispatcher dispatcher, long success, long failures, long timeouts)
     {
         if (isEnabled(HintEventType.DISPATCHER_HINT_RESULT))
-            DiagnosticEventService.publish(new HintEvent(HintEventType.DISPATCHER_HINT_RESULT, dispatcher,
+            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_HINT_RESULT, dispatcher,
                     dispatcher.hostId, dispatcher.address,
                     null, null, HintResult.PAGE_SUCCESS, null,
                               success, failures, timeouts));
@@ -129,7 +129,7 @@ public class HintEvent extends DiagnosticEvent
     public static void pageFailureResult(HintsDispatcher dispatcher, long success, long failures, long timeouts)
     {
         if (isEnabled(HintEventType.DISPATCHER_HINT_RESULT))
-            DiagnosticEventService.publish(new HintEvent(HintEventType.DISPATCHER_HINT_RESULT, dispatcher,
+            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_HINT_RESULT, dispatcher,
                     dispatcher.hostId, dispatcher.address,
                     null, null, HintResult.PAGE_FAILURE, null,
                               success, failures, timeouts));
@@ -137,7 +137,7 @@ public class HintEvent extends DiagnosticEvent
 
     private static boolean isEnabled(HintEventType type)
     {
-        return DiagnosticEventService.isEnabled(HintEvent.class, type);
+        return DiagnosticEventService.instance().isEnabled(HintEvent.class, type);
     }
 
     @Override

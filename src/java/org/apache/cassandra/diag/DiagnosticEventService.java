@@ -43,18 +43,24 @@ public class DiagnosticEventService
     private static final Logger logger = LoggerFactory.getLogger(DiagnosticEventService.class);
 
     // Subscribers interested in consuming all kind of events
-    private static ImmutableSet<Consumer<DiagnosticEvent>> subscribersAll = ImmutableSet.of();
+    private ImmutableSet<Consumer<DiagnosticEvent>> subscribersAll = ImmutableSet.of();
 
     // Subscribers for particular event class, e.g. BootstrapEvent
-    private static ImmutableSetMultimap<Class<? extends DiagnosticEvent>, Consumer<DiagnosticEvent>> subscribersByClass = ImmutableSetMultimap.of();
+    private ImmutableSetMultimap<Class<? extends DiagnosticEvent>, Consumer<DiagnosticEvent>> subscribersByClass = ImmutableSetMultimap.of();
 
     // Subscribers for event class and type, e.g. BootstrapEvent#TOKENS_ALLOCATED
-    private static ImmutableMap<Class, ImmutableSetMultimap<Enum<?>, Consumer<DiagnosticEvent>>> subscribersByClassAndType = ImmutableMap.of();
+    private ImmutableMap<Class, ImmutableSetMultimap<Enum<?>, Consumer<DiagnosticEvent>>> subscribersByClassAndType = ImmutableMap.of();
+
+    private static DiagnosticEventService instance = new DiagnosticEventService();
+
+    private DiagnosticEventService()
+    {
+    }
 
     /**
      * Makes provided event available to all subscribers.
      */
-    public static void publish(DiagnosticEvent event)
+    public void publish(DiagnosticEvent event)
     {
         if (!DatabaseDescriptor.diagnosticEventsEnabled())
             return;
@@ -87,7 +93,7 @@ public class DiagnosticEventService
      * @param event DiagnosticEvent class implementation
      * @param consumer Consumer for received events
      */
-    public static synchronized <E extends DiagnosticEvent> void subscribe(Class<E> event, Consumer<E> consumer)
+    public synchronized <E extends DiagnosticEvent> void subscribe(Class<E> event, Consumer<E> consumer)
     {
         subscribersByClass = ImmutableSetMultimap.<Class<? extends DiagnosticEvent>, Consumer<DiagnosticEvent>>builder()
                               .putAll(subscribersByClass)
@@ -100,7 +106,7 @@ public class DiagnosticEventService
      * @param event DiagnosticEvent class implementation
      * @param consumer Consumer for received events
      */
-    public static synchronized <E extends DiagnosticEvent, T extends Enum<T>> void subscribe(Class<E> event,
+    public synchronized <E extends DiagnosticEvent, T extends Enum<T>> void subscribe(Class<E> event,
                                                                                              T eventType,
                                                                                              Consumer<E> consumer)
     {
@@ -125,7 +131,7 @@ public class DiagnosticEventService
      * Registers event handler for all DiagnosticEvents published from this point.
      * @param consumer Consumer for received events
      */
-    public static synchronized void subscribeAll(Consumer<DiagnosticEvent> consumer)
+    public synchronized void subscribeAll(Consumer<DiagnosticEvent> consumer)
     {
         subscribersAll = ImmutableSet.<Consumer<DiagnosticEvent>>builder()
                          .addAll(subscribersAll)
@@ -137,7 +143,7 @@ public class DiagnosticEventService
      * De-registers event handler from receiving any further events.
      * @param consumer Consumer registered for receiving events
      */
-    public static synchronized <E extends DiagnosticEvent> void unsubscribe(Consumer<E> consumer)
+    public synchronized <E extends DiagnosticEvent> void unsubscribe(Consumer<E> consumer)
     {
         // all events
         subscribersAll = ImmutableSet.copyOf(Iterables.filter(subscribersAll, (c) -> c != consumer));
@@ -186,7 +192,7 @@ public class DiagnosticEventService
      * Indicates if any {@link Consumer} has been registered for the specified class of events.
      * @param event DiagnosticEvent class implementation
      */
-    public static <E extends DiagnosticEvent> boolean hasSubscribers(Class<E> event)
+    public <E extends DiagnosticEvent> boolean hasSubscribers(Class<E> event)
     {
         return !subscribersAll.isEmpty() || subscribersByClass.containsKey(event) || subscribersByClassAndType.containsKey(event);
     }
@@ -196,7 +202,7 @@ public class DiagnosticEventService
      * @param event DiagnosticEvent class implementation
      * @param eventType Subscribed event type matched against {@link DiagnosticEvent#getType()}
      */
-    public static <E extends DiagnosticEvent, T extends Enum<T>> boolean hasSubscribers(Class<E> event, T eventType)
+    public <E extends DiagnosticEvent, T extends Enum<T>> boolean hasSubscribers(Class<E> event, T eventType)
     {
         if (!subscribersAll.isEmpty())
             return true;
@@ -216,7 +222,7 @@ public class DiagnosticEventService
      * and {@link #hasSubscribers(Class)}.
      * @param event DiagnosticEvent class implementation
      */
-    public static <E extends DiagnosticEvent> boolean isEnabled(Class<E> event)
+    public <E extends DiagnosticEvent> boolean isEnabled(Class<E> event)
     {
         return DatabaseDescriptor.diagnosticEventsEnabled() && hasSubscribers(event);
     }
@@ -227,7 +233,7 @@ public class DiagnosticEventService
      * @param event DiagnosticEvent class implementation
      * @param eventType Subscribed event type matched against {@link DiagnosticEvent#getType()}
      */
-    public static <E extends DiagnosticEvent, T extends Enum<T>> boolean isEnabled(Class<E> event, T eventType)
+    public <E extends DiagnosticEvent, T extends Enum<T>> boolean isEnabled(Class<E> event, T eventType)
     {
         return DatabaseDescriptor.diagnosticEventsEnabled() && hasSubscribers(event, eventType);
     }
@@ -239,7 +245,7 @@ public class DiagnosticEventService
      * @param event DiagnosticEvent class implementation
      * @param type Matching event type as returned by {@link DiagnosticEvent#getType()}
      */
-    public static <E extends DiagnosticEvent, T extends Enum<T>>  CompletableFuture<E> once(Class<E> event, T type)
+    public <E extends DiagnosticEvent, T extends Enum<T>>  CompletableFuture<E> once(Class<E> event, T type)
     {
         final CompletableFuture<E> ret = new CompletableFuture<>();
         final Consumer<E> handler = new Consumer<E>()
@@ -258,10 +264,15 @@ public class DiagnosticEventService
         return ret;
     }
 
+    public static DiagnosticEventService instance()
+    {
+        return instance;
+    }
+
     /**
      * Removes all active subscribers. Should only be called from testing.
      */
-    public static synchronized void cleanup()
+    public synchronized void cleanup()
     {
         subscribersByClass = ImmutableSetMultimap.of();
         subscribersAll = ImmutableSet.of();

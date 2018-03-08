@@ -60,30 +60,30 @@ public class HintsServiceEvent extends DiagnosticEvent
     static void dispatchingStarted(HintsService service)
     {
         if (isEnabled(HintsServiceEventType.DISPATCHING_STARTED))
-            DiagnosticEventService.publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_STARTED, service));
+            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_STARTED, service));
     }
 
     static void dispatchingShutdown(HintsService service)
     {
         if (isEnabled(HintsServiceEventType.DISPATCHING_SHUTDOWN))
-            DiagnosticEventService.publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_SHUTDOWN, service));
+            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_SHUTDOWN, service));
     }
 
     static void dispatchingPaused(HintsService service)
     {
         if (isEnabled(HintsServiceEventType.DISPATCHING_PAUSED))
-            DiagnosticEventService.publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_PAUSED, service));
+            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_PAUSED, service));
     }
 
     static void dispatchingResumed(HintsService service)
     {
         if (isEnabled(HintsServiceEventType.DISPATCHING_RESUMED))
-            DiagnosticEventService.publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_RESUMED, service));
+            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_RESUMED, service));
     }
 
     private static boolean isEnabled(HintsServiceEventType type)
     {
-        return DiagnosticEventService.isEnabled(HintsServiceEvent.class, type);
+        return DiagnosticEventService.instance().isEnabled(HintsServiceEvent.class, type);
     }
 
     @Override

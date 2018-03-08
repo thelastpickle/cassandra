@@ -51,14 +51,15 @@ public class DiagnosticEventServiceTest
     @After
     public void cleanup()
     {
-        DiagnosticEventService.cleanup();
+        DiagnosticEventService.instance().cleanup();
     }
 
     @Test
     public void testSubscribe()
     {
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        DiagnosticEventService instance = DiagnosticEventService.instance();
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
         Consumer<TestEvent1> consumer1 = (event) ->
         {
         };
@@ -68,25 +69,26 @@ public class DiagnosticEventServiceTest
         Consumer<TestEvent1> consumer3 = (event) ->
         {
         };
-        DiagnosticEventService.subscribe(TestEvent1.class, consumer1);
-        DiagnosticEventService.subscribe(TestEvent1.class, consumer2);
-        DiagnosticEventService.subscribe(TestEvent1.class, consumer3);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
-        DiagnosticEventService.unsubscribe(consumer1);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
-        DiagnosticEventService.unsubscribe(consumer2);
-        DiagnosticEventService.unsubscribe(consumer3);
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        instance.subscribe(TestEvent1.class, consumer1);
+        instance.subscribe(TestEvent1.class, consumer2);
+        instance.subscribe(TestEvent1.class, consumer3);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
+        instance.unsubscribe(consumer1);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
+        instance.unsubscribe(consumer2);
+        instance.unsubscribe(consumer3);
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
     }
 
     @Test
     public void testSubscribeByType()
     {
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        DiagnosticEventService instance = DiagnosticEventService.instance();
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
         Consumer<TestEvent1> consumer1 = (event) ->
         {
         };
@@ -97,38 +99,39 @@ public class DiagnosticEventServiceTest
         {
         };
 
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST1));
-        DiagnosticEventService.subscribe(TestEvent1.class, TestEventType.TEST1, consumer1);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST1));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST2));
+        assertFalse(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST1));
+        instance.subscribe(TestEvent1.class, TestEventType.TEST1, consumer1);
+        assertTrue(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST1));
+        assertFalse(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST2));
 
-        DiagnosticEventService.subscribe(TestEvent1.class, TestEventType.TEST2, consumer2);
-        DiagnosticEventService.subscribe(TestEvent1.class, TestEventType.TEST2, consumer2);
-        DiagnosticEventService.subscribe(TestEvent1.class, TestEventType.TEST2, consumer2);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST2));
+        instance.subscribe(TestEvent1.class, TestEventType.TEST2, consumer2);
+        instance.subscribe(TestEvent1.class, TestEventType.TEST2, consumer2);
+        instance.subscribe(TestEvent1.class, TestEventType.TEST2, consumer2);
+        assertTrue(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST2));
 
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
 
-        DiagnosticEventService.subscribe(TestEvent1.class, consumer3);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST1));
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST2));
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class, TestEventType.TEST3));
+        instance.subscribe(TestEvent1.class, consumer3);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertTrue(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST1));
+        assertTrue(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST2));
+        assertTrue(instance.hasSubscribers(TestEvent1.class, TestEventType.TEST3));
 
-        DiagnosticEventService.unsubscribe(consumer1);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
-        DiagnosticEventService.unsubscribe(consumer2);
-        DiagnosticEventService.unsubscribe(consumer3);
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        instance.unsubscribe(consumer1);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
+        instance.unsubscribe(consumer2);
+        instance.unsubscribe(consumer3);
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
     }
 
     @Test
     public void testSubscribeAll()
     {
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        DiagnosticEventService instance = DiagnosticEventService.instance();
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
         Consumer<DiagnosticEvent> consumerAll1 = (event) ->
         {
         };
@@ -138,43 +141,45 @@ public class DiagnosticEventServiceTest
         Consumer<DiagnosticEvent> consumerAll3 = (event) ->
         {
         };
-        DiagnosticEventService.subscribeAll(consumerAll1);
-        DiagnosticEventService.subscribeAll(consumerAll2);
-        DiagnosticEventService.subscribeAll(consumerAll3);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent2.class));
-        DiagnosticEventService.unsubscribe(consumerAll1);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent2.class));
-        DiagnosticEventService.unsubscribe(consumerAll2);
-        DiagnosticEventService.unsubscribe(consumerAll3);
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        instance.subscribeAll(consumerAll1);
+        instance.subscribeAll(consumerAll2);
+        instance.subscribeAll(consumerAll3);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertTrue(instance.hasSubscribers(TestEvent2.class));
+        instance.unsubscribe(consumerAll1);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertTrue(instance.hasSubscribers(TestEvent2.class));
+        instance.unsubscribe(consumerAll2);
+        instance.unsubscribe(consumerAll3);
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
     }
 
     @Test
     public void testCleanup()
     {
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        DiagnosticEventService instance = DiagnosticEventService.instance();
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
         Consumer<TestEvent1> consumer = (event) ->
         {
         };
-        DiagnosticEventService.subscribe(TestEvent1.class, consumer);
+        instance.subscribe(TestEvent1.class, consumer);
         Consumer<DiagnosticEvent> consumerAll = (event) ->
         {
         };
-        DiagnosticEventService.subscribeAll(consumerAll);
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertTrue(DiagnosticEventService.hasSubscribers(TestEvent2.class));
-        DiagnosticEventService.cleanup();
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent1.class));
-        assertFalse(DiagnosticEventService.hasSubscribers(TestEvent2.class));
+        instance.subscribeAll(consumerAll);
+        assertTrue(instance.hasSubscribers(TestEvent1.class));
+        assertTrue(instance.hasSubscribers(TestEvent2.class));
+        instance.cleanup();
+        assertFalse(instance.hasSubscribers(TestEvent1.class));
+        assertFalse(instance.hasSubscribers(TestEvent2.class));
     }
 
     @Test
     public void testPublish()
     {
+        DiagnosticEventService instance = DiagnosticEventService.instance();
         TestEvent1 a = new TestEvent1();
         TestEvent1 b = new TestEvent1();
         TestEvent1 c = new TestEvent1();
@@ -184,17 +189,17 @@ public class DiagnosticEventServiceTest
         Consumer<TestEvent1> consumer = consumed::add;
         Consumer<DiagnosticEvent> consumerAll = consumed::add;
 
-        DiagnosticEventService.publish(c);
-        DiagnosticEventService.subscribe(TestEvent1.class, consumer);
-        DiagnosticEventService.publish(a);
-        DiagnosticEventService.unsubscribe(consumer);
-        DiagnosticEventService.publish(c);
-        DiagnosticEventService.subscribeAll(consumerAll);
-        DiagnosticEventService.publish(b);
-        DiagnosticEventService.subscribe(TestEvent1.class, TestEventType.TEST3, consumer);
-        DiagnosticEventService.publish(c);
-        DiagnosticEventService.subscribe(TestEvent1.class, TestEventType.TEST1, consumer);
-        DiagnosticEventService.publish(c);
+        instance.publish(c);
+        instance.subscribe(TestEvent1.class, consumer);
+        instance.publish(a);
+        instance.unsubscribe(consumer);
+        instance.publish(c);
+        instance.subscribeAll(consumerAll);
+        instance.publish(b);
+        instance.subscribe(TestEvent1.class, TestEventType.TEST3, consumer);
+        instance.publish(c);
+        instance.subscribe(TestEvent1.class, TestEventType.TEST1, consumer);
+        instance.publish(c);
 
         assertEquals(events, consumed);
     }
@@ -203,8 +208,8 @@ public class DiagnosticEventServiceTest
     public void testEnabled()
     {
         DatabaseDescriptor.setDiagnosticEventsEnabled(false);
-        DiagnosticEventService.subscribe(TestEvent1.class, (event) -> fail());
-        DiagnosticEventService.publish(new TestEvent1());
+        DiagnosticEventService.instance().subscribe(TestEvent1.class, (event) -> fail());
+        DiagnosticEventService.instance().publish(new TestEvent1());
         DatabaseDescriptor.setDiagnosticEventsEnabled(true);
     }
 

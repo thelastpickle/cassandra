@@ -49,8 +49,8 @@ public class TokenMetadataEvent extends DiagnosticEvent
 
     public static void pendingRangeCalculationStarted(TokenMetadata tokenMetadata, String keyspace)
     {
-        if (DiagnosticEventService.isEnabled(TokenMetadataEvent.class, TokenMetadataEventType.PENDING_RANGE_CALCULATION_STARTED))
-            DiagnosticEventService.publish(new TokenMetadataEvent(TokenMetadataEventType.PENDING_RANGE_CALCULATION_STARTED,
+        if (DiagnosticEventService.instance().isEnabled(TokenMetadataEvent.class, TokenMetadataEventType.PENDING_RANGE_CALCULATION_STARTED))
+            DiagnosticEventService.instance().publish(new TokenMetadataEvent(TokenMetadataEventType.PENDING_RANGE_CALCULATION_STARTED,
                     tokenMetadata, keyspace));
     }
 
