@@ -383,7 +383,7 @@ public class Config
 
     public volatile AuditLogOptions audit_logging_options = new AuditLogOptions();
 
-    public boolean diagnostic_events_enabled = true;
+    public boolean diagnostic_events_enabled = false;
 
     /**
      * @deprecated migrate to {@link DatabaseDescriptor#isClientInitialized()}
