@@ -385,7 +385,7 @@ public class Config
 
     public CorruptedTombstoneStrategy corrupted_tombstone_strategy = CorruptedTombstoneStrategy.disabled;
 
-    public boolean diagnostic_events_enabled = true;
+    public boolean diagnostic_events_enabled = false;
 
     /**
      * @deprecated migrate to {@link DatabaseDescriptor#isClientInitialized()}

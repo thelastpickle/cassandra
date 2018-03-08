@@ -189,6 +189,7 @@ public class DiagnosticEventServiceTest
         Consumer<TestEvent1> consumer = consumed::add;
         Consumer<DiagnosticEvent> consumerAll = consumed::add;
 
+        DatabaseDescriptor.setDiagnosticEventsEnabled(true);
         instance.publish(c);
         instance.subscribe(TestEvent1.class, consumer);
         instance.publish(a);
