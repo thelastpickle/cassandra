@@ -90,7 +90,8 @@ appender reference in the root level section below.
   <root level="INFO">
     <appender-ref ref="SYSTEMLOG" />
     <appender-ref ref="STDOUT" />
-    <appender-ref ref="ASYNCDEBUGLOG" /> <!-- Comment this line to disable debug.log -->
+    <!-- Uncomment the following line to enable debug.log. WARNING : debug logging involves overhead that will impact performance -->
+    <!-- <appender-ref ref="ASYNCDEBUGLOG" /> -->
     <!--
     <appender-ref ref="LogbackMetrics" />
     -->
