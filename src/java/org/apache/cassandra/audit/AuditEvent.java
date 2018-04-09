@@ -18,12 +18,16 @@
 
 package org.apache.cassandra.audit;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
 import org.apache.cassandra.diag.DiagnosticEventService;
 
+/**
+ * {@Link AuditLogEntry} wrapper to expose audit events as {@link DiagnosticEvent}s.
+ */
 public class AuditEvent extends DiagnosticEvent
 {
     private final AuditLogEntry entry;
@@ -53,13 +57,18 @@ public class AuditEvent extends DiagnosticEvent
     @Override
     public Object getSource()
     {
-        return null;
+        return entry.getSource().toString(true);
+    }
+
+    public AuditLogEntry getEntry()
+    {
+        return entry;
     }
 
     @Override
-    public Map<String, String> toMap()
+    public Map<String, Serializable> toMap()
     {
-        HashMap<String, String> ret = new HashMap<>();
+        HashMap<String, Serializable> ret = new HashMap<>();
         if (entry.getKeyspace() != null) ret.put("keyspace", entry.getKeyspace());
         if (entry.getOperation() != null) ret.put("operation", entry.getOperation());
         if (entry.getScope() != null) ret.put("scope", entry.getScope());
