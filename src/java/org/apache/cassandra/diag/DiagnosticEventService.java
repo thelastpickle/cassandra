@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.diag.jmx.DiagnosticEventJMXBroadcaster;
 
 /**
  * Service for publishing and consuming {@link DiagnosticEvent}s.
@@ -70,6 +71,9 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
         {
             throw new RuntimeException(e);
         }
+
+        // register broadcaster for JMX events
+        DiagnosticEventJMXBroadcaster.start();
     }
 
     /**
