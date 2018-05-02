@@ -2507,7 +2507,6 @@ public class DatabaseDescriptor
         return conf.diagnostic_events_enabled;
     }
 
-    @VisibleForTesting
     public static void setDiagnosticEventsEnabled(boolean enabled)
     {
         conf.diagnostic_events_enabled = enabled;

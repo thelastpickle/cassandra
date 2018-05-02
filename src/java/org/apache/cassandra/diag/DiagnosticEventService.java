@@ -17,12 +17,16 @@
  */
 package org.apache.cassandra.diag;
 
+import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -38,7 +42,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 /**
  * Service for publishing and consuming {@link DiagnosticEvent}s.
  */
-public class DiagnosticEventService
+public class DiagnosticEventService implements DiagnosticEventServiceMBean
 {
     private static final Logger logger = LoggerFactory.getLogger(DiagnosticEventService.class);
 
@@ -55,6 +59,17 @@ public class DiagnosticEventService
 
     private DiagnosticEventService()
     {
+
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        try
+        {
+            ObjectName jmxObjectName = new ObjectName("org.apache.cassandra.diag:type=DiagnosticEventService");
+            mbs.registerMBean(this, jmxObjectName);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -277,6 +292,24 @@ public class DiagnosticEventService
         subscribersByClass = ImmutableSetMultimap.of();
         subscribersAll = ImmutableSet.of();
         subscribersByClassAndType = ImmutableMap.of();
+    }
+
+    @Override
+    public boolean isEnabled()
+    {
+        return DatabaseDescriptor.diagnosticEventsEnabled();
+    }
+
+    @Override
+    public void stopPublishing()
+    {
+        DatabaseDescriptor.setDiagnosticEventsEnabled(false);
+    }
+
+    @Override
+    public void resumePublishing()
+    {
+        DatabaseDescriptor.setDiagnosticEventsEnabled(true);
     }
 
     /**
