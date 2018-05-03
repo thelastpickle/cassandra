@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
 import org.apache.cassandra.diag.DiagnosticEventService;
+import org.apache.cassandra.utils.progress.jmx.JMXBroadcastExecutor;
 
 /**
  * Allows to subscribe to diagnostic events, while acting as JMX event broadcaster.
@@ -50,6 +51,9 @@ public class DiagnosticEventJMXBroadcaster extends NotificationBroadcasterSuppor
 
     private DiagnosticEventJMXBroadcaster()
     {
+        // use dedicated executor for handling JMX notifications
+        super(JMXBroadcastExecutor.executor);
+
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         try
         {
