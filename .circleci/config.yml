@@ -35,6 +35,13 @@ default_jobs: &default_jobs
             - unit_tests:
                   requires:
                       - build
+            - stress_tests:
+                  requires:
+                      - build
+            - long_tests:
+                  requires:
+                      - build
+                      - unit_tests
 with_dtests_jobs: &with_dtest_jobs
         jobs:
             - build
@@ -144,7 +151,7 @@ jobs:
           at: /home/cassandra
       - run:
           name: Determine Tests to Run
-          no_output_timeout: 15m
+          no_output_timeout: 5m
           command: |
             # reminder: this code (along with all the steps) is independently executed on every circle container
             # so the goal here is to get the circleci script to return the tests *this* container will run
@@ -171,17 +178,115 @@ jobs:
             #Skip all syncing to disk to avoid performance issues in flaky CI environments
             export CASSANDRA_SKIP_SYNC=true
 
-            time mv ~/cassandra /tmp
-            cd /tmp/cassandra
+            time cp -r ~/cassandra /tmp/cassandra-unit
+            cd /tmp/cassandra-unit
             ant testclasslist -Dtest.classlistfile=/tmp/java_tests_${CIRCLE_NODE_INDEX}_final.txt
          no_output_timeout: 15m
+      - run:
+         name: Run Unit Tests with SSTable Compression
+         command: |
+            export LANG=en_US.UTF-8
+            export JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
+            export PATH=$PATH:$ANT_HOME/bin:$JAVA_HOME/bin
+            #Skip all syncing to disk to avoid performance issues in flaky CI environments
+            export CASSANDRA_SKIP_SYNC=true
+
+            time cp -r ~/cassandra /tmp/cassandra-unit
+            cd /tmp/cassandra-unit
+            ant testclasslist-compression -Dtest.classlistfile=/tmp/java_tests_${CIRCLE_NODE_INDEX}_final.txt
+         no_output_timeout: 15m
       - store_test_results:
-            path: /tmp/cassandra/build/test/output/
+            path: /tmp/cassandra-unit/build/test/output/
       - store_artifacts:
-          path: /tmp/cassandra/build/test/output
+          path: /tmp/cassandra-unit/build/test/output
           destination: junitxml
       - store_artifacts:
-          path: /tmp/cassandra/build/test/logs
+          path: /tmp/cassandra-unit/build/test/logs
+          destination: logs
+  stress_tests:
+    <<: *env_settings
+    parallelism: 1 # This job doesn't benefit from parallelism
+    working_directory: ~/
+    shell: /bin/bash -eo pipefail -l
+    docker:
+      - image: *docker_image
+        environment:
+            <<: *env_vars
+    steps:
+      - attach_workspace:
+          at: /home/cassandra
+      - run:
+         name: Run Stress Tests
+         command: |
+            export LANG=en_US.UTF-8
+            export JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
+            export PATH=$PATH:$ANT_HOME/bin:$JAVA_HOME/bin
+            #Skip all syncing to disk to avoid performance issues in flaky CI environments
+            export CASSANDRA_SKIP_SYNC=true
+
+            time cp -r ~/cassandra /tmp/cassandra-stress
+            cd /tmp/cassandra-stress
+            ant stress-test
+         no_output_timeout: 5m
+      - store_test_results:
+            path: /tmp/cassandra-stress/build/test/output/
+      - store_artifacts:
+          path: /tmp/cassandra-stress/build/test/output
+          destination: junitxml
+      - store_artifacts:
+          path: /tmp/cassandra-stress/build/test/logs
+          destination: logs
+  long_tests:
+    <<: *env_settings
+    working_directory: ~/
+    shell: /bin/bash -eo pipefail -l
+    docker:
+      - image: *docker_image
+        environment:
+            <<: *env_vars
+    steps:
+      - attach_workspace:
+          at: /home/cassandra
+      - run:
+          name: Determine Tests to Run
+          no_output_timeout: 5m
+          command: |
+            # reminder: this code (along with all the steps) is independently executed on every circle container
+            # so the goal here is to get the circleci script to return the tests *this* container will run
+            # which we do via the `circleci` cli tool.
+
+            export LANG=en_US.UTF-8
+            rm -fr ~/cassandra-dtest/upgrade_tests
+            echo "***java tests***"
+
+            # get all of our unit test filenames
+            set -eo pipefail && circleci tests glob "$HOME/cassandra/test/long/**/*.java" > /tmp/all_java_long_tests.txt
+
+            # split up the unit tests into groups based on the number of containers we have
+            set -eo pipefail && circleci tests split --split-by=timings --timings-type=filename --index=${CIRCLE_NODE_INDEX} --total=${CIRCLE_NODE_TOTAL} /tmp/all_java_long_tests.txt > /tmp/java_tests_long_${CIRCLE_NODE_INDEX}.txt
+            set -eo pipefail && cat /tmp/java_tests_long_${CIRCLE_NODE_INDEX}.txt | cut -c 37-1000000 | grep "Test\.java$" > /tmp/java_tests_long_${CIRCLE_NODE_INDEX}_final.txt
+            echo "** /tmp/java_tests_long_${CIRCLE_NODE_INDEX}_final.txt"
+            cat /tmp/java_tests_long_${CIRCLE_NODE_INDEX}_final.txt
+      - run:
+         name: Run Long Tests
+         command: |
+            export LANG=en_US.UTF-8
+            export JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
+            export PATH=$PATH:$ANT_HOME/bin:$JAVA_HOME/bin
+            #Skip all syncing to disk to avoid performance issues in flaky CI environments
+            export CASSANDRA_SKIP_SYNC=true
+
+            time cp -r ~/cassandra /tmp/cassandra-long
+            cd /tmp/cassandra-long
+            ant testclasslist-long -Dtest.classlistfile=/tmp/java_tests_long_${CIRCLE_NODE_INDEX}_final.txt
+         no_output_timeout: 30m
+      - store_test_results:
+            path: /tmp/cassandra-long/build/test/output/
+      - store_artifacts:
+          path: /tmp/cassandra-long/build/test/output
+          destination: junitxml
+      - store_artifacts:
+          path: /tmp/cassandra-long/build/test/logs
           destination: logs
   dtests-with-vnodes:
     <<: *env_settings

@@ -1351,6 +1351,19 @@
     </sequential>
   </macrodef>
 
+  <macrodef name="testlist-long">
+    <attribute name="test.file.list" />
+    <attribute name="testlist.offset" />
+    <sequential>
+      <property name="compressed_yaml" value="${build.test.dir}/cassandra.compressed.yaml"/>
+      <testmacrohelper inputdir="${test.long.src}" filelist="@{test.file.list}" poffset="@{testlist.offset}"
+                       exclude="**/*.java" timeout="${test.timeout}">
+        <jvmarg value="-Dcassandra.ring_delay_ms=1000"/>
+        <jvmarg value="-Dcassandra.tolerate_sstable_size=true"/>
+      </testmacrohelper>
+    </sequential>
+  </macrodef>
+
   <macrodef name="testlist-cdc">
     <attribute name="test.file.list" />
     <attribute name="testlist.offset" />
@@ -1788,6 +1801,27 @@
     </path>
     <property name="all-test-classes" refid="all-test-classes-path"/>
     <testparallel testdelegate="testlist"/>
+  </target>
+
+  <target name="testclasslist-compression" depends="build-test" description="Parallel-run tests given in file -Dtest.classlistfile (one-class-per-line, e.g. org/apache/cassandra/db/SomeTest.java)">
+    <property name="compressed_yaml" value="${build.test.dir}/cassandra.compressed.yaml"/>
+    <concat destfile="${compressed_yaml}">
+      <fileset file="${test.conf}/cassandra.yaml"/>
+      <fileset file="${test.conf}/commitlog_compression.yaml"/>
+    </concat>
+    <path id="all-test-classes-path">
+      <fileset dir="${test.unit.src}" includesfile="${test.classlistfile}"/>
+    </path>
+    <property name="all-test-classes" refid="all-test-classes-path"/>
+    <testparallel testdelegate="testlist-compression" />
+  </target>
+
+  <target name="testclasslist-long" depends="build-test" description="Parallel-run tests given in file -Dtest.classlistfile (one-class-per-line, e.g. org/apache/cassandra/db/SomeTest.java)">
+    <path id="all-test-classes-path">
+      <fileset dir="${test.long.src}" includesfile="${test.classlistfile}"/>
+    </path>
+    <property name="all-test-classes" refid="all-test-classes-path"/>
+    <testparallel testdelegate="testlist-long" />
   </target>
 
   <!-- run microbenchmarks suite -->
