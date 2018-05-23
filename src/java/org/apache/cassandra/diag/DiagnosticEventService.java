@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -38,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.diag.jmx.DiagnosticEventJMXBroadcaster;
 
 /**
  * Service for publishing and consuming {@link DiagnosticEvent}s.
@@ -73,7 +73,7 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
         }
 
         // register broadcaster for JMX events
-        DiagnosticEventJMXBroadcaster.start();
+        DiagnosticEventPersistence.start();
 
         // for local testing
         DummyEventEmitter.instance();
@@ -117,10 +117,12 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
      */
     public synchronized <E extends DiagnosticEvent> void subscribe(Class<E> event, Consumer<E> consumer)
     {
+        logger.debug("Adding subscriber: {}", consumer);
         subscribersByClass = ImmutableSetMultimap.<Class<? extends DiagnosticEvent>, Consumer<DiagnosticEvent>>builder()
                               .putAll(subscribersByClass)
                               .put(event, new TypedConsumerWrapper<>(consumer))
                               .build();
+        logger.debug("Total subscribers: {}", subscribersByClass.values().size());
     }
 
     /**
@@ -167,6 +169,16 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
      */
     public synchronized <E extends DiagnosticEvent> void unsubscribe(Consumer<E> consumer)
     {
+        unsubscribe(null, consumer);
+    }
+
+    /**
+     * De-registers event handler from receiving any further events.
+     * @param event DiagnosticEvent class to unsubscribe from
+     * @param consumer Consumer registered for receiving events
+     */
+    public synchronized <E extends DiagnosticEvent> void unsubscribe(@Nullable Class<E> event, Consumer<E> consumer)
+    {
         // all events
         subscribersAll = ImmutableSet.copyOf(Iterables.filter(subscribersAll, (c) -> c != consumer));
 
@@ -179,7 +191,8 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
             if (subscriber instanceof TypedConsumerWrapper)
                 subscriber = ((TypedConsumerWrapper)subscriber).wrapped;
 
-            if (subscriber != consumer)
+            // other consumers or other events
+            if (subscriber != consumer || (event != null && !entry.getKey().equals(event)))
             {
                 byClassBuilder = byClassBuilder.put(entry);
             }
@@ -199,7 +212,7 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
                 Consumer<DiagnosticEvent> subscriber = e.getValue();
                 if (subscriber instanceof TypedConsumerWrapper)
                     subscriber = ((TypedConsumerWrapper) subscriber).wrapped;
-                return subscriber != consumer;
+                return subscriber != consumer || (event != null && !byClassEntry.getKey().equals(event));
             }).forEach(byTypeBuilder::put);
 
             ImmutableSetMultimap<Enum<?>, Consumer<DiagnosticEvent>> byType = byTypeBuilder.build();
