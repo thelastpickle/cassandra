@@ -111,7 +111,7 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
             val.put("ts", event.timestamp);
             ret.put(entry.getKey(), val);
         }
-        logger.debug("Returning {} events for key {} (limit {}) (includeKey {})", ret.size(), key, limit, includeKey);
+        logger.debug("Returning {} {} events for key {} (limit {}) (includeKey {})", ret.size(), eventClazz, key, limit, includeKey);
         return ret;
     }
 
@@ -135,7 +135,7 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         try
         {
             logger.debug("Disabling events: {}", eventClazz);
-            DiagnosticEventService.instance().unsubscribe(getEventClass(eventClazz), this::onEvent);
+            DiagnosticEventService.instance().unsubscribe(getEventClass(eventClazz), eventConsumer);
         }
         catch (ClassNotFoundException | InvalidClassException e)
         {
