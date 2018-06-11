@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.diag.store.DiagnosticEventMemoryStore;
 import org.apache.cassandra.diag.store.DiagnosticEventStore;
 import org.apache.cassandra.jmx.AbstractEventIdCollector;
+import org.apache.cassandra.jmx.LastEventIdBroadcaster;
 
 
 /**
@@ -66,6 +67,7 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         {
             throw new RuntimeException(e);
         }
+        LastEventIdBroadcaster.instance().addCollector(lastIdCollector);
     }
 
     public static void start()
@@ -156,7 +158,7 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         // get class by eventClazz argument name
         // restrict class loading for security reasons
         if (!eventClazz.startsWith("org.apache.cassandra."))
-            throw new RuntimeException("Not a Cassandra event class");
+            throw new RuntimeException("Not a Cassandra event class: " + eventClazz);
 
         Class<DiagnosticEvent> clazz = (Class<DiagnosticEvent>) Class.forName(eventClazz);
 

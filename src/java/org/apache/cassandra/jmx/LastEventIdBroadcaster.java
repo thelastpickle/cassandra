@@ -57,13 +57,17 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
     private final AtomicReference<ScheduledFuture<?>> scheduledPeriodicalBroadcast = new AtomicReference<>();
     private final AtomicReference<ScheduledFuture<?>> scheduledShortTermBroadcast = new AtomicReference<>();
 
-    private Map<String, Comparable> lastSummary = Collections.emptyMap();
+    private Map<String, Comparable> lastSummary;
 
 
     private LastEventIdBroadcaster()
     {
         // use dedicated executor for handling JMX notifications
         super(JMXBroadcastExecutor.executor);
+
+        Map<String, Comparable> summary = new HashMap<>();
+        summary.put("last_updated_at", 0L);
+        lastSummary = Collections.unmodifiableMap(summary);
 
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         try

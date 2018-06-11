@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.jmx.LastEventIdBroadcaster;
 
 /**
  * Service for publishing and consuming {@link DiagnosticEvent}s.
@@ -72,7 +73,7 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
             throw new RuntimeException(e);
         }
 
-        // register broadcaster for JMX events
+        // register broadcasters for JMX events
         DiagnosticEventPersistence.start();
 
         // for local testing
