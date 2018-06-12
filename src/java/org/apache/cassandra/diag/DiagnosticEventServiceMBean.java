@@ -26,15 +26,15 @@ public interface DiagnosticEventServiceMBean
     /*
      * Indicates if any events will be published.
      */
-    public boolean isEnabled();
+    boolean isEnabled();
 
     /**
      * Disables all events.
      */
-    public void stopPublishing();
+    void stopPublishing();
 
     /**
      * Enables event publishing.
      */
-    public void resumePublishing();
+    void resumePublishing();
 }
