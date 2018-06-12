@@ -18,6 +18,10 @@
 
 package org.apache.cassandra.diag;
 
+import java.io.Serializable;
+import java.util.Map;
+import java.util.SortedMap;
+
 /**
  * Provides JMX enabled attributes and operations implemented by {@link DiagnosticEventService}.
  */
@@ -37,4 +41,24 @@ public interface DiagnosticEventServiceMBean
      * Enables event publishing.
      */
     void resumePublishing();
+
+    /**
+     * Retrieved all events of specified type starting with provided key. Result will be sorted chronologically.
+     *
+     * @param eventClazz fqn of event class
+     * @param key ID of first event to retrieve
+     * @param limit number of results to return
+     * @param includeKey should specified key be returned in result
+     */
+    SortedMap<Long, Map<String, Serializable>> getEvents(String eventClazz, Long key, int limit, boolean includeKey);
+
+    /**
+     * Start storing events to make them available via {@link #getEvents(String, Long, int, boolean)}.
+     */
+    void enableEventPersistence(String eventClazz);
+
+    /**
+     * Stop storing events.
+     */
+    void disableEventPersistence(String eventClazz);
 }

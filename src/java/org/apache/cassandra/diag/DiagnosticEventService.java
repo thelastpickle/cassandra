@@ -17,11 +17,13 @@
  */
 package org.apache.cassandra.diag;
 
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -39,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.jmx.LastEventIdBroadcaster;
 
 /**
  * Service for publishing and consuming {@link DiagnosticEvent}s.
@@ -331,6 +332,24 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
     public void resumePublishing()
     {
         DatabaseDescriptor.setDiagnosticEventsEnabled(true);
+    }
+
+    @Override
+    public SortedMap<Long, Map<String, Serializable>> getEvents(String eventClazz, Long key, int limit, boolean includeKey)
+    {
+        return DiagnosticEventPersistence.instance().getEvents(eventClazz, key, limit, includeKey);
+    }
+
+    @Override
+    public void enableEventPersistence(String eventClazz)
+    {
+        DiagnosticEventPersistence.instance().enableEventPersistence(eventClazz);
+    }
+
+    @Override
+    public void disableEventPersistence(String eventClazz)
+    {
+        DiagnosticEventPersistence.instance().disableEventPersistence(eventClazz);
     }
 
     /**

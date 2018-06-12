@@ -42,7 +42,7 @@ import org.apache.cassandra.jmx.LastEventIdBroadcaster;
 /**
  * Manages storing and retrieving events based on enabled {@link DiagnosticEventStore} implementation.
  */
-public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBean
+public class DiagnosticEventPersistence
 {
     private static final Logger logger = LoggerFactory.getLogger(DiagnosticEventPersistence.class);
 
@@ -73,12 +73,11 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         LastEventIdBroadcaster.instance();
     }
 
-    public DiagnosticEventPersistence instance()
+    public static DiagnosticEventPersistence instance()
     {
         return instance;
     }
 
-    @Override
     public SortedMap<Long, Map<String, Serializable>> getEvents(String eventClazz, Long key, int limit, boolean includeKey)
     {
         assert eventClazz != null;
@@ -113,7 +112,6 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         return ret;
     }
 
-    @Override
     public void enableEventPersistence(String eventClazz)
     {
         try
@@ -127,7 +125,6 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         }
     }
 
-    @Override
     public void disableEventPersistence(String eventClazz)
     {
         try
