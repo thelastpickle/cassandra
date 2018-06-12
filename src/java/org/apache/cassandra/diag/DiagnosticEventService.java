@@ -76,9 +76,6 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
 
         // register broadcasters for JMX events
         DiagnosticEventPersistence.start();
-
-        // for local testing
-        DummyEventEmitter.instance();
     }
 
     /**
