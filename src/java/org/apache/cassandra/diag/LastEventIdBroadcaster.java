@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.jmx;
+package org.apache.cassandra.diag;
 
 import java.lang.management.ManagementFactory;
 import java.util.Map;
@@ -65,7 +65,7 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         try
         {
-            ObjectName jmxObjectName = new ObjectName("org.apache.cassandra.jmx:type=LastEventIdBroadcaster");
+            ObjectName jmxObjectName = new ObjectName("org.apache.cassandra.diag:type=LastEventIdBroadcaster");
             mbs.registerMBean(this, jmxObjectName);
         }
         catch (Exception e)

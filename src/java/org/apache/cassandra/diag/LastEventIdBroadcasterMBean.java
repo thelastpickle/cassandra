@@ -1,4 +1,4 @@
-package org.apache.cassandra.jmx;
+package org.apache.cassandra.diag;
 
 import java.util.Map;
 

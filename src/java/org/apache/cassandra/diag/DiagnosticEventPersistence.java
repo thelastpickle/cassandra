@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.diag.store.DiagnosticEventMemoryStore;
 import org.apache.cassandra.diag.store.DiagnosticEventStore;
-import org.apache.cassandra.jmx.LastEventIdBroadcaster;
 
 
 /**
