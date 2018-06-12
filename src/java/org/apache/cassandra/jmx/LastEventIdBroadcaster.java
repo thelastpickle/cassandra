@@ -19,16 +19,12 @@
 package org.apache.cassandra.jmx;
 
 import java.lang.management.ManagementFactory;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import javax.management.Notification;
 import javax.management.NotificationBroadcasterSupport;
@@ -52,12 +48,11 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
     private final static int PERIODIC_BROADCAST_INTERVAL_MILLIS = 30000;
     private final static int SHORT_TERM_BROADCAST_DELAY_MILLIS = 1000;
 
-    private final Collection<LastEventIdCollector<String, ?>> collectors = new HashSet<>();
     private final AtomicLong notificationSerialNumber = new AtomicLong();
     private final AtomicReference<ScheduledFuture<?>> scheduledPeriodicalBroadcast = new AtomicReference<>();
     private final AtomicReference<ScheduledFuture<?>> scheduledShortTermBroadcast = new AtomicReference<>();
 
-    private Map<String, Comparable> lastSummary;
+    private final Map<String, Comparable> summary = new ConcurrentHashMap<>();
 
 
     private LastEventIdBroadcaster()
@@ -65,9 +60,7 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
         // use dedicated executor for handling JMX notifications
         super(JMXBroadcastExecutor.executor);
 
-        Map<String, Comparable> summary = new HashMap<>();
         summary.put("last_updated_at", 0L);
-        lastSummary = Collections.unmodifiableMap(summary);
 
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         try
@@ -89,18 +82,13 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
     @Override
     public Map<String, Comparable> getLastEventIds()
     {
-        Map<String, Comparable> summary = new HashMap<>(collectors.stream()
-                                                  .flatMap((s) -> s.lastEventIds().entrySet().stream())
-                                                  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-        summary.put("last_updated_at", System.currentTimeMillis());
-        lastSummary = Collections.unmodifiableMap(summary);
-        return lastSummary;
+        return summary;
     }
 
     @Override
     public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate)
     {
-        if (lastUpdate >= (long)lastSummary.get("last_updated_at")) return lastSummary;
+        if (lastUpdate >= (long)summary.get("last_updated_at")) return summary;
         else return getLastEventIds();
     }
 
@@ -122,19 +110,17 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
         }
     }
 
-    public void addCollector(LastEventIdCollector<String, ?> collector)
+    public void setLastEventId(String key, Comparable id)
     {
-        collectors.add(collector);
-        collector.addEventIdsUpdateListener(this::onLastIdsChanged);
+        // ensure monotonic properties of ids
+        if (summary.compute(key, (k, v) -> v == null ? id : id.compareTo(v) > 0 ? id : v) == id) {
+            summary.put("last_updated_at", System.currentTimeMillis());
+            scheduleBroadcast();
+        }
     }
 
-    private void onLastIdsChanged(Map<String, ? extends Comparable> updatedLastIds)
+    private void scheduleBroadcast()
     {
-        HashMap<String, Comparable> map = new HashMap<>(lastSummary);
-        map.putAll(updatedLastIds);
-        map.put("last_updated_at", System.currentTimeMillis());
-        lastSummary = Collections.unmodifiableMap(map);
-
         // schedule broadcast for timely announcing new events before next periodical broadcast
         // this should allow us to buffer new updates for a while, while keeping broadcasts near-time
         ScheduledFuture<?> running = scheduledShortTermBroadcast.get();
@@ -151,8 +137,8 @@ public class LastEventIdBroadcaster extends NotificationBroadcasterSupport imple
 
     private void broadcastEventIds()
     {
-        if (!lastSummary.isEmpty())
-            broadcastEventIds(lastSummary);
+        if (!summary.isEmpty())
+            broadcastEventIds(summary);
     }
 
     private void broadcastEventIds(Map<String, Comparable> summary)

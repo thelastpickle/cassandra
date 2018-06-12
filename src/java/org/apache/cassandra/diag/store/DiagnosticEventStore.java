@@ -21,7 +21,6 @@ package org.apache.cassandra.diag.store;
 import java.util.NavigableMap;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
-import org.apache.cassandra.jmx.LastEventIdCollector;
 
 /**
  * Enables storing and retrieving {@link DiagnosticEvent}s.

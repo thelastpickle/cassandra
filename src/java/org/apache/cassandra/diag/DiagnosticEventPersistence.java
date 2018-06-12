@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.diag.store.DiagnosticEventMemoryStore;
 import org.apache.cassandra.diag.store.DiagnosticEventStore;
-import org.apache.cassandra.jmx.AbstractEventIdCollector;
 import org.apache.cassandra.jmx.LastEventIdBroadcaster;
 
 
@@ -50,8 +49,6 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
     private static DiagnosticEventPersistence instance;
 
     private final Map<Class, DiagnosticEventStore<Long>> stores = new ConcurrentHashMap<>();
-
-    private final DiagnosticEventIdCollector lastIdCollector = new DiagnosticEventIdCollector();
 
     private final Consumer<DiagnosticEvent> eventConsumer = this::onEvent;
 
@@ -67,12 +64,13 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
         {
             throw new RuntimeException(e);
         }
-        LastEventIdBroadcaster.instance().addCollector(lastIdCollector);
     }
 
     public static void start()
     {
         instance = new DiagnosticEventPersistence();
+        // make sure id broadcaster is initialized (registered as MBean)
+        LastEventIdBroadcaster.instance();
     }
 
     public DiagnosticEventPersistence instance()
@@ -150,7 +148,7 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
             logger.trace("Persisting received {} event", cls.getName());
         DiagnosticEventStore<Long> store = getStore(cls);
         store.store(event);
-        lastIdCollector.onEvent(new PersistedDiagnosticEvent(store.getLastEventId(), event));
+        LastEventIdBroadcaster.instance().setLastEventId(event.getClass().getName(), store.getLastEventId());
     }
 
     private Class<DiagnosticEvent> getEventClass(String eventClazz) throws ClassNotFoundException, InvalidClassException
@@ -171,32 +169,5 @@ public class DiagnosticEventPersistence implements DiagnosticEventPersistenceMBe
     private DiagnosticEventStore<Long> getStore(Class cls)
     {
         return stores.computeIfAbsent(cls, (storeKey) -> new DiagnosticEventMemoryStore());
-    }
-
-    private static class PersistedDiagnosticEvent
-    {
-        Long key;
-        DiagnosticEvent event;
-
-        PersistedDiagnosticEvent(Long key, DiagnosticEvent event)
-        {
-            this.key = key;
-            this.event = event;
-        }
-    }
-
-    private static class DiagnosticEventIdCollector extends AbstractEventIdCollector<PersistedDiagnosticEvent, String, Long>
-    {
-        @Override
-        public Long eventId(PersistedDiagnosticEvent event)
-        {
-            return event.key;
-        }
-
-        @Override
-        public String eventType(PersistedDiagnosticEvent event)
-        {
-            return event.event.getClass().getName();
-        }
     }
 }
