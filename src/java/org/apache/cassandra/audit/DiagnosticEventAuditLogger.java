@@ -31,7 +31,7 @@ public class DiagnosticEventAuditLogger implements IAuditLogger
     @Override
     public boolean enabled()
     {
-        return DiagnosticEventService.instance().isEnabled();
+        return DiagnosticEventService.instance().isDiagnosticsEnabled();
     }
 
     @Override

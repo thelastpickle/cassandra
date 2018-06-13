@@ -30,30 +30,29 @@ public interface DiagnosticEventServiceMBean
     /*
      * Indicates if any events will be published.
      */
-    boolean isEnabled();
+    boolean isDiagnosticsEnabled();
 
     /**
      * Disables all events.
      */
-    void stopPublishing();
+    void disableDiagnostics();
 
     /**
      * Enables event publishing.
      */
-    void resumePublishing();
+    void enableDiagnostics();
 
     /**
      * Retrieved all events of specified type starting with provided key. Result will be sorted chronologically.
      *
      * @param eventClazz fqn of event class
-     * @param key ID of first event to retrieve
+     * @param lastKey ID of first event to retrieve
      * @param limit number of results to return
-     * @param includeKey should specified key be returned in result
      */
-    SortedMap<Long, Map<String, Serializable>> getEvents(String eventClazz, Long key, int limit, boolean includeKey);
+    SortedMap<Long, Map<String, Serializable>> readEvents(String eventClazz, Long lastKey, int limit);
 
     /**
-     * Start storing events to make them available via {@link #getEvents(String, Long, int, boolean)}.
+     * Start storing events to make them available via {@link #readEvents(String, Long, int)}.
      */
     void enableEventPersistence(String eventClazz);
 

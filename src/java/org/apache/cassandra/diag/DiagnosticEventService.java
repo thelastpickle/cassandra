@@ -314,27 +314,27 @@ public class DiagnosticEventService implements DiagnosticEventServiceMBean
     }
 
     @Override
-    public boolean isEnabled()
+    public boolean isDiagnosticsEnabled()
     {
         return DatabaseDescriptor.diagnosticEventsEnabled();
     }
 
     @Override
-    public void stopPublishing()
+    public void disableDiagnostics()
     {
         DatabaseDescriptor.setDiagnosticEventsEnabled(false);
     }
 
     @Override
-    public void resumePublishing()
+    public void enableDiagnostics()
     {
         DatabaseDescriptor.setDiagnosticEventsEnabled(true);
     }
 
     @Override
-    public SortedMap<Long, Map<String, Serializable>> getEvents(String eventClazz, Long key, int limit, boolean includeKey)
+    public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClazz, Long lastKey, int limit)
     {
-        return DiagnosticEventPersistence.instance().getEvents(eventClazz, key, limit, includeKey);
+        return DiagnosticEventPersistence.instance().getEvents(eventClazz, lastKey, limit, false);
     }
 
     @Override
