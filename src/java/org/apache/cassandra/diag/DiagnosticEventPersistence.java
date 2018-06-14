@@ -20,7 +20,6 @@ package org.apache.cassandra.diag;
 
 import java.io.InvalidClassException;
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -28,8 +27,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,29 +42,14 @@ public class DiagnosticEventPersistence
 {
     private static final Logger logger = LoggerFactory.getLogger(DiagnosticEventPersistence.class);
 
-    private static DiagnosticEventPersistence instance;
+    private static final DiagnosticEventPersistence instance = new DiagnosticEventPersistence();
 
     private final Map<Class, DiagnosticEventStore<Long>> stores = new ConcurrentHashMap<>();
 
     private final Consumer<DiagnosticEvent> eventConsumer = this::onEvent;
 
-    private DiagnosticEventPersistence()
-    {
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-        try
-        {
-            ObjectName jmxObjectName = new ObjectName("org.apache.cassandra.diag:type=DiagnosticEventPersistence");
-            mbs.registerMBean(this, jmxObjectName);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static void start()
     {
-        instance = new DiagnosticEventPersistence();
         // make sure id broadcaster is initialized (registered as MBean)
         LastEventIdBroadcaster.instance();
     }
