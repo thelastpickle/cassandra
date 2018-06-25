@@ -22,15 +22,14 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
-import org.apache.cassandra.diag.DiagnosticEventService;
 
 /**
  * Events related to {@link TokenMetadata} changes.
  */
-public class TokenMetadataEvent extends DiagnosticEvent
+final class TokenMetadataEvent extends DiagnosticEvent
 {
 
-    public enum TokenMetadataEventType
+    enum TokenMetadataEventType
     {
         PENDING_RANGE_CALCULATION_STARTED,
         PENDING_RANGE_CALCULATION_COMPLETED,
@@ -40,35 +39,26 @@ public class TokenMetadataEvent extends DiagnosticEvent
     private final TokenMetadata tokenMetadata;
     private final String keyspace;
 
-    private TokenMetadataEvent(TokenMetadataEventType type, TokenMetadata tokenMetadata, String keyspace)
+    TokenMetadataEvent(TokenMetadataEventType type, TokenMetadata tokenMetadata, String keyspace)
     {
         this.type = type;
         this.tokenMetadata = tokenMetadata;
         this.keyspace = keyspace;
     }
 
-    public static void pendingRangeCalculationStarted(TokenMetadata tokenMetadata, String keyspace)
-    {
-        if (DiagnosticEventService.instance().isEnabled(TokenMetadataEvent.class, TokenMetadataEventType.PENDING_RANGE_CALCULATION_STARTED))
-            DiagnosticEventService.instance().publish(new TokenMetadataEvent(TokenMetadataEventType.PENDING_RANGE_CALCULATION_STARTED,
-                    tokenMetadata, keyspace));
-    }
-
-    @Override
-    public Enum<TokenMetadataEventType> getType()
+    public TokenMetadataEventType getType()
     {
         return type;
     }
 
-    @Override
-    public Object getSource()
+    public TokenMetadata getSource()
     {
         return tokenMetadata;
     }
 
-    @Override
     public HashMap<String, Serializable> toMap()
     {
+        // be extra defensive against nulls and bugs
         HashMap<String, Serializable> ret = new HashMap<>();
         ret.put("keyspace", keyspace);
         return ret;

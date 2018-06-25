@@ -72,13 +72,13 @@ final class HintsDispatcher implements AutoCloseable
     {
         int messagingVersion = MessagingService.instance().getVersion(address);
         HintsDispatcher dispatcher = new HintsDispatcher(HintsReader.open(file, rateLimiter), hostId, address, messagingVersion, abortRequested);
-        HintEvent.dispatcherCreated(dispatcher);
+        HintDiagnostics.dispatcherCreated(dispatcher);
         return dispatcher;
     }
 
     public void close()
     {
-        HintEvent.dispatcherClosed(this);
+        HintDiagnostics.dispatcherClosed(this);
         reader.close();
     }
 
@@ -114,7 +114,7 @@ final class HintsDispatcher implements AutoCloseable
     // retry in case of a timeout; stop in case of a failure, host going down, or delivery paused
     private Action dispatch(HintsReader.Page page)
     {
-        HintEvent.dispatchPage(this, page.position);
+        HintDiagnostics.dispatchPage(this);
         return sendHintsAndAwait(page);
     }
 
@@ -149,12 +149,12 @@ final class HintsDispatcher implements AutoCloseable
 
         if (failures > 0 || timeouts > 0)
         {
-            HintEvent.pageFailureResult(this, success, failures, timeouts);
+            HintDiagnostics.pageFailureResult(this, success, failures, timeouts);
             return Action.ABORT;
         }
         else
         {
-            HintEvent.pageSuccessResult(this, success, failures, timeouts);
+            HintDiagnostics.pageSuccessResult(this, success, failures, timeouts);
             return Action.CONTINUE;
         }
     }
@@ -176,7 +176,7 @@ final class HintsDispatcher implements AutoCloseable
         {
             if (abortRequested.getAsBoolean())
             {
-                HintEvent.abortRequested(this);
+                HintDiagnostics.abortRequested(this);
                 return Action.ABORT;
             }
             callbacks.add(sendFunction.apply(hints.next()));

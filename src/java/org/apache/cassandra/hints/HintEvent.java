@@ -21,17 +21,19 @@ package org.apache.cassandra.hints;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.UUID;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Preconditions;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
-import org.apache.cassandra.diag.DiagnosticEventService;
 import org.apache.cassandra.locator.InetAddressAndPort;
 
 /**
  * DiagnosticEvent implementation for hinted handoff.
  */
-public class HintEvent extends DiagnosticEvent
+final class HintEvent extends DiagnosticEvent
 {
-    public enum HintEventType
+    enum HintEventType
     {
         DISPATCHING_STARTED,
         DISPATCHING_PAUSED,
@@ -47,126 +49,56 @@ public class HintEvent extends DiagnosticEvent
         ABORT_REQUESTED
     }
 
-    public enum HintResult
+    enum HintResult
     {
         PAGE_SUCCESS, PAGE_FAILURE
     }
 
-    public HintEventType type;
-    HintsDispatcher dispatcher;
-    public UUID targetHostId;
-    public InetAddressAndPort targetAddress;
-    public Boolean encoded;
-    public Hint hint;
-    public HintResult dispatchResult;
-    public InputPosition position;
-    public long pageHintsSuccessful;
-    public long pageHintsFailed;
-    public long pageHintsTimeout;
+    private final HintEventType type;
+    private final HintsDispatcher dispatcher;
+    private final UUID targetHostId;
+    private final InetAddressAndPort targetAddress;
+    @Nullable
+    private final HintResult dispatchResult;
+    @Nullable
+    private final Long pageHintsSuccessful;
+    @Nullable
+    private final Long pageHintsFailed;
+    @Nullable
+    private final Long pageHintsTimeout;
 
-    private HintEvent(HintEventType type, HintsDispatcher dispatcher, UUID targetHostId,
-                      InetAddressAndPort targetAddress, Boolean encoded, Hint hint, HintResult dispatchResult,
-                      InputPosition position, long pageHintsSuccessful, long pageHintsFailed, long pageHintsTimeout)
+    HintEvent(HintEventType type, HintsDispatcher dispatcher, UUID targetHostId, InetAddressAndPort targetAddress,
+              @Nullable HintResult dispatchResult, @Nullable Long pageHintsSuccessful,
+              @Nullable Long pageHintsFailed, @Nullable Long pageHintsTimeout)
     {
         this.type = type;
         this.dispatcher = dispatcher;
         this.targetHostId = targetHostId;
         this.targetAddress = targetAddress;
-        this.encoded = encoded;
-        this.hint = hint;
         this.dispatchResult = dispatchResult;
-        this.position = position;
         this.pageHintsSuccessful = pageHintsSuccessful;
         this.pageHintsFailed = pageHintsFailed;
         this.pageHintsTimeout = pageHintsTimeout;
     }
 
-    public static void dispatcherCreated(HintsDispatcher dispatcher)
-    {
-        if (isEnabled(HintEventType.DISPATCHER_CREATED))
-            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_CREATED, dispatcher,
-                    dispatcher.hostId, dispatcher.address,
-                    null, null, null, null,
-        0, 0, 0));
-    }
-
-    public static void dispatcherClosed(HintsDispatcher dispatcher)
-    {
-        if (isEnabled(HintEventType.DISPATCHER_CLOSED))
-            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_CLOSED, dispatcher,
-                    dispatcher.hostId, dispatcher.address,
-                    null, null, null, null,
-        0, 0, 0));
-    }
-
-    public static void dispatchPage(HintsDispatcher dispatcher, InputPosition pagePosition)
-    {
-        if (isEnabled(HintEventType.DISPATCHER_PAGE))
-            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_PAGE, dispatcher,
-                    dispatcher.hostId, dispatcher.address,
-                    null, null, null, pagePosition,
-        0, 0, 0));
-    }
-
-    public static void abortRequested(HintsDispatcher dispatcher)
-    {
-        if (isEnabled(HintEventType.ABORT_REQUESTED))
-            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.ABORT_REQUESTED, dispatcher,
-                    dispatcher.hostId, dispatcher.address,
-                    null, null, null, null,
-        0, 0, 0));
-    }
-
-    public static void pageSuccessResult(HintsDispatcher dispatcher, long success, long failures, long timeouts)
-    {
-        if (isEnabled(HintEventType.DISPATCHER_HINT_RESULT))
-            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_HINT_RESULT, dispatcher,
-                    dispatcher.hostId, dispatcher.address,
-                    null, null, HintResult.PAGE_SUCCESS, null,
-                              success, failures, timeouts));
-    }
-
-    public static void pageFailureResult(HintsDispatcher dispatcher, long success, long failures, long timeouts)
-    {
-        if (isEnabled(HintEventType.DISPATCHER_HINT_RESULT))
-            DiagnosticEventService.instance().publish(new HintEvent(HintEventType.DISPATCHER_HINT_RESULT, dispatcher,
-                    dispatcher.hostId, dispatcher.address,
-                    null, null, HintResult.PAGE_FAILURE, null,
-                              success, failures, timeouts));
-    }
-
-    private static boolean isEnabled(HintEventType type)
-    {
-        return DiagnosticEventService.instance().isEnabled(HintEvent.class, type);
-    }
-
-    @Override
     public Enum<HintEventType> getType()
     {
         return type;
     }
 
-    @Override
-    public Object getSource()
+    public HintsDispatcher getSource()
     {
         return dispatcher;
     }
 
-    @Override
     public HashMap<String, Serializable> toMap()
     {
+        // be extra defensive against nulls and bugs
         HashMap<String, Serializable> ret = new HashMap<>();
         ret.put("targetHostId", targetHostId);
         ret.put("targetAddress", targetAddress.getHostAddress(true));
-        ret.put("encoded", encoded);
-        if (hint != null)
-        {
-            ret.put("hint.creationTime", hint.creationTime);
-            ret.put("hint.mutation.keyspace", hint.mutation.getKeyspaceName());
-            ret.put("hint.mutation.isLive", hint.isLive());
-            ret.put("hint.mutation.timeout", hint.mutation.getTimeout());
-        }
-        if (pageHintsSuccessful > 0 || pageHintsFailed > 0 || pageHintsTimeout > 0)
+        if (dispatchResult != null) ret.put("dispatchResult", dispatchResult.name());
+        if (pageHintsSuccessful != null || pageHintsFailed != null || pageHintsTimeout != null)
         {
             ret.put("hint.page.hints_succeeded", pageHintsSuccessful);
             ret.put("hint.page.hints_failed", pageHintsFailed);

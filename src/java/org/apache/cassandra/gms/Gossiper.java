@@ -381,7 +381,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
             markDead(endpoint, epState);
         }
 
-        GossiperEvent.convicted(this, endpoint, phi);
+        GossiperDiagnostics.convicted(this, endpoint, phi);
     }
 
     /**
@@ -399,7 +399,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         epState.getHeartBeatState().forceHighestPossibleVersionUnsafe();
         markDead(endpoint, epState);
         FailureDetector.instance.forceConviction(endpoint);
-        GossiperEvent.markedAsShutdown(this, endpoint);
+        GossiperDiagnostics.markedAsShutdown(this, endpoint);
     }
 
     /**
@@ -430,7 +430,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         quarantineEndpoint(endpoint);
         if (logger.isDebugEnabled())
             logger.debug("evicting {} from gossip", endpoint);
-        GossiperEvent.evictedFromMembership(this, endpoint);
+        GossiperDiagnostics.evictedFromMembership(this, endpoint);
     }
 
     /**
@@ -456,7 +456,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         MessagingService.instance().destroyConnectionPool(endpoint);
         if (logger.isDebugEnabled())
             logger.debug("removing endpoint {}", endpoint);
-        GossiperEvent.removedEndpoint(this, endpoint);
+        GossiperDiagnostics.removedEndpoint(this, endpoint);
     }
 
     /**
@@ -478,7 +478,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
     private void quarantineEndpoint(InetAddressAndPort endpoint, long quarantineExpiration)
     {
         justRemovedEndpoints.put(endpoint, quarantineExpiration);
-        GossiperEvent.quarantinedEndpoint(this, endpoint, quarantineExpiration);
+        GossiperDiagnostics.quarantinedEndpoint(this, endpoint, quarantineExpiration);
     }
 
     /**
@@ -490,7 +490,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         // remember, quarantineEndpoint will effectively already add QUARANTINE_DELAY, so this is 2x
         logger.debug("");
         quarantineEndpoint(endpoint, System.currentTimeMillis() + QUARANTINE_DELAY);
-        GossiperEvent.replacementQuarantine(this, endpoint);
+        GossiperDiagnostics.replacementQuarantine(this, endpoint);
     }
 
     /**
@@ -504,7 +504,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         removeEndpoint(endpoint);
         evictFromMembership(endpoint);
         replacementQuarantine(endpoint);
-        GossiperEvent.replacedEndpoint(this, endpoint);
+        GossiperDiagnostics.replacedEndpoint(this, endpoint);
     }
 
     /**
@@ -697,7 +697,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         MessagingService.instance().sendOneWay(message, to);
 
         boolean isSeed = seeds.contains(to);
-        GossiperEvent.sendGossipDigestSyn(this, to);
+        GossiperDiagnostics.sendGossipDigestSyn(this, to);
         return isSeed;
     }
 
@@ -1039,7 +1039,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
 
         MessagingService.instance().sendRR(echoMessage, addr, echoHandler);
 
-        GossiperEvent.markedAlive(this, addr, localState);
+        GossiperDiagnostics.markedAlive(this, addr, localState);
     }
 
     @VisibleForTesting
@@ -1059,7 +1059,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         if (logger.isTraceEnabled())
             logger.trace("Notified {}", subscribers);
 
-        GossiperEvent.realMarkedAlive(this, addr, localState);
+        GossiperDiagnostics.realMarkedAlive(this, addr, localState);
     }
 
     @VisibleForTesting
@@ -1076,7 +1076,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         if (logger.isTraceEnabled())
             logger.trace("Notified {}", subscribers);
 
-        GossiperEvent.markedDead(this, addr, localState);
+        GossiperDiagnostics.markedDead(this, addr, localState);
     }
 
     /**
@@ -1118,7 +1118,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         if (isShutdown(ep))
             markAsShutdown(ep);
 
-        GossiperEvent.majorStateChangeHandled(this, ep, epState);
+        GossiperDiagnostics.majorStateChangeHandled(this, ep, epState);
     }
 
     public boolean isAlive(InetAddressAndPort endpoint)

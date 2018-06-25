@@ -86,7 +86,7 @@ public class NoReplicationTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
             sortedUnits.add(new Weighted<UnitInfo>(unitInfo.ownership, unitInfo));
         }
 
-        TokenAllocatorEvent.tokenInfosCreated(this, sortedUnits, sortedTokens, first);
+        TokenAllocatorDiagnostics.tokenInfosCreated(this, sortedUnits, sortedTokens, first);
         return first;
     }
 
@@ -128,7 +128,7 @@ public class NoReplicationTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
         }
         unitInfos.put(newUnit.unit, newUnit);
         createTokenInfos(unitInfos);
-        TokenAllocatorEvent.randomTokensGenerated(this, numTokens, sortedUnits, sortedTokens, newUnit.unit, tokens);
+        TokenAllocatorDiagnostics.randomTokensGenerated(this, numTokens, sortedUnits, sortedTokens, newUnit.unit, tokens);
         return tokens;
     }
 
@@ -234,7 +234,7 @@ public class NoReplicationTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
         }
         sortedUnits.add(new Weighted<>(newUnitInfo.ownership, newUnitInfo));
 
-        TokenAllocatorEvent.unitedAdded(this, numTokens, sortedUnits, sortedTokens, newTokens, newUnit);
+        TokenAllocatorDiagnostics.unitedAdded(this, numTokens, sortedUnits, sortedTokens, newTokens, newUnit);
         return newTokens;
     }
 
@@ -260,7 +260,7 @@ public class NoReplicationTokenAllocator<Unit> extends TokenAllocatorBase<Unit>
             tokens.add(tokenInfo.value.token);
         }
         sortedTokens.keySet().removeAll(tokens);
-        TokenAllocatorEvent.unitRemoved(this, n, sortedUnits, sortedTokens);
+        TokenAllocatorDiagnostics.unitRemoved(this, n, sortedUnits, sortedTokens);
     }
 
     public int getReplicas()

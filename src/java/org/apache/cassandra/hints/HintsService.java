@@ -209,7 +209,7 @@ public final class HintsService implements HintsServiceMBean
 
         isDispatchPaused.set(false);
 
-        HintsServiceEvent.dispatchingStarted(this);
+        HintsServiceDiagnostics.dispatchingStarted(this);
 
         HintsDispatchTrigger trigger = new HintsDispatchTrigger(catalog, writeExecutor, dispatchExecutor, isDispatchPaused);
         // triggering hint dispatch is now very cheap, so we can do it more often - every 10 seconds vs. every 10 minutes,
@@ -222,7 +222,7 @@ public final class HintsService implements HintsServiceMBean
         logger.info("Paused hints dispatch");
         isDispatchPaused.set(true);
 
-        HintsServiceEvent.dispatchingPaused(this);
+        HintsServiceDiagnostics.dispatchingPaused(this);
     }
 
     public void resumeDispatch()
@@ -230,7 +230,7 @@ public final class HintsService implements HintsServiceMBean
         logger.info("Resumed hints dispatch");
         isDispatchPaused.set(false);
 
-        HintsServiceEvent.dispatchingResumed(this);
+        HintsServiceDiagnostics.dispatchingResumed(this);
     }
 
     /**
@@ -257,7 +257,7 @@ public final class HintsService implements HintsServiceMBean
         dispatchExecutor.shutdownBlocking();
         writeExecutor.shutdownBlocking();
 
-        HintsServiceEvent.dispatchingShutdown(this);
+        HintsServiceDiagnostics.dispatchingShutdown(this);
     }
 
     /**

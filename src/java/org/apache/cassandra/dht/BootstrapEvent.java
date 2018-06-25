@@ -22,30 +22,31 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
-import org.apache.cassandra.diag.DiagnosticEventService;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.locator.TokenMetadata;
 
 /**
  * DiagnosticEvent implementation for bootstrap related activities.
  */
-public class BootstrapEvent extends DiagnosticEvent
+final class BootstrapEvent extends DiagnosticEvent
 {
 
     private final BootstrapEventType type;
+    @Nullable
     private final TokenMetadata tokenMetadata;
     private final InetAddressAndPort address;
+    @Nullable
     private final String allocationKeyspace;
     private final Integer numTokens;
     private final Collection<Token> tokens;
 
-    private BootstrapEvent(BootstrapEventType type, InetAddressAndPort address, TokenMetadata tokenMetadata,
-                           String allocationKeyspace, int numTokens, ImmutableCollection<Token> tokens)
+    BootstrapEvent(BootstrapEventType type, InetAddressAndPort address, @Nullable TokenMetadata tokenMetadata,
+                   @Nullable String allocationKeyspace, int numTokens, ImmutableCollection<Token> tokens)
     {
         this.type = type;
         this.address = address;
@@ -55,47 +56,7 @@ public class BootstrapEvent extends DiagnosticEvent
         this.tokens = tokens;
     }
 
-    public static void useSpecifiedTokens(InetAddressAndPort address, String allocationKeyspace, Collection<Token> initialTokens,
-                                          int numTokens)
-    {
-        if (isEnabled(BootstrapEventType.BOOTSTRAP_USING_SPECIFIED_TOKENS))
-            DiagnosticEventService.instance().publish(new BootstrapEvent(BootstrapEventType.BOOTSTRAP_USING_SPECIFIED_TOKENS,
-                                                              address,
-                                                              null,
-                                                              allocationKeyspace,
-                                                              numTokens,
-                                                              ImmutableList.copyOf(initialTokens)));
-    }
-
-    public static void useRandomTokens(InetAddressAndPort address, TokenMetadata metadata, int numTokens, Collection<Token> tokens)
-    {
-        if (isEnabled(BootstrapEventType.BOOTSTRAP_USING_RANDOM_TOKENS))
-            DiagnosticEventService.instance().publish(new BootstrapEvent(BootstrapEventType.BOOTSTRAP_USING_RANDOM_TOKENS,
-                                                              address,
-                                                              metadata.cloneOnlyTokenMap(),
-                                                              null,
-                                                              numTokens,
-                                                              ImmutableList.copyOf(tokens)));
-    }
-
-    public static void tokensAllocated(InetAddressAndPort address, TokenMetadata metadata,
-                                       String allocationKeyspace, int numTokens, Collection<Token> tokens)
-    {
-        if (isEnabled(BootstrapEventType.TOKENS_ALLOCATED))
-            DiagnosticEventService.instance().publish(new BootstrapEvent(BootstrapEventType.TOKENS_ALLOCATED,
-                                                              address,
-                                                              metadata.cloneOnlyTokenMap(),
-                                                              allocationKeyspace,
-                                                              numTokens,
-                                                              ImmutableList.copyOf(tokens)));
-    }
-
-    private static boolean isEnabled(BootstrapEventType type)
-    {
-        return DiagnosticEventService.instance().isEnabled(BootstrapEvent.class, type);
-    }
-
-    public enum BootstrapEventType
+    enum BootstrapEventType
     {
         BOOTSTRAP_USING_SPECIFIED_TOKENS,
         BOOTSTRAP_USING_RANDOM_TOKENS,
@@ -108,13 +69,14 @@ public class BootstrapEvent extends DiagnosticEvent
         return type;
     }
 
-    public Object getSource()
+    public InetAddressAndPort getSource()
     {
         return address;
     }
 
     public Map<String, Serializable> toMap()
     {
+        // be extra defensive against nulls and bugs
         HashMap<String, Serializable> ret = new HashMap<>();
         ret.put("tokenMetadata", String.valueOf(tokenMetadata));
         ret.put("allocationKeyspace", allocationKeyspace);

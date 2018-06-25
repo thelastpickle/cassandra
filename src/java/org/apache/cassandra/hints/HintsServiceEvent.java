@@ -22,14 +22,13 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import org.apache.cassandra.diag.DiagnosticEvent;
-import org.apache.cassandra.diag.DiagnosticEventService;
 
 /**
  * DiagnosticEvent implementation for HintService.
  */
-public class HintsServiceEvent extends DiagnosticEvent
+final class HintsServiceEvent extends DiagnosticEvent
 {
-    public enum HintsServiceEventType
+    enum HintsServiceEventType
     {
         DISPATCHING_STARTED,
         DISPATCHING_PAUSED,
@@ -37,17 +36,16 @@ public class HintsServiceEvent extends DiagnosticEvent
         DISPATCHING_SHUTDOWN
     }
 
-    public HintsServiceEventType type;
-
-    public HintsService service;
-    public boolean isDispatchPaused;
-    public boolean isShutdown;
-    public boolean dispatchExecutorIsPaused;
-    public boolean dispatchExecutorHasScheduledDispatches;
+    private final HintsServiceEventType type;
+    private final HintsService service;
+    private final boolean isDispatchPaused;
+    private final boolean isShutdown;
+    private final boolean dispatchExecutorIsPaused;
+    private final boolean dispatchExecutorHasScheduledDispatches;
 
     // TODO: add metrics
 
-    private HintsServiceEvent(HintsServiceEventType type, HintsService service)
+    HintsServiceEvent(HintsServiceEventType type, HintsService service)
     {
         this.type = type;
         this.service = service;
@@ -57,49 +55,19 @@ public class HintsServiceEvent extends DiagnosticEvent
         this.dispatchExecutorHasScheduledDispatches = service.dispatchExecutor.hasScheduledDispatches();
     }
 
-    static void dispatchingStarted(HintsService service)
-    {
-        if (isEnabled(HintsServiceEventType.DISPATCHING_STARTED))
-            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_STARTED, service));
-    }
-
-    static void dispatchingShutdown(HintsService service)
-    {
-        if (isEnabled(HintsServiceEventType.DISPATCHING_SHUTDOWN))
-            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_SHUTDOWN, service));
-    }
-
-    static void dispatchingPaused(HintsService service)
-    {
-        if (isEnabled(HintsServiceEventType.DISPATCHING_PAUSED))
-            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_PAUSED, service));
-    }
-
-    static void dispatchingResumed(HintsService service)
-    {
-        if (isEnabled(HintsServiceEventType.DISPATCHING_RESUMED))
-            DiagnosticEventService.instance().publish(new HintsServiceEvent(HintsServiceEventType.DISPATCHING_RESUMED, service));
-    }
-
-    private static boolean isEnabled(HintsServiceEventType type)
-    {
-        return DiagnosticEventService.instance().isEnabled(HintsServiceEvent.class, type);
-    }
-
-    @Override
     public Enum<HintsServiceEventType> getType()
     {
         return type;
     }
 
-    public Object getSource()
+    public HintsService getSource()
     {
         return service;
     }
 
-    @Override
     public HashMap<String, Serializable> toMap()
     {
+        // be extra defensive against nulls and bugs
         HashMap<String, Serializable> ret = new HashMap<>();
         ret.put("isDispatchPaused", isDispatchPaused);
         ret.put("isShutdown", isShutdown);

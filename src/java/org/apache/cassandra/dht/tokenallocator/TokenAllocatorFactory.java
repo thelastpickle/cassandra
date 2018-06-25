@@ -38,12 +38,12 @@ public class TokenAllocatorFactory
         {
             logger.info("Using NoReplicationTokenAllocator.");
             NoReplicationTokenAllocator<InetAddressAndPort> allocator = new NoReplicationTokenAllocator<>(sortedTokens, strategy, partitioner);
-            TokenAllocatorEvent.noReplicationTokenAllocatorInstanciated(allocator);
+            TokenAllocatorDiagnostics.noReplicationTokenAllocatorInstanciated(allocator);
             return allocator;
         }
         logger.info("Using ReplicationAwareTokenAllocator.");
         ReplicationAwareTokenAllocator<InetAddressAndPort> allocator = new ReplicationAwareTokenAllocator<>(sortedTokens, strategy, partitioner);
-        TokenAllocatorEvent.replicationTokenAllocatorInstanciated(allocator);
+        TokenAllocatorDiagnostics.replicationTokenAllocatorInstanciated(allocator);
         return allocator;
     }
 }

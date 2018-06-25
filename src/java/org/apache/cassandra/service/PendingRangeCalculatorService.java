@@ -47,7 +47,7 @@ public class PendingRangeCalculatorService
     {
         executor.setRejectedExecutionHandler((r, e) ->
             {
-                PendingRangeCalculatorServiceEvent.taskRejected(instance, updateJobs);
+                PendingRangeCalculatorServiceDiagnostics.taskRejected(instance, updateJobs);
                 PendingRangeCalculatorService.instance.finishUpdate();
             }
         );
@@ -66,14 +66,14 @@ public class PendingRangeCalculatorService
         {
             try
             {
-                PendingRangeCalculatorServiceEvent.taskStarted(instance, updateJobs);
+                PendingRangeCalculatorServiceDiagnostics.taskStarted(instance, updateJobs);
                 long start = System.currentTimeMillis();
                 List<String> keyspaces = Schema.instance.getNonLocalStrategyKeyspaces();
                 for (String keyspaceName : keyspaces)
                     calculatePendingRanges(Keyspace.open(keyspaceName).getReplicationStrategy(), keyspaceName);
                 if (logger.isTraceEnabled())
                     logger.trace("Finished PendingRangeTask for {} keyspaces in {}ms", keyspaces.size(), System.currentTimeMillis() - start);
-                PendingRangeCalculatorServiceEvent.taskFinished(instance, updateJobs);
+                PendingRangeCalculatorServiceDiagnostics.taskFinished(instance, updateJobs);
             }
             finally
             {
@@ -85,13 +85,13 @@ public class PendingRangeCalculatorService
     private void finishUpdate()
     {
         int jobs = updateJobs.decrementAndGet();
-        PendingRangeCalculatorServiceEvent.taskCountChanged(instance, jobs);
+        PendingRangeCalculatorServiceDiagnostics.taskCountChanged(instance, jobs);
     }
 
     public void update()
     {
         int jobs = updateJobs.incrementAndGet();
-        PendingRangeCalculatorServiceEvent.taskCountChanged(instance, jobs);
+        PendingRangeCalculatorServiceDiagnostics.taskCountChanged(instance, jobs);
         executor.submit(new PendingRangeTask(updateJobs));
     }
 
