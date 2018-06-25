@@ -33,7 +33,7 @@ import org.apache.cassandra.locator.InetAddressAndPort;
 /**
  * DiagnosticEvent implementation for {@link Gossiper} activities.
  */
-public class GossiperEvent extends DiagnosticEvent
+final class GossiperEvent extends DiagnosticEvent
 {
     private final InetAddressAndPort endpoint;
     private final Long quarantineExpiration;
@@ -68,8 +68,8 @@ public class GossiperEvent extends DiagnosticEvent
     public GossiperEventType type;
 
 
-    private GossiperEvent(GossiperEventType type, Gossiper gossiper, InetAddressAndPort endpoint, Long quarantineExpiration,
-                          EndpointState localState)
+    GossiperEvent(GossiperEventType type, Gossiper gossiper, InetAddressAndPort endpoint, Long quarantineExpiration,
+                  EndpointState localState)
     {
         this.type = type;
         this.endpoint = endpoint;
@@ -84,96 +84,6 @@ public class GossiperEvent extends DiagnosticEvent
         this.seeds = ImmutableSet.copyOf(gossiper.seeds);
         this.seedsInShadowRound = ImmutableSet.copyOf(gossiper.seedsInShadowRound);
         this.unreachableEndpoints = ImmutableMap.copyOf(gossiper.unreachableEndpoints);
-    }
-
-
-    public static void markedAsShutdown(Gossiper gossiper, InetAddressAndPort endpoint)
-    {
-        if (isEnabled(GossiperEventType.MARKED_AS_SHUTDOWN))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.MARKED_AS_SHUTDOWN, gossiper, endpoint,
-                                                             null, null));
-    }
-
-    public static void convicted(Gossiper gossiper, InetAddressAndPort endpoint, double phi)
-    {
-        if (isEnabled(GossiperEventType.CONVICTED))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.CONVICTED, gossiper, endpoint,
-                                                             null, null));
-    }
-
-    public static void replacementQuarantine(Gossiper gossiper, InetAddressAndPort endpoint)
-    {
-        if (isEnabled(GossiperEventType.REPLACEMENT_QUARANTINE))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.REPLACEMENT_QUARANTINE, gossiper, endpoint,
-                                                             null, null));
-    }
-
-    public static void replacedEndpoint(Gossiper gossiper, InetAddressAndPort endpoint)
-    {
-        if (isEnabled(GossiperEventType.REPLACED_ENDPOINT))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.REPLACED_ENDPOINT, gossiper, endpoint,
-                                                             null, null));
-    }
-
-    static void evictedFromMembership(Gossiper gossiper, InetAddressAndPort endpoint)
-    {
-        if (isEnabled(GossiperEventType.EVICTED_FROM_MEMBERSHIP))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.EVICTED_FROM_MEMBERSHIP, gossiper, endpoint,
-                                                             null, null));
-    }
-
-    static void removedEndpoint(Gossiper gossiper, InetAddressAndPort endpoint)
-    {
-        if (isEnabled(GossiperEventType.REMOVED_ENDPOINT))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.REMOVED_ENDPOINT, gossiper, endpoint,
-                                                             null, null));
-    }
-
-    static void quarantinedEndpoint(Gossiper gossiper, InetAddressAndPort endpoint, long quarantineExpiration)
-    {
-        if (isEnabled(GossiperEventType.QUARANTINED_ENDPOINT))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.QUARANTINED_ENDPOINT, gossiper, endpoint,
-                                                             quarantineExpiration, null));
-    }
-
-    static void markedAlive(Gossiper gossiper, InetAddressAndPort addr, EndpointState localState)
-    {
-        if (isEnabled(GossiperEventType.MARKED_ALIVE))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.MARKED_ALIVE, gossiper, addr,
-                                                             null, localState));
-    }
-
-    static void realMarkedAlive(Gossiper gossiper, InetAddressAndPort addr, EndpointState localState)
-    {
-        if (isEnabled(GossiperEventType.REAL_MARKED_ALIVE))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.REAL_MARKED_ALIVE, gossiper, addr,
-                                                             null, localState));
-    }
-
-    static void markedDead(Gossiper gossiper, InetAddressAndPort addr, EndpointState localState)
-    {
-        if (isEnabled(GossiperEventType.MARKED_DEAD))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.MARKED_DEAD, gossiper, addr,
-                                                             null, localState));
-    }
-
-    static void majorStateChangeHandled(Gossiper gossiper, InetAddressAndPort addr, EndpointState state)
-    {
-        if (isEnabled(GossiperEventType.MAJOR_STATE_CHANGE_HANDLED))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.MAJOR_STATE_CHANGE_HANDLED, gossiper, addr,
-                                                             null, state));
-    }
-
-    static void sendGossipDigestSyn(Gossiper gossiper, InetAddressAndPort to)
-    {
-        if (isEnabled(GossiperEventType.SEND_GOSSIP_DIGEST_SYN))
-            DiagnosticEventService.instance().publish(new GossiperEvent(GossiperEventType.SEND_GOSSIP_DIGEST_SYN, gossiper, to,
-                                                             null, null));
-    }
-
-    private static boolean isEnabled(GossiperEventType type)
-    {
-        return DiagnosticEventService.instance().isEnabled(GossiperEvent.class, type);
     }
 
     @Override
