@@ -1,3 +1,5 @@
+ * Removed obsolete OldNetworkTopologyStrategy (CASSANDRA-13990)
+
 4.0
  * Update Netty dependencies to latest, clean up SocketFactory (CASSANDRA-15195)
  * Native Transport - Apply noSpamLogger to ConnectionLimitHandler (CASSANDRA-15167)
