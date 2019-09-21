@@ -46,9 +46,6 @@ public class LoaderOptions
     public static final String HELP_OPTION = "help";
     public static final String VERBOSE_OPTION = "verbose";
     public static final String NOPROGRESS_OPTION = "no-progress";
-    public static final String NATIVE_PORT_OPTION = "port";
-    public static final String STORAGE_PORT_OPTION = "storage-port";
-    public static final String SSL_STORAGE_PORT_OPTION = "ssl-storage-port";
     public static final String USER_OPTION = "username";
     public static final String PASSWD_OPTION = "password";
     public static final String AUTH_PROVIDER_OPTION = "auth-provider";
@@ -59,7 +56,6 @@ public class LoaderOptions
     public static final String THROTTLE_MBITS = "throttle";
     public static final String INTER_DC_THROTTLE_MBITS = "inter-dc-throttle";
     public static final String TOOL_NAME = "sstableloader";
-    public static final String ALLOW_SERVER_PORT_DISCOVERY_OPTION = "server-port-discovery";
     public static final String TARGET_KEYSPACE = "target-keyspace";
 
     /* client encryption options */
@@ -76,20 +72,16 @@ public class LoaderOptions
     public final boolean debug;
     public final boolean verbose;
     public final boolean noProgress;
-    public final int nativePort;
     public final String user;
     public final String passwd;
     public final AuthProvider authProvider;
     public final int throttle;
     public final int interDcThrottle;
-    public final int storagePort;
-    public final int sslStoragePort;
     public final EncryptionOptions clientEncOptions;
     public final int connectionsPerHost;
     public final EncryptionOptions.ServerEncryptionOptions serverEncOptions;
     public final Set<InetSocketAddress> hosts;
     public final Set<InetAddressAndPort> ignores;
-    public final boolean allowServerPortDiscovery;
     public final String targetKeyspace;
 
     LoaderOptions(Builder builder)
@@ -98,19 +90,15 @@ public class LoaderOptions
         debug = builder.debug;
         verbose = builder.verbose;
         noProgress = builder.noProgress;
-        nativePort = builder.nativePort;
         user = builder.user;
         passwd = builder.passwd;
         authProvider = builder.authProvider;
         throttle = builder.throttle;
         interDcThrottle = builder.interDcThrottle;
-        storagePort = builder.storagePort;
-        sslStoragePort = builder.sslStoragePort;
         clientEncOptions = builder.clientEncOptions;
         connectionsPerHost = builder.connectionsPerHost;
         serverEncOptions = builder.serverEncOptions;
         hosts = builder.hosts;
-        allowServerPortDiscovery = builder.allowServerPortDiscovery;
         ignores = builder.ignores;
         targetKeyspace = builder.targetKeyspace;
     }
@@ -121,23 +109,20 @@ public class LoaderOptions
         boolean debug;
         boolean verbose;
         boolean noProgress;
-        int nativePort = 9042;
+        final int nativePort = 9042;
         String user;
         String passwd;
         String authProviderName;
         AuthProvider authProvider;
         int throttle = 0;
         int interDcThrottle = 0;
-        int storagePort;
-        int sslStoragePort;
+        int storagePort = 7000;
+        int sslStoragePort = 7001;
         EncryptionOptions clientEncOptions = new EncryptionOptions();
         int connectionsPerHost = 1;
         EncryptionOptions.ServerEncryptionOptions serverEncOptions = new EncryptionOptions.ServerEncryptionOptions();
-        Set<InetAddress> hostsArg = new HashSet<>();
-        Set<InetAddress> ignoresArg = new HashSet<>();
         Set<InetSocketAddress> hosts = new HashSet<>();
         Set<InetAddressAndPort> ignores = new HashSet<>();
-        boolean allowServerPortDiscovery;
         String targetKeyspace;
 
         Builder()
@@ -148,22 +133,6 @@ public class LoaderOptions
         public LoaderOptions build()
         {
             constructAuthProvider();
-
-            try
-            {
-                for (InetAddress host : hostsArg)
-                {
-                    hosts.add(new InetSocketAddress(host, nativePort));
-                }
-                for (InetAddress host : ignoresArg)
-                {
-                    ignores.add(InetAddressAndPort.getByNameOverrideDefaults(host.getHostAddress(), storagePort));
-                }
-            }
-            catch (UnknownHostException e)
-            {
-                Throwables.propagate(e);
-            }
 
             return new LoaderOptions(this);
         }
@@ -189,12 +158,6 @@ public class LoaderOptions
         public Builder noProgress(boolean noProgress)
         {
             this.noProgress = noProgress;
-            return this;
-        }
-
-        public Builder nativePort(int nativePort)
-        {
-            this.nativePort = nativePort;
             return this;
         }
 
@@ -228,18 +191,6 @@ public class LoaderOptions
             return this;
         }
 
-        public Builder storagePort(int storagePort)
-        {
-            this.storagePort = storagePort;
-            return this;
-        }
-
-        public Builder sslStoragePort(int sslStoragePort)
-        {
-            this.sslStoragePort = sslStoragePort;
-            return this;
-        }
-
         public Builder encOptions(EncryptionOptions encOptions)
         {
             this.clientEncOptions = encOptions;
@@ -258,22 +209,9 @@ public class LoaderOptions
             return this;
         }
 
-        @Deprecated
-        public Builder hosts(Set<InetAddress> hosts)
-        {
-            this.hostsArg.addAll(hosts);
-            return this;
-        }
-
         public Builder hostsAndNativePort(Set<InetSocketAddress> hosts)
         {
             this.hosts.addAll(hosts);
-            return this;
-        }
-
-        public Builder host(InetAddress host)
-        {
-            hostsArg.add(host);
             return this;
         }
 
@@ -283,33 +221,15 @@ public class LoaderOptions
             return this;
         }
 
-        public Builder ignore(Set<InetAddress> ignores)
-        {
-            this.ignoresArg.addAll(ignores);
-            return this;
-        }
-
         public Builder ignoresAndInternalPorts(Set<InetAddressAndPort> ignores)
         {
             this.ignores.addAll(ignores);
             return this;
         }
 
-        public Builder ignore(InetAddress ignore)
-        {
-            ignoresArg.add(ignore);
-            return this;
-        }
-
         public Builder ignoreAndInternalPorts(InetAddressAndPort ignore)
         {
             ignores.add(ignore);
-            return this;
-        }
-
-        public Builder allowServerPortDiscovery(boolean allowServerPortDiscovery)
-        {
-            this.allowServerPortDiscovery = allowServerPortDiscovery;
             return this;
         }
 
@@ -359,7 +279,6 @@ public class LoaderOptions
 
                 verbose = cmd.hasOption(VERBOSE_OPTION);
                 noProgress = cmd.hasOption(NOPROGRESS_OPTION);
-                allowServerPortDiscovery = cmd.hasOption(ALLOW_SERVER_PORT_DISCOVERY_OPTION);
 
                 if (cmd.hasOption(USER_OPTION))
                 {
@@ -439,18 +358,6 @@ public class LoaderOptions
                     config.inter_dc_stream_throughput_outbound_megabits_per_sec = 0;
                 }
 
-                if (cmd.hasOption(NATIVE_PORT_OPTION))
-                    nativePort = Integer.parseInt(cmd.getOptionValue(NATIVE_PORT_OPTION));
-                else
-                    nativePort = config.native_transport_port;
-                if (cmd.hasOption(STORAGE_PORT_OPTION))
-                    storagePort = Integer.parseInt(cmd.getOptionValue(STORAGE_PORT_OPTION));
-                else
-                    storagePort = config.storage_port;
-                if (cmd.hasOption(SSL_STORAGE_PORT_OPTION))
-                    sslStoragePort = Integer.parseInt(cmd.getOptionValue(SSL_STORAGE_PORT_OPTION));
-                else
-                    sslStoragePort = config.ssl_storage_port;
                 throttle = config.stream_throughput_outbound_megabits_per_sec;
                 clientEncOptions = config.client_encryption_options;
                 serverEncOptions = config.server_encryption_options;
@@ -607,9 +514,6 @@ public class LoaderOptions
         options.addOption(null, NOPROGRESS_OPTION, "don't display progress");
         options.addOption("i", IGNORE_NODES_OPTION, "NODES", "don't stream to this (comma separated) list of nodes");
         options.addOption("d", INITIAL_HOST_ADDRESS_OPTION, "initial hosts", "Required. try to connect to these hosts (comma separated) initially for ring information");
-        options.addOption("p",  NATIVE_PORT_OPTION, "native transport port", "port used for native connection (default 9042)");
-        options.addOption("sp",  STORAGE_PORT_OPTION, "storage port", "port used for internode communication (default 7000)");
-        options.addOption("ssp",  SSL_STORAGE_PORT_OPTION, "ssl storage port", "port used for TLS internode communication (default 7001)");
         options.addOption("t", THROTTLE_MBITS, "throttle", "throttle speed in Mbits (default unlimited)");
         options.addOption("idct", INTER_DC_THROTTLE_MBITS, "inter-dc-throttle", "inter-datacenter throttle speed in Mbits (default unlimited)");
         options.addOption("u", USER_OPTION, "username", "username for cassandra authentication");
@@ -626,7 +530,6 @@ public class LoaderOptions
         options.addOption("st", SSL_STORE_TYPE, "STORE-TYPE", "Client SSL: type of store");
         options.addOption("ciphers", SSL_CIPHER_SUITES, "CIPHER-SUITES", "Client SSL: comma-separated list of encryption suites to use");
         options.addOption("f", CONFIG_PATH, "path to config file", "cassandra.yaml file path for streaming throughput and client/server SSL.");
-        options.addOption("spd", ALLOW_SERVER_PORT_DISCOVERY_OPTION, "allow server port discovery", "Use ports published by server to decide how to connect. With SSL requires StartTLS to be used.");
         options.addOption("k", TARGET_KEYSPACE, "target keyspace name", "target keyspace name");
         return options;
     }

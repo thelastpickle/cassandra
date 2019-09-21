@@ -18,20 +18,30 @@
 package org.apache.cassandra.tools;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
+
 import javax.net.ssl.SSLContext;
 
 import com.datastax.driver.core.AuthProvider;
 import com.datastax.driver.core.JdkSSLOptions;
 import com.datastax.driver.core.SSLOptions;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.net.HostAndPort;
+
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.EncryptionOptions;
+import org.apache.cassandra.hadoop.ConfigHelper;
+import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.io.sstable.SSTableLoader;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.security.SSLFactory;
@@ -40,6 +50,7 @@ import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.JVMStabilityInspector;
 import org.apache.cassandra.utils.NativeSSTableLoaderClient;
 import org.apache.cassandra.utils.OutputHandler;
+import org.apache.hadoop.conf.Configuration;
 
 public class BulkLoader
 {
@@ -55,18 +66,13 @@ public class BulkLoader
         OutputHandler handler = new OutputHandler.SystemOutput(options.verbose, options.debug);
         SSTableLoader loader = new SSTableLoader(
                 options.directory.getAbsoluteFile(),
-                new ExternalClient(
+                new NativeSSTableLoaderClient(
                         options.hosts,
-                        options.nativePort,
-                        options.storagePort,
                         options.authProvider,
-                        options.sslStoragePort,
-                        options.serverEncOptions,
-                        buildSSLOptions(options.clientEncOptions),
-                        options.allowServerPortDiscovery),
-                        handler,
-                        options.connectionsPerHost,
-                        options.targetKeyspace);
+                        buildSSLOptions(options.clientEncOptions)),
+                handler,
+                options.connectionsPerHost,
+                options.targetKeyspace);
         DatabaseDescriptor.setStreamThroughputOutboundMegabitsPerSec(options.throttle);
         DatabaseDescriptor.setInterDCStreamThroughputOutboundMegabitsPerSec(options.interDcThrottle);
         StreamResultFuture future = null;
@@ -267,32 +273,6 @@ public class BulkLoader
                             .withSSLContext(sslContext)
                             .withCipherSuites(clientEncryptionOptions.cipher_suites.toArray(new String[0]))
                             .build();
-    }
-
-    static class ExternalClient extends NativeSSTableLoaderClient
-    {
-        private final int sslStoragePort;
-        private final EncryptionOptions.ServerEncryptionOptions serverEncOptions;
-
-        public ExternalClient(Set<InetSocketAddress> hosts,
-                              int nativePort,
-                              int storagePort,
-                              AuthProvider authProvider,
-                              int sslStoragePort,
-                              EncryptionOptions.ServerEncryptionOptions serverEncryptionOptions,
-                              SSLOptions sslOptions,
-                              boolean allowServerPortDiscovery)
-        {
-            super(hosts, nativePort, storagePort, authProvider, sslOptions, allowServerPortDiscovery);
-            this.sslStoragePort = sslStoragePort;
-            serverEncOptions = serverEncryptionOptions;
-        }
-
-        @Override
-        public StreamConnectionFactory getConnectionFactory()
-        {
-            return new BulkLoadConnectionFactory(sslStoragePort, serverEncOptions, false);
-        }
     }
 
     public static class CmdLineOptions extends Options

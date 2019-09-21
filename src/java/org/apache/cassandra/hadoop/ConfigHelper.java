@@ -21,9 +21,6 @@
 package org.apache.cassandra.hadoop;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.schema.CompressionParams;
 import org.apache.cassandra.utils.FBUtilities;
@@ -42,7 +39,6 @@ public class ConfigHelper
     private static final String OUTPUT_KEYSPACE_PASSWD_CONFIG = "cassandra.output.keyspace.passwd";
     private static final String INPUT_COLUMNFAMILY_CONFIG = "cassandra.input.columnfamily";
     private static final String OUTPUT_COLUMNFAMILY_CONFIG = "mapreduce.output.basename"; //this must == OutputFormat.BASE_OUTPUT_NAME
-    private static final String INPUT_PREDICATE_CONFIG = "cassandra.input.predicate";
     private static final String INPUT_KEYRANGE_CONFIG = "cassandra.input.keyRange";
     private static final String INPUT_SPLIT_SIZE_CONFIG = "cassandra.input.split.size";
     private static final String INPUT_SPLIT_SIZE_IN_MB_CONFIG = "cassandra.input.split.size_mb";
@@ -52,15 +48,11 @@ public class ConfigHelper
     private static final int DEFAULT_RANGE_BATCH_SIZE = 4096;
     private static final String INPUT_INITIAL_ADDRESS = "cassandra.input.address";
     private static final String OUTPUT_INITIAL_ADDRESS = "cassandra.output.address";
-    private static final String OUTPUT_INITIAL_PORT = "cassandra.output.port";
     private static final String READ_CONSISTENCY_LEVEL = "cassandra.consistencylevel.read";
     private static final String WRITE_CONSISTENCY_LEVEL = "cassandra.consistencylevel.write";
     private static final String OUTPUT_COMPRESSION_CLASS = "cassandra.output.compression.class";
     private static final String OUTPUT_COMPRESSION_CHUNK_LENGTH = "cassandra.output.compression.length";
     private static final String OUTPUT_LOCAL_DC_ONLY = "cassandra.output.local.dc.only";
-    private static final String DEFAULT_CASSANDRA_NATIVE_PORT = "7000";
-
-    private static final Logger logger = LoggerFactory.getLogger(ConfigHelper.class);
 
     /**
      * Set the keyspace and column family for the input of this job.
@@ -349,16 +341,6 @@ public class ConfigHelper
     public static String getOutputInitialAddress(Configuration conf)
     {
         return conf.get(OUTPUT_INITIAL_ADDRESS);
-    }
-
-    public static void setOutputInitialPort(Configuration conf, Integer port)
-    {
-        conf.set(OUTPUT_INITIAL_PORT, port.toString());
-    }
-
-    public static Integer getOutputInitialPort(Configuration conf)
-    {
-        return Integer.valueOf(conf.get(OUTPUT_INITIAL_PORT, DEFAULT_CASSANDRA_NATIVE_PORT));
     }
 
     public static void setOutputInitialAddress(Configuration conf, String address)
