@@ -46,4 +46,5 @@ public enum ApplicationState
     X8,
     X9,
     X10,
+    JMX_ADDRESS_AND_PORT
 }

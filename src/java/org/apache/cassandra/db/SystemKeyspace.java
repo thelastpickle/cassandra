@@ -195,6 +195,8 @@ public final class SystemKeyspace
                 + "release_version text,"
                 + "native_address inet,"
                 + "native_port int,"
+                + "jmx_address inet,"
+                + "jmx_port int,"
                 + "schema_version uuid,"
                 + "tokens set<varchar>,"
                 + "PRIMARY KEY ((peer), peer_port))")
@@ -728,6 +730,15 @@ public final class SystemKeyspace
         executeInternal(String.format(req, PEERS_V2), ep.address, ep.port, address.address, address.port);
     }
 
+    public static synchronized void updatePeerJmxAddress(InetAddressAndPort ep, InetAddressAndPort address)
+    {
+        if (ep.equals(FBUtilities.getJmxAddressAndPort()))
+            return;
+
+        String req = "INSERT INTO system.%s (peer, peer_port, jmx_address, jmx_port) VALUES (?, ?, ?, ?)";
+        executeInternal(String.format(req, PEERS_V2), ep.address, ep.port, address.address, address.port);
+    }
+
 
     public static synchronized void updateHintsDropped(InetAddressAndPort ep, UUID timePeriod, int value)
     {
@@ -843,6 +854,21 @@ public final class SystemKeyspace
             }
         }
         return hostIdMap;
+    }
+
+    public static List<InetAddressAndPort> getJmxEndpoints()
+    {
+        List<InetAddressAndPort> jmx = new ArrayList<>();
+        for (UntypedResultSet.Row row : executeInternal("SELECT jmx_address, jmx_port FROM system." + PEERS_V2))
+        {
+            if (row.has("jmx_address") && row.has("jmx_port"))
+            {
+                InetAddress address = row.getInetAddress("jmx_address");
+                Integer port = row.getInt("jmx_port");
+                jmx.add(InetAddressAndPort.getByAddressOverrideDefaults(address, port));
+            }
+        }
+        return jmx;
     }
 
     /**

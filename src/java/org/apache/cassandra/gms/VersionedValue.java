@@ -261,6 +261,11 @@ public class VersionedValue implements Comparable<VersionedValue>
             return new VersionedValue(address.toString());
         }
 
+        public VersionedValue jmxaddressAndPort(InetAddressAndPort address)
+        {
+            return new VersionedValue(address.toString());
+        }
+
         public VersionedValue releaseVersion()
         {
             return new VersionedValue(FBUtilities.getReleaseVersionString());

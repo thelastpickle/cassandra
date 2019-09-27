@@ -189,6 +189,8 @@ public interface StorageServiceMBean extends NotificationEmitter
     @Deprecated public Map<String, String> getHostIdToEndpoint();
     public Map<String, String> getHostIdToEndpointWithPort();
 
+    public List<String> getJmxEndpoints();
+
     /** Human-readable load value */
     public String getLoadString();
 
