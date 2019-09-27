@@ -89,6 +89,7 @@ public class FBUtilities
     private static volatile InetAddressAndPort broadcastNativeAddressAndPort;
     private static volatile InetAddressAndPort broadcastInetAddressAndPort;
     private static volatile InetAddressAndPort localInetAddressAndPort;
+    private static volatile InetAddressAndPort jmxAddressAndPort;
 
     public static int getAvailableProcessors()
     {
@@ -202,6 +203,33 @@ public class FBUtilities
             broadcastNativeAddressAndPort = InetAddressAndPort.getByAddressOverrideDefaults(getJustBroadcastNativeAddress(),
                                                                                              DatabaseDescriptor.getNativeTransportPort());
         return broadcastNativeAddressAndPort;
+    }
+
+    /**
+     * This returns the address that is bound to for JMX.
+     * @return null if jmx is disabled.
+     */
+    public static InetAddressAndPort getJmxAddressAndPort()
+    {
+        if (null == jmxAddressAndPort) {
+            try
+            {
+                InetAddress serverAddress = InetAddress.getLocalHost();
+                String jmxPort = System.getProperty("cassandra.jmx.remote.port");
+                if (null == jmxPort)
+                {
+                    jmxPort = System.getProperty("cassandra.jmx.local.port");
+                    serverAddress = InetAddress.getLoopbackAddress();
+                }
+                if (null != jmxPort)
+                    jmxAddressAndPort = InetAddressAndPort.getByAddressOverrideDefaults(serverAddress, Integer.parseInt(jmxPort));
+            }
+            catch (UnknownHostException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+        return jmxAddressAndPort;
     }
 
     public static String getNetworkInterface(InetAddress localAddress)

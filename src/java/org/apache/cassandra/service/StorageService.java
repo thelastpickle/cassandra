@@ -804,6 +804,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             appStates.put(ApplicationState.NET_VERSION, valueFactory.networkVersion());
             appStates.put(ApplicationState.HOST_ID, valueFactory.hostId(localHostId));
             appStates.put(ApplicationState.NATIVE_ADDRESS_AND_PORT, valueFactory.nativeaddressAndPort(FBUtilities.getBroadcastNativeAddressAndPort()));
+            appStates.put(ApplicationState.JMX_ADDRESS_AND_PORT, valueFactory.jmxaddressAndPort(FBUtilities.getJmxAddressAndPort()));
             appStates.put(ApplicationState.RPC_ADDRESS, valueFactory.rpcaddress(FBUtilities.getJustBroadcastNativeAddress()));
             appStates.put(ApplicationState.RELEASE_VERSION, valueFactory.releaseVersion());
 
@@ -2006,6 +2007,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         return mapOut;
     }
 
+    public List<String> getJmxEndpoints()
+    {
+        return SystemKeyspace.getJmxEndpoints().stream().map((e) -> e.toString()).collect(Collectors.toList());
+    }
+
     /**
      * Construct the range to endpoint mapping based on the true view
      * of the world.
@@ -2141,6 +2147,17 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                             throw new RuntimeException(e);
                         }
                         break;
+                    case JMX_ADDRESS_AND_PORT:
+                        try
+                        {
+                            InetAddressAndPort address = InetAddressAndPort.getByName(value.value);
+                            SystemKeyspace.updatePeerJmxAddress(endpoint, address);
+                        }
+                        catch (UnknownHostException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        break;
                     case SCHEMA:
                         SystemKeyspace.updatePeerInfo(endpoint, "schema_version", UUID.fromString(value.value));
                         MigrationManager.instance.scheduleSchemaPull(endpoint, epState);
@@ -2194,6 +2211,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         EndpointState epState = Gossiper.instance.getEndpointStateForEndpoint(endpoint);
         InetAddress native_address = null;
         int native_port = DatabaseDescriptor.getNativeTransportPort();
+        InetAddressAndPort jmxAddress = FBUtilities.getJmxAddressAndPort();
 
         for (Map.Entry<ApplicationState, VersionedValue> entry : epState.states())
         {
@@ -2230,6 +2248,16 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                         throw new RuntimeException(e);
                     }
                     break;
+                case JMX_ADDRESS_AND_PORT:
+                    try
+                    {
+                        jmxAddress = InetAddressAndPort.getByName(entry.getValue().value);
+                    }
+                    catch (UnknownHostException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                    break;
                 case SCHEMA:
                     SystemKeyspace.updatePeerInfo(endpoint, "schema_version", UUID.fromString(entry.getValue().value));
                     break;
@@ -2246,6 +2274,8 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                                                    InetAddressAndPort.getByAddressOverrideDefaults(native_address,
                                                                                                    native_port));
         }
+        if (jmxAddress != null)
+            SystemKeyspace.updatePeerJmxAddress(endpoint, jmxAddress);
     }
 
     private void notifyRpcChange(InetAddressAndPort endpoint, boolean ready)
