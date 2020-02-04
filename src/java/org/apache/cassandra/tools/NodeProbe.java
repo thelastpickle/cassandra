@@ -817,6 +817,20 @@ public class NodeProbe
         return ssProxy.getCompactionThroughputMbPerSec();
     }
 
+    public String getCompressionOptions(String keyspace, String table) {
+        return String.format("%s", getCfsProxy(keyspace, table).getCompressionParameters()).replaceAll("\\s", "");
+    }
+
+    public void setCompressionOptions(String keyspace, String table, String value) {
+        String[] pairs = value.replaceAll("\\{", "").replaceAll("\\}", "").split(",");
+        HashMap<String, String> newParameters = new HashMap<>();
+        for (String pair : pairs) {
+            String[] keyAndValue = pair.split("=");
+            newParameters.put(keyAndValue[0], keyAndValue[1]);
+        }
+        getCfsProxy(keyspace, table).setCompressionParameters(newParameters);
+    }
+
     public int getStreamThroughput()
     {
         return ssProxy.getStreamThroughputMbPerSec();

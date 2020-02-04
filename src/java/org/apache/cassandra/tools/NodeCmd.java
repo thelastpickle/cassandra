@@ -143,6 +143,8 @@ public class NodeCmd
         DISABLEAUTOCOMPACTION,
         ENABLEAUTOCOMPACTION,
         GETCOMPACTIONTHROUGHPUT,
+        GETCOMPRESSIONOPTIONS,
+        SETCOMPRESSIONOPTIONS,
         GETSTREAMTHROUGHPUT,
         GETENDPOINTS,
         GETSSTABLES,
@@ -1313,6 +1315,11 @@ public class NodeCmd
                     probe.joinRing();
                     break;
 
+                case SETCOMPRESSIONOPTIONS:
+                    if (arguments.length !=3) { badUse("Missing keyspace, table and new value arguments."); }
+                    probe.setCompressionOptions(arguments[0], arguments[1], arguments[2]);
+                    break;
+
                 case SETCOMPACTIONTHROUGHPUT :
                     if (arguments.length != 1) { badUse("Missing value argument."); }
                     probe.setCompactionThroughput(Integer.parseInt(arguments[0]));
@@ -1369,6 +1376,11 @@ public class NodeCmd
                 case GETCOMPACTIONTHRESHOLD :
                     if (arguments.length != 2) { badUse("getcompactionthreshold requires ks and cf args."); }
                     nodeCmd.printCompactionThreshold(System.out, arguments[0], arguments[1]);
+                    break;
+
+                case GETCOMPRESSIONOPTIONS:
+                    if (arguments.length != 2) { badUse("Missing keyspace and table arguments."); }
+                    System.out.println(probe.getCompressionOptions(arguments[0], arguments[1]));
                     break;
 
                 case GETCOMPACTIONTHROUGHPUT : nodeCmd.printCompactionThroughput(System.out); break;

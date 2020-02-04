@@ -710,7 +710,7 @@
         The jar target makes cassandra.jar output.
     -->
     <target name="jar"
-            depends="build, build-test, stress-build, write-poms"
+            depends="build, stress-build, write-poms"
             description="Assemble Cassandra JAR files">
       <mkdir dir="${build.classes.main}/META-INF" />
       <mkdir dir="${build.classes.thrift}/META-INF" />
@@ -1432,4 +1432,17 @@
             file="${build.dir}/${final.name}-javadoc.jar"
             classifier="javadoc"/>
   </target>
+
+  <target name="fat-jar" depends="mvn-install">
+      <jar destfile="${build.dir}/nodetool-fat.jar" filesetmanifest="skip">
+          <zipgroupfileset dir="lib" includes="*.jar"/>
+          <zipgroupfileset dir="build/lib/jars" includes="*.jar" excludes=""/>
+          <zipgroupfileset dir="build" includes="${ant.project.name}-${version}.jar"/>
+
+          <manifest>
+              <attribute name="Main-Class" value="org.apache.cassandra.tools.NodeCmd"/>
+          </manifest>
+      </jar>
+  </target>
+
 </project>

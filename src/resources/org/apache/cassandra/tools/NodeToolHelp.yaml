@@ -226,3 +226,9 @@ commands:
   - name: getLoggingLevels
     help: |
       Get the runtime logging levels
+  - name: getcompressionoptions <keyspace> <table>
+    help: |
+      Get the compression options for a given table
+  - name: setcompressionoptions <keyspace> <table> "<value>"
+    help: |
+      Set the compression options to given value. Value can be copied from the get command
