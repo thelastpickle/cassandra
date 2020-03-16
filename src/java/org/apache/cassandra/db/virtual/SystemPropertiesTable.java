@@ -47,6 +47,7 @@ final class SystemPropertiesTable extends AbstractVirtualTable
             "sun.arch.data.model",
             // jmx properties
             "java.rmi.server.hostname",
+            "java.rmi.server.randomID",
             "com.sun.management.jmxremote.authenticate",
             "com.sun.management.jmxremote.rmi.port",
             "com.sun.management.jmxremote.ssl",
@@ -65,6 +66,10 @@ final class SystemPropertiesTable extends AbstractVirtualTable
             "org.apache.cassandra.disable_mbean_registration"
             );
 
+    private static final Set<String> CASSANDRA_RELEVANT_ENVS = Sets.newHashSet(
+            "JAVA_HOME"
+            );
+
     SystemPropertiesTable(String keyspace)
     {
         super(TableMetadata.builder(keyspace, "system_properties")
@@ -79,6 +84,11 @@ final class SystemPropertiesTable extends AbstractVirtualTable
     public DataSet data()
     {
         SimpleDataSet result = new SimpleDataSet(metadata());
+
+        System.getenv().keySet()
+                .stream()
+                .filter(SystemPropertiesTable::isCassandraRelevant)
+                .forEach(name -> addRow(result, name, System.getenv(name)));
 
         System.getProperties().stringPropertyNames()
                 .stream()
@@ -101,7 +111,8 @@ final class SystemPropertiesTable extends AbstractVirtualTable
 
     static boolean isCassandraRelevant(String name)
     {
-        return name.startsWith(Config.PROPERTY_PREFIX) || CASSANDRA_RELEVANT_PROPERTIES.contains(name);
+        return name.startsWith(Config.PROPERTY_PREFIX) || CASSANDRA_RELEVANT_PROPERTIES.contains(name)
+                                                       || CASSANDRA_RELEVANT_ENVS.contains(name);
     }
 
     private static void addRow(SimpleDataSet result, String name, String value)
