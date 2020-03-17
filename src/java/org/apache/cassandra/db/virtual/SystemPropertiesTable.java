@@ -63,7 +63,9 @@ final class SystemPropertiesTable extends AbstractVirtualTable
             "cassandra-foreground",
             "cassandra-pidfile",
             "default.provide.overlapping.tombstones",
-            "org.apache.cassandra.disable_mbean_registration"
+            "org.apache.cassandra.disable_mbean_registration",
+            // only for testing
+            "org.apache.cassandra.db.virtual.SystemPropertiesTableTest"
             );
 
     private static final Set<String> CASSANDRA_RELEVANT_ENVS = Sets.newHashSet(
@@ -104,7 +106,7 @@ final class SystemPropertiesTable extends AbstractVirtualTable
         SimpleDataSet result = new SimpleDataSet(metadata());
         String name = UTF8Type.instance.compose(partitionKey.getKey());
         if (isCassandraRelevant(name))
-            addRow(result, name, System.getProperty(name));
+            addRow(result, name, System.getProperty(name, System.getenv(name)));
 
         return result;
     }
