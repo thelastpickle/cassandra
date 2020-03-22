@@ -1,4 +1,5 @@
 4.0-beta2
+ * Always access system properties and environment variables via the new CassandraRelevantProperties and CassandraRelevantEnv classes (CASSANDRA-15876)
  * Fix unicode chars error input (CASSANDRA-15990)
  * Improved testability for CacheMetrics and ChunkCacheMetrics (CASSANDRA-15788)
  * Handle errors in StreamSession#prepare (CASSANDRA-15852)
