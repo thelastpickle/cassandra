@@ -178,7 +178,7 @@ public class ReadRepairTest extends TestBaseImpl
     @Test
     public void movingTokenReadRepairTest() throws Throwable
     {
-        try (Cluster cluster = init(Cluster.create(4), 3))
+        try (Cluster cluster = init(builder().withNodes(4).withConfig(c -> c.set("reject_out_of_token_range_requests", false)).start(), 3))
         {
             List<Token> tokens = cluster.tokens();
 
@@ -353,7 +353,9 @@ public class ReadRepairTest extends TestBaseImpl
         String key = "test1";
         try (Cluster cluster = init(Cluster.build()
                                            .withConfig(config -> config.with(Feature.GOSSIP, Feature.NETWORK)
-                                                                       .set("read_request_timeout_in_ms", Integer.MAX_VALUE))
+                                                                       .set("read_request_timeout_in_ms", Integer.MAX_VALUE)
+                                                                       .set("reject_out_of_token_range_requests", false)
+                                           )
                                            .withTokenSupplier(TokenSupplier.evenlyDistributedTokens(4))
                                            .withNodeIdTopology(NetworkTopology.singleDcNetworkTopology(4, "dc0", "rack0"))
                                            .withNodes(3)

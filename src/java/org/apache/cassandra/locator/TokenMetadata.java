@@ -812,6 +812,14 @@ public class TokenMetadata
         return builder.build();
     }
 
+    @VisibleForTesting
+    public void setPendingRangesUnsafe(String keyspaceName, Multimap<Range<Token>, Replica> rangeMap)
+    {
+        PendingRangeMaps prm = new PendingRangeMaps();
+        rangeMap.entries().forEach(entry -> prm.addPendingRange(entry.getKey(), entry.getValue()));
+        pendingRanges.put(keyspaceName, prm);
+    }
+
      /**
      * Calculate pending ranges according to bootsrapping and leaving nodes. Reasoning is:
      *

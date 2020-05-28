@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +102,28 @@ public abstract class AbstractReplicationStrategy
         }
 
         return endpoints;
+    }
+
+    /**
+     * get the (possibly cached) endpoints that should store the given Token.
+     * Note that while the endpoints are conceptually a Set (no duplicates will be included),
+     * we return a List to avoid an extra allocation when sorting by proximity later
+     * @param token the position the natural endpoints are requested for
+     * @return a copy of the natural endpoints for the given token
+     */
+    public EndpointsForToken getNaturalAndPendingReplicasForToken(Token token)
+    {
+        EndpointsForToken natural = getNaturalReplicasForToken(token);
+        PendingRangeMaps pendingRanges = tokenMetadata.getPendingRanges(keyspaceName);
+        if (pendingRanges != null)
+        {
+            EndpointsForToken pending = pendingRanges.pendingEndpointsFor(token);
+            return EndpointsForToken.copyOf(token, Iterables.concat(natural.list, pending.list));
+        }
+        else
+        {
+            return natural;
+        }
     }
 
     public Replica getLocalReplicaFor(RingPosition<?> searchPosition)

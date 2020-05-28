@@ -17,6 +17,8 @@
  */
 package org.apache.cassandra.db;
 
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +26,15 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.partitions.UnfilteredPartitionIterator;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.InvalidRequestException;
+import org.apache.cassandra.locator.EndpointsForRange;
 import org.apache.cassandra.locator.Replica;
+import org.apache.cassandra.metrics.StorageMetrics;
 import org.apache.cassandra.net.IVerbHandler;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.tracing.Tracing;
+import org.apache.cassandra.utils.NoSpamLogger;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -38,6 +43,8 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
     public static final ReadCommandVerbHandler instance = new ReadCommandVerbHandler();
 
     private static final Logger logger = LoggerFactory.getLogger(ReadCommandVerbHandler.class);
+    private static final String logMessageTemplate = "Received read request from {} for token {} outside valid range for keyspace {}";
+    private static final String exceptionMessageTemplate = "Exception thrown checking if token {} outside valid range for keyspace {} - permitting";
 
     public void doVerb(Message<ReadCommand> message)
     {
@@ -47,6 +54,29 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
         }
 
         ReadCommand command = message.payload;
+
+        // no out of token range checking for partition range reads yet
+        if (command.isSinglePartitionRead())
+        {
+            boolean outOfRangeTokenLogging = StorageService.instance.isOutOfTokenRangeRequestLoggingEnabled();
+            boolean outOfRangeTokenRejection = StorageService.instance.isOutOfTokenRangeRequestRejectionEnabled();
+
+            DecoratedKey key = ((SinglePartitionReadCommand)command).partitionKey();
+            if ((outOfRangeTokenLogging || outOfRangeTokenRejection) && !command.metadata().isVirtual() && isOutOfRangeRead(command.metadata().keyspace, key))
+            {
+                StorageService.instance.incOutOfRangeOperationCount();
+                Keyspace.open(command.metadata().keyspace).metric.outOfRangeTokenReads.inc();
+
+                // Log at most 1 message per second
+                if (outOfRangeTokenLogging)
+                    NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, message.from(), key.getToken(), command.metadata().keyspace);
+
+                if (outOfRangeTokenRejection)
+                    // no need to respond, just drop the request
+                    return;
+            }
+        }
+
         validateTransientStatus(message);
 
         long timeout = message.expiresAtNanos() - message.createdAtNanos();
@@ -100,6 +130,22 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
                                                             command.acceptsTransient() ? "transient" : "full",
                                                             replica.isTransient() ? "transient" : "full",
                                                             this));
+        }
+    }
+
+    private boolean isOutOfRangeRead(String keyspace, DecoratedKey key)
+    {
+        try
+        {
+            return Keyspace.open(keyspace)
+                           .getReplicationStrategy()
+                           .getNaturalReplicas(key)
+                           .selfIfPresent() == null;
+        }
+        catch (Throwable tr)
+        {
+            NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, exceptionMessageTemplate, keyspace, key.getKey(), tr);
+            return false;
         }
     }
 }
