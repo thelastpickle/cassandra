@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.rows.*;
@@ -53,7 +51,7 @@ public class NativeAllocator extends MemtableAllocator
             RACE_ALLOCATED.put(i, new RaceAllocated());
     }
 
-    private final AtomicReference<Region> currentRegion = new AtomicReference<>();
+    private final ThreadLocal<Region> currentRegion = new ThreadLocal<>();
     private final ConcurrentLinkedQueue<Region> regions = new ConcurrentLinkedQueue<>();
     private final EnsureOnHeap.CloneToHeap cloneToHeap = new EnsureOnHeap.CloneToHeap();
 
@@ -143,12 +141,9 @@ public class NativeAllocator extends MemtableAllocator
         if (next == null)
             next = new Region(MemoryUtil.allocate(size), size);
 
-        // we try to swap in the region we've obtained;
-        // if we fail to swap the region, we try to stash it for repurposing later; if we're out of stash room, we free it
-        if (currentRegion.compareAndSet(current, next))
-            regions.add(next);
-        else if (!raceAllocated.stash(next))
-            MemoryUtil.free(next.peer);
+        // swap in the region we've obtained
+        currentRegion.set(next);
+        regions.add(next);
     }
 
     private long allocateOversize(int size)
@@ -212,15 +207,9 @@ public class NativeAllocator extends MemtableAllocator
         private final int capacity;
 
         /**
-         * Offset for the next allocation, or the sentinel value -1
-         * which implies that the region is still uninitialized.
+         * Offset for the next allocation
          */
-        private final AtomicInteger nextFreeOffset = new AtomicInteger(0);
-
-        /**
-         * Total number of allocations satisfied from this buffer
-         */
-        private final AtomicInteger allocCount = new AtomicInteger();
+        private volatile int nextFreeOffset = 0;
 
         /**
          * Create an uninitialized region. Note that memory is not allocated yet, so
@@ -237,34 +226,22 @@ public class NativeAllocator extends MemtableAllocator
         /**
          * Try to allocate <code>size</code> bytes from the region.
          *
-         * @return the successful allocation, or null to indicate not-enough-space
+         * @return the successful allocation, or -1 to indicate not-enough-space
          */
         long allocate(int size)
         {
-            while (true)
-            {
-                int oldOffset = nextFreeOffset.get();
+            int oldOffset = nextFreeOffset;
+            if (oldOffset + size > capacity) // capacity == remaining
+                return -1;
 
-                if (oldOffset + size > capacity) // capacity == remaining
-                    return -1;
-
-                // Try to atomically claim this region
-                if (nextFreeOffset.compareAndSet(oldOffset, oldOffset + size))
-                {
-                    // we got the alloc
-                    allocCount.incrementAndGet();
-                    return peer + oldOffset;
-                }
-                // we raced and lost alloc, try again
-            }
+            nextFreeOffset +=  size;
+            return peer + oldOffset;
         }
 
         @Override
         public String toString()
         {
-            return "Region@" + System.identityHashCode(this) +
-                    " allocs=" + allocCount.get() + "waste=" +
-                    (capacity - nextFreeOffset.get());
+            return "Region@" + System.identityHashCode(this) + "waste=" + (capacity - nextFreeOffset);
         }
     }
 
