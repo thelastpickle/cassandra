@@ -20,6 +20,7 @@ package org.apache.cassandra.utils.memory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -218,11 +219,6 @@ public class NativeAllocator extends MemtableAllocator
         private final AtomicInteger nextFreeOffset = new AtomicInteger(0);
 
         /**
-         * Total number of allocations satisfied from this buffer
-         */
-        private final AtomicInteger allocCount = new AtomicInteger();
-
-        /**
          * Create an uninitialized region. Note that memory is not allocated yet, so
          * this is cheap.
          *
@@ -250,21 +246,17 @@ public class NativeAllocator extends MemtableAllocator
 
                 // Try to atomically claim this region
                 if (nextFreeOffset.compareAndSet(oldOffset, oldOffset + size))
-                {
-                    // we got the alloc
-                    allocCount.incrementAndGet();
                     return peer + oldOffset;
-                }
+
                 // we raced and lost alloc, try again
+                LockSupport.parkNanos(1); // https://arxiv.org/pdf/1305.5800.pdf
             }
         }
 
         @Override
         public String toString()
         {
-            return "Region@" + System.identityHashCode(this) +
-                    " allocs=" + allocCount.get() + "waste=" +
-                    (capacity - nextFreeOffset.get());
+            return "Region@" + System.identityHashCode(this) + "waste=" + (capacity - nextFreeOffset.get());
         }
     }
 
