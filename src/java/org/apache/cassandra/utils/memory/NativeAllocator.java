@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.rows.*;
@@ -256,6 +257,7 @@ public class NativeAllocator extends MemtableAllocator
                     return peer + oldOffset;
                 }
                 // we raced and lost alloc, try again
+                LockSupport.parkNanos(1); // https://arxiv.org/pdf/1305.5800.pdf
             }
         }
 

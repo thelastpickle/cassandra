@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,6 +217,7 @@ public class SlabAllocator extends MemtableBufferAllocator
                     return (ByteBuffer) data.duplicate().position(oldOffset).limit(oldOffset + size);
                 }
                 // we raced and lost alloc, try again
+                LockSupport.parkNanos(1); // https://arxiv.org/pdf/1305.5800.pdf
             }
         }
 
