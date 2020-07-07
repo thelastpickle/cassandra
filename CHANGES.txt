@@ -1,4 +1,5 @@
 4.0-beta3
+ * Updated default num_tokens from 256 to 16 with associated allocate_tokens_for_local_replication_factor (CASSANDRA-13701)
  * Use unsigned short in ValueAccessor.sliceWithShortLength (CASSANDRA-16147)
  * Abort repairs when getting a truncation request (CASSANDRA-15854)
  * Remove bad assert when getting active compactions for an sstable (CASSANDRA-15457)
