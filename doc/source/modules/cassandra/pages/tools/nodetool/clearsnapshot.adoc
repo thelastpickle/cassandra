@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$clearsnapshot.txt[]
+include::example$TEXT/NODETOOL/clearsnapshot.txt[]
 ----

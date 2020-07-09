@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getendpoints.txt[]
+include::example$TEXT/NODETOOL/getendpoints.txt[]
 ----

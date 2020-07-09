@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getseeds.txt[]
+include::example$TEXT/NODETOOL/getseeds.txt[]
 ----

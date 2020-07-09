@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$refreshsizeestimates.txt[]
+include::example$TEXT/NODETOOL/refreshsizeestimates.txt[]
 ----

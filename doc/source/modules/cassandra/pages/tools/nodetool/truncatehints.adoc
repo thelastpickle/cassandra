@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$truncatehints.txt[]
+include::example$TEXT/NODETOOL/truncatehints.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$reloadtriggers.txt[]
+include::example$TEXT/NODETOOL/reloadtriggers.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$move.txt[]
+include::example$TEXT/NODETOOL/move.txt[]
 ----

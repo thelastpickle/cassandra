@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$describecluster.txt[]
+include::example$TEXT/NODETOOL/describecluster.txt[]
 ----

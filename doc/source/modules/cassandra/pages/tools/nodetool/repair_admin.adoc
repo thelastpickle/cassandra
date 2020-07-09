@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$repair_admin.txt[]
+include::example$TEXT/NODETOOL/repair_admin.txt[]
 ----

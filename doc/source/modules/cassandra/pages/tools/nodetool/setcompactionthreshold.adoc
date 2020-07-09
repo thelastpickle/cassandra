@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$setcompactionthreshold.txt[]
+include::example$TEXT/NODETOOL/setcompactionthreshold.txt[]
 ----

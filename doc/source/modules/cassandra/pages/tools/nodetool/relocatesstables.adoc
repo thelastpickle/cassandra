@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$relocatesstables.txt[]
+include::example$TEXT/NODETOOL/relocatesstables.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getconcurrentviewbuilders.txt[]
+include::example$TEXT/NODETOOL/getconcurrentviewbuilders.txt[]
 ----

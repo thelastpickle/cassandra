@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$statusautocompaction.txt[]
+include::example$TEXT/NODETOOL/statusautocompaction.txt[]
 ----

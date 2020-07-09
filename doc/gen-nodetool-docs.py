@@ -31,10 +31,10 @@ if(os.environ.get("SKIP_NODETOOL") == "1"):
 
 nodetool = "../bin/nodetool"
 outdir = "source/modules/cassandra/pages/tools/nodetool"
-examplesdir = "source/modules/cassandra/examples"
+examplesdir = "source/modules/cassandra/examples/TEXT/NODETOOL"
 helpfilename = outdir + "/nodetool.txt"
 command_re = re.compile("(    )([_a-z]+)")
-commandADOCContent = "== {0}\n\n== Usage\n[source,plaintext]\n----\ninclude::example${0}.txt[]\n----\n"
+commandADOCContent = "== {0}\n\n== Usage\n[source,plaintext]\n----\ninclude::example$TEXT/NODETOOL/{0}.txt[]\n----\n"
 
 # create the documentation directory
 if not os.path.exists(outdir):

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$gettraceprobability.txt[]
+include::example$TEXT/NODETOOL/gettraceprobability.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$ring.txt[]
+include::example$TEXT/NODETOOL/ring.txt[]
 ----

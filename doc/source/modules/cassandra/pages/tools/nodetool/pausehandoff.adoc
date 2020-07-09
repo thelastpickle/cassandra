@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$pausehandoff.txt[]
+include::example$TEXT/NODETOOL/pausehandoff.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$drain.txt[]
+include::example$TEXT/NODETOOL/drain.txt[]
 ----

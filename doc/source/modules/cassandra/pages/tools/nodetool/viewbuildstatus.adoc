@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$viewbuildstatus.txt[]
+include::example$TEXT/NODETOOL/viewbuildstatus.txt[]
 ----

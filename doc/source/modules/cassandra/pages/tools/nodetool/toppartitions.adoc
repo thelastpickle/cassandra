@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$toppartitions.txt[]
+include::example$TEXT/NODETOOL/toppartitions.txt[]
 ----

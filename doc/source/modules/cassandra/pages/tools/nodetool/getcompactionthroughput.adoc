@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getcompactionthroughput.txt[]
+include::example$TEXT/NODETOOL/getcompactionthroughput.txt[]
 ----

@@ -15,7 +15,6 @@ BUILDDIR	= build
 #I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 YAML_DOC_INPUT=../conf/cassandra.yaml
-#YAML_DOC_OUTPUT=source/configuration/cassandra_config_file.adoc
 YAML_DOC_OUTPUT=source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
 
 MAKE_CASSANDRA_YAML = python convert_yaml_to_adoc.py $(YAML_DOC_INPUT) $(YAML_DOC_OUTPUT)

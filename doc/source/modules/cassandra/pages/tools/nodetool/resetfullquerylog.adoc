@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$resetfullquerylog.txt[]
+include::example$TEXT/NODETOOL/resetfullquerylog.txt[]
 ----

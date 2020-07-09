@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$settraceprobability.txt[]
+include::example$TEXT/NODETOOL/settraceprobability.txt[]
 ----

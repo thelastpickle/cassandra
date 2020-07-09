@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$proxyhistograms.txt[]
+include::example$TEXT/NODETOOL/proxyhistograms.txt[]
 ----

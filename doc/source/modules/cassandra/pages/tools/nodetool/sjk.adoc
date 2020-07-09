@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$sjk.txt[]
+include::example$TEXT/NODETOOL/sjk.txt[]
 ----

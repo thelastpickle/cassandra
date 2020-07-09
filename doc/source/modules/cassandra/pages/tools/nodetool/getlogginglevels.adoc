@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getlogginglevels.txt[]
+include::example$TEXT/NODETOOL/getlogginglevels.txt[]
 ----

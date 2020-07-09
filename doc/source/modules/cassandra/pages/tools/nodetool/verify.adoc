@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$verify.txt[]
+include::example$TEXT/NODETOOL/verify.txt[]
 ----

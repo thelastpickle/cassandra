@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$refresh.txt[]
+include::example$TEXT/NODETOOL/refresh.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getconcurrentcompactors.txt[]
+include::example$TEXT/NODETOOL/getconcurrentcompactors.txt[]
 ----

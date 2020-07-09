@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$statusbackup.txt[]
+include::example$TEXT/NODETOOL/statusbackup.txt[]
 ----

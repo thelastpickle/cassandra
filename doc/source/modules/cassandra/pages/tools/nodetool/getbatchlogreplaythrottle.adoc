@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getbatchlogreplaythrottle.txt[]
+include::example$TEXT/NODETOOL/getbatchlogreplaythrottle.txt[]
 ----

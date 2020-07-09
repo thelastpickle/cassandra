@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$enableauditlog.txt[]
+include::example$TEXT/NODETOOL/enableauditlog.txt[]
 ----

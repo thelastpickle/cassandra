@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$replaybatchlog.txt[]
+include::example$TEXT/NODETOOL/replaybatchlog.txt[]
 ----

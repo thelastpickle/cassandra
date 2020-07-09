@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$rebuild.txt[]
+include::example$TEXT/NODETOOL/rebuild.txt[]
 ----

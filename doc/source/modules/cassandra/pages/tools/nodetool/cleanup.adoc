@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$cleanup.txt[]
+include::example$TEXT/NODETOOL/cleanup.txt[]
 ----

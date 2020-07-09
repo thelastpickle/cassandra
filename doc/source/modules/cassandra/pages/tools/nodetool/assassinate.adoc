@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$assassinate.txt[]
+include::example$TEXT/NODETOOL/assassinate.txt[]
 ----

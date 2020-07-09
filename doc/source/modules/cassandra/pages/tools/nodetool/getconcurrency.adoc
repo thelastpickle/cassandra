@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$getconcurrency.txt[]
+include::example$TEXT/NODETOOL/getconcurrency.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$bootstrap.txt[]
+include::example$TEXT/NODETOOL/bootstrap.txt[]
 ----

@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$setmaxhintwindow.txt[]
+include::example$TEXT/NODETOOL/setmaxhintwindow.txt[]
 ----

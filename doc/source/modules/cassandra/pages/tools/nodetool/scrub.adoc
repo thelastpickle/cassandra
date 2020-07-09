@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$scrub.txt[]
+include::example$TEXT/NODETOOL/scrub.txt[]
 ----

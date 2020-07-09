@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$enablegossip.txt[]
+include::example$TEXT/NODETOOL/enablegossip.txt[]
 ----

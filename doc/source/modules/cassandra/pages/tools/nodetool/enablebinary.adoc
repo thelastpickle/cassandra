@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$enablebinary.txt[]
+include::example$TEXT/NODETOOL/enablebinary.txt[]
 ----

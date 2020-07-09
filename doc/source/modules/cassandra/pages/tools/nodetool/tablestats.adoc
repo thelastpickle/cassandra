@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$tablestats.txt[]
+include::example$TEXT/NODETOOL/tablestats.txt[]
 ----

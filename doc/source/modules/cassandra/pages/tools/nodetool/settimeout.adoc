@@ -3,5 +3,5 @@
 == Usage
 [source,plaintext]
 ----
-include::example$settimeout.txt[]
+include::example$TEXT/NODETOOL/settimeout.txt[]
 ----
