@@ -19,8 +19,11 @@ A script to convert cassandra.yaml into Asciidoc for
 the online documentation.
 
 Usage:
-# LLP 07.06.20 FIGURE OUT THE OUTPUT FILE
-    convert_yaml_to_adoc.py conf/cassandra.yaml docs/source/conf.adoc
+
+YAML_INPUT=conf/cassandra.yaml
+YAML_OUTPUT=source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
+
+    convert_yaml_to_adoc.py $YAML_INPUT $YAML_OUTPUT
 """
 
 import sys
@@ -50,15 +53,12 @@ COMPLEX_OPTIONS = (
     'hinted_handoff_disabled_datacenters'
 )
 
-
 def convert(yaml_file, dest_file):
     with open(yaml_file, 'r') as f:
         # Trim off the boilerplate header
         lines = f.readlines()[7:]
 
     with open(dest_file, 'w') as outfile:
-        #next line not needed? LLP 07.06.20
-	#outfile.write(".. _cassandra-yaml:\n")
         outfile.write("= cassandra.yaml file configuration\n")
 
         # since comments preceed an option, this holds all of the comment
