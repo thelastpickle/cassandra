@@ -1,0 +1,7 @@
+== verify
+
+== Usage
+[source,plaintext]
+----
+include::example$verify.txt[]
+----

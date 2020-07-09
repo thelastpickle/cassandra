@@ -1,0 +1,7 @@
+== statusautocompaction
+
+== Usage
+[source,plaintext]
+----
+include::example$statusautocompaction.txt[]
+----

@@ -1,0 +1,7 @@
+== setbatchlogreplaythrottle
+
+== Usage
+[source,plaintext]
+----
+include::example$setbatchlogreplaythrottle.txt[]
+----

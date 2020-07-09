@@ -30,10 +30,11 @@ if(os.environ.get("SKIP_NODETOOL") == "1"):
 
 
 nodetool = "../bin/nodetool"
-outdir = "source/tools/nodetool"
+outdir = "source/modules/cassandra/pages/tools/nodetool"
+examplesdir = "source/modules/cassandra/examples"
 helpfilename = outdir + "/nodetool.txt"
 command_re = re.compile("(    )([_a-z]+)")
-commandRSTContent = ".. _nodetool_{0}:\n\n{0}\n{1}\n\nUsage\n---------\n\n.. include:: {0}.txt\n  :literal:\n\n"
+commandADOCContent = "== {0}\n\n== Usage\n[source,plaintext]\n----\ninclude::example${0}.txt[]\n----\n"
 
 # create the documentation directory
 if not os.path.exists(outdir):
@@ -51,32 +52,32 @@ def create_help_file():
             )
             raise cpe
 
-# for a given command, create the help file and an RST file to contain it
-def create_rst(command):
+# for a given command, create the help file and an ADOC file to contain it
+def create_adoc(command):
     if command:
         cmdName = command.group(0).strip()
-        cmdFilename = outdir + "/" + cmdName + ".txt"
-        rstFilename = outdir + "/" + cmdName + ".rst"
-        with open(cmdFilename, "w+") as cmdFile:
+        cmdFilename = examplesdir + "/" + cmdName + ".txt"
+        adocFilename = outdir + "/" + cmdName + ".adoc"
+        with open(cmdFilename, "wb+") as cmdFile:
             proc = Popen([nodetool, "help", cmdName], stdin=PIPE, stdout=PIPE)
             (out, err) = proc.communicate()
             cmdFile.write(out)
-        with open(rstFilename, "w+") as rstFile:
-            rstFile.write(commandRSTContent.format(cmdName, '-' * len(cmdName)))
+        with open(adocFilename, "w+") as adocFile:
+            adocFile.write(commandADOCContent.format(cmdName,cmdName,cmdName))
 
 # create base file
 create_help_file()
 
 # create the main usage page
-with open(outdir + "/nodetool.rst", "w+") as output:
+with open(outdir + "/nodetool.adoc", "w+") as output:
     with open(helpfilename, "r+") as helpfile:
-        output.write(".. _nodetool\n\nNodetool\n--------\n\nUsage\n---------\n\n")
+        output.write("== Nodetool\n\n== Usage\n\n")
         for commandLine in helpfile:
-            command = command_re.sub(r'\n\1:doc:`\2` - ',commandLine)
+            command = command_re.sub(r'\nxref:tools/nodetool/\2.adoc[\2] - ',commandLine)
             output.write(command)
 
 # create the command usage pages
-with open(helpfilename, "rw+") as helpfile:
+with open(helpfilename, "r+") as helpfile:
     for commandLine in helpfile:
         command = command_re.match(commandLine)
-        create_rst(command)
+        create_adoc(command)

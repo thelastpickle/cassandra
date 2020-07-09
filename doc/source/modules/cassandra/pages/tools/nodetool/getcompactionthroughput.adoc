@@ -1,0 +1,7 @@
+== getcompactionthroughput
+
+== Usage
+[source,plaintext]
+----
+include::example$getcompactionthroughput.txt[]
+----

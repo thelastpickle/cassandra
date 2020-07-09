@@ -1,0 +1,7 @@
+== tablehistograms
+
+== Usage
+[source,plaintext]
+----
+include::example$tablehistograms.txt[]
+----

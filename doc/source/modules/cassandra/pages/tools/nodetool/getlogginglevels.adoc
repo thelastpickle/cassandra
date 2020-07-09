@@ -1,0 +1,7 @@
+== getlogginglevels
+
+== Usage
+[source,plaintext]
+----
+include::example$getlogginglevels.txt[]
+----

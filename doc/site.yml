@@ -1,0 +1,59 @@
+site:
+  title: Apache Cassandra Documentation
+  url: file:///Users/lorina.poland/CLONES/cassandra/build/html/Cassandra/4.0
+
+content:
+  sources: 
+  - url: /Users/lorina.poland/CLONES/cassandra
+    branches: [doc_redo_asciidoc,4.0-rc5, 3.11]
+    start_path: doc/source
+
+output:
+    dir: ./build/html
+
+asciidoc:
+  attributes:
+    experimental: ''
+    example-caption: ~
+    hide-uri-scheme: ''
+    idprefix: ''
+    idseparator: '-'
+    linkattrs: ''
+    source-language: asciidoc
+    table-caption: ~
+    url-project: https://asciidoctor.org
+    url-org: https://github.com/asciidoctor
+    url-exten-lab: https://github.com/asciidoctor/asciidoctor-extensions-lab
+    url-rubygem: https://rubygems.org/gems/asciidoctor
+    url-tilt: https://github.com/rtomayko/tilt
+    url-foundation: https://foundation.zurb.com
+    url-jruby: https://jruby.org
+    url-asciimath: https://docs.mathjax.org/en/latest/asciimath.html
+    url-latexmath: https://docs.mathjax.org/en/latest/tex.html
+    url-mathjax: https://www.mathjax.org
+    url-mathjax-docs: https://meta.math.stackexchange.com/questions/5020/mathjax-basic-tutorial-and-quick-reference
+    url-coderay: http://coderay.rubychan.de/
+    url-coderay-gem: https://rubygems.org/gems/coderay
+    url-highlightjs: https://highlightjs.org/
+    url-highlightjs-lang: https://highlightjs.org/download/
+    url-prettify: https://code.google.com/p/google-code-prettify
+    url-pygments: http://pygments.org
+    url-pygments-lang: http://pygments.org/languages/
+    url-pygments-gem: https://rubygems.org/gems/pygments.rb
+    url-python: https://www.python.org
+    url-rouge: http://rouge.jneen.net
+    40_version: '4.0'
+    3x_version: '3.11'
+    30_version: '3.0'
+    22_version: '2.2'
+    21_version: '2.1'
+
+ui: 
+  bundle:
+    url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
+    snapshot: true
+  supplemental_files:
+  - path: ui.yml
+    contents: |
+      static_files: [ .nojekyll ]
+  - path: .nojekyll

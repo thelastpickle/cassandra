@@ -1,0 +1,7 @@
+== upgradesstables
+
+== Usage
+[source,plaintext]
+----
+include::example$upgradesstables.txt[]
+----

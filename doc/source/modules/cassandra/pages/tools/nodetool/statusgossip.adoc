@@ -1,0 +1,7 @@
+== statusgossip
+
+== Usage
+[source,plaintext]
+----
+include::example$statusgossip.txt[]
+----

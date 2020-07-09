@@ -1,0 +1,7 @@
+== info
+
+== Usage
+[source,plaintext]
+----
+include::example$info.txt[]
+----

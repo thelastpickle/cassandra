@@ -1,0 +1,7 @@
+== enablegossip
+
+== Usage
+[source,plaintext]
+----
+include::example$enablegossip.txt[]
+----

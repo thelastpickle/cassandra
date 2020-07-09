@@ -1,0 +1,7 @@
+== rebuild_index
+
+== Usage
+[source,plaintext]
+----
+include::example$rebuild_index.txt[]
+----

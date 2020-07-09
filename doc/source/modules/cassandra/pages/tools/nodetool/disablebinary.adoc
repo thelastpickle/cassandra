@@ -1,0 +1,7 @@
+== disablebinary
+
+== Usage
+[source,plaintext]
+----
+include::example$disablebinary.txt[]
+----

@@ -1,0 +1,7 @@
+== relocatesstables
+
+== Usage
+[source,plaintext]
+----
+include::example$relocatesstables.txt[]
+----

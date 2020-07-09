@@ -1,23 +1,24 @@
-# Makefile for Sphinx documentation
+# Makefile for Antora documentation
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
-PAPER         =
-BUILDDIR      = build
+ANTORAOPTS    = DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest
+ANTORAYAML    = site.yml
+ANTORACMD     = antora
 
 # Internal variables.
-PAPEROPT_a4     = -D latex_paper_size=a4
-PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+BUILDDIR	= build
+#PAPEROPT_a4     = -D latex_paper_size=a4
+#PAPEROPT_letter = -D latex_paper_size=letter
+#ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 # the i18n builder cannot share the environment and doctrees with the others
-I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+#I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 YAML_DOC_INPUT=../conf/cassandra.yaml
-YAML_DOC_OUTPUT=source/configuration/cassandra_config_file.rst
+#YAML_DOC_OUTPUT=source/configuration/cassandra_config_file.adoc
+YAML_DOC_OUTPUT=source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
 
-MAKE_CASSANDRA_YAML = python convert_yaml_to_rst.py $(YAML_DOC_INPUT) $(YAML_DOC_OUTPUT)
+MAKE_CASSANDRA_YAML = python convert_yaml_to_adoc.py $(YAML_DOC_INPUT) $(YAML_DOC_OUTPUT)
 
 GENERATE_NODETOOL_DOCS = python gen-nodetool-docs.py
 
@@ -63,7 +64,8 @@ clean:
 html:
 	$(MAKE_CASSANDRA_YAML)
 	$(GENERATE_NODETOOL_DOCS)
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo "use antora" 
+	$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

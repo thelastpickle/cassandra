@@ -1,0 +1,7 @@
+== setlogginglevel
+
+== Usage
+[source,plaintext]
+----
+include::example$setlogginglevel.txt[]
+----
