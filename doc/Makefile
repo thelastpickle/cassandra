@@ -64,8 +64,7 @@ clean:
 html:
 	$(MAKE_CASSANDRA_YAML)
 	$(GENERATE_NODETOOL_DOCS)
-	@echo "use antora" 
-	$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML) $(BUILDDIR)/html
+	$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML)
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
@@ -74,7 +73,7 @@ website: clean
 	@touch $(WEB_SITE_PRESENCE_FILE)
 	$(MAKE_CASSANDRA_YAML)
 	$(GENERATE_NODETOOL_DOCS)
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML)
 	@rm $(WEB_SITE_PRESENCE_FILE)
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
