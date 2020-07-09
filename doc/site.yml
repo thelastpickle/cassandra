@@ -5,7 +5,7 @@ site:
 content:
   sources: 
   - url: /Users/lorina.poland/CLONES/cassandra
-    branches: [doc_redo_asciidoc,4.0-rc5, 3.11]
+    branches: [doc_redo_asciidoc,doc_redo_asciidoc3.11,4.0-rc5, 3.11]
     start_path: doc/source
 
 output:
