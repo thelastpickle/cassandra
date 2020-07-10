@@ -59,10 +59,14 @@ clean:
 	rm -rf $(BUILDDIR)/*
 	rm -f $(YAML_DOC_OUTPUT)
 
+.PHONY: gennodetool
+gennodetool:
+	$(GENERATE_NODETOOL_DOCS)
+
 .PHONY: html
 html:
 	$(MAKE_CASSANDRA_YAML)
-	$(GENERATE_NODETOOL_DOCS)
+	#$(GENERATE_NODETOOL_DOCS)
 	$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML)
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

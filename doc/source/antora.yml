@@ -1,6 +1,6 @@
 name: Cassandra
-version: '3.11'
-prerelease: -rc.test
+version: '4.0'
+prerelease: -rc.5
 nav:
 - modules/ROOT/nav.adoc
 - modules/cassandra/nav.adoc

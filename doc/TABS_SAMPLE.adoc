@@ -1,0 +1,24 @@
+= TEST
+
+This is some text to make sure this page is build.
+:tabs:
+
+[{tabs}]
+====
+Tab 1 Title::
++
+-- 
+This is the content of the first tab.
+
+Another paragraph in the first tab.
+
+[source,console]
+----
+$ a code block
+----
+--
+Tab 2 Title::
++
+This is the content of the second tab.
+====
+

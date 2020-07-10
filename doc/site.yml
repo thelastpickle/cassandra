@@ -1,12 +1,26 @@
 site:
   title: Apache Cassandra Documentation
   url: file:///Users/lorina.poland/CLONES/cassandra/build/html/Cassandra/4.0
+  # UNCOMMENT WHEN READY
+  #keys:
+  # google_analytics: 'UA-11583863-1'
 
 content:
   sources: 
   - url: /Users/lorina.poland/CLONES/cassandra
-    branches: [doc_redo_asciidoc,doc_redo_asciidoc3.11,4.0-rc5, 3.11]
+    branches: [doc_redo_asciidoc,doc_redo_asciidoc3.11]
     start_path: doc/source
+
+ui:
+  # Need to replace this with a direct github url rather than a local path
+  bundle:
+    url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
+    snapshot: true
+  supplemental_files:
+  - path: ui.yml
+    contents: |
+      static_files: [ .nojekyll ]
+  - path: .nojekyll
 
 output:
     dir: ./build/html
@@ -21,6 +35,15 @@ asciidoc:
     linkattrs: ''
     source-language: asciidoc
     table-caption: ~
+    tabs: tabs
+    current-version: 4.0
+    latest-version: 4.0
+    previous-version: 3.11
+    40_version: '4.0'
+    3x_version: '3.11'
+    30_version: '3.0'
+    22_version: '2.2'
+    21_version: '2.1'
     url-project: https://asciidoctor.org
     url-org: https://github.com/asciidoctor
     url-exten-lab: https://github.com/asciidoctor/asciidoctor-extensions-lab
@@ -42,18 +65,5 @@ asciidoc:
     url-pygments-gem: https://rubygems.org/gems/pygments.rb
     url-python: https://www.python.org
     url-rouge: http://rouge.jneen.net
-    40_version: '4.0'
-    3x_version: '3.11'
-    30_version: '3.0'
-    22_version: '2.2'
-    21_version: '2.1'
-
-ui: 
-  bundle:
-    url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
-    snapshot: true
-  supplemental_files:
-  - path: ui.yml
-    contents: |
-      static_files: [ .nojekyll ]
-  - path: .nojekyll
+  extensions:
+  - ./lib/tabs-block.js
