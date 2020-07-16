@@ -456,85 +456,36 @@ A CQL table has a number of options that can be set at creation (and,
 for most of them, altered later). These options are specified after the
 `WITH` keyword.
 
-Amongst those options, however, are two important ones that cannot be changed after
-creation and influence which queries can be done against the table: 
-* `COMPACT STORAGE` 
-* `CLUSTERING ORDER` 
-Those, as well as the other options of a table, are described in the following
-sections.
-
-==== Compact tables
-
-[WARNING]
-.Warning
-====
-Since Cassandra 3.0, compact tables have the exact same layout
-internally than non compact ones (for the same schema obviously), and
-declaring a table compact *only* creates artificial limitations on the
-table definition and usage. It only exists for historical reason and is
-preserved for backward compatibility And as `COMPACT STORAGE` cannot, as
-of Cassandra , be removed, it is strongly discouraged to create new
-table with the `COMPACT STORAGE` option.
-====
-
-A _compact_ table is one defined with the `COMPACT STORAGE` option.
-This option is only maintained for backward compatibility for
-definitions created before CQL version 3 and shouldn't be used for new
-tables. Declaring a table with this option creates limitations for the
-table which are largely arbitrary (and exists for historical reasons).
-Amongst those limitation:
-
-* a compact table cannot use collections nor static columns.
-* if a compact table has at least one clustering column, then it must
-have _exactly_ one column outside of the primary key ones. This imply
-you cannot add or remove columns after creation in particular.
-* a compact table is limited in the indexes it can create, and no
-materialized view can be created on it.
+One important option that cannot be changed after creation, `CLUSTERING ORDER BY`, influences how queries can be done against the table. It is worth discussing in more detail here.
 
 [[clustering-order]]
-==== Reversing the clustering order
+==== Clustering order
 
-The clustering order of a table is defined by the
-`clustering columns <clustering-columns>` of that table. By default,
-that ordering is based on natural order of those clustering order, but
-the `CLUSTERING ORDER` allows to change that clustering order to use the
-_reverse_ natural order for some (potentially all) of the columns.
+The clustering order of a table is defined by the clustering columns. 
+By default, the clustering order is ascending for the clustering column's data types. 
+For example, integers order from 1, 2, ... n, while text orders from A to Z. 
 
-The `CLUSTERING ORDER` option takes the comma-separated list of the
-clustering column, each with a `ASC` (for _ascendant_, e.g. the natural
-order) or `DESC` (for _descendant_, e.g. the reverse natural order).
-Note in particular that the default (if the `CLUSTERING ORDER` option is
-not used) is strictly equivalent to using the option with all clustering
-columns using the `ASC` modifier.
+The `CLUSTERING ORDER BY` table option uses a comma-separated list of the
+clustering columns, each set for either `ASC` (for _ascending_ order) or `DESC` (for _descending order).
+The default is ascending for all clustering columns if the `CLUSTERING ORDER BY` option is not set. 
 
-Note that this option is basically a hint for the storage engine to
-change the order in which it stores the row but it has 3 visible
-consequences:
+This option is basically a hint for the storage engine that changes the order in which it stores the row.
+Beware of the consequences of setting this option:
 
-* it limits which `ORDER BY` clause are allowed for
-`selects <select-statement>` on that table. You can only::
-  order results by the clustering order or the reverse clustering order.
-  Meaning that if a table has 2 clustering column `a` and `b` and you
-  defined `WITH CLUSTERING ORDER (a DESC, b ASC)`, then in queries you
-  will be allowed to use `ORDER BY (a DESC, b ASC)` and (reverse
-  clustering order) `ORDER BY (a ASC, b DESC)` but *not*
-  `ORDER BY (a ASC, b ASC)` (nor `ORDER BY (a DESC, b DESC)`).
-* it also change the default order of results when queried (if no
-`ORDER BY` is provided). Results are always returned::
-  in clustering order (within a partition).
-* it has a small performance impact on some queries as queries in
-reverse clustering order are slower than the one in::
-  forward clustering order. In practice, this means that if you plan on
-  querying mostly in the reverse natural order of your columns (which is
-  common with time series for instance where you often want data from
-  the newest to the oldest), it is an optimization to declare a
-  descending clustering order.
+* It changes the default ascending order of results when queried with a `SELECT` statement with no `ORDER BY` clause.
+
+* It limits how the `ORDER BY` clause is used in `SELECT` statements on that table. 
+Results can only be ordered with either the original clustering order or the reverse clustering order.
+Suppose you create a table with two clustering columns `a` and `b`, defined `WITH CLUSTERING ORDER BY (a DESC, b ASC)`.
+Queries on the table can use `ORDER BY (a DESC, b ASC)` or `ORDER BY (a ASC, b DESC)`. 
+Mixed order, such as `ORDER BY (a ASC, b ASC)` or `ORDER BY (a DESC, b DESC)` will not return expected order.
+
+* It has a performance impact on queries. Queries in reverse clustering order are slower than the default ascending order.
+If you plan to query mostly in descending order, declare the clustering order in the table schema using `WITH CLUSTERING ORDER BY ()`. 
+This optimization is common for time series, to retrieve the data from newest to oldest.
 
 [[create-table-general-options]]
 ==== Other table options
-
-review (misses cdc if nothing else) and link to proper categories when
-appropriate (compaction for instance)
 
 A table supports the following options:
 
@@ -542,24 +493,24 @@ A table supports the following options:
 |===
 |option | kind | default | description
 
-| `comment` | _simple_ | none | A free-form, human-readable comment. 
-| `speculative_retry` | _simple_ | 99PERCENTILE | Speculative retry options
-| `cdc` |_boolean_ |false |Create a Change Data Capture (CDC) log on the table.
-| `additional_write_policy` |_simple_ |99PERCENTILE |`Speculative retry options
-| `gc_grace_seconds` |_simple_ |864000 |Time to wait before garbage
-collecting tombstones (deletion markers).
+| `comment` | _simple_ | none | A free-form, human-readable comment
+| xref:cql/ddl.adoc#spec_retry[`speculative_retry`] | _simple_ | 99PERCENTILE | Speculative retry options
+| `cdc` |_boolean_ |false |Create a Change Data Capture (CDC) log on the table
+| `additional_write_policy` |_simple_ |99PERCENTILE | Same as `speculative_retry`
+| `gc_grace_seconds` |_simple_ |864000 |Time to wait before garbage collecting tombstones (deletion markers)
 | `bloom_filter_fp_chance` |_simple_ |0.00075 |The target probability of
 false positive of the sstable bloom filters. Said bloom filters will be
 sized to provide the provided probability (thus lowering this value
 impact the size of bloom filters in-memory and on-disk)
-| `default_time_to_live` |_simple_ |0 |The default expiration time (“TTL”) in seconds for a table.
-| `compaction` |_map_ |_see below_ |`Compaction options <cql-compaction-options>`.
-| `compression` |_map_ |_see below_ |`Compression options <cql-compression-options>`.
+| `default_time_to_live` |_simple_ |0 |Default expiration time (“TTL”) in seconds for a table
+| `compaction` |_map_ |_see below_ |`Compaction options <cql-compaction-options>`
+| `compression` |_map_ |_see below_ |`Compression options <cql-compression-options>`
 | `caching` |_map_ |_see below_ |Caching options
-| `memtable_flush_period_in_ms` |_simple_ |0 |Time (in ms) before Cassandra flushes memtables to disk.
+| `memtable_flush_period_in_ms` |_simple_ |0 |Time (in ms) before Cassandra flushes memtables to disk
 | `read_repair` |_simple_ |BLOCKING |Sets read repair behavior (see below)
 |===
 
+[[spec_retry]]
 ===== Speculative retry options
 
 By default, Cassandra read coordinators only query as many replicas as
@@ -582,7 +533,7 @@ Examples of setting speculative retry are:
 ALTER TABLE users WITH speculative_retry = '10ms';
 ----
 
-Or,
+or,
 
 [source,cql]
 ----
