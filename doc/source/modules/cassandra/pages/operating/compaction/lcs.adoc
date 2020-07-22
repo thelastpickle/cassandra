@@ -65,6 +65,7 @@ for example. To avoid this LCS tries to include those starved high level
 sstables in other compactions if there has been 25 compaction rounds
 where the highest level has not been involved.
 
+[[lcs_options]]
 == LCS options
 
 `sstable_size_in_mb` (default: 160MB)::

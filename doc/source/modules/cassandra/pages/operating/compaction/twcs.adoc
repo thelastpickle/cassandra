@@ -8,9 +8,11 @@ workload, the contents of an entire SSTable likely expire at
 approximately the same time, allowing them to be dropped completely, and
 space reclaimed much more reliably than when using
 `SizeTieredCompactionStrategy` or `LeveledCompactionStrategy`. The basic
-concept is that `TimeWindowCompactionStrategy` will create 1 sstable per
+concept is that `TimeWindowCompactionStrategy` will create one sstable per
 file for a given window, where a window is simply calculated as the
 combination of two primary options:
+
+[[twcs_options]]
 
 `compaction_window_unit` (default: DAYS)::
   A Java TimeUnit (MINUTES, HOURS, or DAYS).

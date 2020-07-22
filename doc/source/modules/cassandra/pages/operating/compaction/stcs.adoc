@@ -17,6 +17,7 @@ unrepaired data). There is also an option (-s) to do a major compaction
 that splits the output into several sstables. The sizes of the sstables
 are approximately 50%, 25%, 12.5%... of the total size.
 
+[[stcs_options]]
 == STCS options
 
 `min_sstable_size` (default: 50MB)::
