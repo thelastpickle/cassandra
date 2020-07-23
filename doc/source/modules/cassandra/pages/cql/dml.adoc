@@ -8,65 +8,37 @@ update, delete and query data.
 
 Querying data from data is done using a `SELECT` statement:
 
-select_statement: SELECT [ JSON | DISTINCT ] (
-[.title-ref]#select_clause# | '_' ) : FROM `table_name` : [ WHERE
-`where_clause` ] : [ GROUP BY `group_by_clause` ] : [ ORDER BY
-`ordering_clause` ] : [ PER PARTITION LIMIT (`integer` | `bind_marker`)
-] : [ LIMIT (`integer` | `bind_marker`) ] : [ ALLOW FILTERING ]
-select_clause: `selector` [ AS `identifier` ] ( ',' `selector` [ AS
-`identifier` ] ) selector: `column_name` : | `term` : | CAST '('
-`selector` AS `cql_type` ')' : | `function_name` '(' [ `selector` ( ','
-`selector` )_ ] ')' : | COUNT '(' '_' ')' where_clause: `relation` ( AND
-`relation` )_ relation: [.title-ref]#column_name# [.title-ref]#operator#
-[.title-ref]#term# : '(' [.title-ref]#column_name# ( ','
-[.title-ref]#column_name# )* ')' [.title-ref]#operator#
-[.title-ref]#tuple_literal# : TOKEN '(' [.title-ref]#column_name# ( ','
-[.title-ref]#column_name# )* ')' [.title-ref]#operator#
-[.title-ref]#term# operator: '=' | '<' | '>' | '<=' | '>=' | '!=' | IN |
-CONTAINS | CONTAINS KEY group_by_clause: [.title-ref]#column_name# ( ','
-[.title-ref]#column_name# )* ordering_clause: [.title-ref]#column_name#
-[ ASC | DESC ] ( ',' [.title-ref]#column_name# [ ASC | DESC ] )*
+[source,bnf]
+----
+include:example$BNF/select_statement.bnf[]
+----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-SELECT name, occupation FROM users WHERE userid IN (199, 200, 207);
-SELECT JSON name, occupation FROM users WHERE userid = 199;
-SELECT name AS user_name, occupation AS user_occupation FROM users;
-
-SELECT time, value
-FROM events
-WHERE event_type = 'myEvent'
-  AND time > '2011-02-03'
-  AND time <= '2012-01-01'
-
-SELECT COUNT (*) AS user_count FROM users;
+include:example$CQL/select_statement.cql[]
 ----
 
 The `SELECT` statements reads one or more columns for one or more rows
 in a table. It returns a result-set of the rows matching the request,
 where each row contains the values for the selection corresponding to
-the query. Additionally, `functions <cql-functions>` including
-`aggregation <aggregate-functions>` ones can be applied to the result.
+the query. Additionally, xref:cql/functions.adoc#cql-functions[functions] including
+xref:cql/functions.adoc#aggregate-functions[aggregations] can be applied to the result.
 
-A `SELECT` statement contains at least a
-`selection clause <selection-clause>` and the name of the table on which
-the selection is on (note that CQL does *not* joins or sub-queries and
-thus a select statement only apply to a single table). In most case, a
-select will also have a `where clause <where-clause>` and it can
-optionally have additional clauses to `order <ordering-clause>` or
-`limit <limit-clause>` the results. Lastly, `queries that require
-filtering <allow-filtering>` can be allowed if the `ALLOW FILTERING`
-flag is provided.
+A `SELECT` statement contains at least a xref:cql/dml.adoc#selection-clause[selection clause] and the name of the table on which
+the selection is executed. 
+CQL does *not* execute joins or sub-queries and a select statement only apply to a single table. 
+A select statement can also have a xref:cql/dml.adoc#where-clause[where clause] that can further narrow the query results.
+Additional clauses can xref:cql/dml.adoc#ordering-clause[order] or xref:cql/dml.adoc#limit-clause[limit] the results. 
+Lastly, xref:cql/dml.adoc#allow-filtering[queries that require full cluster filtering] can append `ALLOW FILTERING` to any query.
 
+[[selection-clause]]
 === Selection clause
 
-The `select_clause` determines which columns needs to be queried and
-returned in the result-set, as well as any transformation to apply to
-this result before returning. It consists of a comma-separated list of
-_selectors_ or, alternatively, of the wildcard character (`*`) to select
-all the columns defined in the table.
+The `select_clause` determines which columns will be queried and returned in the result set. 
+This clause can also apply transformations to apply to the result before returning. 
+The selection clause consists of a comma-separated list of specific _selectors_ or, alternatively, the wildcard character (`*`) to select all the columns defined in the table.
 
 ==== Selectors
 
@@ -87,7 +59,7 @@ which counts all non-null results.
 
 ==== Aliases
 
-Every _top-level_ selector can also be aliased (using [.title-ref]#AS#).
+Every _top-level_ selector can also be aliased (using AS#).
 If so, the name of the corresponding column in the result set will be
 that of the alias. For instance:
 
@@ -359,13 +331,13 @@ SELECT * FROM users WHERE birth_year = 1981 AND country = 'FR' ALLOW FILTERING;
 
 Inserting data for a row is done using an `INSERT` statement:
 
-insert_statement: INSERT INTO [.title-ref]#table_name# (
-[.title-ref]#names_values# | [.title-ref]#json_clause# ) : [ IF NOT
-EXISTS ] : [ USING [.title-ref]#update_parameter# ( AND
-[.title-ref]#update_parameter# )* ] names_values: [.title-ref]#names#
-VALUES [.title-ref]#tuple_literal# json_clause: JSON
-[.title-ref]#string# [ DEFAULT ( NULL | UNSET ) ] names: '('
-[.title-ref]#column_name# ( ',' [.title-ref]#column_name# )* ')'
+insert_statement: INSERT INTO table_name# (
+names_values# | json_clause# ) : [ IF NOT
+EXISTS ] : [ USING update_parameter# ( AND
+update_parameter# )* ] names_values: names#
+VALUES tuple_literal# json_clause: JSON
+string# [ DEFAULT ( NULL | UNSET ) ] names: '('
+column_name# ( ',' column_name# )* ')'
 
 For instance:
 
@@ -499,11 +471,11 @@ of `null` is equivalent to inserting with a TTL of 0.
 
 Deleting rows or parts of rows uses the `DELETE` statement:
 
-delete_statement: DELETE [ [.title-ref]#simple_selection# ( ','
-[.title-ref]#simple_selection# ) ] : FROM [.title-ref]#table_name# : [
-USING [.title-ref]#update_parameter# ( AND
-[.title-ref]#update_parameter# )* ] : WHERE [.title-ref]#where_clause# :
-[ IF ( EXISTS | [.title-ref]#condition# ( AND [.title-ref]#condition#
+delete_statement: DELETE [ simple_selection# ( ','
+simple_selection# ) ] : FROM table_name# : [
+USING update_parameter# ( AND
+update_parameter# )* ] : WHERE where_clause# :
+[ IF ( EXISTS | condition# ( AND condition#
 )*) ]
 
 For instance:

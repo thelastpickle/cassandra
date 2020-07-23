@@ -1,4 +1,5 @@
 = Data Definition
+:tabs:
 
 CQL stores data in _tables_, whose schema defines the layout of the
 data in the table. Tables are located in _keyspaces_. 
@@ -285,17 +286,28 @@ partition (having the same xref:cql/ddl.adoc#partition-key[partition key].
 
 For example:
 
+[{tabs}] 
+==== 
+Code:: 
++ 
+-- 
 [source,cql]
 ----
 include::example$CQL/create_static_column.cql[]
 include::example$CQL/insert_static_data.cql[]
 include::example$CQL/select_static_data.cql[]
 ----
-results in:
+--
+
+Results::
++
+--
 [source,cql]
 ----
 include::example$RESULTS/select_static_data.result[]
 ----
+--
+====
 
 As can be seen, the `s` value is the same (`static1`) for both of the
 rows in the partition (the partition key being `pk`, and both

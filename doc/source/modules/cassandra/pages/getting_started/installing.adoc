@@ -1,4 +1,5 @@
 = Installing Cassandra
+:tabs:
 
 These are the instructions for deploying the supported releases of
 Apache Cassandra on Linux servers.
@@ -53,19 +54,7 @@ binaries and configuration files as the `cassandra` OS user.
 
 == Installing the binary tarball
 
-[arabic]
-. Verify the version of Java installed. For example:
-
-[source,shell]
-----
-include::example$BASH/java_verify.sh[]
-----
-should return:
-
-[source,plaintext]
-----
-include::example$RESULTS/java_verify.result[]
-----
+include::partial$java_version.adoc[]
 
 [arabic, start=2]
 . Download the binary tarball from one of the mirrors on the
@@ -86,31 +75,49 @@ http://archive.apache.org/dist/cassandra/[Apache Archives].
 the methods https://www.apache.org/dyn/closer.cgi#verify[here]. For
 example, to verify the hash of the downloaded file using GPG:
 
+[{tabs}]
+====
+Command::
++
+--
 [source,shell]
 ----
 include::example$BASH/verify_gpg.sh[]
 ----
+--
 
-should return:
-
+Result::
++
+--
 [source,plaintext]
 ----
 include::example$RESULTS/verify_gpg.result[]
 ----
+--
+====
 
 Compare the signature with the SHA256 file from the Downloads site:
 
+[{tabs}]
+====
+Command::
++
+--
 [source,shell]
 ----
 include::example$BASH/curl_verify_sha.sh[]
 ----
+--
 
-which returns: 
-
+Result::
++
+--
 [source,plaintext]
 ----
 28757dde589f70410f9a6a95c39ee7e6cde63440e2b06b91ae6b200614fa364d
 ----
+--
+====
 
 [arabic, start=4]
 . Unpack the tarball:
@@ -151,39 +158,37 @@ include::example$BASH/start_tarball.sh[]
 
 NOTE: This will run Cassandra as the authenticated Linux user.
 
+include::partial$tail_syslog.adoc[]
 You can monitor the progress of the startup with:
 
+[{tabs}]
+====
+Command::
++
+--
 [source,shell]
 ----
 include::example$BASH/tail_syslog.sh[]
 ----
+--
 
+Result::
++
+--
 Cassandra is ready when you see an entry like this in the `system.log`:
 
 [source,plaintext]
 ----
 include::example$RESULTS/tail_syslog.result[]
 ----
+--
+====
 
 include::partial$nodetool_and_cqlsh.adoc[]
 
 == Installing the Debian packages
 
-[arabic]
-. Verify the version of Java installed. For example:
-
-// LLP: NEED TO ADD TO PARTIALS TO REUSE
-[source,shell]
-----
-include::example$BASH/java_verify.sh[]
-----
-
-should return:
-
-[source,plaintext]
-----
-include::example$RESULTS/java_verify.result[]
-----
+include::partial$java_version.adoc[]
 
 [arabic, start=2]
 . Add the Apache repository of Cassandra to the file
@@ -199,14 +204,26 @@ include::example$BASH/get_deb_package.sh[]
 . Add the Apache Cassandra repository keys to the list of trusted keys
 on the server:
 
+[{tabs}]
+====
+Command::
++
+--
 [source,shell]
 ----
 include::example$BASH/add_repo_keys.sh[]
 ----
+--
+
+Result::
++
+--
 [source,plaintext]
 ----
 include::example$RESULTS/add_repo_keys.result[]
 ----
+--
+====
 
 [arabic, start=4]
 . Update the package index from sources:
@@ -234,17 +251,7 @@ include::partial$nodetool_and_cqlsh_nobin.adoc[]
 
 == Installing the RPM packages
 
-[arabic]
-. Verify the version of Java installed. For example:
-
-[source,shell]
-----
-include::example$BASH/java_verify.sh[]
-----
-[source,plaintext]
-----
-include::example$RESULTS/java_verify.result[]
-----
+include::partial$java_version.adoc[]
 
 [arabic, start=2]
 . Add the Apache repository of Cassandra to the file
