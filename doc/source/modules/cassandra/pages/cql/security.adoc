@@ -1,4 +1,4 @@
-= Security
+role_name ::= identifier | string= Security
 
 [[cql-roles]]
 == Database Roles
@@ -8,7 +8,7 @@ Syntactically, a role is defined by:
 
 [source, bnf]
 ----
-role_name ::= identifier | string
+include::example$BNF/role_name.bnf[]
 ----
 
 
@@ -19,33 +19,20 @@ Creating a role uses the `CREATE ROLE` statement:
 
 [source, bnf]
 ----
-create_role_statement ::= CREATE ROLE [ IF NOT EXISTS ] role_name 
-			  [ WITH role_options# ]
-role_options ::= role_option ( AND role_option)* 
-role_option ::= PASSWORD '=' string
-		| LOGIN '=' boolean 
-		| SUPERUSER '=' boolean
-		| OPTIONS '=' map_literal 
-		| ACCESS TO DATACENTERS set_literal 
-		| ACCESS TO ALL DATACENTERS
+include::example$BNF/create_role_statement.bnf[]
 ----
 
 For instance:
 
 [source,cql]
 ----
-CREATE ROLE new_role;
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true;
-CREATE ROLE bob WITH PASSWORD = 'password_b' AND LOGIN = true AND SUPERUSER = true;
-CREATE ROLE carlos WITH OPTIONS = { 'custom_option1' : 'option1_value', 'custom_option2' : 99 };
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true AND ACCESS TO DATACENTERS {'DC1', 'DC3'};
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true AND ACCESS TO ALL DATACENTERS;
+include::example$CQL/create_role.cql[]
 ----
 
 By default roles do not possess `LOGIN` privileges or `SUPERUSER`
 status.
 
-`Permissions <cql-permissions>` on database resources are granted to
+xref:cql/security.adoc#cql-permissions[Permissions] on database resources are granted to
 roles; types of resources include keyspaces, tables, functions and roles
 themselves. Roles may be granted to other roles to create hierarchical
 permissions structures; in these hierarchies, permissions and
@@ -57,7 +44,7 @@ acquire any roles and privileges granted to that role.
 
 Only a client with with the `CREATE` permission on the database roles
 resource may issue `CREATE ROLE` requests (see the
-`relevant section <cql-permissions>` below), unless the client is a
+xref:cql/security.adoc#cql-permissions[relevant section]), unless the client is a
 `SUPERUSER`. Role management in Cassandra is pluggable and custom
 implementations may support only a subset of the listed options.
 
@@ -88,8 +75,7 @@ used and the role exists, the statement is a no-op:
 
 [source,cql]
 ----
-CREATE ROLE other_role;
-CREATE ROLE IF NOT EXISTS other_role;
+include::example$CQL/create_role_ifnotexists.cql[]
 ----
 
 [[alter-role-statement]]
@@ -99,14 +85,14 @@ Altering a role options uses the `ALTER ROLE` statement:
 
 [source, bnf]
 ----
-alter_role_statement ::= ALTER ROLE role_name WITH role_options
+include::example$BNF/alter_role_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-ALTER ROLE bob WITH PASSWORD = 'PASSWORD_B' AND SUPERUSER = false;
+include::example$CQL/alter_role.cql[]
 ----
 
 ==== Restricting connections to specific datacenters
@@ -119,13 +105,13 @@ clause.
 
 Conditions on executing `ALTER ROLE` statements:
 
-* A client must have `SUPERUSER` status to alter the `SUPERUSER` status
+* a client must have `SUPERUSER` status to alter the `SUPERUSER` status
 of another role
-* A client cannot alter the `SUPERUSER` status of any role it currently
+* a client cannot alter the `SUPERUSER` status of any role it currently
 holds
-* A client can only modify certain properties of the role with which it
+* a client can only modify certain properties of the role with which it
 identified at login (e.g. `PASSWORD`)
-* To modify properties of a role, the client must be granted `ALTER`
+* to modify properties of a role, the client must be granted `ALTER`
 `permission <cql-permissions>` on that role
 
 [[drop-role-statement]]
@@ -135,7 +121,7 @@ Dropping a role uses the `DROP ROLE` statement:
 
 [source, bnf]
 ----
-drop_role_statement ::= DROP ROLE [ IF EXISTS ] role_name
+include::example$BNF/drop_role_statement.bnf[]
 ----
 
 `DROP ROLE` requires the client to have `DROP`
@@ -154,12 +140,11 @@ used and the role does not exist the statement is a no-op.
 DROP ROLE intentionally does not terminate any open user sessions.
 Currently connected sessions will remain connected and will retain the
 ability to perform any database actions which do not require
-`authorization<authorization>`. However, if authorization is enabled,
-`permissions<cql-permissions>` of the dropped role are also revoked,
-subject to the `caching options<auth-caching>` configured in
-`cassandra.yaml<cassandra-yaml>`. Should a dropped role be subsequently
-recreated and have new `permissions<grant-permission-statement>` or
-`roles<grant-role-statement>` granted to it, any client sessions still
+xref:cql/security.adoc#authorization[authorization]. 
+However, if authorization is enabled, xref:cql/security.adoc#cql-permissions[permissions] of the dropped role are also revoked,
+subject to the xref:cql/security.adoc#auth-caching[caching options] configured in xref:cql/configuring.adoc#cassandra.yaml[cassandra-yaml] file. 
+Should a dropped role be subsequently recreated and have new xref:security.adoc#grant-permission-statement[permissions] or
+xref:security.adoc#grant-role-statement[roles]` granted to it, any client sessions still
 connected will acquire the newly granted permissions and roles.
 ====
 
@@ -170,14 +155,14 @@ Granting a role to another uses the `GRANT ROLE` statement:
 
 [source, bnf]
 ----
-grant_role_statement ::= GRANT role_name TO role_name#
+include::example$BNF/grant_role_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-GRANT report_writer TO alice;
+include::example$CQL/grant_role.cql[]
 ----
 
 This statement grants the `report_writer` role to `alice`. Any
@@ -188,12 +173,7 @@ not permitted. The following examples result in error conditions:
 
 [source,cql]
 ----
-GRANT role_a TO role_b;
-GRANT role_b TO role_a;
-
-GRANT role_a TO role_b;
-GRANT role_b TO role_c;
-GRANT role_c TO role_a;
+include::example$CQL/role_error.cql[]
 ----
 
 [[revoke-role-statement]]
@@ -203,14 +183,14 @@ Revoking a role uses the `REVOKE ROLE` statement:
 
 [source, bnf]
 ----
-revoke_role_statement ::= REVOKE role_name FROM role_name
+include::example$BNF/revoke_role_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-REVOKE report_writer FROM alice;
+include::example$CQL/revoke_role.cql[]
 ----
 
 This statement revokes the `report_writer` role from `alice`. Any
@@ -225,34 +205,34 @@ listed using the `LIST ROLES` statement:
 
 [source, bnf]
 ----
-list_roles_statement ::= LIST ROLES [ OF role_name] [ NORECURSIVE ]
+include::example$BNF/list_roles_statement.bnf[]
 ----
 
 For instance:
 
 [source,cql]
 ----
-LIST ROLES;
+include::example$CQL/list_roles.cql[]
 ----
 
 returns all known roles in the system, this requires `DESCRIBE`
-permission on the database roles resource. And:
+permission on the database roles resource. 
+
+This example enumerates all roles granted to `alice`, including those transitively
+acquired:
 
 [source,cql]
 ----
-LIST ROLES OF alice;
+include::example$CQL/list_roles_of.cql[]
 ----
 
-enumerates all roles granted to `alice`, including those transitively
-acquired. But:
+This example lists all roles directly granted to `bob` without including any of the
+transitively acquired ones:
 
 [source,cql]
 ----
-LIST ROLES OF bob NORECURSIVE
+include::example$CQL/list_roles_nonrecursive.cql[]
 ----
-
-lists all roles directly granted to `bob` without including any of the
-transitively acquired ones.
 
 == Users
 
@@ -270,39 +250,22 @@ Creating a user uses the `CREATE USER` statement:
 
 [source, bnf]
 ----
-create_user_statement ::= CREATE USER [ IF NOT EXISTS ] role_name 
-			  [ WITH PASSWORD string ] 
-			  [ user_option ] 
-user_option: SUPERUSER | NOSUPERUSER
+include::example$CQL/create_user_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-CREATE USER alice WITH PASSWORD 'password_a' SUPERUSER;
-CREATE USER bob WITH PASSWORD 'password_b' NOSUPERUSER;
+include::example$CQL/create_user.cql[]
 ----
 
-`CREATE USER` is equivalent to `CREATE ROLE` where the `LOGIN` option is
-`true`. So, the following pairs of statements are equivalent:
+The `CREATE USER` command is equivalent to `CREATE ROLE` where the `LOGIN` option is `true`. 
+So, the following pairs of statements are equivalent:
 
 [source,cql]
 ----
-CREATE USER alice WITH PASSWORD 'password_a' SUPERUSER;
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true AND SUPERUSER = true;
-
-CREATE USER IF NOT EXISTS alice WITH PASSWORD 'password_a' SUPERUSER;
-CREATE ROLE IF NOT EXISTS alice WITH PASSWORD = 'password_a' AND LOGIN = true AND SUPERUSER = true;
-
-CREATE USER alice WITH PASSWORD 'password_a' NOSUPERUSER;
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true AND SUPERUSER = false;
-
-CREATE USER alice WITH PASSWORD 'password_a' NOSUPERUSER;
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true;
-
-CREATE USER alice WITH PASSWORD 'password_a';
-CREATE ROLE alice WITH PASSWORD = 'password_a' AND LOGIN = true;
+include::example$CQL/create_user_role.cql[]
 ----
 
 [[alter-user-statement]]
@@ -312,15 +275,14 @@ Altering the options of a user uses the `ALTER USER` statement:
 
 [source, bnf]
 ----
-alter_user_statement ::= ALTER USER role_name [ WITH PASSWORD string] [ user_option]
+include::example$BNF/alter_user_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-ALTER USER alice WITH PASSWORD 'PASSWORD_A';
-ALTER USER bob SUPERUSER;
+include::example$CQL/alter_user.cql[]
 ----
 
 [[drop-user-statement]]
@@ -330,7 +292,7 @@ Dropping a user uses the `DROP USER` statement:
 
 [source, bnf]
 ----
-drop_user_statement ::= DROP USER [ IF EXISTS ] role_name
+include::example$BNF/drop_user_statement.bnf[]
 ----
 
 [[list-users-statement]]
@@ -338,16 +300,12 @@ drop_user_statement ::= DROP USER [ IF EXISTS ] role_name
 
 Existing users can be listed using the `LIST USERS` statement:
 
-list_users_statement: LIST USERS
-
-Note that this statement is equivalent to:
-
-[source,cql]
+[source, bnf]
 ----
-LIST ROLES;
+include::example$BNF/list_users_statement.bnf[]
 ----
 
-but only roles with the `LOGIN` privilege are included in the output.
+Note that this statement is equivalent to xref:security.adoc#list-roles-statement[`LIST ROLES], but only roles with the `LOGIN` privilege are included in the output.
 
 == Data Control
 
@@ -523,63 +481,52 @@ Granting a permission uses the `GRANT PERMISSION` statement:
 
 [source, bnf]
 ----
-grant_permission_statement ::= GRANT permissions ON resource TO role_name 
-permissions ::= ALL [ PERMISSIONS ] | permission [ PERMISSION ] 
-permission ::= CREATE | ALTER | DROP | SELECT | MODIFY | AUTHORIZE | DESCRIBE | EXECUTE
-resource ::= 	ALL KEYSPACES 
-		| KEYSPACE keyspace_name 
-		| [ TABLE ] table_name 
-		| ALL ROLES 
-		| ROLE role_name
-		| ALL FUNCTIONS [ IN KEYSPACE keyspace_name ]
-		| FUNCTION function_name '(' [ cql_type( ',' cql_type )* ] ')' 
-		| ALL MBEANS 
-		| ( MBEAN | MBEANS ) string
+include::example$BNF/grant_permission_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-GRANT SELECT ON ALL KEYSPACES TO data_reader;
+include::example$CQL/grant_perm.cql[]
 ----
 
-This gives any user with the role `data_reader` permission to execute
+This example gives any user with the role `data_reader` permission to execute
 `SELECT` statements on any table across all keyspaces:
 
 [source,cql]
 ----
-GRANT MODIFY ON KEYSPACE keyspace1 TO data_writer;
+include::example$CQL/grant_modify.cql[]
 ----
 
-This give any user with the role `data_writer` permission to perform
+To give any user with the role `data_writer` permission to perform
 `UPDATE`, `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE` queries on all
 tables in the `keyspace1` keyspace:
 
 [source,cql]
 ----
-GRANT DROP ON keyspace1.table1 TO schema_owner;
+include::example$CQL/grant_drop.cql[]
 ----
 
-This gives any user with the `schema_owner` role permissions to `DROP`
+To give any user with the `schema_owner` role permissions to `DROP` a specific
 `keyspace1.table1`:
 
 [source,cql]
 ----
-GRANT EXECUTE ON FUNCTION keyspace1.user_function( int ) TO report_writer;
+include::example$CQL/grant_execute.cql[]
 ----
 
-This grants any user with the `report_writer` role permission to execute
+This command grants any user with the `report_writer` role permission to execute
 `SELECT`, `INSERT` and `UPDATE` queries which use the function
 `keyspace1.user_function( int )`:
 
 [source,cql]
 ----
-GRANT DESCRIBE ON ALL ROLES TO role_admin;
+include::example$CQL/grant_describe.cql[]
 ----
 
 This grants any user with the `role_admin` role permission to view any
-and all roles in the system with a `LIST ROLES` statement
+and all roles in the system with a `LIST ROLES` statement.
 
 ==== GRANT ALL
 
@@ -602,18 +549,14 @@ statement:
 
 [source, bnf]
 ----
-revoke_permission_statement ::= REVOKE permissions ON resource FROM role_name
+include::example$BNF/revoke_permission_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-REVOKE SELECT ON ALL KEYSPACES FROM data_reader;
-REVOKE MODIFY ON KEYSPACE keyspace1 FROM data_writer;
-REVOKE DROP ON keyspace1.table1 FROM schema_owner;
-REVOKE EXECUTE ON FUNCTION keyspace1.user_function( int ) FROM report_writer;
-REVOKE DESCRIBE ON ALL ROLES FROM role_admin;
+include::example$CQL/revoke_perm.cql[]
 ----
 
 Because of their function in normal driver operations, certain tables
@@ -623,11 +566,7 @@ their assigned role:
 
 [source,cql]
 ----
-* `system_schema.keyspaces`
-* `system_schema.columns`
-* `system_schema.tables`
-* `system.local`
-* `system.peers`
+include::example$CQL/no_revoke.cql[]
 ----
 
 [[list-permissions-statement]]
@@ -637,14 +576,14 @@ Listing granted permissions uses the `LIST PERMISSIONS` statement:
 
 [source, bnf]
 ----
-list_permissions_statement ::= LIST permissions [ ON resource] [ OF role_name[ NORECURSIVE ] ]
+include::example$BNF/list_permissions_statement.bnf[]
 ----
 
-For instance:
+For example:
 
 [source,cql]
 ----
-LIST ALL PERMISSIONS OF alice;
+include::example$CQL/list_perm.cql[]
 ----
 
 Show all permissions granted to `alice`, including those acquired
@@ -652,7 +591,7 @@ transitively from any other roles:
 
 [source,cql]
 ----
-LIST ALL PERMISSIONS ON keyspace1.table1 OF bob;
+include::example$CQL/list_all_perm.cql[]
 ----
 
 Show all permissions on `keyspace1.table1` granted to `bob`, including
@@ -665,7 +604,7 @@ which were directly granted to `bob` or one of `bob`'s roles:
 
 [source,cql]
 ----
-LIST SELECT PERMISSIONS OF carlos;
+include::example$CQL/list_select_perm.cql[]
 ----
 
 Show any permissions granted to `carlos` or any of `carlos`'s roles,

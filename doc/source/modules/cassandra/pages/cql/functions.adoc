@@ -1,12 +1,12 @@
-// Need some intro for UDF and native functions in general and point those to it.
-// [[cql-functions]][[native-functions]]
+// Need some intro for UDF and native functions in general and point those to it.  
+// [[cql-functions]][[native-functions]] 
 
 == Functions
 
 CQL supports 2 main categories of functions:
 
-* xref:cql/function.adoc#scalar-functions[scalar functions] that take a number of values and produce an output
-* xref:cql/function.adoc#aggregate-fuctions[aggregate functions] that aggregate multiple rows resulting from a `SELECT` statement
+* xref:cql/functions.adoc#scalar-functions[scalar functions] that take a number of values and produce an output
+* xref:cql/functions.adoc#aggregate-functions[aggregate functions] that aggregate multiple rows resulting from a `SELECT` statement
 
 In both cases, CQL provides a number of native "hard-coded" functions as
 well as the ability to create new user-defined functions.
@@ -300,7 +300,7 @@ include::example$JAVA/udf_imports.java[]
 Please note, that these convenience imports are not available for script UDFs.
 
 [[create-function-statement]]
-==== CREATE FUNCTION
+==== CREATE FUNCTION statement
 
 Creating a new user-defined function uses the `CREATE FUNCTION` statement:
 
@@ -337,7 +337,7 @@ Functions belong to a keyspace; if no keyspace is specified, the current keyspac
 User-defined functions are not allowed in the system keyspaces.
 
 [[drop-function-statement]]
-===== DROP FUNCTION
+==== DROP FUNCTION statement
 
 Dropping a function uses the `DROP FUNCTION` statement:
 
@@ -356,7 +356,7 @@ include::example$CQL/drop_function.cql[]
 You must specify the argument types of the function, the arguments_signature, in the drop command if there are multiple overloaded functions with the same name but different signatures.  
 `DROP FUNCTION` with the optional `IF EXISTS` keywords drops a function if it exists, but does not throw an error if it doesn't.
 
-[[ aggregate-functions ]]
+[[aggregate-functions]]
 === Aggregate functions
 
 Aggregate functions work on a set of rows. 
@@ -420,7 +420,7 @@ include::example$CQL/avg.cql[]
 ----
 
 [[user-defined-aggregates-functions]]
-==== User-Defined Aggregates
+==== User-Defined Aggregates (UDAs)
 
 User-defined aggregates allow the creation of custom aggregate functions. 
 User-defined aggregates can be used in `SELECT` statement.
@@ -444,7 +444,7 @@ include::example$CQL/uda.cql[]
 ----
 
 [[create-aggregate-statement]]
-===== CREATE AGGREGATE
+==== CREATE AGGREGATE statement
 
 Creating (or replacing) a user-defined aggregate function uses the
 `CREATE AGGREGATE` statement:
@@ -479,7 +479,7 @@ If no `FINALFUNC` is defined, the overall return type of the aggregate function 
 If a `FINALFUNC` is defined, it is the return type of that function.
 
 [[drop-aggregate-statement]]
-===== DROP AGGREGATE
+==== DROP AGGREGATE statement
 
 Dropping an user-defined aggregate function uses the `DROP AGGREGATE`
 statement:
