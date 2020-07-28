@@ -3,9 +3,8 @@
 When reviewing tickets in Apache JIRA, the following items should be
 covered as part of the review process:
 
-*General*
+== *General*
 
-____
 * Does it conform to the `code_style` guidelines?
 * Is there any redundant or duplicate code?
 * Is the code as modular as possible?
@@ -13,11 +12,9 @@ ____
 * Can any of the code be replaced with library functions?
 * Are units of measurement used in the code consistent, both internally
 and with the rest of the ecosystem?
-____
 
-*Error-Handling*
+== *Error-Handling*
 
-____
 * Are all data inputs and outputs checked (for the correct type, length,
 format, and range) and encoded?
 * Where third-party utilities are used, are returning errors being
@@ -27,11 +24,9 @@ caught?
 * Are errors well-documented? Does the error message tell the user how
 to proceed?
 * Do exceptions propagate to the appropriate level in the code?
-____
 
-*Documentation*
+== *Documentation*
 
-____
 * Do comments exist and describe the intent of the code (the "why", not
 the "how")?
 * Are javadocs added where appropriate?
@@ -48,11 +43,9 @@ where appropriate?
 * Has lib/licences been updated for third-party libs? Are they Apache
 License compatible?
 * Is the Component on the JIRA ticket set appropriately?
-____
 
-*Testing*
+== *Testing*
 
-____
 * Is the code testable? i.e. don’t add too many or hide dependencies,
 unable to initialize objects, test frameworks can use methods etc.
 * Do tests exist and are they comprehensive?
@@ -69,14 +62,11 @@ applicable)? Are there any regressions?
 regressions w/multiple workloads?
 * If adding a new feature, were tests added and performed confirming it
 meets the expected SLA/use-case requirements for the feature?
-____
 
-*Logging*
+== *Logging*
 
-____
 * Are logging statements logged at the correct level?
 * Are there logs in the critical path that could affect performance?
 * Is there any log that could be added to communicate status or
 troubleshoot potential problems in this feature?
 * Can any unnecessary logging statement be removed?
-____

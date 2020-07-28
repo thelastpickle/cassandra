@@ -3,22 +3,20 @@
 == How Cassandra is documented
 
 The official Cassandra documentation lives in the project's git
-repository. We use a static site generator,
-http://www.sphinx-doc.org/[Sphinx], to create pages hosted at
-https://cassandra.apache.org/doc/latest/[cassandra.apache.org]. You'll
-also find developer centric content about Cassandra internals in our
-retired https://wiki.apache.org/cassandra[wiki] (not covered by this
-guide).
+repository. 
+We use a static site generator, http://www.antora.org/[Antora], to create pages hosted at
+https://cassandra.apache.org/doc/latest/[cassandra.apache.org]. 
 
-Using a static site generator often requires to use a markup language
+<!-- You'll also find developer-centric content about Cassandra internals in our
+retired https://wiki.apache.org/cassandra[wiki] (not covered by this
+guide). -->
+
+Using a static site generator often requires the use of a markup language
 instead of visual editors (which some people would call good news).
-Sphinx, the tool-set we use to generate our documentation, uses
-http://www.sphinx-doc.org/en/stable/rest.html[reStructuredText] for
-that. Markup languages allow you to format text by making use of certain
-syntax elements. Your document structure will also have to follow
-specific conventions. Feel free to take a look at link:..[existing
-documents] to get a better idea how we use reStructuredText to write our
-documents.
+Antora processes http://www.asciidoc.org[Ascidoc], the markup language used to generate our documentation.
+Markup languages allow you to format text using certain syntax elements. 
+Your document structure will also have to follow specific conventions. 
+Feel free to take a look at http://cassandra.apache.org/docs[existing documents] to get a better idea how we structure our documents.
 
 So how do you actually start making contributions?
 
@@ -45,16 +43,16 @@ decide you’re ready to contribute your work.
 image::docs_create_branch.png[image]
 
 [arabic, start=3]
-. Navigate to document sources `doc/source` to find the `.rst` file to
+. Navigate to document sources `doc/source/modules` to find the `.adoc` file to
 edit. The URL of the document should correspond to the directory
-structure. New files can be created using the "Create new file" button:
+structure within the modules, where first the `component` name, such as `cassandra` is listed, and then the actual pages inside the `pages` directory. New files can be created using the "Create new file" button:
 
 image::docs_create_file.png[image]
 
 [arabic, start=4]
 . At this point you should be able to edit the file using the GitHub web
 editor. Start by naming your file and add some content. Have a look at
-other existing `.rst` files to get a better idea what format elements to
+other existing `.adoc` files to get a better idea what format elements to
 use.
 
 image::docs_editor.png[image]
@@ -87,20 +85,20 @@ Significant changes to the documentation are best managed through our
 Jira issue tracker. Please follow the same
 https://cassandra.apache.org/doc/latest/development/patches.html[contribution
 guides] as for regular code contributions. Creating high quality content
-takes a lot of effort. It’s therefor always a good idea to create a
-ticket before you start and explain what you’re planing to do. This will
+takes a lot of effort. It’s therefore always a good idea to create a
+ticket before you start and explain what you’re planning to do. This will
 create the opportunity for other contributors and committers to comment
 on your ideas and work so far. Eventually your patch gets a formal
 review before it is committed.
 
-== Working on documents locally using Sphinx
+== Working on documents locally using Antora
 
 _Recommended for advanced editing_
 
 Using the GitHub web interface should allow you to use most common
 layout elements including images. More advanced formatting options and
-navigation elements depend on Sphinx to render correctly. Therefor it’s
-a good idea to setup Sphinx locally for any serious editing. Please
+navigation elements depend on Antora to render correctly. Therefore, it’s
+a good idea to setup Antora locally for any serious editing. Please
 follow the instructions in the Cassandra source directory at
 `doc/README.md`. Setup is very easy (at least on OSX and Linux).
 

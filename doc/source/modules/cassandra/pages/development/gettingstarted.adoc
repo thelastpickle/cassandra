@@ -35,7 +35,7 @@ how to subscribe to the mailing list.
 Reviewing patches is not the sole domain of committers, if others have
 reviewed a patch it can reduce the load on the committers allowing them
 to write more great features or review more patches. Follow the
-instructions in `_development_how_to_review` or create a build with the
+instructions in xref:development/development_how_to_review[How to review] or create a build with the
 patch and test it with your own workload. Add a comment to the JIRA
 ticket to let others know what you have done and the results of your
 work. (For example, "I tested this performance enhacement on our

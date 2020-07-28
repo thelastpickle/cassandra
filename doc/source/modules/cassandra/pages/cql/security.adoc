@@ -250,7 +250,7 @@ Creating a user uses the `CREATE USER` statement:
 
 [source, bnf]
 ----
-include::example$CQL/create_user_statement.bnf[]
+include::example$BNF/create_user_statement.bnf[]
 ----
 
 For example:

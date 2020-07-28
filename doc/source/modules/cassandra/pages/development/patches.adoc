@@ -37,7 +37,7 @@ each contribution will become a part of Cassandra. Therefore it's
 generally a good idea to first get some feedback on the things you plan
 to work on, especially about any new features or major changes to the
 code base. You can reach out to other developers on the mailing list or
-`Slack <slack>`.
+`Slack`.
 
 You should also::
   * Avoid redundant work by searching for already reported issues in
