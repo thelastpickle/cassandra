@@ -5,16 +5,16 @@
 Picking the right compaction strategy for your workload will ensure the
 best performance for both querying and for compaction itself.
 
-`Size Tiered Compaction Strategy <stcs>`::
+xref:cql/operating/compaction/stcs.adoc[`Size Tiered Compaction Strategy (STCS)`]::
   The default compaction strategy. Useful as a fallback when other
   strategies don't fit the workload. Most useful for non pure time
-  series workloads with spinning disks, or when the I/O from `LCS <lcs>`
+  series workloads with spinning disks, or when the I/O from `LCS`
   is too high.
-`Leveled Compaction Strategy <lcs>`::
+xref:cql/operating/compaction/lcs.adoc[`Leveled Compaction Strategy (LCS)`]::
   Leveled Compaction Strategy (LCS) is optimized for read heavy
   workloads, or workloads with lots of updates and deletes. It is not a
   good choice for immutable time series data.
-`Time Window Compaction Strategy <twcs>`::
+xref:cql/operating/compaction/twcs.adoc[`Time Window Compaction Strategy (TWCS)`]::
   Time Window Compaction Strategy is designed for TTL'ed, mostly
   immutable time series data.
 
@@ -22,20 +22,20 @@ best performance for both querying and for compaction itself.
 
 The concept of compaction is used for different kinds of operations in
 Cassandra, the common thing about these operations is that it takes one
-or more sstables and output new sstables. The types of compactions are;
+or more SSTables and output new SSTables. The types of compactions are:
 
 Minor compaction::
   triggered automatically in Cassandra.
 Major compaction::
-  a user executes a compaction over all sstables on the node.
+  a user executes a compaction over all SSTables on the node.
 User defined compaction::
-  a user triggers a compaction on a given set of sstables.
+  a user triggers a compaction on a given set of SSTables.
 Scrub::
-  try to fix any broken sstables. This can actually remove valid data if
+  try to fix any broken SSTables. This can actually remove valid data if
   that data is corrupted, if that happens you will need to run a full
   repair on the node.
-Upgradesstables::
-  upgrade sstables to the latest version. Run this after upgrading to a
+UpgradeSSTables::
+  upgrade SSTables to the latest version. Run this after upgrading to a
   new major version.
 Cleanup::
   remove any ranges this node does not own anymore, typically triggered
@@ -45,29 +45,29 @@ Secondary index rebuild::
   rebuild the secondary indexes on the node.
 Anticompaction::
   after repair the ranges that were actually repaired are split out of
-  the sstables that existed when repair started.
+  the SSTables that existed when repair started.
 Sub range compaction::
   It is possible to only compact a given sub range - this could be
   useful if you know a token that has been misbehaving - either
   gathering many updates or many deletes.
-  (`nodetool compact -st x -et y`) will pick all sstables containing the
-  range between x and y and issue a compaction for those sstables. For
-  STCS this will most likely include all sstables but with LCS it can
-  issue the compaction for a subset of the sstables. With LCS the
+  (`nodetool compact -st x -et y`) will pick all SSTables containing the
+  range between x and y and issue a compaction for those SSTables. For
+  STCS this will most likely include all SSTables but with LCS it can
+  issue the compaction for a subset of the SSTables. With LCS the
   resulting sstable will end up in L0.
 
 == When is a minor compaction triggered?
 
-- When an sstable is added to the node through flushing/streaming etc. #
-When autocompaction is enabled after being disabled
-(`nodetool enableautocompaction`) # When compaction adds new sstables. #
-A check for new minor compactions every 5 minutes.
+* When an sstable is added to the node through flushing/streaming
+* When autocompaction is enabled after being disabled (`nodetool enableautocompaction`) 
+* When compaction adds new SSTables 
+* A check for new minor compactions every 5 minutes
 
-== Merging sstables
+== Merging SSTables
 
-Compaction is about merging sstables, since partitions in sstables are
+Compaction is about merging SSTables, since partitions in SSTables are
 sorted based on the hash of the partition key it is possible to
-efficiently merge separate sstables. Content of each partition is also
+efficiently merge separate SSTables. Content of each partition is also
 sorted so each partition can be merged efficiently.
 
 == Tombstones and Garbage Collection (GC) Grace
@@ -157,7 +157,7 @@ tombstone the following needs to be true;
 
 * The tombstone must be older than `gc_grace_seconds`
 * If partition X contains the tombstone, the sstable containing the
-partition plus all sstables containing data older than the tombstone
+partition plus all SSTables containing data older than the tombstone
 containing X must be included in the same compaction. We don't need to
 care if the partition is in an sstable if we can guarantee that all data
 in that sstable is newer than the tombstone. If the tombstone is older
@@ -183,18 +183,18 @@ is reached. Once the TTL has expired the data is converted to a
 tombstone which stays around for at least `gc_grace_seconds`. Note that
 if you mix data with TTL and data without TTL (or just different length
 of the TTL) Cassandra will have a hard time dropping the tombstones
-created since the partition might span many sstables and not all are
+created since the partition might span many SSTables and not all are
 compacted at once.
 
-== Fully expired sstables
+== Fully expired SSTables
 
 If an sstable contains only tombstones and it is guaranteed that that
 sstable is not shadowing data in any other sstable compaction can drop
-that sstable. If you see sstables with only tombstones (note that TTL:ed
+that sstable. If you see SSTables with only tombstones (note that TTL:ed
 data is considered tombstones once the time to live has expired) but it
-is not being dropped by compaction, it is likely that other sstables
+is not being dropped by compaction, it is likely that other SSTables
 contain older data. There is a tool called `sstableexpiredblockers` that
-will list which sstables are droppable and which are blocking them from
+will list which SSTables are droppable and which are blocking them from
 being dropped. This is especially useful for time series compaction with
 `TimeWindowCompactionStrategy` (and the deprecated
 `DateTieredCompactionStrategy`). With `TimeWindowCompactionStrategy` it
@@ -205,19 +205,19 @@ enabling `unsafe_aggressive_sstable_expiration`.
 
 With incremental repairs Cassandra must keep track of what data is
 repaired and what data is unrepaired. With anticompaction repaired data
-is split out into repaired and unrepaired sstables. To avoid mixing up
+is split out into repaired and unrepaired SSTables. To avoid mixing up
 the data again separate compaction strategy instances are run on the two
 sets of data, each instance only knowing about either the repaired or
-the unrepaired sstables. This means that if you only run incremental
+the unrepaired SSTables. This means that if you only run incremental
 repair once and then never again, you might have very old data in the
-repaired sstables that block compaction from dropping tombstones in the
-unrepaired (probably newer) sstables.
+repaired SSTables that block compaction from dropping tombstones in the
+unrepaired (probably newer) SSTables.
 
 == Data directories
 
-Since tombstones and data can live in different sstables it is important
+Since tombstones and data can live in different SSTables it is important
 to realize that losing an sstable might lead to data becoming live again
-- the most common way of losing sstables is to have a hard drive break
+- the most common way of losing SSTables is to have a hard drive break
 down. To avoid making data live tombstones and actual data are always in
 the same data directory. This way, if a disk is lost, all versions of a
 partition are lost and no data can get undeleted. To achieve this a
@@ -239,12 +239,12 @@ this is to create more data directories backed by the big disk.
 == Single sstable tombstone compaction
 
 When an sstable is written a histogram with the tombstone expiry times
-is created and this is used to try to find sstables with very many
+is created and this is used to try to find SSTables with very many
 tombstones and run single sstable compaction on that sstable in hope of
 being able to drop tombstones in that sstable. Before starting this it
 is also checked how likely it is that any tombstones will actually will
 be able to be dropped how much this sstable overlaps with other
-sstables. To avoid most of these checks the compaction option
+SSTables. To avoid most of these checks the compaction option
 `unchecked_tombstone_compaction` can be enabled.
 
 [[compaction-options]]
@@ -278,10 +278,10 @@ There is a number of common options for all the compaction strategies;
   Option to enable the extra safety of making sure that tombstones are
   only dropped if the data has been repaired.
 `min_threshold` (default: 4)::
-  Lower limit of number of sstables before a compaction is triggered.
+  Lower limit of number of SSTables before a compaction is triggered.
   Not used for `LeveledCompactionStrategy`.
 `max_threshold` (default: 32)::
-  Upper limit of number of sstables before a compaction is triggered.
+  Upper limit of number of SSTables before a compaction is triggered.
   Not used for `LeveledCompactionStrategy`.
 
 Further, see the section on each strategy for specific additional

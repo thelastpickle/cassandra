@@ -38,7 +38,8 @@ Redistribution).
 As with any application, looking for `ERROR` or `WARN` lines can be a
 great first step:
 
-....
+[source, bash]
+----
 $ # Search for warnings or errors in the latest system.log
 $ grep 'WARN\|ERROR' system.log | tail
 ...
@@ -46,7 +47,7 @@ $ grep 'WARN\|ERROR' system.log | tail
 $ # Search for warnings or errors in all rotated system.log
 $ zgrep 'WARN\|ERROR' system.log.* | less
 ...
-....
+----
 
 === `debug.log`
 
@@ -63,19 +64,19 @@ flush impacted.
 This log can be _very_ noisy, so it is highly recommended to use `grep`
 and other log analysis tools to dive deep. For example:
 
-....
-$ # Search for messages involving a CompactionTask with 5 lines of context
-$ grep CompactionTask debug.log -C 5
-...
+[source, bash]
+----
+# Search for messages involving a CompactionTask with 5 lines of context
+$ grep CompactionTask debug.log -C 5 
 
-$ # Look at the distribution of flush tasks per keyspace
+# Look at the distribution of flush tasks per keyspace
 $ grep "Enqueuing flush" debug.log | cut -f 10 -d ' ' | sort | uniq -c
     6 compaction_history:
     1 test_keyspace:
     2 local:
     17 size_estimates:
     17 sstable_activity:
-....
+----
 
 === `gc.log`
 
@@ -85,7 +86,8 @@ application pause times, and why pauses happened. This may help narrow
 down throughput or latency issues to a mistuned JVM. For example you can
 view the last few pauses:
 
-....
+[source, bash]
+----
 $ grep stopped gc.log.0.current | tail
 2018-08-29T00:19:39.522+0000: 3022663.591: Total time for which application threads were stopped: 0.0332813 seconds, Stopping threads took: 0.0008189 seconds
 2018-08-29T00:19:44.369+0000: 3022668.438: Total time for which application threads were stopped: 0.0312507 seconds, Stopping threads took: 0.0007025 seconds
@@ -97,14 +99,15 @@ $ grep stopped gc.log.0.current | tail
 2018-08-29T00:20:15.739+0000: 3022699.809: Total time for which application threads were stopped: 0.0078283 seconds, Stopping threads took: 0.0006012 seconds
 2018-08-29T00:20:15.770+0000: 3022699.839: Total time for which application threads were stopped: 0.0301285 seconds, Stopping threads took: 0.0003789 seconds
 2018-08-29T00:20:15.798+0000: 3022699.867: Total time for which application threads were stopped: 0.0279407 seconds, Stopping threads took: 0.0003627 seconds
-....
+----
 
 This shows a lot of valuable information including how long the
 application was paused (meaning zero user queries were being serviced
 during the e.g. 33ms JVM pause) as well as how long it took to enter the
 safepoint. You can use this raw data to e.g. get the longest pauses:
 
-....
+[source, bash]
+----
 $ grep stopped gc.log.0.current | cut -f 11 -d ' ' | sort -n  | tail | xargs -IX grep X gc.log.0.current | sort -k 1
 2018-08-28T17:13:40.520-0700: 1.193: Total time for which application threads were stopped: 0.0157914 seconds, Stopping threads took: 0.0000355 seconds
 2018-08-28T17:13:41.206-0700: 1.879: Total time for which application threads were stopped: 0.0249811 seconds, Stopping threads took: 0.0000318 seconds
@@ -116,10 +119,10 @@ $ grep stopped gc.log.0.current | cut -f 11 -d ' ' | sort -n  | tail | xargs -IX
 2018-08-28T17:13:42.825-0700: 3.498: Total time for which application threads were stopped: 0.0379155 seconds, Stopping threads took: 0.0000571 seconds
 2018-08-28T17:13:43.574-0700: 4.247: Total time for which application threads were stopped: 0.0323812 seconds, Stopping threads took: 0.0000574 seconds
 2018-08-28T17:13:44.602-0700: 5.275: Total time for which application threads were stopped: 0.0238975 seconds, Stopping threads took: 0.0000788 seconds
-....
+----
 
 In this case any client waiting on a query would have experienced a
-[.title-ref]#56ms# latency at 17:13:41.
+56ms latency at 17:13:41.
 
 Note that GC pauses are not _link:[only] garbage collection, although
 generally speaking high pauses with fast safepoints indicate a lack of
@@ -134,7 +137,8 @@ Using these logs you can even get a pause distribution with something
 like
 https://github.com/bitly/data_hacks/blob/master/data_hacks/histogram.py[histogram.py]:
 
-....
+[source, bash]
+----
 $ grep stopped gc.log.0.current | cut -f 11 -d ' ' | sort -n | histogram.py
 # NumSamples = 410293; Min = 0.00; Max = 11.49
 # Mean = 0.035346; Variance = 0.002216; SD = 0.047078; Median 0.036498
@@ -149,13 +153,14 @@ $ grep stopped gc.log.0.current | cut -f 11 -d ' ' | sort -n | histogram.py
     8.0465 -     9.1960 [     0]:
     9.1960 -    10.3455 [     0]:
    10.3455 -    11.4949 [     2]:
-....
+----
 
 We can see in this case while we have very good average performance
 something is causing multi second JVM pauses ... In this case it was
 mostly safepoint pauses caused by slow disks:
 
-....
+[source, bash]
+----
 $ grep stopped gc.log.0.current | cut -f 11 -d ' ' | sort -n | tail | xargs -IX grep X  gc.log.0.current| sort -k 1
 2018-07-27T04:52:27.413+0000: 187831.482: Total time for which application threads were stopped: 6.5037022 seconds, Stopping threads took: 0.0005212 seconds
 2018-07-30T23:38:18.354+0000: 514582.423: Total time for which application threads were stopped: 6.3262938 seconds, Stopping threads took: 0.0004882 seconds
@@ -167,7 +172,7 @@ $ grep stopped gc.log.0.current | cut -f 11 -d ' ' | sort -n | tail | xargs -IX 
 2018-08-23T06:36:29.018+0000: 2526873.087: Total time for which application threads were stopped: 11.4949489 seconds, Stopping threads took: 11.4638297 seconds
 2018-08-23T06:37:12.671+0000: 2526916.741: Total time for which application threads were stopped: 6.3867003 seconds, Stopping threads took: 6.3507166 seconds
 2018-08-23T06:37:47.156+0000: 2526951.225: Total time for which application threads were stopped: 7.9528200 seconds, Stopping threads took: 7.9197756 seconds
-....
+----
 
 Sometimes reading and understanding java GC logs is hard, but you can
 take the raw GC files and visualize them using tools such as
@@ -175,8 +180,8 @@ https://github.com/chewiebug/GCViewer[GCViewer] which take the Cassandra
 GC log as input and show you detailed visual information on your garbage
 collection performance. This includes pause analysis as well as
 throughput information. For a stable Cassandra JVM you probably want to
-aim for pauses less than [.title-ref]#200ms# and GC throughput greater
-than [.title-ref]#99%# (ymmv).
+aim for pauses less than 200ms and GC throughput greater
+than 99%.
 
 Java GC pauses are one of the leading causes of tail latency in
 Cassandra (along with drive latency) so sometimes this information can
@@ -188,18 +193,20 @@ If the default logging levels are insuficient, `nodetool` can set higher
 or lower logging levels for various packages and classes using the
 `nodetool setlogginglevel` command. Start by viewing the current levels:
 
-....
+[source, bash]
+----
 $ nodetool getlogginglevels
 
 Logger Name                                        Log Level
 ROOT                                                    INFO
 org.apache.cassandra                                   DEBUG
-....
+----
 
 Perhaps the `Gossiper` is acting up and we wish to enable it at `TRACE`
 level for even more insight:
 
-....
+[source, bash]
+----
 $ nodetool setlogginglevel org.apache.cassandra.gms.Gossiper TRACE
 
 $ nodetool getlogginglevels
@@ -214,7 +221,7 @@ TRACE [GossipStage:1] 2018-07-04 17:07:47,879 Gossiper.java:1234 - Updating
 heartbeat state version to 2344 from 2343 for 127.0.0.2:7000 ...
 TRACE [GossipStage:1] 2018-07-04 17:07:47,879 Gossiper.java:923 - local
 heartbeat version 2341 greater than 2340 for 127.0.0.1:7000
-....
+----
 
 Note that any changes made this way are reverted on next Cassandra
 process restart. To make the changes permanent add the appropriate rule
@@ -243,7 +250,8 @@ ensures the total size of the capture does not exceed a particular
 limit. FQL is enabled with `nodetool` and the logs are read with the
 provided `bin/fqltool` utility:
 
-....
+[source, bash]
+----
 $ mkdir /var/tmp/fql_logs
 $ nodetool enablefullquerylog --path /var/tmp/fql_logs
 
@@ -262,8 +270,8 @@ Query: select * from keyspace1.standard1 ;
 Values:
 
 $ nodetool disablefullquerylog
-....
+----
 
 Note that if you want more information than this tool provides, there
 are other live capture options available such as
-`packet capture <packet-capture>`.
+xref:cql/troubleshooting/use_tools.adoc#packet-capture[`packet-capture`].

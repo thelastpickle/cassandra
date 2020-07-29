@@ -11,7 +11,8 @@ useful for troubleshooting:
 
 You can use `nodetool status` to assess status of the cluster:
 
-....
+[source, bash]
+----
 $ nodetool status <optional keyspace>
 
 Datacenter: dc1
@@ -22,7 +23,7 @@ Status=Up/Down
 UN  127.0.1.1  4.69 GiB   1            100.0%            35ea8c9f-b7a2-40a7-b9c5-0ee8b91fdd0e  r1
 UN  127.0.1.2  4.71 GiB   1            100.0%            752e278f-b7c5-4f58-974b-9328455af73f  r2
 UN  127.0.1.3  4.69 GiB   1            100.0%            9dc1a293-2cc0-40fa-a6fd-9e6054da04a7  r3
-....
+----
 
 In this case we can see that we have three nodes in one datacenter with
 about 4.6GB of data each and they are all "up". The up/down status of a
@@ -33,7 +34,8 @@ the full view.
 You can use `nodetool status` plus a little grep to see which nodes are
 down:
 
-....
+[source, bash]
+----
 $ nodetool status | grep -v '^UN'
 Datacenter: dc1
 ===============
@@ -46,7 +48,7 @@ Status=Up/Down
 |/ State=Normal/Leaving/Joining/Moving
 --  Address    Load       Tokens       Owns (effective)  Host ID                               Rack
 DN  127.0.0.5  105.73 KiB  1            33.3%             df303ac7-61de-46e9-ac79-6e630115fd75  r1
-....
+----
 
 In this case there are two datacenters and there is one node down in
 datacenter `dc2` and rack `r1`. This may indicate an issue on
@@ -58,7 +60,8 @@ datacenter `dc2` and rack `r1`. This may indicate an issue on
 You can view latency distributions of coordinator read and write latency
 to help narrow down latency issues using `nodetool proxyhistograms`:
 
-....
+[source, bash]
+----
 $ nodetool proxyhistograms
 Percentile       Read Latency      Write Latency      Range Latency   CAS Read Latency  CAS Write Latency View Write Latency
                      (micros)           (micros)           (micros)           (micros)           (micros)           (micros)
@@ -69,7 +72,7 @@ Percentile       Read Latency      Write Latency      Range Latency   CAS Read L
 99%                   3379.39            2346.80               0.00               0.00               0.00               0.00
 Min                     42.51             105.78               0.00               0.00               0.00               0.00
 Max                  25109.16           43388.63               0.00               0.00               0.00               0.00
-....
+----
 
 Here you can see the full latency distribution of reads, writes, range
 requests (e.g. `select * from keyspace.table`), CAS read (compare phase
@@ -86,7 +89,8 @@ If you know which table is having latency/error issues, you can use
 `nodetool tablehistograms` to get a better idea of what is happening
 locally on a node:
 
-....
+[source, bash]
+----
 $ nodetool tablehistograms keyspace table
 Percentile  SSTables     Write Latency      Read Latency    Partition Size        Cell Count
                               (micros)          (micros)           (bytes)
@@ -97,7 +101,7 @@ Percentile  SSTables     Write Latency      Read Latency    Partition Size      
 99%             2.00            182.79            785.94             17084               103
 Min             0.00             42.51             24.60             14238                87
 Max             2.00          12108.97          17436.92             17084               103
-....
+----
 
 This shows you percentile breakdowns particularly critical metrics.
 
@@ -133,7 +137,8 @@ on a particular node. This is useful for trying to find out which
 resource (read threads, write threads, compaction, request response
 threads) the Cassandra process lacks. For example:
 
-....
+[source, bash]
+----
 $ nodetool tpstats
 Pool Name                         Active   Pending      Completed   Blocked  All time blocked
 ReadStage                              2         0             12         0                 0
@@ -175,7 +180,7 @@ BATCH_REMOVE                 0               N/A               N/A              
 REQUEST_RESPONSE             0              0.00              0.00              0.00              0.00
 PAGED_RANGE                  0               N/A               N/A               N/A               N/A
 READ_REPAIR                  0               N/A               N/A               N/A               N/A
-....
+----
 
 This command shows you all kinds of interesting statistics. The first
 section shows a detailed breakdown of threadpools for each Cassandra
@@ -211,7 +216,8 @@ of load on your disk drives. There are great `os tools <os-iostat>` to
 determine if this is the case, but often it's a good idea to check if
 compactions are even running using `nodetool compactionstats`:
 
-....
+[source, bash]
+----
 $ nodetool compactionstats
 pending tasks: 2
 - keyspace.table: 2
@@ -219,7 +225,7 @@ pending tasks: 2
 id                                   compaction type keyspace table completed total    unit  progress
 2062b290-7f3a-11e8-9358-cd941b956e60 Compaction      keyspace table 21848273  97867583 bytes 22.32%
 Active compaction remaining time :   0h00m04s
-....
+----
 
 In this case there is a single compaction running on the
 `keyspace.table` table, has completed 21.8 megabytes of 97 and Cassandra

@@ -1,5 +1,6 @@
 = Time Window CompactionStrategy
 
+[[twcs]]
 `TimeWindowCompactionStrategy` (TWCS) is designed specifically for
 workloads where it's beneficial to have data on disk grouped by the
 timestamp of the data, a common goal when the workload is time-series in
@@ -22,15 +23,15 @@ combination of two primary options:
   Expired sstables will be dropped without checking its data is
   shadowing other sstables. This is a potentially risky option that can
   lead to data loss or deleted data re-appearing, going beyond what
-  [.title-ref]#unchecked_tombstone_compaction# does for single sstable
+  unchecked_tombstone_compaction does for single sstable
   compaction. Due to the risk the jvm must also be started with
-  [.title-ref]#-Dcassandra.unsafe_aggressive_sstable_expiration=true#.
+  `-Dcassandra.unsafe_aggressive_sstable_expiration=true`.
 
 Taken together, the operator can specify windows of virtually any size,
-and [.title-ref]#TimeWindowCompactionStrategy# will work to create a
+and `TimeWindowCompactionStrategy` will work to create a
 single sstable for writes within that window. For efficiency during
 writing, the newest window will be compacted using
-[.title-ref]#SizeTieredCompactionStrategy#.
+`SizeTieredCompactionStrategy`.
 
 Ideally, operators should select a `compaction_window_unit` and
 `compaction_window_size` pair that produces approximately 20-30 windows

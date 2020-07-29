@@ -36,7 +36,8 @@ usage (E), old generation heap usage (O), count of eden collections
 collections (FGC) and time spent in old/mixed generation collections
 (FGCT):
 
-....
+[source, bash]
+----
 jstat -gcutil <cassandra pid> 500ms
  S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT     GCT
  0.00   0.00  81.53  31.16  93.07  88.20     12    0.151     3    0.257    0.408
@@ -49,7 +50,7 @@ jstat -gcutil <cassandra pid> 500ms
  0.00   0.00  85.03  31.16  93.07  88.20     12    0.151     3    0.257    0.408
  0.00   0.00  85.03  31.16  93.07  88.20     12    0.151     3    0.257    0.408
  0.00   0.00  85.94  31.16  93.07  88.20     12    0.151     3    0.257    0.408
-....
+----
 
 In this case we see we have a relatively healthy heap profile, with
 31.16% old generation heap usage and 83% eden. If the old generation
@@ -69,12 +70,12 @@ To get a point in time snapshot of exactly what Cassandra is doing, run
 `jstack` against the Cassandra PID. *Note* that this does pause the JVM
 for a very brief period (<20ms).:
 
-....
+[source, bash]
+----
 $ jstack <cassandra pid> > threaddump
 
 # display the threaddump
 $ cat threaddump
-...
 
 # look at runnable threads
 $grep RUNNABLE threaddump -B 1
@@ -93,10 +94,9 @@ $grep RUNNABLE threaddump -B 1
 "C1 CompilerThread3" #8 daemon prio=9 os_prio=0 tid=0x00007f82e80cc000 nid=0x2a29 waiting on condition [0x0000000000000000]
    java.lang.Thread.State: RUNNABLE
 --
-...
 
 # Note that the nid is the Linux thread id
-....
+----
 
 Some of the most important information in the threaddumps are
 waiting/blocking threads, including what locks or monitors the thread is
@@ -110,7 +110,7 @@ all resources that Cassandra makes heavy uses of:
 
 * CPU cores. For executing concurrent user queries
 * CPU processing time. For query activity (data decompression, row
-merging, etc...)
+merging, etc.)
 * CPU processing time (low priority). For background tasks (compaction,
 streaming, etc ...)
 * RAM for Java Heap. Used to hold internal data-structures and by
@@ -165,7 +165,8 @@ mapped file memory.
 Use iostat to determine how data drives are faring, including latency
 distributions, throughput, and utilization:
 
-....
+[source, bash]
+----
 $ sudo iostat -xdm 2
 Linux 4.13.0-13-generic (hostname)     07/03/2018     _x86_64_    (8 CPU)
 
@@ -178,7 +179,7 @@ Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu
 sda               0.00     0.00    2.00   32.00     0.01     4.04   244.24     0.54   16.00    0.00   17.00   1.06   3.60
 sdb               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00
 sdc               0.00    24.50    0.00  114.00     0.00    11.62   208.70     5.56   48.79    0.00   48.79   1.12  12.80
-....
+----
 
 In this case we can see that `/dev/sdc1` is a very slow drive, having an
 `await` close to 50 milliseconds and an `avgqu-sz` close to 5 ios. The
@@ -216,12 +217,13 @@ operating system's https://en.wikipedia.org/wiki/Page_cache[Page Cache]
 is crucial to performance. Start by finding how much available cache is
 in the system:
 
-....
+[source, bash]
+----
 $ free -g
               total        used        free      shared  buff/cache   available
 Mem:             15           9           2           0           3           5
 Swap:             0           0           0
-....
+----
 
 In this case 9GB of memory is used by user processes (Cassandra heap)
 and 8GB is available for OS page cache. Of that, 3GB is actually used to
@@ -230,8 +232,8 @@ Cassandra performance can suffer significantly. This is why Cassandra
 starts with a reasonably small amount of memory reserved for the heap.
 
 If you suspect that you are missing the OS page cache frequently you can
-use advanced tools like `cachestat <use-bcc-tools>` or
-`vmtouch <use-vmtouch>` to dive deeper.
+use advanced tools like xref:use_tools.adoc#use-bcc-tools[cachestat] or
+xref:use_tools.adoc#use-vmtouch[vmtouch] to dive deeper.
 
 === Network Latency and Reliability
 
@@ -242,7 +244,8 @@ operations, the network can be an important resource to investigate. You
 can determine internode latency using tools like `ping` and `traceroute`
 or most effectively `mtr`:
 
-....
+[source, bash]
+----
 $ mtr -nr www.google.com
 Start: Sun Jul 22 13:10:28 2018
 HOST: hostname                     Loss%   Snt   Last   Avg  Best  Wrst StDev
@@ -260,7 +263,7 @@ HOST: hostname                     Loss%   Snt   Last   Avg  Best  Wrst StDev
  13.|-- 108.170.242.81             0.0%    10   14.4  13.2  10.9  16.0   1.7
  14.|-- 72.14.239.43               0.0%    10   12.2  16.1  11.0  32.8   7.1
  15.|-- 216.58.195.68              0.0%    10   25.1  15.3  11.1  25.1   4.8
-....
+----
 
 In this example of `mtr`, we can rapidly assess the path that your
 packets are taking, as well as what their typical loss and latency are.
@@ -277,7 +280,8 @@ both bandwidth usage as well as connection information at a glance. An
 example showing traffic during a stress run against a local `ccm`
 cluster:
 
-....
+[source, bash]
+----
 $ # remove the -t for ncurses instead of pure text
 $ sudo iftop -nNtP -i lo
 interface: lo
@@ -314,7 +318,7 @@ Total send and receive rate:                         2.25Mb     2.25Mb     2.25M
 Peak rate (sent/received/total):                     2.25Mb         0b     2.25Mb
 Cumulative (sent/received/total):                     576KB         0B      576KB
 ============================================================================================
-....
+----
 
 In this case we can see that bandwidth is fairly shared between many
 peers, but if the total was getting close to the rated capacity of the
@@ -334,9 +338,10 @@ https://github.com/iovisor/bcc[bcc-tools] for diving deep into
 performance problems. First install `bcc-tools`, e.g. via `apt` on
 Debian:
 
-....
+[source, bash]
+----
 $ apt install bcc-tools
-....
+----
 
 Then you can use all the tools that `bcc-tools` contains. One of the
 most useful tools is `cachestat`
@@ -344,7 +349,8 @@ most useful tools is `cachestat`
 examples]) which allows you to determine exactly how many OS page cache
 hits and misses are happening:
 
-....
+[source, bash]
+----
 $ sudo /usr/share/bcc/tools/cachestat -T 1
 TIME        TOTAL   MISSES     HITS  DIRTIES   BUFFERS_MB  CACHED_MB
 18:44:08       66       66        0       64           88       4427
@@ -356,7 +362,7 @@ TIME        TOTAL   MISSES     HITS  DIRTIES   BUFFERS_MB  CACHED_MB
 18:44:14    16741        0    16741       58           88       4428
 18:44:15     1935       36     1899       18           88       4428
 18:44:16       89       34       55       18           88       4428
-....
+----
 
 In this case there are not too many page cache `MISSES` which indicates
 a reasonably sized cache. These metrics are the most direct measurement
@@ -370,7 +376,8 @@ You can also measure disk latency distributions using `biolatency`
 examples]) to get an idea of how slow Cassandra will be when reads miss
 the OS page Cache and have to hit disks:
 
-....
+[source, bash]
+----
 $ sudo /usr/share/bcc/tools/biolatency -D 10
 Tracing block device I/O... Hit Ctrl-C to end.
 
@@ -405,7 +412,7 @@ disk = 'sdc'
       4096 -> 8191       : 56       |*****************                       |
       8192 -> 16383      : 131      |****************************************|
      16384 -> 32767      : 9        |**                                      |
-....
+----
 
 In this case most ios on the data drive (`sdc`) are fast, but many take
 between 8 and 16 milliseconds.
@@ -414,7 +421,8 @@ Finally `biosnoop`
 (https://github.com/iovisor/bcc/blob/master/tools/biosnoop_example.txt[examples])
 can be used to dive even deeper and see per IO latencies:
 
-....
+[source, bash]
+----
 $ sudo /usr/share/bcc/tools/biosnoop | grep java | head
 0.000000000    java           17427  sdc     R  3972458600 4096      13.58
 0.000818000    java           17427  sdc     R  3972459408 4096       0.35
@@ -431,7 +439,7 @@ $ sudo /usr/share/bcc/tools/biosnoop | grep java | head
 8.033175000    java           18279  sdc     R  10899952  8192       0.46
 8.073295000    java           18279  sdc     R  23384320  122880     3.01
 8.073768000    java           18279  sdc     R  23384560  8192       0.46
-....
+----
 
 With `biosnoop` you see every single IO and how long they take. This
 data can be used to construct the latency distributions in `biolatency`
@@ -455,25 +463,27 @@ https://github.com/hoytech/vmtouch[vmtouch].
 
 First install it:
 
-....
+[source, bash]
+----
 $ git clone https://github.com/hoytech/vmtouch.git
 $ cd vmtouch
 $ make
-....
+----
 
 Then run it on the Cassandra data directory:
 
-....
+[source, bash]
+----
 $ ./vmtouch /var/lib/cassandra/data/
            Files: 312
      Directories: 92
   Resident Pages: 62503/64308  244M/251M  97.2%
          Elapsed: 0.005657 seconds
-....
+----
 
 In this case almost the entire dataset is hot in OS page Cache.
 Generally speaking the percentage doesn't really matter unless reads are
-missing the cache (per e.g. `cachestat <use-bcc-tools>`), in which case
+missing the cache (per e.g. xref:cql/troubleshooting/use_tools.adoc#use-bcc-tools[cachestat] in which case
 having additional memory may help read performance.
 
 === CPU Flamegraphs
@@ -505,7 +515,8 @@ For example just cloning straight off github we first install the
 `perf-map-agent` to the location of our JVMs (assumed to be
 `/usr/lib/jvm`):
 
-....
+[source, bash]
+----
 $ sudo bash
 $ export JAVA_HOME=/usr/lib/jvm/java-8-oracle/
 $ cd /usr/lib/jvm
@@ -513,11 +524,12 @@ $ git clone --depth=1 https://github.com/jvm-profiling-tools/perf-map-agent
 $ cd perf-map-agent
 $ cmake .
 $ make
-....
+----
 
 Now to get a flamegraph:
 
-....
+[source, bash]
+----
 $ git clone --depth=1 https://github.com/brendangregg/FlameGraph
 $ sudo bash
 $ cd FlameGraph
@@ -527,7 +539,7 @@ $ # Translate the data
 $ perf script > cassandra_stacks
 $ cat cassandra_stacks | ./stackcollapse-perf.pl | grep -v cpu_idle | \
     ./flamegraph.pl --color=java --hash > cassandra_flames.svg
-....
+----
 
 The resulting SVG is searchable, zoomable, and generally easy to
 introspect using a browser.
@@ -545,15 +557,17 @@ releases.
 
 To get a packet capture first capture some packets:
 
-....
+[source, bash]
+----
 $ sudo tcpdump -U -s0 -i <INTERFACE> -w cassandra.pcap -n "tcp port 9042"
-....
+----
 
 Now open it up with wireshark:
 
-....
+[source, bash]
+----
 $ wireshark cassandra.pcap
-....
+----
 
 If you don't see CQL like statements try telling to decode as CQL by
 right clicking on a packet going to 9042 -> `Decode as` -> select CQL

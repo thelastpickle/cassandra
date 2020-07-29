@@ -1,25 +1,21 @@
 = Cassandra Stress
 
-cassandra-stress is a tool for benchmarking and load testing a Cassandra
-cluster. cassandra-stress supports testing arbitrary CQL tables and
-queries to allow users to benchmark their data model.
+The `cassandra-stress` tool is used to benchmark and load-test a Cassandra
+cluster. 
+`cassandra-stress` supports testing arbitrary CQL tables and queries, allowing users to benchmark their own data model.
 
-This documentation focuses on user mode as this allows the testing of
-your actual schema.
+This documentation focuses on user mode to test personal schema.
 
 == Usage
 
 There are several operation types:
 
-____
 * write-only, read-only, and mixed workloads of standard data
 * write-only and read-only workloads for counter columns
 * user configured workloads, running custom queries on custom schemas
-____
 
-The syntax is [.title-ref]#cassandra-stress <command> [options]#. If you
-want more information on a given command or options, just run
-[.title-ref]#cassandra-stress help <command|option>#.
+The syntax is `cassandra-stress <command> [options]`. 
+For more information on a given command or options, run `cassandra-stress help <command|option>`.
 
 Commands:::
   read:;;
@@ -81,18 +77,17 @@ Suboptions:::
   Every command and primary option has its own collection of suboptions.
   These are too numerous to list here. For information on the suboptions
   for each command or option, please use the help command,
-  [.title-ref]#cassandra-stress help <command|option>#.
+  `cassandra-stress help <command|option>`.
 
 == User mode
 
-User mode allows you to use your stress your own schemas. This can save
-time in the long run rather than building an application and then
-realising your schema doesn't scale.
+User mode allows you to stress your own schemas, to save you time
+in the long run. Find out if your application can scale using stress test with your schema.
 
 === Profile
 
-User mode requires a profile defined in YAML. Multiple YAML files may be
-specified in which case operations in the ops argument are referenced as
+User mode defines a profile using YAML. 
+Multiple YAML files may be specified, in which case operations in the ops argument are referenced as
 specname.opname.
 
 An identifier for the profile:
@@ -137,7 +132,7 @@ table_definition: |
   ) 
 ----
 
-Optional meta information on the generated columns in the above table.
+Optional meta-information on the generated columns in the above table.
 The min and max only apply to text and blob types. The distribution
 field represents the total unique population distribution of that column
 across rows:
@@ -255,15 +250,14 @@ Running a user mode test with multiple yaml files::::
   truncate=once
 This will run operations as specified in both the example.yaml and
 example2.yaml files. example.yaml and example2.yaml can reference the
-same table::
-  although care must be taken that the table definition is identical
-  (data generation specs can be different).
+same table, although care must be taken that the table definition is identical
+ (data generation specs can be different).
 
 === Lightweight transaction support
 
-cassandra-stress supports lightweight transactions. In this it will
-first read current data from Cassandra and then uses read value(s) to
-fulfill lightweight transaction condition(s).
+cassandra-stress supports lightweight transactions. 
+To use this feature, the command will first read current data from Cassandra, and then uses read values to
+fulfill lightweight transaction conditions.
 
 Lightweight transaction update query:
 
@@ -288,7 +282,7 @@ include::example$YAML/stress-lwt-example.yaml[]
 
 Graphs can be generated for each run of stress.
 
-image::example-stress-graph.png[image]
+image::example-stress-graph.png[example cassandra-stress graph]
 
 To create a new graph:
 

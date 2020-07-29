@@ -1,5 +1,6 @@
 = Leveled Compaction Strategy
 
+[[lcs]]
 The idea of `LeveledCompactionStrategy` (LCS) is that all sstables are
 put into different levels where we guarantee that no overlapping
 sstables are in the same level. By overlapping we mean that the
