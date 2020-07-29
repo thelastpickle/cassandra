@@ -1,2 +1,2 @@
-SELECT * FROM "CatalogKeyspace".journal;
-SELECT * FROM "CatalogKeyspace".magazine;
+SELECT * FROM catalogkeyspace.journal;
+SELECT * FROM catalogkeyspace.magazine;

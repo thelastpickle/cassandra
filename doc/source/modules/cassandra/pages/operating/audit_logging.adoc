@@ -1,45 +1,40 @@
 = Audit Logging
 
 Audit logging in Cassandra logs every incoming CQL command request,
-Authentication (successful as well as unsuccessful login) to C* node.
-Currently, there are two implementations provided, the custom logger can
-be implemented and injected with the class name as a parameter in
-cassandra.yaml.
+as well as authentication (successful/unsuccessful login) to a Cassandra node.
+Currently, there are two implementations provided. 
+The custom logger can be implemented and injected with the class name as a parameter in
+the `cassandra.yaml` file.
 
-* `BinAuditLogger` An efficient way to log events to file in a binary
-format.
-* `FileAuditLogger` Logs events to `audit/audit.log` file using slf4j
-logger.
+* `BinAuditLogger`: an efficient way to log events to file in a binary
+format (community-recommended logger for performance)
+* `FileAuditLogger`: logs events to `audit/audit.log` file using slf4j
+logger
 
-_Recommendation_ `BinAuditLogger` is a community recommended logger
-considering the performance
+== What does audit logging captures
 
-== What does it capture
+Audit logging captures following events:
 
-Audit logging captures following events
-
-* Successful as well as unsuccessful login attempts.
-* All database commands executed via Native protocol (CQL) attempted or
-successfully executed.
+* Successful as well as unsuccessful login attempts
+* All database commands executed via native CQL protocol attempted or
+successfully executed
 
 == Limitations
 
 Executing prepared statements will log the query as provided by the
-client in the prepare call, along with the execution time stamp and all
-other attributes (see below). Actual values bound for prepared statement
-execution will not show up in the audit log.
+client in the prepare call, along with the execution timestamp and all
+other attributes (see below). 
+Actual values bound for prepared statement execution will not show up in the audit log.
 
-== What does it log
+== What does audit logging logs
 
 Each audit log implementation has access to the following attributes,
 and for the default text based logger these fields are concatenated with
-[.title-ref]#|# s to yield the final message.
+pipes to yield the final message.
 
-____
 * `user`: User name(if available)
 * `host`: Host IP, where the command is being executed
-* `source ip address`: Source IP address from where the request
-initiated
+* `source ip address`: Source IP address from where the request initiated
 * `source port`: Source port number from where the request initiated
 * `timestamp`: unix time stamp
 * `type`: Type of the request (SELECT, INSERT, etc.,)
@@ -49,17 +44,16 @@ be executed
 * `scope` - Table/Aggregate name/ function name/ trigger name etc., as
 applicable
 * `operation` - CQL command being executed
-____
 
 == How to configure
 
-Auditlog can be configured using cassandra.yaml. If you want to try
-Auditlog on one node, it can also be enabled and configured using
-`nodetool`.
+Auditlog can be configured using the `cassandra.yaml` file. 
+To use audit logging on one node, either edit that file or enable and configure using `nodetool`.
 
 === cassandra.yaml configurations for AuditLog
 
-____
+The following options are supported:
+
 * `enabled`: This option enables/ disables audit log
 * `logger`: Class name of the logger/ custom logger.
 * `audit_logs_dir`: Auditlogs directory location, if not set, default to
@@ -79,15 +73,14 @@ be excluded from audit log, default - excludes no category
 audit log, default - includes all users
 * `excluded_users`: Comma separated list of users to be excluded from
 audit log, default - excludes no user
-____
 
 List of available categories are: QUERY, DML, DDL, DCL, OTHER, AUTH,
 ERROR, PREPARE
 
 === NodeTool command to enable AuditLog
 
-`enableauditlog`: Enables AuditLog with yaml defaults. yaml
-configurations can be overridden using options via nodetool command.
+The `nodetool enableauditlog` command enables AuditLog with the `cassandra.yaml` file defaults. 
+Those defaults can be overridden using options with this nodetool command.
 
 [source,none]
 ----
@@ -124,7 +117,7 @@ nodetool enableauditlog
 
 === NodeTool command to disable AuditLog
 
-`disableauditlog`: Disables AuditLog.
+The `nodetool disableauditlog` command disables AuditLog.
 
 [source,none]
 ----
@@ -133,11 +126,8 @@ nodetool disableuditlog
 
 === NodeTool command to reload AuditLog filters
 
-`enableauditlog`: NodeTool enableauditlog command can be used to reload
-auditlog filters when called with default or previous `loggername` and
-updated filters
-
-E.g.,
+The `nodetool enableauditlog` command can be used to reload auditlog filters with either defaults or previous `loggername` and
+updated filters:
 
 [source,none]
 ----
@@ -146,8 +136,7 @@ nodetool enableauditlog --loggername <Default/ existing loggerName> --included-k
 
 == View the contents of AuditLog Files
 
-`auditlogviewer` is the new tool introduced to help view the contents of
-binlog file in human readable text format.
+The `auditlogviewer` is used to view the contents of the audit binlog file in human readable text format.
 
 [source,none]
 ----
@@ -166,14 +155,14 @@ auditlogviewer <path1> [<path2>...<pathN>] [options]
 `-h,--help`::
   display this help message
 
-For example, to dump the contents of audit log files on the console
+For example, to dump the contents of audit log files to the console:
 
 [source,none]
 ----
 auditlogviewer /logs/cassandra/audit
 ----
 
-=== Sample output
+results in
 
 [source,none]
 ----
@@ -182,12 +171,11 @@ LogMessage: user:anonymous|host:localhost/X.X.X.X|source:/X.X.X.X|port:60878|tim
 
 == Configuring BinAuditLogger
 
-To use `BinAuditLogger` as a logger in AuditLogging, set the logger to
-`BinAuditLogger` in cassandra.yaml under `audit_logging_options`
-section. `BinAuditLogger` can be futher configued using its advanced
-options in cassandra.yaml.
+To use `BinAuditLogger` as a logger in AuditLogging, set the logger to `BinAuditLogger` in the `cassandra.yaml` file
+ under the `audit_logging_options` section. 
+`BinAuditLogger` can be futher configued using its advanced options in `cassandra.yaml`.
 
-=== Adcanced Options for BinAuditLogger
+=== Advanced Options for BinAuditLogger
 
 `block`::
   Indicates if the AuditLog should block if the it falls behind or
@@ -208,10 +196,8 @@ options in cassandra.yaml.
 
 == Configuring FileAuditLogger
 
-To use `FileAuditLogger` as a logger in AuditLogging, apart from setting
-the class name in cassandra.yaml, following configuration is needed to
-have the audit log events to flow through separate log file instead of
-system.log
+To use `FileAuditLogger` as a logger in AuditLogging, set the class name in the `cassandra.yaml` file and configure
+the audit log events to flow through separate log file instead of system.log.
 
 [source,xml]
 ----

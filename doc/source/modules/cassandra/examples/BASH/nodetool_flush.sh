@@ -1,3 +1,3 @@
-$ nodetool flush "CQLKeyspace" t
-$ nodetool flush "CQLKeyspace" t2
-$ nodetool flush "CatalogKeyspace" journal magazine
+$ nodetool flush cqlkeyspace t
+$ nodetool flush cqlkeyspace t2
+$ nodetool flush catalogkeyspace journal magazine

@@ -63,17 +63,17 @@ demonstrate incremental backups and snapshots.
 We have used a three node Cassandra cluster. 
 First, the keyspaces are created. 
 Then tables are created within a keyspace and table data is added. 
-We have used two keyspaces `CQLKeyspace` and `CatalogKeyspace` with two tables within
+We have used two keyspaces `cqlkeyspace` and `catalogkeyspace` with two tables within
 each. 
 
-Create the `CQLKeyspace`:
+Create the keyspace `cqlkeyspace`:
 
 [source,cql]
 ----
 include::example$CQL/create_ks_backup.cql[]
 ----
 
-Create two tables `t` and `t2` in the `CQLKeyspace` keyspace.
+Create two tables `t` and `t2` in the `cqlkeyspace` keyspace.
 
 [source,cql]
 ----
@@ -101,14 +101,14 @@ results in
 include::example$RESULTS/select_data_backup.result[]
 ----
 
-Create a second keyspace `CatalogKeyspace`:
+Create a second keyspace `catalogkeyspace`:
 
 [source,cql]
 ----
 include::example$CQL/create_ks2_backup.cql[]
 ----
 
-Create two tables `journal`  and `magazine` in `CatalogKeyspace`:
+Create two tables `journal`  and `magazine` in `catalogkeyspace`:
 
 [source,cql]
 ----
@@ -185,7 +185,7 @@ We shall be using the example keyspaces and tables to create snapshots.
 ==== Taking Snapshots of all Tables in a Keyspace
 
 Using the syntax above, create a snapshot called `catalog-ks` for all the tables
-in the `CatalogKeyspace` keyspace:
+in the `catalogkeyspace` keyspace:
 
 [source,bash]
 ----
@@ -224,7 +224,7 @@ syntax becomes as follows:
 include::example$BASH/snapshot_one_table.sh[]
 ----
 
-Using the syntax above, create a snapshot for table `magazine` in keyspace `CatalogKeyspace`:
+Using the syntax above, create a snapshot for table `magazine` in keyspace `catalogkeyspace`:
 
 [source,bash]
 ----
@@ -242,7 +242,7 @@ include::example$RESULTS/snapshot_one_table2.result[]
 
 To take snapshots of multiple tables in a keyspace the list of
 _Keyspace.table_ must be specified with option `--kt-list`. 
-For example, create snapshots for tables `t` and `t2` in the `CQLKeyspace` keyspace:
+For example, create snapshots for tables `t` and `t2` in the `cqlkeyspace` keyspace:
 
 [source,bash]
 ----
@@ -257,7 +257,7 @@ include::example$RESULTS/snapshot_mult_tables.result[]
 ----
 
 Multiple snapshots of the same set of tables may be created and tagged with a different name. 
-As an example, create another snapshot for the same set of tables `t` and `t2` in the `CQLKeyspace` 
+As an example, create another snapshot for the same set of tables `t` and `t2` in the `cqlkeyspace` 
 keyspace and tag the snapshots differently:
 
 [source,bash]
@@ -330,7 +330,7 @@ include::example$RESULTS/snapshot_all.result[]
 ----
 
 To list the snapshots for a particular table first change to the snapshots directory for that table. 
-For example, list the snapshots for the `CatalogKeyspace/journal` table:
+For example, list the snapshots for the `catalogkeyspace/journal` table:
 
 [source,bash]
 ----
@@ -366,14 +366,14 @@ Snapshots may be cleared or deleted with the `nodetool clearsnapshot`
 command. Either a specific snapshot name must be specified or the `–all`
 option must be specified. 
 
-For example, delete a snapshot called `magazine` from keyspace `CQLKeyspace`:
+For example, delete a snapshot called `magazine` from keyspace `cqlkeyspace`:
 
 [source,bash]
 ----
 include::example$BASH/nodetool_clearsnapshot.sh[]
 ----
 
-or delete all snapshots from `CQLKeyspace` with the –all option:
+or delete all snapshots from `cqlkeyspace` with the –all option:
 
 [source,bash]
 ----

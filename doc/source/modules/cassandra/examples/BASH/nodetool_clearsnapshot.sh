@@ -1,1 +1,1 @@
-$ nodetool clearsnapshot -t magazine "CQLKeyspace"
+$ nodetool clearsnapshot -t magazine cqlkeyspace

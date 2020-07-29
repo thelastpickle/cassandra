@@ -1,4 +1,4 @@
-USE "CQLKeyspace";
+USE cqlkeyspace;
 CREATE TABLE t (
    id int,
    k int,

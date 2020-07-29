@@ -1,4 +1,4 @@
-USE CatalogKeyspace;
+USE catalogkeyspace;
 CREATE TABLE journal (
    id int,
    name text,

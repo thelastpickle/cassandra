@@ -1,1 +1,1 @@
-$ nodetool snapshot --kt-list "CQLKeyspace".t,"CQLKeyspace".t2 --tag multi-table-2
+$ nodetool snapshot --kt-list cqlkeyspace.t, cqlkeyspace.t2 --tag multi-table-2

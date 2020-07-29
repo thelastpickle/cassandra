@@ -1,1 +1,1 @@
-$ nodetool snapshot --tag magazine --table magazine  "CatalogKeyspace"
+$ nodetool snapshot --tag magazine --table magazine  catalogkeyspace

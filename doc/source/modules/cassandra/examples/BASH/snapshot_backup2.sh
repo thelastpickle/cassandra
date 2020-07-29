@@ -1,1 +1,1 @@
-$ nodetool snapshot --tag catalog-ks "CatalogKeyspace"
+$ nodetool snapshot --tag catalog-ks catalogkeyspace
