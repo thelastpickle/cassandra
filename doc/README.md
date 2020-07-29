@@ -3,7 +3,7 @@ Apache Cassandra documentation directory
 
 This directory contains the documentation maintained in-tree for Apache
 Cassandra. This directory contains the following documents:
-- The source of the official Cassandra documentation, in the `source/`
+- The source of the official Cassandra documentation, in the `source/modules`
   subdirectory. See below for more details on how to edit/build that
   documentation.
 - The specification(s) for the supported versions of native transport protocol.
