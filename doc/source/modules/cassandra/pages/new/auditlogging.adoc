@@ -1,53 +1,44 @@
 = Audit Logging
 
-Audit Logging is a new feature in Apache Cassandra 4.0
-(https://issues.apache.org/jira/browse/CASSANDRA-12151[CASSANDRA-12151]).
-All database activity is logged to a directory in the local filesystem
-and the audit log files are rolled periodically. All database operations
-are monitored and recorded. Audit logs are stored in local directory
-files instead of the database itself as it provides several benefits,
-some of which are:
+Audit Logging is a new feature in Apache Cassandra 4.0 (https://issues.apache.org/jira/browse/CASSANDRA-12151[CASSANDRA-12151]).
+All database activity is logged to a directory in the local filesystem and the audit log files are rolled periodically. 
+All database operations are monitored and recorded. 
+Audit logs are stored in local directory files instead of the database itself as it provides several benefits, some of which are:
 
 * No additional database capacity is needed to store audit logs
-* No query tool is required while storing the audit logs in the database
-would require a query tool
+* No query tool is required while storing the audit logs in the database would require a query tool
 * Latency of database operations is not affected; no performance impact
-* It is easier to implement file based logging than database based
-logging
+* It is easier to implement file based logging than database based logging
 
 == What does Audit Logging Log?
 
 Audit logging logs:
 
-[arabic]
-. All authentication which includes successful and failed login attempts
-. All database command requests to CQL. Both failed and successful CQL
-is logged
+* All authentication which includes successful and failed login attempts
+* All database command requests to CQL. Both failed and successful CQL is logged
 
 More specifically an audit log entry could be one of two types:
 
-[loweralpha]
-. CQL Audit Log Entry Type or
-. Common Audit Log Entry Type
+* CQL Audit Log Entry Type or
+* Common Audit Log Entry Type
 
 Each of these types comprises of several database operations. The CQL
 Audit Log Entry Type could be one of the following; the category of the
 CQL audit log entry type is listed in parentheses.
 
-[arabic]
-. SELECT(QUERY),
-. UPDATE(DML),
-. DELETE(DML),
-. TRUNCATE(DDL),
-. CREATE_KEYSPACE(DDL),
-. ALTER_KEYSPACE(DDL),
-. DROP_KEYSPACE(DDL),
-. CREATE_TABLE(DDL),
-. DROP_TABLE(DDL),
-. PREPARE_STATEMENT(PREPARE),
-. DROP_TRIGGER(DDL),
-. LIST_USERS(DCL),
-. CREATE_INDEX(DDL),
+* SELECT(QUERY),
+* UPDATE(DML),
+* DELETE(DML),
+* TRUNCATE(DDL),
+* CREATE_KEYSPACE(DDL),
+* ALTER_KEYSPACE(DDL),
+* DROP_KEYSPACE(DDL),
+* CREATE_TABLE(DDL),
+* DROP_TABLE(DDL),
+* PREPARE_STATEMENT(PREPARE),
+* DROP_TRIGGER(DDL),
+* LIST_USERS(DCL),
+* CREATE_INDEX(DDL),
 . DROP_INDEX(DDL),
 . GRANT(DCL),
 . REVOKE(DCL),
@@ -102,161 +93,153 @@ frequency is hourly.
 
 == Configuring Audit Logging
 
-Audit Logging is configured on each node separately. Audit Logging is
-configured in `cassandra.yaml` in the `audit_logging_options` setting.
-The settings may be same/different on each node.
+The ``cassandra.yaml`` file can be used to configure and enable audit logging.
+Configuration and enablement may be the same or different on each node, depending on the ``cassandra.yaml`` file settings.
+Audit logs are generated on each enabled node, so logs on each node will have that node's queries.
+All options for audit logging can be set in the ``cassandra.yaml`` file under the `audit_logging_options:`.
 
-=== Enabling Audit Logging
+The file includes the following options that can be uncommented for use:
+
+[source, yaml]
+----
+# Audit logging - Logs every incoming CQL command request, authentication to a node. See the docs
+# on audit_logging for full details about the various configuration options.
+audit_logging_options:
+    enabled: false
+    logger:
+      - class_name: BinAuditLogger
+    # audit_logs_dir:
+    # included_keyspaces:
+    # excluded_keyspaces: system, system_schema, system_virtual_schema
+    # included_categories:
+    # excluded_categories:
+    # included_users:
+    # excluded_users:
+    # roll_cycle: HOURLY
+    # block: true
+    # max_queue_weight: 268435456 # 256 MiB
+    # max_log_size: 17179869184 # 16 GiB
+    ## archive command is "/path/to/script.sh %path" where %path is replaced with the file being rolled:
+    # archive_command:
+    # max_archive_retries: 10
+----
+
+=== enabled
 
 Audit logging is enabled by setting the `enabled` option to `true` in
-the `audit_logging_options` setting.
+the `audit_logging_options` setting. For example, ``enabled: true``.
 
-....
-audit_logging_options:
-   enabled: true
-....
+=== logger
 
-=== Setting the Logger
+The type of audit logger is set with the `logger` option. 
+Supported values are: `BinAuditLogger` (default), `FileAuditLogger` and `NoOpAuditLogger`.
+`BinAuditLogger` logs events to a file in binary format. 
+`FileAuditLogger` uses the standard logging mechanism, `slf4j` to log events to the `audit/audit.log` file. It is a synchronous, file-based audit logger.
+`NoOpAuditLogger` is a no-op implementation of the audit logger that shoudl be specified when audit logging is disabled.
 
-The audit logger is set with the `logger` option.
+For example:
 
-....
-logger: BinAuditLogger
-....
+[source, yaml]
+----
+logger: 
+  - class_name: FileAuditLogger
+----
 
-Two types of audit loggers are supported: `FileAuditLogger` and
-`BinAuditLogger`. `BinAuditLogger` is the default setting. The
-`BinAuditLogger` is an efficient way to log events to file in a binary
-format.
 
-`FileAuditLogger` is synchronous, file-based audit logger; just uses the
-standard logging mechanism. `FileAuditLogger` logs events to
-`audit/audit.log` file using `slf4j` logger.
+=== audit_logs_dir
 
-The `NoOpAuditLogger` is a No-Op implementation of the audit logger to
-be used as a default audit logger when audit logging is disabled.
+To write audit logs, an existing directory must be set in ``audit_log_dir``.
 
-=== Setting the Audit Logs Directory
+The directory must have appropriate permissions set to allow reading, writing, and executing.
+Logging will recursively delete the directory contents as needed.
+Do not place links in this directory to other sections of the filesystem.
+For example, ``audit_log_dir: /cassandra/audit/logs/hourly``.
 
-The audit logs directory is set with the `audit_logs_dir` option. A new
-directory is not created automatically and an existing directory must be
-set. Audit Logs directory can be configured using
-`cassandra.logdir.audit` system property or default is set to
-`cassandra.logdir + /audit/`. A user created directory may be set. As an
-example, create a directory for the audit logs and set its permissions.
+The audit log directory can also be configured using the system property `cassandra.logdir.audit`, which by default is set to `cassandra.logdir + /audit/`.
 
-....
-sudo mkdir –p  /cassandra/audit/logs/hourly
-sudo chmod -R 777 /cassandra/audit/logs/hourly
-....
-
-Set the directory for the audit logs directory using the
-`audit_logs_dir` option.
-
-....
-audit_logs_dir: "/cassandra/audit/logs/hourly"
-....
-
-=== Setting Keyspaces to Audit
+=== included_keyspaces and excluded_keyspaces
 
 Set the keyspaces to include with the `included_keyspaces` option and
-the keyspaces to exclude with the `excluded_keyspaces` option. By
-default all keyspaces are included. By default, `system`,
-`system_schema` and `system_virtual_schema` are excluded.
+the keyspaces to exclude with the `excluded_keyspaces` option. 
+By default, `system`, `system_schema` and `system_virtual_schema` are excluded, and all other keyspaces are included.
 
-....
-# included_keyspaces:
-# excluded_keyspaces: system, system_schema, system_virtual_schema
-....
+For example:
+[source, yaml]
+----
+included_keyspaces: test, demo
+excluded_keyspaces: system, system_schema, system_virtual_schema
+----
 
-=== Setting Categories to Audit
+=== included_categories and excluded_categories
 
-The categories of database operations to be included are specified with
-the `included_categories` option as a comma separated list. By default
-all supported categories are included. The categories of database
-operations to be excluded are specified with `excluded_categories`
-option as a comma separated list. By default no category is excluded.
+The categories of database operations to include are specified with the `included_categories` option as a comma-separated list. 
+The categories of database operations to exclude are specified with `excluded_categories` option as a comma-separated list. 
+The supported categories for audit log are: `AUTH`, `DCL`, `DDL`, `DML`, `ERROR`, `OTHER`, `PREPARE`, and `QUERY`.
+By default all supported categories are included, and no category is excluded. 
 
-....
-# included_categories:
-# excluded_categories:
-....
+[source, yaml]
+----
+included_categories: AUTH, ERROR, DCL
+excluded_categories: DDL, DML, QUERY, PREPARE
+----
 
-The supported categories for audit log are:
+=== included_users and excluded_users
 
-[arabic]
-. QUERY
-. DML
-. DDL
-. DCL
-. OTHER
-. AUTH
-. ERROR
-. PREPARE
+Users to audit log are set with the `included_users` and `excluded_users` options. 
+The `included_users` option specifies a comma-separated list of users to include explicitly.
+The `excluded_users` option specifies a comma-separated list of users to exclude explicitly.
+By default all users are included, and no users are excluded. 
 
-=== Setting Users to Audit
+[source, yaml]
+----
+included_users: 
+excluded_users: john, mary
+----
 
-Users to audit log are set with the `included_users` and
-`excluded_users` options. The `included_users` option specifies a comma
-separated list of users to include explicitly and by default all users
-are included. The `excluded_users` option specifies a comma separated
-list of users to exclude explicitly and by default no user is excluded.
+=== roll_cycle
 
-....
-# included_users:
-# excluded_users:
-....
+The ``roll_cycle`` defines the frequency with which the audit log segments are rolled.
+Supported values are ``HOURLY`` (default), ``MINUTELY``, and ``DAILY``.
+For example: ``roll_cycle: DAILY``
 
-=== Setting the Roll Frequency
+=== block
 
-The `roll_cycle` option sets the frequency at which the audit log file
-is rolled. Supported values are `MINUTELY`, `HOURLY`, and `DAILY`.
-Default value is `HOURLY`, which implies that after every hour a new
-audit log file is created.
+The ``block`` option specifies whether audit logging should block writing or drop log records if the audit logging falls behind. Supported boolean values are ``true`` (default) or ``false``.
+For example: ``block: false`` to drop records
 
-....
-roll_cycle: HOURLY
-....
+=== max_queue_weight
+
+The ``max_queue_weight`` option sets the maximum weight of in-memory queue for records waiting to be written to the file before blocking or dropping.  The option must be set to a positive value. The default value is 268435456, or 256 MiB.
+For example, to change the default: ``max_queue_weight: 134217728 # 128 MiB``
+
+=== max_log_size
+
+The ``max_log_size`` option sets the maximum size of the rolled files to retain on disk before deleting the oldest file.  The option must be set to a positive value. The default is 17179869184, or 16 GiB.
+For example, to change the default: ``max_log_size: 34359738368 # 32 GiB``
+
+=== archive_command
+
+The ``archive_command`` option sets the user-defined archive script to execute on rolled log files.
+For example: ``archive_command: /usr/local/bin/archiveit.sh %path # %path is the file being rolled``
+
+=== max_archive_retries
+
+The ``max_archive_retries`` option sets the max number of retries of failed archive commands. The default is 10.
+For example: ``max_archive_retries: 10``
+
 
 An audit log file could get rolled for other reasons as well such as a
 log file reaches the configured size threshold.
 
-=== Setting Archiving Options
+Audit logging can also be configured using ``nodetool` when enabling the feature, and will override any values set in the `cassandra.yaml` file, as discussed in the next section.
 
-The archiving options are for archiving the rolled audit logs. The
-`archive` command to use is set with the `archive_command` option and
-the `max_archive_retries` sets the maximum # of tries of failed archive
-commands.
 
-....
-# archive_command:
-# max_archive_retries: 10
-....
+== Enabling Audit Logging with ``nodetool``
+ 
+Audit logging is enabled on a per-node basis using the ``nodetool enableauditlog`` command. At a minimum, the path to the logging directory must be defined, if ``audit_log_dir`` is not set in the `cassandra.yaml` file.
 
-Default archive command is `"/path/to/script.sh %path"` where `%path` is
-replaced with the file being rolled:
-
-=== Other Settings
-
-The other audit logs settings are as follows.
-
-....
-# block: true
-# max_queue_weight: 268435456 # 256 MiB
-# max_log_size: 17179869184 # 16 GiB
-....
-
-The `block` option specifies whether the audit logging should block if
-the logging falls behind or should drop log records.
-
-The `max_queue_weight` option sets the maximum weight of in memory queue
-for records waiting to be written to the file before blocking or
-dropping.
-
-The `max_log_size` option sets the maximum size of the rolled files to
-retain on disk before deleting the oldest.
-
-== Using Nodetool to Enable Audit Logging
+The syntax of the ``nodetool enableauditlog`` command has all the same options that can be set in the ``cassandra.yaml`` file.
+In addition, ``nodetool`` has options to set which host and port to run the command on, and username and password if the command requires authentication.
 
 The `nodetool  enableauditlog` command may be used to enable audit logs
 and it overrides the settings in `cassandra.yaml`. The
