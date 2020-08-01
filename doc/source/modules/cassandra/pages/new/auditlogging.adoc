@@ -3,9 +3,8 @@
 Audit Logging is a new feature in Apache Cassandra 4.0 (https://issues.apache.org/jira/browse/CASSANDRA-12151[CASSANDRA-12151]).
 This new feature is safe for production use, with configurable limits to heap memory and disk space to prevent out-of-memory errors.
 All database activity is logged per-node as file-based records to a specified local filesystem directory. 
-The audit log files are rolled periodically. 
-All database operations are monitored and recorded. 
-Audit logs are stored in local directory files instead of the database itself as it provides several benefits, some of which are:
+The audit log files are rolled periodically based on a configurable value. 
+Some of the features of audit logging are:
 
 * No additional database capacity is needed to store audit logs.
 * No query tool is required to store the audit logs.

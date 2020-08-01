@@ -1,42 +1,26 @@
 = Virtual Tables
 
-Apache Cassandra 4.0 implements virtual tables
-(https://issues.apache.org/jira/browse/CASSANDRA-7622[CASSANDRA-7622]).
+Apache Cassandra 4.0 implements virtual tables (https://issues.apache.org/jira/browse/CASSANDRA-7622[CASSANDRA-7622]).
+Virtual tables are tables backed by an API instead of data explicitly managed and stored as SSTables. 
+Apache Cassandra 4.0 implements a virtual keyspace interface for virtual tables. 
+Virtual tables are specific to each node.
 
-== Definition
+Some of the features of virtual tables are the ability to:
 
-A virtual table is a table that is backed by an API instead of data
-explicitly managed and stored as SSTables. Apache Cassandra 4.0
-implements a virtual keyspace interface for virtual tables. Virtual
-tables are specific to each node.
+* expose metrics through CQL
+* expose YAML configuration information
 
-== Objective
+Virtual keyspaces and tables are quite different from regular tables and keyspaces:
 
-A virtual table could have several uses including:
-
-* Expose metrics through CQL
-* Expose YAML configuration information
-
-== How are Virtual Tables different from regular tables?
-
-Virtual tables and virtual keyspaces are quite different from regular
-tables and keyspaces respectively such as:
-
-* Virtual tables are read-only, but it is likely to change
-* Virtual tables are not replicated
-* Virtual tables are local only and non distributed
-* Virtual tables have no associated SSTables
-* Consistency level of the queries sent virtual tables are ignored
-* Virtual tables are managed by Cassandra and a user cannot run DDL to
-create new virtual tables or DML to modify existing virtual tables
-* Virtual tables are created in special keyspaces and not just any
-keyspace
-* All existing virtual tables use `LocalPartitioner`. Since a virtual
-table is not replicated the partitioner sorts in order of partition keys
-instead of by their hash.
-* Making advanced queries with `ALLOW FILTERING` and aggregation
-functions may be used with virtual tables even though in normal tables
-we dont recommend it
+* Virtual tables are created in special keyspaces and not just any keyspace.
+* Virtual tables are managed by Cassandra. Users cannot run DDL to create new virtual tables or DML to modify existing virtual tables.
+* Virtual tables are currently read-only, although that may change in a later version.
+* Virtual tables are local only, non-distributed, and thus not replicated.
+* Virtual tables have no associated SSTables.
+* Consistency level of the queries sent to virtual tables are ignored.
+* All existing virtual tables use `LocalPartitioner`. 
+Since a virtual table is not replicated the partitioner sorts in order of partition keys instead of by their hash.
+* Making advanced queries using `ALLOW FILTERING` and aggregation functions can be executed in virtual tables, even though in normal tables we dont recommend it.
 
 == Virtual Keyspaces
 
