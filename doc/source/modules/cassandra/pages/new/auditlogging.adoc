@@ -1,102 +1,96 @@
 = Audit Logging
 
 Audit Logging is a new feature in Apache Cassandra 4.0 (https://issues.apache.org/jira/browse/CASSANDRA-12151[CASSANDRA-12151]).
-All database activity is logged to a directory in the local filesystem and the audit log files are rolled periodically. 
+This new feature is safe for production use, with configurable limits to heap memory and disk space to prevent out-of-memory errors.
+All database activity is logged per-node as file-based records to a specified local filesystem directory. 
+The audit log files are rolled periodically. 
 All database operations are monitored and recorded. 
 Audit logs are stored in local directory files instead of the database itself as it provides several benefits, some of which are:
 
-* No additional database capacity is needed to store audit logs
-* No query tool is required while storing the audit logs in the database would require a query tool
-* Latency of database operations is not affected; no performance impact
-* It is easier to implement file based logging than database based logging
+* No additional database capacity is needed to store audit logs.
+* No query tool is required to store the audit logs.
+* Latency of database operations is not affected, so there is no performance impact.
+* Heap memory usage is bounded by a weighted queue, with configurable maximum weight sitting in front of logging thread.
+* Disk utilization is bounded by a configurable size, deleting old log segments once the limit is reached.
+* Can be enabled, disabled, or reset (to delete on-disk data) using the JMX tool, ``nodetool``.
+* Can configure the settings in either the `cassandra.yaml` file or by using ``nodetool``.
 
-== What does Audit Logging Log?
+Audit logging includes all CQL requests, both successful and failed. 
+It also captures all successful and failed authentication and authorization events, such as login attempts. 
+The difference between Full Query Logging (FQL) and audit logging is that FQL captures only successful CQL requests, which allow replay or comparison of logs.
+Audit logs are useful for compliance and debugging, while FQL is useful for debugging, performance benchmarking, testing and auditing CQL queries.
 
-Audit logging logs:
+== Audit information logged
 
-* All authentication which includes successful and failed login attempts
-* All database command requests to CQL. Both failed and successful CQL is logged
+The audit log contains:
 
-More specifically an audit log entry could be one of two types:
+* all events in the configured keyspaces to include
+* all events in the configured categories to include
+* all events executed by the configured users to include
 
-* CQL Audit Log Entry Type or
-* Common Audit Log Entry Type
+The audit log does not contain:
 
-Each of these types comprises of several database operations. The CQL
-Audit Log Entry Type could be one of the following; the category of the
-CQL audit log entry type is listed in parentheses.
+* configuration changes made in `cassandra.yaml` file
+* `nodetool` commands
 
-* SELECT(QUERY),
-* UPDATE(DML),
-* DELETE(DML),
-* TRUNCATE(DDL),
-* CREATE_KEYSPACE(DDL),
-* ALTER_KEYSPACE(DDL),
-* DROP_KEYSPACE(DDL),
-* CREATE_TABLE(DDL),
-* DROP_TABLE(DDL),
-* PREPARE_STATEMENT(PREPARE),
-* DROP_TRIGGER(DDL),
-* LIST_USERS(DCL),
-* CREATE_INDEX(DDL),
-. DROP_INDEX(DDL),
-. GRANT(DCL),
-. REVOKE(DCL),
-. CREATE_TYPE(DDL),
-. DROP_AGGREGATE(DDL),
-. ALTER_VIEW(DDL),
-. CREATE_VIEW(DDL),
-. DROP_ROLE(DCL),
-. CREATE_FUNCTION(DDL),
-. ALTER_TABLE(DDL),
-. BATCH(DML),
-. CREATE_AGGREGATE(DDL),
-. DROP_VIEW(DDL),
-. DROP_TYPE(DDL),
-. DROP_FUNCTION(DDL),
-. ALTER_ROLE(DCL),
-. CREATE_TRIGGER(DDL),
-. LIST_ROLES(DCL),
-. LIST_PERMISSIONS(DCL),
-. ALTER_TYPE(DDL),
-. CREATE_ROLE(DCL),
-. USE_KEYSPACE (OTHER).
+The audit log is a series of log entries. 
+An audit log entry contains:
 
-The Common Audit Log Entry Type could be one of the following; the
-category of the Common audit log entry type is listed in parentheses.
+* keyspace (String) - Keyspace on which request is made
+* operation (String) - Database operation such as CQL command
+* user (String) - User name
+* scope (String) - Scope of request such as Table/Function/Aggregate name
+* type (AuditLogEntryType) - Type of request
+** CQL Audit Log Entry Type
+** Common Audit Log Entry Type
+* source (InetAddressAndPort) - Source IP Address from which request originated
+* timestamp (long ) - Timestamp of the request
+* batch (UUID) - Batch of request
+* options (QueryOptions) - CQL Query options
+* state (QueryState) - State related to a given query
 
-[arabic]
-. REQUEST_FAILURE(ERROR),
-. LOGIN_ERROR(AUTH),
-. UNAUTHORIZED_ATTEMPT(AUTH),
-. LOGIN_SUCCESS (AUTH).
+Each entry contains all applicable attributes for the given event, concatenated with a pipe (|).
 
-== What Audit Logging does not Log?
+CQL audit log entry types are the following CQL commands. Each command is assigned to a particular specified category to log:
 
-Audit logging does not log:
+[width="100%",cols="20%,80%",options="header",]
+|===
+| Category | CQL commands
 
-[arabic]
-. Configuration changes made in `cassandra.yaml`
-. Nodetool Commands
+| DDL | ALTER_KEYSPACE, CREATE_KEYSPACE, DROP_KEYSPACE, 
+ALTER_TABLE, CREATE_TABLE, DROP_TABLE, 
+CREATE_FUNCTION, DROP_FUNCTION, 
+CREATE_AGGREGATE, DROP_AGGREGATE, 
+CREATE_INDEX, DROP_INDEX, 
+ALTER_TYPE, CREATE_TYPE, DROP_TYPE,
+CREATE_TRIGGER, DROP_TRIGGER,
+ALTER_VIEW, CREATE_VIEW, DROP_VIEW,
+TRUNCATE
+| DML | BATCH, DELETE, UPDATE
+| DCL | GRANT, REVOKE, 
+ALTER_ROLE, CREATE_ROLE, DROP_ROLE, 
+LIST_ROLES, LIST_PERMISSIONS, LIST_USERS
+| OTHER | USE_KEYSPACE
+| QUERY | SELECT
+| PREPARE | PREPARE_STATEMENT
+|===
 
-== Audit Logging is Flexible and Configurable
+Common audit log entry types are one of the following:
 
-Audit logging is flexible and configurable in `cassandra.yaml` as
-follows:
+[width="100%",cols="50%,50%",options="header",]
+|===
+| Category | CQL commands
 
-* Keyspaces and tables to be monitored and audited may be specified.
-* Users to be included/excluded may be specified. By default all users
-are audit logged.
-* Categories of operations to audit or exclude may be specified.
-* The frequency at which to roll the log files may be specified. Default
-frequency is hourly.
+| AUTH | LOGIN_SUCCESS, LOGIN_ERROR, UNAUTHORIZED_ATTEMPT
+| ERROR | REQUEST_FAILURE
+|===
 
-== Configuring Audit Logging
+== Configuring audit logging in cassandra.yaml
 
-The ``cassandra.yaml`` file can be used to configure and enable audit logging.
-Configuration and enablement may be the same or different on each node, depending on the ``cassandra.yaml`` file settings.
+The `cassandra.yaml` file can be used to configure and enable audit logging.
+Configuration and enablement may be the same or different on each node, depending on the `cassandra.yaml` file settings.
 Audit logs are generated on each enabled node, so logs on each node will have that node's queries.
-All options for audit logging can be set in the ``cassandra.yaml`` file under the `audit_logging_options:`.
+All options for audit logging can be set in the `cassandra.yaml` file under the ``audit_logging_options:``.
 
 The file includes the following options that can be uncommented for use:
 
@@ -241,110 +235,111 @@ Audit logging is enabled on a per-node basis using the ``nodetool enableauditlog
 The syntax of the ``nodetool enableauditlog`` command has all the same options that can be set in the ``cassandra.yaml`` file.
 In addition, ``nodetool`` has options to set which host and port to run the command on, and username and password if the command requires authentication.
 
-The `nodetool  enableauditlog` command may be used to enable audit logs
-and it overrides the settings in `cassandra.yaml`. The
-`nodetool enableauditlog` command syntax is as follows.
+[source, plaintext]
+----
+       nodetool [(-h <host> | --host <host>)] [(-p <port> | --port <port>)]
+                [(-pp | --print-port)] [(-pw <password> | --password <password>)]
+                [(-pwf <passwordFilePath> | --password-file <passwordFilePath>)]
+                [(-u <username> | --username <username>)] enableauditlog
+                [--excluded-categories <excluded_categories>]
+                [--excluded-keyspaces <excluded_keyspaces>]
+                [--excluded-users <excluded_users>]
+                [--included-categories <included_categories>]
+                [--included-keyspaces <included_keyspaces>]
+                [--included-users <included_users>] [--logger <logger>]
 
-....
-nodetool [(-h <host> | --host <host>)] [(-p <port> | --port <port>)]
-        [(-pp | --print-port)] [(-pw <password> | --password <password>)]
-        [(-pwf <passwordFilePath> | --password-file <passwordFilePath>)]
-        [(-u <username> | --username <username>)] enableauditlog
-        [--excluded-categories <excluded_categories>]
-        [--excluded-keyspaces <excluded_keyspaces>]
-        [--excluded-users <excluded_users>]
-        [--included-categories <included_categories>]
-        [--included-keyspaces <included_keyspaces>]
-        [--included-users <included_users>] [--logger <logger>]
-....
+OPTIONS
+        --excluded-categories <excluded_categories>
+            Comma separated list of Audit Log Categories to be excluded for
+            audit log. If not set the value from cassandra.yaml will be used
 
-OPTIONS::
-  --excluded-categories <excluded_categories>;;
-    Comma separated list of Audit Log Categories to be excluded for
-    audit log. If not set the value from cassandra.yaml will be used
-  --excluded-keyspaces <excluded_keyspaces>;;
-    Comma separated list of keyspaces to be excluded for audit log. If
-    not set the value from cassandra.yaml will be used
-  --excluded-users <excluded_users>;;
-    Comma separated list of users to be excluded for audit log. If not
-    set the value from cassandra.yaml will be used
-  -h <host>, --host <host>;;
-    Node hostname or ip address
-  --included-categories <included_categories>;;
-    Comma separated list of Audit Log Categories to be included for
-    audit log. If not set the value from cassandra.yaml will be used
-  --included-keyspaces <included_keyspaces>;;
-    Comma separated list of keyspaces to be included for audit log. If
-    not set the value from cassandra.yaml will be used
-  --included-users <included_users>;;
-    Comma separated list of users to be included for audit log. If not
-    set the value from cassandra.yaml will be used
-  --logger <logger>;;
-    Logger name to be used for AuditLogging. Default BinAuditLogger. If
-    not set the value from cassandra.yaml will be used
-  -p <port>, --port <port>;;
-    Remote jmx agent port number
-  -pp, --print-port;;
-    Operate in 4.0 mode with hosts disambiguated by port number
-  -pw <password>, --password <password>;;
-    Remote jmx agent password
-  -pwf <passwordFilePath>, --password-file <passwordFilePath>;;
-    Path to the JMX password file
-  -u <username>, --username <username>;;
-    Remote jmx agent username
+        --excluded-keyspaces <excluded_keyspaces>
+            Comma separated list of keyspaces to be excluded for audit log. If
+            not set the value from cassandra.yaml will be used
 
-The `nodetool disableauditlog` command disables audit log. The command
-syntax is as follows.
+        --excluded-users <excluded_users>
+            Comma separated list of users to be excluded for audit log. If not
+            set the value from cassandra.yaml will be used
 
-....
-nodetool [(-h <host> | --host <host>)] [(-p <port> | --port <port>)]
-        [(-pp | --print-port)] [(-pw <password> | --password <password>)]
-        [(-pwf <passwordFilePath> | --password-file <passwordFilePath>)]
-        [(-u <username> | --username <username>)] disableauditlog
-....
+        -h <host>, --host <host>
+            Node hostname or ip address
 
-OPTIONS::
-  -h <host>, --host <host>;;
-    Node hostname or ip address
-  -p <port>, --port <port>;;
-    Remote jmx agent port number
-  -pp, --print-port;;
-    Operate in 4.0 mode with hosts disambiguated by port number
-  -pw <password>, --password <password>;;
-    Remote jmx agent password
-  -pwf <passwordFilePath>, --password-file <passwordFilePath>;;
-    Path to the JMX password file
-  -u <username>, --username <username>;;
-    Remote jmx agent username
+        --included-categories <included_categories>
+            Comma separated list of Audit Log Categories to be included for
+            audit log. If not set the value from cassandra.yaml will be used
 
-== Viewing the Audit Logs
+        --included-keyspaces <included_keyspaces>
+            Comma separated list of keyspaces to be included for audit log. If
+            not set the value from cassandra.yaml will be used
 
-An audit log event comprises of a keyspace that is being audited, the
-operation that is being logged, the scope and the user. An audit log
-entry comprises of the following attributes concatenated with a "|".
+        --included-users <included_users>
+            Comma separated list of users to be included for audit log. If not
+            set the value from cassandra.yaml will be used
 
-....
-type (AuditLogEntryType): Type of request
-source (InetAddressAndPort): Source IP Address from which request originated
-user (String): User name
-timestamp (long ): Timestamp of the request
-batch (UUID): Batch of request
-keyspace (String): Keyspace on which request is made
-scope (String): Scope of request such as Table/Function/Aggregate name
-operation (String): Database operation such as CQL command
-options (QueryOptions): CQL Query options
-state (QueryState): State related to a given query
-....
+        --logger <logger>
+            Logger name to be used for AuditLogging. Default BinAuditLogger. If
+            not set the value from cassandra.yaml will be used
 
-Some of these attributes may not be applicable to a given request and
-not all of these options must be set.
+        -p <port>, --port <port>
+            Remote jmx agent port number
 
-== An Audit Logging Demo
+        -pp, --print-port
+            Operate in 4.0 mode with hosts disambiguated by port number
 
-To demonstrate audit logging enable and configure audit logs with
-following settings.
+        -pw <password>, --password <password>
+            Remote jmx agent password
 
-....
+        -pwf <passwordFilePath>, --password-file <passwordFilePath>
+            Path to the JMX password file
+
+        -u <username>, --username <username>
+            Remote jmx agent username
+----
+
+To enable audit logging, run following command on each node in the cluster on which you want to enable logging:
+
+[source, bash]
+----
+$ nodetool enableauditlog
+----
+
+== Disabling audit logging
+
+Use the `nodetool disableauditlog` command to disable audit logging. 
+
+== Viewing audit logs
+
+The `auditlogviewer` tool is used to view (dump) audit logs. 
+``auditlogviewer`` converts the binary log files into human-readable format; only the audit log directory must be supplied as a command-line option.
+
+
+The syntax of `auditlogviewer` is:
+
+[source, plaintext]
+----
+auditlogviewer
+
+Audit log files directory path is a required argument.
+usage: auditlogviewer <path1> [<path2>...<pathN>] [options]
+--
+View the audit log contents in human readable format
+--
+Options are:
+-f,--follow       Upon reaching the end of the log continue indefinitely
+                  waiting for more records
+-h,--help         display this help message
+-r,--roll_cycle   How often to roll the log file was rolled. May be
+                  necessary for Chronicle to correctly parse file names. (MINUTELY, HOURLY,
+                  DAILY). Default HOURLY.
+----
+
+== Example
+
+[arabic, start=1]
+. To demonstrate audit logging, first configure the ``cassandra.yaml`` file with the following settings:
+
+[source, yaml]
+----
 audit_logging_options:
    enabled: true
    logger: BinAuditLogger
@@ -362,35 +357,71 @@ audit_logging_options:
    ## archive command is "/path/to/script.sh %path" where %path is replaced with the file being rolled:
    # archive_command:
    # max_archive_retries: 10
-....
+----
 
-Create the audit log directory `/cassandra/audit/logs/hourly` and set
-its permissions as discussed earlier. Run some CQL commands such as
-create a keyspace, create a table and query a table. Any supported CQL
-commands may be run as discussed in section *What does Audit Logging
-Log?*. Change directory (with `cd` command) to the audit logs directory.
+[arabic, start=2]
+. Create the audit log directory `/cassandra/audit/logs/hourly` and set the directory permissions to read, write, and execute for all. 
 
-....
-cd /cassandra/audit/logs/hourly
-....
+[arabic, start=3]
+. Now create a demo keyspace and table and insert some data using ``cqlsh``:
 
-List the files/directories and some `.cq4` files should get listed.
-These are the audit logs files.
+[source, cql]
+----
+ cqlsh> CREATE KEYSPACE auditlogkeyspace
+   ... WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 1};
+ cqlsh> USE auditlogkeyspace;
+ cqlsh:auditlogkeyspace> CREATE TABLE t (
+ ...id int,
+ ...k int,
+ ...v text,
+ ...PRIMARY KEY (id)
+ ... );
+ cqlsh:auditlogkeyspace> INSERT INTO t (id, k, v) VALUES (0, 0, 'val0');
+ cqlsh:auditlogkeyspace> INSERT INTO t (id, k, v) VALUES (0, 1, 'val1');
+----
 
-....
-[ec2-user@ip-10-0-2-238 hourly]$ ls -l
+All the supported CQL commands will be logged to the audit log directory.
+
+[arabic, start=4]
+. Change directory to the audit logs directory.
+
+[source, bash]
+----
+$ cd /cassandra/audit/logs/hourly
+----
+
+[arabic, start=5]
+. List the audit log files and directories. 
+
+[source, bash]
+----
+$ ls -l
+----
+
+You should see results similar to:
+
+[source, plaintext]
+----
 total 28
+-rw-rw-r--. 1 ec2-user ec2-user    65536 Aug  2 03:01 directory-listing.cq4t
 -rw-rw-r--. 1 ec2-user ec2-user 83886080 Aug  2 03:01 20190802-02.cq4
 -rw-rw-r--. 1 ec2-user ec2-user 83886080 Aug  2 03:01 20190802-03.cq4
--rw-rw-r--. 1 ec2-user ec2-user    65536 Aug  2 03:01 directory-listing.cq4t
-....
+----
 
-The `auditlogviewer` tool is used to dump audit logs. Run the
-`auditlogviewer` tool. Audit log files directory path is a required
-argument. The output should be similar to the following output.
+The audit log files will all be listed with a `.cq4` file type. The audit directory is of `.cq4t` type.
 
-....
-[ec2-user@ip-10-0-2-238 hourly]$ auditlogviewer /cassandra/audit/logs/hourly
+[arabic, start=6]
+. Run `auditlogviewer` tool to view the audit logs. 
+
+[source, bash]
+----
+$ auditlogviewer /cassandra/audit/logs/hourly
+----
+
+This command will return a readable version of the log. Here is a partial sample of the log for the commands in this demo:
+
+[source, plaintext]
+----
 WARN  03:12:11,124 Using Pauser.sleepy() as not enough processors, have 2, needs 8+
 Type: AuditLog
 LogMessage:
@@ -423,29 +454,9 @@ Type: AuditLog
 LogMessage:
 user:anonymous|host:10.0.2.238:7000|source:/127.0.0.1|port:46264|timestamp:1564714870678|type :USE_KEYSPACE|category:OTHER|ks:auditlogkeyspace|operation:USE auditlogkeyspace;
 [ec2-user@ip-10-0-2-238 hourly]$
-....
-
-The `auditlogviewer` tool usage syntax is as follows.
-
-....
-./auditlogviewer
-Audit log files directory path is a required argument.
-usage: auditlogviewer <path1> [<path2>...<pathN>] [options]
---
-View the audit log contents in human readable format
---
-Options are:
--f,--follow       Upon reaching the end of the log continue indefinitely
-                  waiting for more records
--h,--help         display this help message
--r,--roll_cycle   How often to roll the log file was rolled. May be
-                  necessary for Chronicle to correctly parse file names. (MINUTELY, HOURLY,
-                  DAILY). Default HOURLY.
-....
+----
 
 == Diagnostic events for user audit logging
 
-Any native transport enabled client is able to subscribe to diagnostic
-events that are raised around authentication and CQL operations. These
-events can then be consumed and used by external tools to implement a
-Cassandra user auditing solution.
+Any native transport-enabled client can subscribe to audit log events for diagnosing cluster issues.
+These events can be consumed by external tools to implement a Cassandra user auditing solution.
