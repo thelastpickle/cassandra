@@ -4,6 +4,7 @@ Audit Logging is a new feature in Apache Cassandra 4.0 (https://issues.apache.or
 This new feature is safe for production use, with configurable limits to heap memory and disk space to prevent out-of-memory errors.
 All database activity is logged per-node as file-based records to a specified local filesystem directory. 
 The audit log files are rolled periodically based on a configurable value. 
+
 Some of the features of audit logging are:
 
 * No additional database capacity is needed to store audit logs.
@@ -120,14 +121,16 @@ audit_logging_options:
 === enabled
 
 Audit logging is enabled by setting the `enabled` option to `true` in
-the `audit_logging_options` setting. For example, ``enabled: true``.
+the `audit_logging_options` setting. 
+If this option is enabled, audit logging will start when Cassandra is started.
+For example, ``enabled: true``.
 
 === logger
 
 The type of audit logger is set with the `logger` option. 
 Supported values are: `BinAuditLogger` (default), `FileAuditLogger` and `NoOpAuditLogger`.
 `BinAuditLogger` logs events to a file in binary format. 
-`FileAuditLogger` uses the standard logging mechanism, `slf4j` to log events to the `audit/audit.log` file. It is a synchronous, file-based audit logger.
+`FileAuditLogger` uses the standard logging mechanism, `slf4j` to log events to the `audit/audit.log` file. It is a synchronous, file-based audit logger. The roll_cycle will be set in the `logback.xml` file.
 `NoOpAuditLogger` is a no-op implementation of the audit logger that shoudl be specified when audit logging is disabled.
 
 For example:
@@ -138,15 +141,14 @@ logger:
   - class_name: FileAuditLogger
 ----
 
-
 === audit_logs_dir
 
-To write audit logs, an existing directory must be set in ``audit_log_dir``.
+To write audit logs, an existing directory must be set in ``audit_logs_dir``.
 
 The directory must have appropriate permissions set to allow reading, writing, and executing.
 Logging will recursively delete the directory contents as needed.
 Do not place links in this directory to other sections of the filesystem.
-For example, ``audit_log_dir: /cassandra/audit/logs/hourly``.
+For example, ``audit_logs_dir: /cassandra/audit/logs/hourly``.
 
 The audit log directory can also be configured using the system property `cassandra.logdir.audit`, which by default is set to `cassandra.logdir + /audit/`.
 
@@ -229,9 +231,9 @@ Audit logging can also be configured using ``nodetool` when enabling the feature
 
 == Enabling Audit Logging with ``nodetool``
  
-Audit logging is enabled on a per-node basis using the ``nodetool enableauditlog`` command. At a minimum, the path to the logging directory must be defined, if ``audit_log_dir`` is not set in the `cassandra.yaml` file.
+Audit logging is enabled on a per-node basis using the ``nodetool enableauditlog`` command. The logging directory must be defined with ``audit_logs_dir`` in the `cassandra.yaml` file or uses the default value ``cassandra.logdir.audit``.
 
-The syntax of the ``nodetool enableauditlog`` command has all the same options that can be set in the ``cassandra.yaml`` file.
+The syntax of the ``nodetool enableauditlog`` command has all the same options that can be set in the ``cassandra.yaml`` file except ``audit_logs_dir``.
 In addition, ``nodetool`` has options to set which host and port to run the command on, and username and password if the command requires authentication.
 
 [source, plaintext]
@@ -308,8 +310,9 @@ Use the `nodetool disableauditlog` command to disable audit logging.
 
 == Viewing audit logs
 
-The `auditlogviewer` tool is used to view (dump) audit logs. 
+The `auditlogviewer` tool is used to view (dump) audit logs if the logger was ``BinAuditLogger``.. 
 ``auditlogviewer`` converts the binary log files into human-readable format; only the audit log directory must be supplied as a command-line option.
+If the logger ``FileAuditLogger`` was set, the log file are already in human-readable format and ``auditlogviewer`` is not needed to read files. 
 
 
 The syntax of `auditlogviewer` is:
