@@ -25,98 +25,80 @@ Since a virtual table is not replicated the partitioner sorts in order of partit
 == Virtual Keyspaces
 
 Apache Cassandra 4.0 has added two new keyspaces for virtual tables:
-`system_virtual_schema` and `system_views`. Run the following command to
-list the keyspaces:
 
-....
-cqlsh> DESC KEYSPACES;
-system_schema  system       system_distributed  system_virtual_schema
-system_auth      system_traces       system_views
-....
+* `system_virtual_schema` 
+* `system_views`. 
 
-The `system_virtual_schema keyspace` contains schema information on
-virtual tables. The `system_views` keyspace contains the actual virtual
-tables.
+The `system_virtual_schema` keyspace has three tables: `keyspaces`,
+`columns` and `tables` for the virtual keyspace, table, and column definitions, respectively.
+These tables contain schema information for the virtual tables.
+It is used by Cassandra internally and a user should not access it directly.
+
+The `system_views` keyspace contains the actual virtual tables.
 
 == Virtual Table Limitations
 
-Virtual tables and virtual keyspaces have some limitations initially
-though some of these could change such as:
+Before disccusing virtual keyspaces and tables, note that virtual keyspaces and tables have some limitations. 
+These limitations are subject to change.
+Virtual keyspaces cannot be altered or dropped. 
+In fact, no operations can be performed against virtual keyspaces.
 
-* Cannot alter or drop virtual keyspaces or tables
-* Cannot truncate virtual tables
-* Expiring columns are not supported by virtual tables
-* Conditional updates are not supported by virtual tables
-* Cannot create tables in virtual keyspaces
-* Cannot perform any operations against virtual keyspace
-* Secondary indexes are not supported on virtual tables
-* Cannot create functions in virtual keyspaces
-* Cannot create types in virtual keyspaces
-* Materialized views are not supported on virtual tables
-* Virtual tables don't support `DELETE` statements
-* Cannot `CREATE TRIGGER` against a virtual table
-* Conditional `BATCH` statements cannot include mutations for virtual
-tables
-* Cannot include a virtual table statement in a logged batch
-* Mutations for virtual and regular tables cannot exist in the same
-batch
-* Conditional `BATCH` statements cannot include mutations for virtual
-tables
-* Cannot create aggregates in virtual keyspaces; but may run aggregate
-functions on select
+Virtual tables cannot be created in virtual keyspaces.
+Virtual tables cannot be altered, dropped, or truncated.
+Secondary indexes, types, functions, aggregates, materialized views, and triggers cannot be created for virtual tables.
+Expiring time-to-live (TTL) columns cannot be created.
+Virtual tables do not support conditional updates or deletes.
+Aggregates may be run in SELECT statements.
 
-== Listing and Describing Virtual Tables
+Conditional batch statements cannot include mutations for virtual tables, nor can a virtual table statement be included in a logged batch.
+In fact, mutations for virtual and regular tables cannot occur in the same batch table.
 
-Virtual tables in a virtual keyspace may be listed with `DESC TABLES`.
-The `system_views` virtual keyspace tables include the following:
+== Virtual Tables
 
-....
-cqlsh> USE system_views;
-cqlsh:system_views> DESC TABLES;
-coordinator_scans   clients             tombstones_scanned  internode_inbound
-disk_usage          sstable_tasks       live_scanned        caches
-local_writes        max_partition_size  local_reads
-coordinator_writes  internode_outbound  thread_pools
-local_scans         coordinator_reads   settings
-....
+Each of the virtual tables in the `system_views` virtual keyspace contain different information.
 
-Some of the salient virtual tables in `system_views` virtual keyspace
-are described in Table 1.
-
-Table 1 : Virtual Tables in system_views
+The following table describes the virtual tables: 
 
 [width="98%",cols="27%,73%",]
 |===
 |Virtual Table |Description
 
+|caches |Displays the general cache information including cache name, capacity_bytes, entry_count, hit_count, hit_ratio double,
+recent_hit_rate_per_second, recent_request_rate_per_second, request_count, and size_bytes.
+
 |clients |Lists information about all connected clients.
 
-|disk_usage |Disk usage including disk_space, keyspace_name, and
-table_name by system keyspaces.
+|coordinator_read_latency |Records counts, keyspace_name, table_name, max, median, and per_second for coordinator reads.
 
-|local_writes |A table metric for local writes including count,
-keyspace_name, max, median, per_second, and table_name.
+|coordinator_scan |Records counts, keyspace_name, table_name, max, median, and per_second for coordinator scans.
 
-|caches |Displays the general cache information including cache name,
-capacity_bytes, entry_count, hit_count, hit_ratio double,
-recent_hit_rate_per_second, recent_request_rate_per_second,
-request_count, and size_bytes.
+|coordinator_write_latency |Records counts, keyspace_name, table_name, max, median, and per_second for coordinator writes.
 
-|local_reads |A table metric for local reads information.
+|disk_usage |Records disk usage including disk_space, keyspace_name, and table_name, sorted by system keyspaces.
 
-|sstable_tasks |Lists currently running tasks such as compactions and
-upgrades on SSTables.
+|internode_inbound |Lists information about the inbound internode messaging.
 
-|internode_inbound |Lists information about the inbound internode
-messaging.
+|internode_outbound |Information about the outbound internode messaging.
 
-|thread_pools |Lists metrics for each thread pool.
+|local_read_latency |Records counts, keyspace_name, table_name, max, median, and per_second for local reads.
 
-|settings |Displays configuration settings in cassandra.yaml.
+|local_scan |Records counts, keyspace_name, table_name, max, median, and per_second for local scans.
+
+|local_write_latency |Records counts, keyspace_name, table_name, max, median, and per_second for local writes.
 
 |max_partition_size |A table metric for maximum partition size.
 
-|internode_outbound |Information about the outbound internode messaging.
+|rows_per_read |Records counts, keyspace_name, tablek_name, max, and median for rows read.
+
+|settings |Displays configuration settings in cassandra.yaml.
+
+|sstable_tasks |Lists currently running tasks and progress on SSTables, for operations like compaction and upgrade.
+
+|system_properties |Displays environmental system properties set on the node.
+
+|thread_pools |Lists metrics for each thread pool.
+
+|tombstones_per_read |Records counts, keyspace_name, tablek_name, max, and median for tombstones.
 |===
 
 We shall discuss some of the virtual tables in more detail next.
@@ -333,10 +315,96 @@ keyspace_name | table_name | p50th_ms | p99th_ms | count    | max_ms  | per_seco
   tlp_stress |   keyvalue |    0.043 |    0.152 | 49785158 | 186.563 |  11418.356
 ....
 
-== The system_virtual_schema keyspace
 
-The `system_virtual_schema` keyspace has three tables: `keyspaces`,
-`columns` and `tables` for the virtual keyspace definitions, virtual
-table definitions, and virtual column definitions respectively. It is
-used by Cassandra internally and a user would not need to access it
-directly.
+== Example
+
+[arabic, start=1]
+. To list the keyspaces, enter ``cqlsh`` and run the CQL command ``DESCRIBE KEYSPACES``:
+
+[source, cql]
+----
+cqlsh> DESC KEYSPACES;
+system_schema  system          system_distributed  system_virtual_schema
+system_auth    system_traces   system_views
+----
+
+[arabic, start=2]
+. To view the virtual table schema, run the CQL commands ``USE system_virtual_schema`` and ``SELECT * FROM tables``:
+
+[source, cql]
+----
+cqlsh> USE system_virtual_schema;
+cqlsh> SELECT * FROM tables;
+----
+ 
+results in:
+
+[source, cql]
+----
+ keyspace_name         | table_name                | comment
+-----------------------+---------------------------+--------------------------------------
+          system_views |                    caches |                        system caches
+          system_views |                   clients |          currently connected clients
+          system_views |  coordinator_read_latency |
+          system_views |  coordinator_scan_latency |
+          system_views | coordinator_write_latency |
+          system_views |                disk_usage |
+          system_views |         internode_inbound |
+          system_views |        internode_outbound |
+          system_views |        local_read_latency |
+          system_views |        local_scan_latency |
+          system_views |       local_write_latency |
+          system_views |        max_partition_size |
+          system_views |             rows_per_read |
+          system_views |                  settings |                     current settings
+          system_views |             sstable_tasks |                current sstable tasks
+          system_views |         system_properties | Cassandra relevant system properties
+          system_views |              thread_pools |
+          system_views |       tombstones_per_read |
+ system_virtual_schema |                   columns |           virtual column definitions
+ system_virtual_schema |                 keyspaces |         virtual keyspace definitions
+ system_virtual_schema |                    tables |            virtual table definitions
+
+(21 rows)
+----
+
+[arabic, start=3]
+. To view the virtual tables, run the CQL commands ``USE system_view`` and ``DESCRIBE tables``:
+
+[source, cql]
+----
+cqlsh> USE system_view;;
+cqlsh> DESCRIBE tables;
+----
+
+results in:
+
+[source, cql]
+----
+sstable_tasks       clients                   coordinator_write_latency
+disk_usage          local_write_latency       tombstones_per_read
+thread_pools        internode_outbound        settings
+local_scan_latency  coordinator_scan_latency  system_properties
+internode_inbound   coordinator_read_latency  max_partition_size
+local_read_latency  rows_per_read             caches
+----
+
+[arabic, start=4]
+. To look at any table data, run the CQL command ``SELECT``:
+
+[source, cql]
+----
+cqlsh> USE system_view;;
+cqlsh> SELECT * FROM clients LIMIT 2;
+----
+ results in:
+
+[source, cql]
+----
+ address   | port  | connection_stage | driver_name            | driver_version | hostname  | protocol_version | request_count | ssl_cipher_suite | ssl_enabled | ssl_protocol | username
+-----------+-------+------------------+------------------------+----------------+-----------+------------------+---------------+------------------+-------------+--------------+-----------
+ 127.0.0.1 | 37308 |            ready | DataStax Python Driver |   3.21.0.post0 | localhost |                4 |            17 |             null |       False |         null | anonymous
+ 127.0.0.1 | 37310 |            ready | DataStax Python Driver |   3.21.0.post0 | localhost |                4 |             8 |             null |       False |         null | anonymous
+
+(2 rows)
+----
