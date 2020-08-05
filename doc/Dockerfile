@@ -1,55 +1,55 @@
-# Dockerfile for building the Cassandra documentation.
-# If wanting to regenerate the documentation from scratch,
-# run `ant realclean` from the root directory of this project.
+FROM ubuntu:18.04
 
-FROM python:2.7
+# Set up non-root user, 'build', with default uid:gid
+# This allows passing --build-arg to use local host user's uid:gid:
+#   $ docker-compose build \
+#     --build-arg UID=$(id -u) \
+#     --build-arg GID=$(id -g) \
+#     cassandra-website
+ARG UID=1000
+ARG GID=1000
+RUN echo "Setting up user 'build' with UID=${UID} GID=${GID}"
+RUN groupadd --gid $GID --non-unique build
+RUN useradd --create-home --shell /bin/bash \
+    --uid $UID --gid $GID --non-unique build
 
-WORKDIR /usr/src/code
+# INSTALL wget, python3, java11, and other tools required to build the docs
+RUN apt-get update && \
+    apt-get install -y \
+        wget \
+        python3 \
+        openjdk-11-jdk \
+        git \
+        make \
+        ant \
+        ant-optional
 
-# LLP 07.28.2020 CHANGE THIS TO ANTORA
-# install nodejs and nvm
-# install antora
-# install any antora extensions
+# INSTALL nodejs and nvm
+ARG NODE_PACKAGE="node-v12.16.2-linux-x64.tar.gz"
+RUN wget https://nodejs.org/download/release/v12.16.2/${NODE_PACKAGE} && \
+    tar -C /usr/local --strip-components 1 -xzf ${NODE_PACKAGE} && \
+    rm ${NODE_PACKAGE}
 
-# FROM ANTORA DOCKER Dockerfile (https://gitlab.com/antora/docker-antora.git)
+# INSTALL yarn
+#RUN npm install yarn -g
 
-FROM node:10-alpine
+# Use npm to install Antora globally
+RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3
 
-ENV NODE_PATH /usr/local/share/.config/yarn/global/node_modules
+ENV BUILD_DIR="/antora"
 
-RUN apk --no-cache add curl findutils jq \
-    && yarn global add --ignore-optional --silent @antora/cli@latest @antora/site-generator-default@latest \
-    && rm -rf $(yarn cache dir)/* \
-    && find $(yarn global dir)/node_modules/asciidoctor.js/dist/* -maxdepth 0 -not -name node -exec rm -rf {} \; \
-    && find $(yarn global dir)/node_modules/handlebars/dist/* -maxdepth 0 -not -name cjs -exec rm -rf {} \; \
-    && find $(yarn global dir)/node_modules/handlebars/lib/* -maxdepth 0 -not -name index.js -exec rm -rf {} \; \
-    && find $(yarn global dir)/node_modules/isomorphic-git/dist/* -maxdepth 0 -not -name for-node -exec rm -rf {} \; \
-    && rm -rf $(yarn global dir)/node_modules/moment/min \
-    && rm -rf $(yarn global dir)/node_modules/moment/src \
-    && rm -rf $(yarn global dir)/node_modules/source-map/dist \
-    && rm -rf /tmp/*
+# Setup directories for building the docs
+#  Give the build user rw access to everything in the build directory,
+#   neccessary for the ASF 'websites' jenkins agent (which can't chown)
+RUN mkdir -p ${BUILD_DIR}/cassandra-site && \
+    git clone https://gitbox.apache.org/repos/asf/cassandra.git ${BUILD_DIR}/cassandra && \
+    chmod -R a+rw ${BUILD_DIR}
 
-WORKDIR /antora
+# set the USER to `build`, the working directory to /antora,
+# and copy the shell script and run
+USER build
 
+WORKDIR $BUILD_DIR
 COPY docker-entrypoint.sh /usr/local/bin/
-
 ENTRYPOINT ["docker-entrypoint.sh"]
-
-CMD ["DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest antora site.yml"]
-
-#-----------------OLD STUFF---------
-# llp sync apt package index files
-#RUN apt-get update
-
-# llp 08.04.20 This grabs a pre-built OpenJDK 11 and installs
-#RUN wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add - \
-#    && add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ \
-#    && apt-get update \
-#    && apt-get install -y adoptopenjdk-11-hotspot ant
-
-# llp clear out local repo of retrieved package files
-#RUN apt-get clean
-
-# run sphinx and build the docs with jdk11
-#CMD CASSANDRA_USE_JDK11=true ant gen-doc \
-#    && echo "The locally built documentation can be found here:\n\n    build/html/index.html\n\n"
+CMD [""]

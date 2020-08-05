@@ -2,10 +2,24 @@
 
 # abort script if a command fails
 set -e
+ 
+# DOING IN DOCKERFILE
+#git clone https://gitbox.apache.org/repos/asf/cassandra.git ${BUILD_DIR}/cassandra && \
+#chmod -R a+rw ${BUILD_DIR}
 
-# prepend antora if command is not detected
-if [ $# -eq 0 ] || [ "${1:0:1}" == '-' ] || [ -z `command -v "$1" || echo -n` ]; then
-  set -- antora "$@"
-fi
+# trunk will be the initial branch
+cd ${BUILD_DIR}/cassandra; 
+git checkout doc_redo_asciidoc; 
+ant jar;
+cd doc; python3 gen-nodetool-docs.py; python3 convert_yaml_to_adoc.py;
 
-exec "$@"
+# and clean to get ready for the next branch
+ant realclean;
+
+#cd ${BUILD_DIR}/cassandra;
+#git checkout doc_redo_asciidoc3.11;
+#ant jar;
+#cd doc; python3 gen-nodetool-docs.py; python3 convert_yaml_to_adoc.py;
+
+
+
