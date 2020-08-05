@@ -8,8 +8,7 @@ set -e
 #chmod -R a+rw ${BUILD_DIR}
 
 # trunk will be the initial branch
-cd ${BUILD_DIR}/cassandra; 
-git checkout doc_redo_asciidoc; 
+cd ${BUILD_DIR}/cassandra && git checkout doc_redo_asciidoc; 
 ant jar;
 cd doc; python3 gen-nodetool-docs.py; python3 convert_yaml_to_adoc.py;
 
