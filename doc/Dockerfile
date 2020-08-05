@@ -11,7 +11,7 @@ WORKDIR /usr/src/code
 # install antora
 # install any antora extensions
 
-# FROM ANTORA DOCKER (https://gitlab.com/antora/docker-antora.git)
+# FROM ANTORA DOCKER Dockerfile (https://gitlab.com/antora/docker-antora.git)
 
 FROM node:10-alpine
 
@@ -38,14 +38,18 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["antora"]
 
 #-----------------OLD STUFF---------
+# llp sync apt package index files
 RUN apt-get update
 
+# llp 08.04.20 This grabs a pre-built OpenJDK 11 and installs
 RUN wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add - \
     && add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ \
     && apt-get update \
     && apt-get install -y adoptopenjdk-11-hotspot ant
 
+# llp clear out local repo of retrieved package files
 RUN apt-get clean
 
+# run sphinx and build the docs with jdk11
 CMD CASSANDRA_USE_JDK11=true ant gen-doc \
     && echo "The locally built documentation can be found here:\n\n    build/html/index.html\n\n"
