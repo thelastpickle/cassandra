@@ -34,14 +34,18 @@ RUN wget https://nodejs.org/download/release/v12.16.2/${NODE_PACKAGE} && \
 #RUN npm install yarn -g
 
 # Use npm to install Antora globally
-RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3
+# and antora-lunr for site search
+RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3 
+RUN npm i -g antora-lunr
 
 ENV BUILD_DIR="/antora"
 
 # Setup directories for building the docs
 #  Give the build user rw access to everything in the build directory,
 #   neccessary for the ASF 'websites' jenkins agent (which can't chown)
+# *************************
 # CHANGE THIS TO REAL REPO AFTER TESTING!!!!
+# *************************
 RUN mkdir -p ${BUILD_DIR}/cassandra && \
     git clone https://github.com/polandll/cassandra.git ${BUILD_DIR}/cassandra && \
     chmod -R a+rw ${BUILD_DIR}/cassandra
