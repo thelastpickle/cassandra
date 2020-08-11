@@ -37,16 +37,29 @@ do
   cd doc
   git checkout "${branch_name}"
   python3 gen-nodetool-docs.py
-  python3 convert_yaml_to_adoc.py
-  mkdir -p doc/build_gen/"${branch_name}"/
-  mv source/modules/cassandra/pages/tools/nodetool/ doc/build_gen/"${branch_name}"/
-  mv source/modules/cassandra/pages/configuration/cass_yaml_file.adoc doc/build_gen/"${branch_name}"/
+  YAML_INPUT="${BUILD_DIR}"/cassandra/conf/cassandra.yaml
+  YAML_OUTPUT="${BUILD_DIR}"/cassandra/doc/source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
+  #YAML_OUTPUT=doc/build_gen/"${branch_name}"/cass_yaml_file.adoc
+  python3 convert_yaml_to_adoc.py ${YAML_INPUT} ${YAML_OUTPUT}
+  #mkdir -p doc/build_gen/"${branch_name}"/
+  #mv source/modules/cassandra/pages/tools/nodetool/ doc/build_gen/"${branch_name}"/
+  #mv source/modules/cassandra/pages/configuration/cass_yaml_file.adoc doc/build_gen/"${branch_name}"/
   # After copy we will have:
+  # ACTUALLY HAVE doc/doc/build_gen/<branch_name>
   # doc/build_gen/<branch_name>
   #  - nodetool/
   #  - cass_yaml_file.adoc
   ant realclean
 done
+
+# run antora
+# You can set these variables from the command line.
+ANTORAOPTS    = DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest
+ANTORAYAML    = site.yml
+ANTORACMD     = antora
+
+$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML)
+
 
 # DOING IN DOCKERFILE
 #git clone https://gitbox.apache.org/repos/asf/cassandra.git ${BUILD_DIR}/cassandra && \
