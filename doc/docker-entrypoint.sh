@@ -58,12 +58,11 @@ done
 
 # run antora
 # You can set these variables from the command line.
-ANTORAOPTS    = DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest
-ANTORAYAML    = site.yml
-ANTORACMD     = antora
+ANTORAOPTS = DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest
+ANTORAYAML = site.yml
+ANTORACMD  = antora
 
-$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML)
-
+RUN ${ANTORAOPTS} ${ANTORACMD} ${ANTORAYAML}
 
 # DOING IN DOCKERFILE
 #git clone https://gitbox.apache.org/repos/asf/cassandra.git ${BUILD_DIR}/cassandra && \
