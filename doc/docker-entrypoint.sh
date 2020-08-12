@@ -33,6 +33,7 @@ BRANCH_LIST="doc_redo_asciidoc doc_redo_asciidoc3.11"
 cd "${BUILD_DIR}"/cassandra
 for branch_name in ${BRANCH_LIST}
 do
+  export CASSANDRA_USE_JDK11=true
   ant jar
   cd doc
   git checkout "${branch_name}"
