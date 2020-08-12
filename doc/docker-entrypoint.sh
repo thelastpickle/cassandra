@@ -39,11 +39,11 @@ do
   python3 gen-nodetool-docs.py
   YAML_INPUT="${BUILD_DIR}"/cassandra/conf/cassandra.yaml
   YAML_OUTPUT="${BUILD_DIR}"/cassandra/doc/source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
-  #YAML_OUTPUT=doc/build_gen/"${branch_name}"/cass_yaml_file.adoc
   python3 convert_yaml_to_adoc.py ${YAML_INPUT} ${YAML_OUTPUT}
 
   # need to add,commit changes
-  git add && git commit -m "${branch_name} nodetool changes
+  git add && git commit -m "${branch_name} nodetool changes"
+
   #mkdir -p doc/build_gen/"${branch_name}"/
   #mv source/modules/cassandra/pages/tools/nodetool/ doc/build_gen/"${branch_name}"/
   #mv source/modules/cassandra/pages/configuration/cass_yaml_file.adoc doc/build_gen/"${branch_name}"/
