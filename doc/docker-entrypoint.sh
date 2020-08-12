@@ -138,5 +138,6 @@ antora site.yml
 if [ "${BUILD_MODE}" = "preview" ]
 then
   echo "Starting webserver"
+  python3 -m http.server 8080
 fi
 
