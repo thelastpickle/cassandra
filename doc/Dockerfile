@@ -16,7 +16,7 @@ RUN apt-get update && \
     apt-get install -y \
         wget \
         python3 \
-        openjdk-11-jdk \
+        openjdk-8-jdk \
         git \
         make \
         ant \
