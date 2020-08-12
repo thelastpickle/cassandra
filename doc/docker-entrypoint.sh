@@ -1,24 +1,76 @@
-#!/bin/sh
+#!/bin/bash
 
 # abort script if a command fails
 set -e
 
-# -Check if we have an argument for a reference repository
-# -If we have a reference repository, then copy changes to branch that is changed (optional)
-# -Run python scripts to generate nodetool output and cassandra.yaml
+# Run python scripts to generate nodetool output and cassandra.yaml
 # Run antora
 
-USE_REPOSITORY="${1}"
+usage() {
+    cat << EOF
+This container generates the Apache Cassandra documentation.
+Usage:
+$ docker run -i -t -v <PATH_TO_CASSANDRA_REPOSITORY_LOCAL_COPY>:/reference/cassandra cassandra-docs:latest [OPTIONS] <GIT_EMAIL_ADDRESS> <GIT_USER_NAME>
+Options
+ -b               Build mode; either "preview" or "production". Defaults to "preview".
+ -k               Path to GPG private key to perform signed commits.
+ -h               Help and usage.
+EOF
+    exit 2
+}
+
+while getopts "b:k:h" opt_flag; do
+    case $opt_flag in
+        b)
+            BUILD_MODE=$OPTARG
+            ;;
+        k)
+            GPG_KEY=$OPTARG
+            ;;
+        h)
+            usage
+            ;;
+    esac
+done
+
+shift $(($OPTIND - 1))
+
+if [ "$#" -eq 0 ]
+then
+    usage
+fi
+
+GIT_EMAIL_ADDRESS=${1}
+GIT_USER_NAME=${2}
+
+# Setup git and ssh
+git config --global user.email "${GIT_EMAIL_ADDRESS}"
+git config --global user.name "${GIT_USER_NAME}"
+
+if [ -n "${GPG_KEY}" ]
+then
+  gpg --import "${GPG_KEY}"
+  GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec  | tr -s ' ' | cut -d' ' -f2 | cut -d'/' -f2)
+  git config --global user.signingkey "${GPG_KEY_ID}"
+  git config --global gpg.program gpg
+  git config --global commit.gpgsign true
+  export GPG_TTY=$(tty)
+fi
+
+echo
+echo "Running in '${BUILD_MODE}' mode!"
+echo
+
 export CASSANDRA_USE_JDK11=true
 
-# @TODO: Consider changing the argument to be a path to a repository rather than a flag??
-
 echo "If this is your first time running this container script, go get a coffee - it's going to take awhile."
-if [ "${USE_REPOSITORY}" = "preview" ]
+if [ "${BUILD_MODE}" = "preview" ]
 then
   cd "${REF_DIR}"/cassandra
   ref_branch=$(git branch | grep "\*" | cut -d' ' -f2)
-  modified_files=$(git status | grep modified | tr -s ' ' | cut -d' ' -f2)
+
+  echo "Getting list of cleanly modified files in your repository."
+  modified_files=$(git status | grep -v "both modified" | grep "modified" | tr -s ' ' | cut -d' ' -f2)
 
   cd "${BUILD_DIR}"/cassandra
   git checkout "${ref_branch}"
@@ -26,6 +78,7 @@ then
 
   for file_itr in ${modified_files}
   do
+    echo "Copying modified file '${file_itr}' to '${BUILD_DIR}/cassandra/${file_itr}'."
     cp "${REF_DIR}"/cassandra/"${file_itr}" "${BUILD_DIR}"/cassandra/"${file_itr}"
   done
 fi
@@ -35,34 +88,55 @@ BRANCH_LIST="doc_redo_asciidoc doc_redo_asciidoc3.11"
 
 cd "${BUILD_DIR}"/cassandra
 
-echo "checking out branch"
 for branch_name in ${BRANCH_LIST}
 do
+  echo "Checking out branch '${branch_name}'"
   git checkout "${branch_name}"
-  echo "building jar files"
+
+  echo "Building JAR files"
   ant jar
-  cd doc
+
+  # change into doc directory and push the current directory to the stack
+  pushd doc
   # generate the nodetool docs
-  echo "generate nodetool"
+  echo "Generating Cassandra nodetool documentation"
   python3 gen-nodetool-docs.py
+
   # generate cassandra.yaml doc file
-  echo "generate cassandra.yaml"
+  echo "Generating Cassandra configuration documentation"
   YAML_INPUT="${BUILD_DIR}"/cassandra/conf/cassandra.yaml
   YAML_OUTPUT="${BUILD_DIR}"/cassandra/doc/source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
-  python3 convert_yaml_to_adoc.py ${YAML_INPUT} ${YAML_OUTPUT}
+  python3 convert_yaml_to_adoc.py "${YAML_INPUT}" "${YAML_OUTPUT}"
 
   # need to add,commit changes before changing branches
-  git add . && git commit -m "Generated nodetool and configuration documentation for ${branch_name}"
-  echo "clean up"
+  git add .
+  git commit -m "Generated nodetool and configuration documention for ${branch_name}."
+
+  # change back to previous directory on the stack
+  popd
   ant realclean
 done
 
+# *************************
+# CHANGE THIS TO trunk AFTER TESTING!!!!
+# *************************
+# Antora is run only from one branch (trunk)
+git checkout doc_redo_asciidoc
+cd doc
 # run antora
-# You can set these variables from the command line.
-ANTORAOPTS = DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest
-ANTORAYAML = site.yml
-ANTORACMD  = antora
+# Set these environment variables first to run: ${ANTORAOPTS} ${ANTORACMD} ${ANTORAYAML}
+#ANTORAOPTS = DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest
+#ANTORAYAML = site.yml
+#ANTORACMD  = antora
 
-DOCSEARCH_ENABLED=true DOCSEARCH_ENGINE=lunr DOCSEARCH_INDEX_VERSION=latest antora site.yml
-#${ANTORAOPTS} ${ANTORACMD} ${ANTORAYAML}
+echo "Build the docs site with antora"
+export DOCSEARCH_ENABLED=true
+export DOCSEARCH_ENGINE=lunr
+export DOCSEARCH_INDEX_VERSION=latest
+antora site.yml
+
+if [ "${BUILD_MODE}" = "preview" ]
+then
+  echo "Starting webserver"
+fi
 

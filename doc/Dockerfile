@@ -7,14 +7,16 @@ FROM ubuntu:18.04
 #     cassandra-website
 ARG UID=1000
 ARG GID=1000
+ARG BUILD_USER=build
 RUN echo "Setting up user 'build' with UID=${UID} GID=${GID}"
-RUN groupadd --gid $GID --non-unique build
+RUN groupadd --gid ${GID} --non-unique ${BUILD_USER}
 RUN useradd --create-home --shell /bin/bash \
-    --uid $UID --gid $GID --non-unique build
+    --uid ${UID} --gid ${GID} --non-unique ${BUILD_USER}
 # INSTALL wget, python3, java11, and other tools required to build the docs
 RUN apt-get update && \
     apt-get install -y \
         wget \
+        gpg \
         python3 \
         openjdk-11-jdk \
         git \
@@ -26,15 +28,16 @@ ARG NODE_PACKAGE="node-v12.16.2-linux-x64.tar.gz"
 RUN wget https://nodejs.org/download/release/v12.16.2/${NODE_PACKAGE} && \
     tar -C /usr/local --strip-components 1 -xzf ${NODE_PACKAGE} && \
     rm ${NODE_PACKAGE}
-# INSTALL yarn
-#RUN npm install yarn -g
 # Use npm to install Antora globally
 # and antora-lunr for site search
 RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3 
 RUN npm i -g antora-lunr
 ENV BUILD_DIR="/antora"
 ENV REF_DIR="/reference"
-ENV USE_REPOSITORY="false"
+ENV BUILD_MODE="preview"
+ENV GIT_EMAIL_ADDRESS=""
+ENV GIT_USER_NAME=""
+ENV GPG_KEY=""
 # Setup directories for building the docs
 #  Give the build user rw access to everything in the build directory,
 #   neccessary for the ASF 'websites' jenkins agent (which can't chown)
@@ -49,8 +52,8 @@ RUN mkdir -p ${BUILD_DIR}/cassandra && \
     chmod -R a+rw ${REF_DIR}/cassandra
 # set the USER to `build`, the working directory to /antora,
 # and copy the shell script and run
-USER build
-WORKDIR $BUILD_DIR
+USER ${BUILD_USER}
+WORKDIR ${BUILD_DIR}
 COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD [""]
