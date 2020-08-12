@@ -17,7 +17,7 @@ content:
 ui:
   # Need to replace this with a direct github url rather than a local path
   bundle:
-    url: /https://github.com/ianjevans/antora-ui-datastax/build/ui-bundle.zip
+    url: ui-bundle.zip
     #url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
     snapshot: true
   supplemental_files:
