@@ -52,7 +52,7 @@ do
   python3 convert_yaml_to_adoc.py ${YAML_INPUT} ${YAML_OUTPUT}
 
   # need to add,commit changes before changing branches
-  git add . && git commit -m "${branch_name} nodetool changes"
+  git add . && git commit -m "Generated nodetool and configuration documentation for ${branch_name}"
   echo "clean up"
   ant realclean
 done
