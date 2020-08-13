@@ -23,22 +23,27 @@ RUN apt-get update && \
         make \
         ant \
         ant-optional
+
 # INSTALL nodejs and nvm
 ARG NODE_PACKAGE="node-v12.16.2-linux-x64.tar.gz"
 RUN wget https://nodejs.org/download/release/v12.16.2/${NODE_PACKAGE} && \
     tar -C /usr/local --strip-components 1 -xzf ${NODE_PACKAGE} && \
     rm ${NODE_PACKAGE}
+
 # Use npm to install Antora globally
 # and antora-lunr for site search
-RUN npm i -g antora-lunr
-RUN npm i -g antora-site-generator-lunr
-RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3 
-ENV BUILD_DIR="/antora"
-ENV REF_DIR="/reference"
-ENV BUILD_MODE="preview"
-ENV GIT_EMAIL_ADDRESS=""
-ENV GIT_USER_NAME=""
-ENV GPG_KEY=""
+RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3
+RUN npm i -g antora-lunr antora-site-generator-lunr
+
+ENV BUILD_DIR "/antora"
+ENV REF_DIR "/reference"
+ENV BUILD_MODE "preview"
+ENV GIT_EMAIL_ADDRESS ""
+ENV GIT_USER_NAME ""
+ENV GPG_KEY_PATH ""
+ENV GENERATE_NODETOOL_AND_CONFIG_DOCS "true"
+ENV WEB_SERVER_PORT "8080"
+
 # Setup directories for building the docs
 #  Give the build user rw access to everything in the build directory,
 #   neccessary for the ASF 'websites' jenkins agent (which can't chown)
@@ -51,8 +56,12 @@ RUN mkdir -p ${BUILD_DIR}/cassandra && \
     chmod -R a+rw ${BUILD_DIR}/cassandra && \
     mkdir -p ${REF_DIR}/cassandra && \
     chmod -R a+rw ${REF_DIR}/cassandra
+
 # set the USER to `build`, the working directory to /antora,
 # and copy the shell script and run
+
+EXPOSE ${WEB_SERVER_PORT}/tcp
+
 USER ${BUILD_USER}
 WORKDIR ${BUILD_DIR}
 COPY docker-entrypoint.sh /usr/local/bin/
