@@ -44,3 +44,7 @@ to do so by submitting your contribution like any other patch following
 == Meta information
 * xref:bugs.adoc[Reporting bugs]
 * xref:contactus.adoc[Contact us]
+
+== The rest of the information
+* xref:REST:community.adoc[Community]
+* xref:REST:download.adoc[Download]

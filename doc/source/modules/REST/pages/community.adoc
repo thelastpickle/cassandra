@@ -1,10 +1,8 @@
 = Community
 
-== Community
+== Getting and keeping in touch
 
-=== Getting and keeping in touch
-
-==== Mailing lists
+== Mailing lists
 
 Discussion and questions on Cassandra’s usage and development happens
 mainly on the following mailing lists:
@@ -29,7 +27,7 @@ those who would like to keep close tabs on Cassandra’s development
 mailto:commits-unsubscribe@cassandra.apache.org[unsubscribe] |
 https://lists.apache.org/list.html?commits@cassandra.apache.org[Archives]).
 
-==== Slack
+== Slack
 
 We have recently moved to the ASF Slack organization for all chat.
 Please https://s.apache.org/slack-invite[sign up for an account] to
@@ -41,13 +39,13 @@ Cassandra development
 * `#cassandra-builds` - results of automated test builds
 * `#cassandra-builds-patches` - results of patch test builds
 
-=== Stack Overflow
+== Stack Overflow
 
 You can also check the
 http://stackoverflow.com/questions/tagged/cassandra[Q&A about using
 Cassandra] on Stack Overflow.
 
-=== Books and publications
+== Books and publications
 
 * http://shop.oreilly.com/product/0636920299837.do[Cassandra: The
 Definitive Guide, 3rd Edition], by Jeff Carpenter and Eben Hewitt.
@@ -60,13 +58,13 @@ by Mat Brown
 * https://dl.acm.org/citation.cfm?id=1773922[Cassandra: a decentralized
 structured storage system], by Avinash Lakshman and Prashant Malik
 
-=== Third-party projects
+== Third-party projects
 
 There are a number of third-party Cassandra projects that could be
 useful. Check out this
 https://cassandra.apache.org/third-party/[listing].
 
-=== Reporting bugs
+== Reporting bugs
 
 If you encounter a problem with Cassandra, the first places to ask for
 help are the link:#mailing[user mailing list] and the `#cassandra`
