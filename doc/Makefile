@@ -40,8 +40,8 @@ gennodetool:
 .PHONY: html
 html:
 	$(MAKE_CASSANDRA_YAML)
-	$(GENERATE_NODETOOL_DOCS)
-	$(ANTORAOPTS) $(ANTORACMD) $(ANTORAYAML)
+#	$(GENERATE_NODETOOL_DOCS)
+	$(ANTORAOPTS) $(ANTORACMD) --generator antora-site-generator-lunr $(ANTORAYAML)
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

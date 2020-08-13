@@ -46,5 +46,5 @@ to do so by submitting your contribution like any other patch following
 * xref:contactus.adoc[Contact us]
 
 == The rest of the information
-* xref:REST:community.adoc[Community]
-* xref:REST:download.adoc[Download]
+* xref:sitestuff:community.adoc[Community]
+* xref:sitestuff:download.adoc[Download]
