@@ -30,8 +30,9 @@ RUN wget https://nodejs.org/download/release/v12.16.2/${NODE_PACKAGE} && \
     rm ${NODE_PACKAGE}
 # Use npm to install Antora globally
 # and antora-lunr for site search
-RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3 
 RUN npm i -g antora-lunr
+RUN npm i -g antora-site-generator-lunr
+RUN npm i -g @antora/cli@2.3 @antora/site-generator-default@2.3 
 ENV BUILD_DIR="/antora"
 ENV REF_DIR="/reference"
 ENV BUILD_MODE="preview"
