@@ -8,8 +8,8 @@ site:
 
 content:
   sources: 
-  #- url: /antora/cassandra
-  - url: https://github.com/polandll/cassandra.git
+  - url: /antora/cassandra
+  #- url: https://github.com/polandll/cassandra.git
     branches: 
     - 'doc_redo_asciidoc'
     - 'doc_redo_asciidoc3.11'
@@ -18,8 +18,8 @@ content:
 ui:
   # Need to replace this with a direct github url rather than a local path
   bundle:
-    #url: /antora/cassandra/doc/ui-bundle.zip
-    url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
+    url: /antora/cassandra/doc/ui-bundle.zip
+    #url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
     snapshot: true
   supplemental_files:
   - path: ui.yml
