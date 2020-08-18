@@ -20,7 +20,7 @@ ui:
   bundle:
     #url: /antora/cassandra/doc/ui-bundle.zip
     #url: /Users/lorina.poland/CLONES/antora-ui-datastax/build/ui-bundle.zip
-    url: https://github.com/ianevans/antora-ui-datastax/build/ui-bundle.zip
+    url: https://github.com/ianjevans/antora-ui-datastax/build/ui-bundle.zip
     snapshot: true
   supplemental_files:
   - path: ui.yml
