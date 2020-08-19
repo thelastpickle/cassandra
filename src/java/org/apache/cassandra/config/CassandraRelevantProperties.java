@@ -192,7 +192,7 @@ public enum CassandraRelevantProperties
     {
         String value = System.getProperty(key);
 
-        return value == null ? Boolean.parseBoolean(defaultVal) : BOOLEAN_CONVERTER.convert(value);
+        return value == null ? BOOLEAN_CONVERTER.convert(defaultVal) : BOOLEAN_CONVERTER.convert(value);
     }
 
     /**
@@ -203,7 +203,7 @@ public enum CassandraRelevantProperties
     {
         String value = System.getProperty(key);
 
-        return value == null ? Integer.parseInt(Objects.requireNonNull(defaultVal)) : INTEGER_CONVERTER.convert(value);
+        return value == null ? INTEGER_CONVERTER.convert(defaultVal) : INTEGER_CONVERTER.convert(value);
     }
 
     private interface PropertyConverter<T>
