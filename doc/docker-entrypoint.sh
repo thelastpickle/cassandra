@@ -109,11 +109,11 @@ then
     # change into doc directory and push the current directory to the stack
     pushd doc
     # generate the nodetool docs
-    echo "Generating Cassandra nodetool documentation"
+    echo "Generating Cassandra nodetool documentation."
     python3 gen-nodetool-docs.py
 
     # generate cassandra.yaml doc file
-    echo "Generating Cassandra configuration documentation"
+    echo "Generating Cassandra configuration documentation."
     YAML_INPUT="${BUILD_DIR}"/cassandra/conf/cassandra.yaml
     YAML_OUTPUT="${BUILD_DIR}"/cassandra/doc/source/modules/cassandra/pages/configuration/cass_yaml_file.adoc
     python3 convert_yaml_to_adoc.py "${YAML_INPUT}" "${YAML_OUTPUT}"
@@ -126,6 +126,8 @@ then
     popd
     ant realclean
   done
+else
+  echo "Skipping the generation of Cassandra nodetool and configuration (YAML) documentation."
 fi
 
 # *************************
@@ -136,7 +138,7 @@ git checkout doc_redo_asciidoc
 cd doc
 
 # run antora
-echo "Building the docs site with antora"
+echo "Building the docs site with antora."
 export DOCSEARCH_ENABLED=true
 export DOCSEARCH_ENGINE=lunr
 export NODE_PATH="$(npm -g root)"
@@ -145,7 +147,7 @@ antora --generator antora-site-generator-lunr site.yml
 
 if [ "${BUILD_MODE}" = "preview" ]
 then
-  echo "Starting webserver"
+  echo "Starting webserver."
   python3 -m http.server "${WEB_SERVER_PORT}"
 fi
 

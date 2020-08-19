@@ -42,7 +42,7 @@ ENV GIT_EMAIL_ADDRESS ""
 ENV GIT_USER_NAME ""
 ENV GPG_KEY_PATH ""
 ENV GENERATE_NODETOOL_AND_CONFIG_DOCS "true"
-ENV WEB_SERVER_PORT "8080"
+ENV WEB_SERVER_PORT "5000"
 
 # Setup directories for building the docs
 #  Give the build user rw access to everything in the build directory,
