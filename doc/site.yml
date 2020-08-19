@@ -23,10 +23,10 @@ ui:
     #url: https://github.com/ianjevans/antora-ui-datastax/build/ui-bundle.zip
     snapshot: true
   supplemental_files: ./supplemental_ui
-  - path: ui.yml
-    contents: |
-      static_files: [ .nojekyll ]
-  - path: .nojekyll
+  #- path: ui.yml
+  #  contents: |
+  #    static_files: [ .nojekyll ]
+  #- path: .nojekyll
 
 output:
     clean: true
