@@ -117,7 +117,7 @@ public class JMXServerUtils
         // Set the port used to create subsequent connections to exported objects over RMI. This simplifies
         // configuration in firewalled environments, but it can't be used in conjuction with SSL sockets.
         // See: CASSANDRA-7087
-        int rmiPort = COM_SUN_MANAGEMENT_JMXREMOTE_RMI_PORT.getInteger();
+        int rmiPort = COM_SUN_MANAGEMENT_JMXREMOTE_RMI_PORT.getInt();
 
         // We create the underlying RMIJRMPServerImpl so that we can manually bind it to the registry,
         // rather then specifying a binding address in the JMXServiceURL and letting it be done automatically

@@ -137,7 +137,9 @@ public enum CassandraRelevantProperties
 
     /** mx4jport */
     MX4JPORT ("mx4jport"),
+
     //cassandra properties (without the "cassandra." prefix)
+
     /**
      * The cassandra-foreground option will tell CassandraDaemon whether
      * to close stdout/stderr, but it's up to us not to background.
@@ -165,8 +167,8 @@ public enum CassandraRelevantProperties
         this.defaultVal = null;
     }
 
-    final private String key;
-    final private String defaultVal;
+    private final String key;
+    private final String defaultVal;
 
     public String getKey()
     {
@@ -192,18 +194,18 @@ public enum CassandraRelevantProperties
     {
         String value = System.getProperty(key);
 
-        return value == null ? BOOLEAN_CONVERTER.convert(defaultVal) : BOOLEAN_CONVERTER.convert(value);
+        return BOOLEAN_CONVERTER.convert(value == null ? defaultVal : value);
     }
 
     /**
      * Gets the value of a system property as a int.
      * @return system property int value if it exists, defaultValue otherwise.
      */
-    public int getInteger() throws ConfigurationException
+    public int getInt()
     {
         String value = System.getProperty(key);
 
-        return value == null ? INTEGER_CONVERTER.convert(defaultVal) : INTEGER_CONVERTER.convert(value);
+        return INTEGER_CONVERTER.convert(value == null ? defaultVal : value);
     }
 
     private interface PropertyConverter<T>
@@ -211,11 +213,11 @@ public enum CassandraRelevantProperties
         T convert(String value);
     }
 
-    static private final PropertyConverter<String> STRING_CONVERTER = value -> value;
+    private static final PropertyConverter<String> STRING_CONVERTER = value -> value;
 
-    static private final PropertyConverter<Boolean> BOOLEAN_CONVERTER = Boolean::parseBoolean;
+    private static final PropertyConverter<Boolean> BOOLEAN_CONVERTER = Boolean::parseBoolean;
 
-    static private final PropertyConverter<Integer> INTEGER_CONVERTER = value ->
+    private static final PropertyConverter<Integer> INTEGER_CONVERTER = value ->
     {
         try
         {
@@ -227,5 +229,13 @@ public enum CassandraRelevantProperties
                                                            "expected integer value but got '%s'", value));
         }
     };
+
+    /**
+     * @return whether a system property is present or not.
+     */
+    public boolean isPresent()
+    {
+        return System.getProperties().containsKey(key);
+    }
 }
 

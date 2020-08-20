@@ -126,7 +126,7 @@ public class CassandraDaemon
         // on it, so log a warning and skip setting up the server with the settings
         // as configured in cassandra-env.(sh|ps1)
         // See: CASSANDRA-11540 & CASSANDRA-11725
-        if (COM_SUN_MANAGEMENT_JMXREMOTE_PORT.getString() != null)
+        if (COM_SUN_MANAGEMENT_JMXREMOTE_PORT.isPresent())
         {
             logger.warn("JMX settings in cassandra-env.sh have been bypassed as the JMX connector server is " +
                         "already initialized. Please refer to cassandra-env.(sh|ps1) for JMX configuration info");

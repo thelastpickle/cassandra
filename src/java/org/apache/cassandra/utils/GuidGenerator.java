@@ -31,7 +31,7 @@ public class GuidGenerator
 
     static
     {
-        if (JAVA_SECURITY_EGD.getString() == null)
+        if (!JAVA_SECURITY_EGD.isPresent())
         {
             System.setProperty("java.security.egd", "file:/dev/urandom");
         }

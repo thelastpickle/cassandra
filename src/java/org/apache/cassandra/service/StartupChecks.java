@@ -200,7 +200,7 @@ public class StartupChecks
     {
         public void execute()
         {
-            if (COM_SUN_MANAGEMENT_JMXREMOTE_PORT.getString() != null)
+            if (COM_SUN_MANAGEMENT_JMXREMOTE_PORT.isPresent())
             {
                 logger.warn("Use of com.sun.management.jmxremote.port at startup is deprecated. " +
                             "Please use cassandra.jmx.remote.port instead.");
