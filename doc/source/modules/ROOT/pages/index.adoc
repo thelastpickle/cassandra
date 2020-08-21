@@ -48,3 +48,4 @@ to do so by submitting your contribution like any other patch following
 == The rest of the information
 * xref:sitestuff:community.adoc[Community]
 * xref:sitestuff:download.adoc[Download]
+* xref:native_protocol.adoc[Native Protocols]
