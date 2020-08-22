@@ -18,8 +18,6 @@
 
 package org.apache.cassandra.config;
 
-import java.util.Objects;
-
 import org.apache.cassandra.exceptions.ConfigurationException;
 
 /** A class that extracts system properties for the cassandra node it runs within. */
@@ -150,6 +148,7 @@ public enum CassandraRelevantProperties
     DEFAULT_PROVIDE_OVERLAPPING_TOMBSTONES ("default.provide.overlapping.tombstones"),
     ORG_APACHE_CASSANDRA_DISABLE_MBEAN_REGISTRATION ("org.apache.cassandra.disable_mbean_registration"),
     //only for testing
+    ORG_APACHE_CASSANDRA_CONF_CASSANDRA_RELEVANT_PROPERTIES_TEST("org.apache.cassandra.conf.CassandraRelevantPropertiesTest"),
     ORG_APACHE_CASSANDRA_DB_VIRTUAL_SYSTEM_PROPERTIES_TABLE_TEST("org.apache.cassandra.db.virtual.SystemPropertiesTableTest"),
 
     /** This property indicates whether disable_mbean_registration is true */
