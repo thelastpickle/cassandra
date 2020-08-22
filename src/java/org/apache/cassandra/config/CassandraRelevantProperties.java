@@ -221,7 +221,7 @@ public enum CassandraRelevantProperties
     {
         try
         {
-            return Integer.parseInt(value);
+            return Integer.decode(value);
         }
         catch (NumberFormatException e)
         {
