@@ -11,7 +11,6 @@ be the first thing to read if you are new to Cassandra.
 * xref:getting_started/querying.adoc[Inserting and querying data]
 * xref:getting_started/drivers.adoc[Client drivers]: Drivers for various languages.
 ** [ xref:getting_started/drivers.adoc#java[Java] ]
- [ xref:getting_started/drivers.adoc#java[Java] ]
  [ xref:getting_started/drivers.adoc#python[Python] ]
  [ xref:getting_started/drivers.adoc#ruby[Ruby] ]
  [ xref:getting_started/drivers.adoc#c-net[C# / .NET] ]

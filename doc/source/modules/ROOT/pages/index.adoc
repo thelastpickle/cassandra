@@ -17,7 +17,7 @@ to do so by submitting your contribution like any other patch following
 
 | xref:cassandra:getting_started/index.adoc[Getting started] | Newbie starting point
 
-| xref:cassandra:new/index.adoc[New in 4.0] | What's new in Cassandra 4.0
+| xref:cassandra:new/index.adoc[What's new in 4.0] | What's new in Cassandra 4.0
 
 | xref:cassandra:architecture/index.adoc[Architecture] | Cassandra's big picture
 
@@ -33,19 +33,18 @@ to do so by submitting your contribution like any other patch following
 
 | xref:cassandra:troubleshooting/index.adoc[Troubleshooting] | What to look for when you have a problem
 
-| xref:cassandra:development/index.adoc[Development] | Learn how to improve Cassandra and contribute patches
-
 | xref:cassandra:faq/index.adoc[FAQ] | Frequently asked questions
 
 | xref:cassandra:plugins/index.adoc[Plug-ins] | Third-party plug-ins
 
+| xref:master@Website:ROOT:native_protocol.adoc[Native Protocols] | Native Cassandra protocol specifications
+
 |===
 
 == Meta information
-* xref:bugs.adoc[Reporting bugs]
-* xref:contactus.adoc[Contact us]
-
-== The rest of the information
-* xref:sitestuff:community.adoc[Community]
-* xref:sitestuff:download.adoc[Download]
-* xref:native_protocol.adoc[Native Protocols]
+* xref:master@Website:ROOT:bugs.adoc[Reporting bugs]
+* xref:master@Website:ROOT:contactus.adoc[Contact us]
+* xref:master@Website:ROOT:development/index.adoc[Contributing code]
+* xref:master@Website:ROOT:docdev/index.adoc[Contributing to the docs]
+* xref:master@Website:ROOT:community.adoc[Community]
+* xref:master@Website:ROOT:download.adoc[Download]
