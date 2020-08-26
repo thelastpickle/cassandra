@@ -1,7 +1,7 @@
 * website nav links
-** xref:Website:glossary.adoc[Glossary]
-** xref:Website:bugs.adoc[How to report bugs]
-** xref:Website: contactus.adoc[Contact us]
+** xref:master@Website:ROOT:glossary.adoc[Glossary]
+** xref:master@Website:ROOT:bugs.adoc[How to report bugs]
+** xref:master@Website:ROOT:contactus.adoc[Contact us]
 * xref:index.adoc[Main]
 ** xref:glossary.adoc[Glossary]
 ** xref:bugs.adoc[How to report bugs]
