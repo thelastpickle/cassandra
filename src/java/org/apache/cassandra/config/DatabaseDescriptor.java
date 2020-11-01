@@ -289,6 +289,31 @@ public class DatabaseDescriptor
         }
     }
 
+    @VisibleForTesting
+    static void applyTokensConfig(Config config) throws ConfigurationException
+    {
+        if (config.num_tokens != null && config.num_tokens > MAX_NUM_TOKENS)
+            throw new ConfigurationException(String.format("A maximum number of %d tokens per node is supported", MAX_NUM_TOKENS), false);
+
+        if (config.initial_token != null)
+        {
+            Collection<String> tokens = tokensFromString(config.initial_token);
+            if (config.num_tokens != null && tokens.size() != config.num_tokens)
+            {
+                throw new ConfigurationException(String.format("The number of initial tokens (by initial_token) specified (%s) is different from num_tokens value (%s)",
+                                                               tokens.size(),
+                                                               config.num_tokens),
+                                                 false);
+            }
+            for (String token : tokens)
+                partitioner.getTokenFactory().validate(token);
+        }
+        else if (config.num_tokens == null)
+        {
+            config.num_tokens = 1;
+        }
+    }
+
     public static void applyConfig(Config config) throws ConfigurationException
     {
         conf = config;
@@ -655,26 +680,7 @@ public class DatabaseDescriptor
         if (conf.concurrent_compactors <= 0)
             throw new ConfigurationException("concurrent_compactors should be strictly greater than 0, but was " + conf.concurrent_compactors, false);
 
-        if (conf.num_tokens != null && conf.num_tokens > MAX_NUM_TOKENS)
-            throw new ConfigurationException(String.format("A maximum number of %d tokens per node is supported", MAX_NUM_TOKENS), false);
-
-        if (conf.initial_token != null)
-        {
-            Collection<String> tokens = tokensFromString(conf.initial_token);
-            if (conf.num_tokens != null && tokens.size() != conf.num_tokens)
-            {
-                throw new ConfigurationException(String.format("The number of initial tokens (by initial_token) specified (%s) is different from num_tokens value (%s)",
-                                                               tokens.size(),
-                                                               conf.num_tokens),
-                                                 false);
-            }
-            for (String token : tokens)
-                partitioner.getTokenFactory().validate(token);
-        }
-        else if (conf.num_tokens == null)
-        {
-            conf.num_tokens = 1;
-        }
+        applyTokensConfig(config);
 
         try
         {

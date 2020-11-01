@@ -325,11 +325,7 @@ public class DatabaseDescriptorTest
 
         try
         {
-            DatabaseDescriptor.applyConfig(testConfig);
-        }
-        catch (ConfigurationException e)
-        {
-            Assert.fail("number of tokens in initial_token=0,256,1024 does not match num_tokens = 3");
+            DatabaseDescriptor.applyTokensConfig(testConfig);
         }
         finally
         {
@@ -351,7 +347,7 @@ public class DatabaseDescriptorTest
 
         try
         {
-            DatabaseDescriptor.applyConfig(testConfig);
+            DatabaseDescriptor.applyTokensConfig(testConfig);
 
             Assert.fail("initial_token = 0,256,1024 and num_tokens = 10 but applyInitialTokens() did not fail!");
         }
@@ -376,15 +372,16 @@ public class DatabaseDescriptorTest
         try
         {
             testConfig.initial_token = "0,256,1024";
-            DatabaseDescriptor.applyConfig(testConfig);
+            testConfig.num_tokens = null;
+            DatabaseDescriptor.applyTokensConfig(testConfig);
         }
         finally
         {
             unregisterSnitchesForTokenConfigTest();
         }
 
-        Assert.assertNull(DatabaseDescriptor.getNumTokens());
-        Assert.assertEquals(3, DatabaseDescriptor.getInitialTokens().size());
+        Assert.assertNull(testConfig.num_tokens);
+        Assert.assertEquals(3, DatabaseDescriptor.tokensFromString(testConfig.initial_token).size());
     }
 
     @Test
@@ -397,15 +394,15 @@ public class DatabaseDescriptorTest
 
         try
         {
-            DatabaseDescriptor.applyConfig(testConfig);
+            DatabaseDescriptor.applyTokensConfig(testConfig);
         }
         finally
         {
             unregisterSnitchesForTokenConfigTest();
         }
 
-        Assert.assertEquals(new Integer(3), DatabaseDescriptor.getNumTokens());
-        Assert.assertTrue(DatabaseDescriptor.getInitialTokens().isEmpty());
+        Assert.assertEquals(Integer.valueOf(3), testConfig.num_tokens);
+        Assert.assertTrue(DatabaseDescriptor.tokensFromString(testConfig.initial_token).isEmpty());
     }
 
     @Test
@@ -417,15 +414,15 @@ public class DatabaseDescriptorTest
 
         try
         {
-            DatabaseDescriptor.applyConfig(testConfig);
+            DatabaseDescriptor.applyTokensConfig(testConfig);
         }
         finally
         {
             unregisterSnitchesForTokenConfigTest();
         }
 
-        Assert.assertEquals(new Integer(1), DatabaseDescriptor.getNumTokens());
-        Assert.assertTrue(DatabaseDescriptor.getInitialTokens().isEmpty());
+        Assert.assertEquals(Integer.valueOf(1), testConfig.num_tokens);
+        Assert.assertTrue(DatabaseDescriptor.tokensFromString(testConfig.initial_token).isEmpty());
     }
 
     private void unregisterSnitchesForTokenConfigTest() throws Exception
