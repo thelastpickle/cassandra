@@ -111,9 +111,17 @@ public class TokenMetadata
 
     public TokenMetadata()
     {
-        this(SortedBiMultiValMap.<Token, InetAddressAndPort>create(),
+        this(SortedBiMultiValMap.create(),
              HashBiMap.create(),
-             Topology.empty(),
+             Topology.empty(DatabaseDescriptor.getEndpointSnitch()),
+             DatabaseDescriptor.getPartitioner());
+    }
+
+    public TokenMetadata(IEndpointSnitch snitch)
+    {
+        this(SortedBiMultiValMap.create(),
+             HashBiMap.create(),
+             Topology.empty(snitch),
              DatabaseDescriptor.getPartitioner());
     }
 
@@ -1188,7 +1196,7 @@ public class TokenMetadata
             pendingRanges.clear();
             movingEndpoints.clear();
             sortedTokens.clear();
-            topology = Topology.empty();
+            topology = Topology.empty(DatabaseDescriptor.getEndpointSnitch());
             invalidateCachedRings();
         }
         finally
@@ -1364,6 +1372,7 @@ public class TokenMetadata
         private final ImmutableMap<String, ImmutableMultimap<String, InetAddressAndPort>> dcRacks;
         /** reverse-lookup map for endpoint to current known dc/rack assignment */
         private final ImmutableMap<InetAddressAndPort, Pair<String, String>> currentLocations;
+        private final IEndpointSnitch snitch;
 
         private Topology(Builder builder)
         {
@@ -1375,6 +1384,7 @@ public class TokenMetadata
             this.dcRacks = dcRackBuilder.build();
 
             this.currentLocations = ImmutableMap.copyOf(builder.currentLocations);
+            this.snitch = builder.snitch;
         }
 
         /**
@@ -1406,14 +1416,14 @@ public class TokenMetadata
             return new Builder(this);
         }
 
-        static Builder builder()
+        static Builder builder(IEndpointSnitch snitch)
         {
-            return new Builder();
+            return new Builder(snitch);
         }
 
-        static Topology empty()
+        static Topology empty(IEndpointSnitch snitch)
         {
-            return builder().build();
+            return builder(snitch).build();
         }
 
         private static class Builder
@@ -1424,12 +1434,14 @@ public class TokenMetadata
             private final Map<String, Multimap<String, InetAddressAndPort>> dcRacks;
             /** reverse-lookup map for endpoint to current known dc/rack assignment */
             private final Map<InetAddressAndPort, Pair<String, String>> currentLocations;
+            private final IEndpointSnitch snitch;
 
-            Builder()
+            Builder(IEndpointSnitch snitch)
             {
                 this.dcEndpoints = HashMultimap.create();
                 this.dcRacks = new HashMap<>();
                 this.currentLocations = new HashMap<>();
+                this.snitch = snitch;
             }
 
             Builder(Topology from)
@@ -1441,6 +1453,7 @@ public class TokenMetadata
                     dcRacks.put(entry.getKey(), HashMultimap.create(entry.getValue()));
 
                 this.currentLocations = new HashMap<>(from.currentLocations);
+                this.snitch = from.snitch;
             }
 
             /**
@@ -1448,7 +1461,6 @@ public class TokenMetadata
              */
             Builder addEndpoint(InetAddressAndPort ep)
             {
-                IEndpointSnitch snitch = DatabaseDescriptor.getEndpointSnitch();
                 String dc = snitch.getDatacenter(ep);
                 String rack = snitch.getRack(ep);
                 Pair<String, String> current = currentLocations.get(ep);

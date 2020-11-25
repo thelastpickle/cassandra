@@ -53,12 +53,15 @@ public class TokenAllocation
     final AbstractReplicationStrategy replicationStrategy;
     final int numTokens;
     final Map<String, Map<String, StrategyAdapter>> strategyByRackDc = new HashMap<>();
+    private final boolean validateAllocation;
 
-    private TokenAllocation(TokenMetadata tokenMetadata, AbstractReplicationStrategy replicationStrategy, int numTokens, boolean clone)
+    private TokenAllocation(TokenMetadata tokenMetadata, AbstractReplicationStrategy replicationStrategy, int numTokens, boolean clone,
+                            boolean validateAllocation)
     {
         this.tokenMetadata = clone ? tokenMetadata.cloneOnlyTokenMap() : tokenMetadata;
         this.replicationStrategy = replicationStrategy;
         this.numTokens = numTokens;
+        this.validateAllocation = validateAllocation;
     }
 
     @VisibleForTesting
@@ -68,19 +71,19 @@ public class TokenAllocation
         return create(snitch, tokenMetadata, replicas, numTokens, false);
     }
 
-    public static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens)
+    public static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens, boolean validateAllocation)
     {
-        return create(snitch, tokenMetadata, replicas, numTokens, true);
+        return create(snitch, tokenMetadata, replicas, numTokens, true, validateAllocation);
     }
 
-    public static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens, boolean clone)
+    public static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens, boolean clone, boolean validateAllocation)
     {
         // We create a fake NTS replication strategy with the specified RF in the local DC
         HashMap<String, String> options = new HashMap<>();
         options.put(snitch.getLocalDatacenter(), Integer.toString(replicas));
         NetworkTopologyStrategy fakeReplicationStrategy = new NetworkTopologyStrategy(null, tokenMetadata, snitch, options);
 
-        TokenAllocation allocator = new TokenAllocation(tokenMetadata, fakeReplicationStrategy, numTokens, clone);
+        TokenAllocation allocator = new TokenAllocation(tokenMetadata, fakeReplicationStrategy, numTokens, clone, validateAllocation);
         return allocator;
     }
 
@@ -95,7 +98,7 @@ public class TokenAllocation
 
     public static TokenAllocation create(TokenMetadata tokenMetadata, AbstractReplicationStrategy rs, int numTokens)
     {
-        return new TokenAllocation(tokenMetadata, rs, numTokens, true);
+        return new TokenAllocation(tokenMetadata, rs, numTokens, true, true);
     }
 
     public static Collection<Token> allocateTokens(final TokenMetadata tokenMetadata,
@@ -105,7 +108,7 @@ public class TokenAllocation
     {
 
         IEndpointSnitch snitch = DatabaseDescriptor.getEndpointSnitch();
-        TokenAllocation allocator = create(snitch, tokenMetadata, replicas, numTokens);
+        TokenAllocation allocator = create(snitch, tokenMetadata, replicas, numTokens, true);
         return allocator.allocate(endpoint);
     }
 
@@ -116,12 +119,13 @@ public class TokenAllocation
         Collection<Token> tokens = strategy.createAllocator().addUnit(endpoint, numTokens);
         tokens = strategy.adjustForCrossDatacenterClashes(tokens);
 
-        if (logger.isWarnEnabled())
+        SummaryStatistics os = strategy.replicatedOwnershipStats();
+        tokenMetadata.updateNormalTokens(tokens, endpoint);
+        SummaryStatistics ns = strategy.replicatedOwnershipStats();
+
+        if (validateAllocation && logger.isWarnEnabled())
         {
             logger.warn("Selected tokens {}", tokens);
-            SummaryStatistics os = strategy.replicatedOwnershipStats();
-            tokenMetadata.updateNormalTokens(tokens, endpoint);
-            SummaryStatistics ns = strategy.replicatedOwnershipStats();
             logger.warn("Replicated node load in datacenter before allocation {}", statToString(os));
             logger.warn("Replicated node load in datacenter after allocation {}", statToString(ns));
 
