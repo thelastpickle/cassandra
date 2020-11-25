@@ -24,6 +24,7 @@ Cassandra must be stopped before these tools are executed, or unexpected results
 .. toctree::
    :maxdepth: 2
 
+   generate-tokens
    sstabledump
    sstableexpiredblockers
    sstablelevelreset
