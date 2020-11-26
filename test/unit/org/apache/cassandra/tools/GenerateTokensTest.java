@@ -18,7 +18,13 @@
 
 package org.apache.cassandra.tools;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import org.slf4j.LoggerFactory;
+
+import junit.framework.AssertionFailedError;
+import org.apache.cassandra.dht.tokenallocator.TokenAllocation;
 
 
 public class GenerateTokensTest
@@ -32,6 +38,8 @@ public class GenerateTokensTest
             for (int numTokens = 1; numTokens <= 16 ; ++numTokens)
             {
                 GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf});
+                GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--partitioner", "Murmur3Partitioner"});
+                GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--partitioner", "RandomPartitioner"});
                 GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "15"});
                 if (rf <= 2)
                     GenerateTokens.main(new String[]{"-n", "10", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "5,5"});
@@ -43,6 +51,7 @@ public class GenerateTokensTest
                     GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "3,3,3,3,3"});
             }
         }
+        Assert.assertFalse(LoggerFactory.getLogger(TokenAllocation.class).isWarnEnabled());
     }
-
+    
 }

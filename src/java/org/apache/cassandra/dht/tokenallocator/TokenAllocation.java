@@ -43,7 +43,6 @@ import org.apache.cassandra.locator.NetworkTopologyStrategy;
 import org.apache.cassandra.locator.SimpleStrategy;
 import org.apache.cassandra.locator.TokenMetadata;
 import org.apache.cassandra.locator.TokenMetadata.Topology;
-import org.assertj.core.util.VisibleForTesting;
 
 public class TokenAllocation
 {
@@ -53,38 +52,12 @@ public class TokenAllocation
     final AbstractReplicationStrategy replicationStrategy;
     final int numTokens;
     final Map<String, Map<String, StrategyAdapter>> strategyByRackDc = new HashMap<>();
-    private final boolean validateAllocation;
 
-    private TokenAllocation(TokenMetadata tokenMetadata, AbstractReplicationStrategy replicationStrategy, int numTokens, boolean clone,
-                            boolean validateAllocation)
+    private TokenAllocation(TokenMetadata tokenMetadata, AbstractReplicationStrategy replicationStrategy, int numTokens)
     {
-        this.tokenMetadata = clone ? tokenMetadata.cloneOnlyTokenMap() : tokenMetadata;
+        this.tokenMetadata = tokenMetadata.cloneOnlyTokenMap();
         this.replicationStrategy = replicationStrategy;
         this.numTokens = numTokens;
-        this.validateAllocation = validateAllocation;
-    }
-
-    @VisibleForTesting
-    public static TokenAllocation createForTest(TokenMetadata tokenMetadata, int replicas, int numTokens)
-    {
-        IEndpointSnitch snitch = DatabaseDescriptor.getEndpointSnitch();
-        return create(snitch, tokenMetadata, replicas, numTokens, false);
-    }
-
-    public static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens, boolean validateAllocation)
-    {
-        return create(snitch, tokenMetadata, replicas, numTokens, true, validateAllocation);
-    }
-
-    public static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens, boolean clone, boolean validateAllocation)
-    {
-        // We create a fake NTS replication strategy with the specified RF in the local DC
-        HashMap<String, String> options = new HashMap<>();
-        options.put(snitch.getLocalDatacenter(), Integer.toString(replicas));
-        NetworkTopologyStrategy fakeReplicationStrategy = new NetworkTopologyStrategy(null, tokenMetadata, snitch, options);
-
-        TokenAllocation allocator = new TokenAllocation(tokenMetadata, fakeReplicationStrategy, numTokens, clone, validateAllocation);
-        return allocator;
     }
 
     public static Collection<Token> allocateTokens(final TokenMetadata tokenMetadata,
@@ -92,13 +65,7 @@ public class TokenAllocation
                                                    final InetAddressAndPort endpoint,
                                                    int numTokens)
     {
-        TokenAllocation allocator = create(tokenMetadata, rs, numTokens);
-        return allocator.allocate(endpoint);
-    }
-
-    public static TokenAllocation create(TokenMetadata tokenMetadata, AbstractReplicationStrategy rs, int numTokens)
-    {
-        return new TokenAllocation(tokenMetadata, rs, numTokens, true, true);
+        return create(tokenMetadata, rs, numTokens).allocate(endpoint);
     }
 
     public static Collection<Token> allocateTokens(final TokenMetadata tokenMetadata,
@@ -106,57 +73,66 @@ public class TokenAllocation
                                                    final InetAddressAndPort endpoint,
                                                    int numTokens)
     {
-
-        IEndpointSnitch snitch = DatabaseDescriptor.getEndpointSnitch();
-        TokenAllocation allocator = create(snitch, tokenMetadata, replicas, numTokens, true);
-        return allocator.allocate(endpoint);
+        return create(DatabaseDescriptor.getEndpointSnitch(), tokenMetadata, replicas, numTokens).allocate(endpoint);
     }
 
-    @VisibleForTesting
-    public Collection<Token> allocate(InetAddressAndPort endpoint)
+    static TokenAllocation create(IEndpointSnitch snitch, TokenMetadata tokenMetadata, int replicas, int numTokens)
+    {
+        // We create a fake NTS replication strategy with the specified RF in the local DC
+        HashMap<String, String> options = new HashMap<>();
+        options.put(snitch.getLocalDatacenter(), Integer.toString(replicas));
+        NetworkTopologyStrategy fakeReplicationStrategy = new NetworkTopologyStrategy(null, tokenMetadata, snitch, options);
+
+        TokenAllocation allocator = new TokenAllocation(tokenMetadata, fakeReplicationStrategy, numTokens);
+        return allocator;
+    }
+
+    static TokenAllocation create(TokenMetadata tokenMetadata, AbstractReplicationStrategy rs, int numTokens)
+    {
+        return new TokenAllocation(tokenMetadata, rs, numTokens);
+    }
+
+    Collection<Token> allocate(InetAddressAndPort endpoint)
     {
         StrategyAdapter strategy = getOrCreateStrategy(endpoint);
         Collection<Token> tokens = strategy.createAllocator().addUnit(endpoint, numTokens);
         tokens = strategy.adjustForCrossDatacenterClashes(tokens);
 
-        SummaryStatistics os = strategy.replicatedOwnershipStats();
+        SummaryStatistics os = logger.isWarnEnabled() ? strategy.replicatedOwnershipStats() : null;
         tokenMetadata.updateNormalTokens(tokens, endpoint);
-        SummaryStatistics ns = strategy.replicatedOwnershipStats();
 
-        if (validateAllocation && logger.isWarnEnabled())
+        if (logger.isWarnEnabled())
         {
+            SummaryStatistics ns = strategy.replicatedOwnershipStats();
             logger.warn("Selected tokens {}", tokens);
             logger.warn("Replicated node load in datacenter before allocation {}", statToString(os));
             logger.warn("Replicated node load in datacenter after allocation {}", statToString(ns));
 
-            // TODO: Is it worth doing the replicated ownership calculation always to be able to raise this alarm?
-            if (ns.getStandardDeviation() > os.getStandardDeviation())
+            if (ns.getStandardDeviation() - os.getStandardDeviation() > 0.1)
                 logger.warn("Unexpected growth in standard deviation after allocation.");
         }
 
         return tokens;
     }
 
-    public static String statToString(SummaryStatistics stat)
+    static String statToString(SummaryStatistics stat)
     {
         return String.format("max %.2f min %.2f stddev %.4f", stat.getMax() / stat.getMean(), stat.getMin() / stat.getMean(), stat.getStandardDeviation());
     }
 
-    @VisibleForTesting
-    public SummaryStatistics getAllocationRingOwnership(String datacenter, String rack)
+    SummaryStatistics getAllocationRingOwnership(String datacenter, String rack)
     {
         return getOrCreateStrategy(datacenter, rack).replicatedOwnershipStats();
     }
 
-    @VisibleForTesting
-    public SummaryStatistics getAllocationRingOwnership(InetAddressAndPort endpoint)
+    SummaryStatistics getAllocationRingOwnership(InetAddressAndPort endpoint)
     {
         return getOrCreateStrategy(endpoint).replicatedOwnershipStats();
     }
 
     abstract class StrategyAdapter implements ReplicationStrategy<InetAddressAndPort>
     {
-        // return true iff the provided endpoint occurs in the same virtual token-ring we are allocating for
+        // return true if the provided endpoint occurs in the same virtual token-ring we are allocating for
         // i.e. the set of the nodes that share ownership with the node we are allocating
         // alternatively: return false if the endpoint's ownership is independent of the node we are allocating tokens for
         abstract boolean inAllocationRing(InetAddressAndPort other);
@@ -258,7 +234,7 @@ public class TokenAllocation
 
     private StrategyAdapter createStrategy(final SimpleStrategy rs)
     {
-        return groupByNodeAdapter(rs.snitch, rs.getReplicationFactor().allReplicas);
+        return createStrategy(rs.snitch, null, null, rs.getReplicationFactor().allReplicas, false);
     }
 
     private StrategyAdapter createStrategy(TokenMetadata tokenMetadata, NetworkTopologyStrategy strategy, String dc, String rack)
@@ -266,31 +242,38 @@ public class TokenAllocation
         int replicas = strategy.getReplicationFactor(dc).allReplicas;
 
         Topology topology = tokenMetadata.getTopology();
-        // if topology hasn't been setup yet for this endpoint+rack then treat it as a separate unit
+        // if topology hasn't been setup yet for this dc+rack then treat it as a separate unit
         int racks = topology.getDatacenterRacks().get(dc) != null && topology.getDatacenterRacks().get(dc).containsKey(rack)
                 ? topology.getDatacenterRacks().get(dc).asMap().size()
                 : 1;
 
-        if (racks == 1)
+        if (replicas <= 1)
         {
-            return groupByNodeOnSameRackDcAdapter(strategy.snitch, dc, rack, replicas);
+            // each node is treated as separate and replicates once
+            return createStrategy(strategy.snitch, dc, null, 1, false);
         }
-        else if (replicas <= 1 || racks == replicas)
+        else if (racks == replicas)
         {
-            // When replicas <= 1 or racks == replicas, each node is treated as separate and replicates once
-            return groupByNodeOnSameRackDcAdapter(strategy.snitch, dc, rack, 1);
+            // each node is treated as separate and replicates once, with separate allocation rings for each rack
+            return createStrategy(strategy.snitch, dc, rack, 1, false);
         }
         else if (racks > replicas)
         {
-            // When racks > replicas, group by rack
-            return groupByRackAdapter(replicas, strategy.snitch, dc);
+            // group by rack
+            return createStrategy(strategy.snitch, dc, null, replicas, true);
+        }
+        else if (racks == 1)
+        {
+            return createStrategy(strategy.snitch, dc, null, replicas, false);
         }
 
         throw new ConfigurationException(String.format("Token allocation failed: the number of racks %d in datacenter %s is lower than its replication factor %d.",
                                                        racks, dc, replicas));
     }
 
-    private StrategyAdapter groupByRackAdapter(int replicas, IEndpointSnitch snitch, String dc)
+    // a null dc will always return true for inAllocationRing(..)
+    // a null rack will return true for inAllocationRing(..) for all nodes in the same dc
+    private StrategyAdapter createStrategy(IEndpointSnitch snitch, String dc, String rack, int replicas, boolean groupByRack)
     {
         return new StrategyAdapter()
         {
@@ -303,47 +286,13 @@ public class TokenAllocation
             @Override
             public Object getGroup(InetAddressAndPort unit)
             {
-                return snitch.getRack(unit);
+                return groupByRack ? snitch.getRack(unit) : unit;
             }
 
             @Override
             public boolean inAllocationRing(InetAddressAndPort other)
             {
-                return dc.equals(snitch.getDatacenter(other));
-            }
-        };
-    }
-
-    private StrategyAdapter groupByNodeOnSameRackDcAdapter(IEndpointSnitch snitch, String dc, String rack, int replicas)
-    {
-        return groupByNodeAdapter(snitch, dc, rack, replicas, false);
-    }
-
-    private StrategyAdapter groupByNodeAdapter(IEndpointSnitch snitch, int replicas)
-    {
-        return groupByNodeAdapter(snitch, null, null, replicas, true);
-    }
-
-    private StrategyAdapter groupByNodeAdapter(IEndpointSnitch snitch, String dc, String rack, int replicas, boolean ignoreRackDc)
-    {
-        return new StrategyAdapter()
-        {
-            @Override
-            public int replicas()
-            {
-                return replicas;
-            }
-
-            @Override
-            public Object getGroup(InetAddressAndPort unit)
-            {
-                return unit;
-            }
-
-            @Override
-            public boolean inAllocationRing(InetAddressAndPort other)
-            {
-                return ignoreRackDc? true : dc.equals(snitch.getDatacenter(other)) && rack.equals(snitch.getRack(other));
+                return (dc == null || dc.equals(snitch.getDatacenter(other))) && (rack == null || rack.equals(snitch.getRack(other)));
             }
         };
     }

@@ -20,6 +20,8 @@ package org.apache.cassandra.tools;
 
 import java.util.Arrays;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -27,10 +29,12 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.tokenallocator.OfflineTokenAllocator;
+import org.apache.cassandra.dht.tokenallocator.TokenAllocation;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.utils.FBUtilities;
 
@@ -55,6 +59,9 @@ public class GenerateTokens
 
         try
         {
+            // disable the summary statistics logging, since this is a command-line tool with dedicated output
+           ((Logger)LoggerFactory.getLogger(TokenAllocation.class)).setLevel(Level.ERROR);
+
             Util.initDatabaseDescriptor();
             options = getOptions();
             CommandLine cmd = parseCommandLine(args, options);
@@ -93,7 +100,7 @@ public class GenerateTokens
             System.out.println(String.format("Generating tokens for %d nodes with %d vnodes each for replication factor %d and partitioner %s",
                                              nodes, tokens, rf, partitioner.getClass().getSimpleName()));
 
-            for (OfflineTokenAllocator.FakeNode node : OfflineTokenAllocator.allocate(rf, tokens, racksDef, verbose))
+            for (OfflineTokenAllocator.FakeNode node : OfflineTokenAllocator.allocate(rf, tokens, racksDef, verbose, partitioner))
             {
                 if (racksDef != null)
                     System.out.println(String.format("Node %d rack %d:", node.nodeId(), node.rackId()));

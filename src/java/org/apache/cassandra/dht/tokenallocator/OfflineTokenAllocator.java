@@ -36,6 +36,7 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.locator.SimpleSnitch;
@@ -45,10 +46,10 @@ public class OfflineTokenAllocator
 {
     private static final Logger logger = LoggerFactory.getLogger(OfflineTokenAllocator.class);
 
-    public static List<FakeNode> allocate(int rf, int numTokens, int[] nodesPerRack, boolean verbose)
+    public static List<FakeNode> allocate(int rf, int numTokens, int[] nodesPerRack, boolean verbose, IPartitioner partitioner)
     {
         List<FakeNode> fakeNodes = new ArrayList<>(Arrays.stream(nodesPerRack).sum());
-        MultinodeAllocator allocator = new MultinodeAllocator(rf, numTokens, verbose);
+        MultinodeAllocator allocator = new MultinodeAllocator(rf, numTokens, verbose, partitioner);
 
         int racks = nodesPerRack.length;
         int nodeId = 0;
@@ -68,13 +69,13 @@ public class OfflineTokenAllocator
             nodesPerRack[rackId]--;
             rackId = nextRack;
         }
-        allocator.validateAllocation();
+        allocator.validateAllocation(nodeId);
         return fakeNodes;
     }
 
     public static class FakeNode
     {
-        protected final InetAddressAndPort fakeAddress;
+        private final InetAddressAndPort fakeAddress;
         private final int rackId;
         private final Collection<Token> tokens;
 
@@ -92,7 +93,7 @@ public class OfflineTokenAllocator
 
         public int rackId()
         {
-            return this.rackId;
+            return rackId;
         }
 
         public Collection<Token> tokens()
@@ -101,31 +102,28 @@ public class OfflineTokenAllocator
         }
     }
 
-    static class MultinodeAllocator
+    private static class MultinodeAllocator
     {
-        final FakeSnitch fakeSnitch;
-        final TokenMetadata fakeMetadata;
-        final TokenAllocation allocation;
-        final Set<Integer> allocatedRacks = Sets.newHashSet();
-        final Map<Integer, SummaryStatistics> lastCheckPoint = Maps.newHashMap();
+        private final FakeSnitch fakeSnitch;
+        private final TokenMetadata fakeMetadata;
+        private final TokenAllocation allocation;
+        private final Set<Integer> allocatedRacks = Sets.newHashSet();
+        private final Map<Integer, SummaryStatistics> lastCheckPoint = Maps.newHashMap();
         private final boolean verbose;
 
-        public MultinodeAllocator(int rf, int numTokens, boolean verbose)
+        private MultinodeAllocator(int rf, int numTokens, boolean verbose, IPartitioner partitioner)
         {
             this.fakeSnitch = new FakeSnitch();
-            this.fakeMetadata = new TokenMetadata(fakeSnitch);
-            this.allocation = TokenAllocation.create(fakeSnitch, fakeMetadata, rf, numTokens, false);
+            this.fakeMetadata = new TokenMetadata(fakeSnitch).cloneWithNewPartitioner(partitioner);
+            this.allocation = TokenAllocation.create(fakeSnitch, fakeMetadata, rf, numTokens);
             this.verbose = verbose;
         }
 
-        public FakeNode allocateTokensForNode(Integer nodeId, Integer rackId)
+        private FakeNode allocateTokensForNode(int nodeId, Integer rackId)
         {
             // Verify if allocation is balanced after each round across all racks
             if (allocatedRacks.contains(rackId))
-            {
-                validateAllocation();
-                allocatedRacks.clear();
-            }
+                validateAllocation(nodeId);
 
             // Update snitch and token metadata info
             InetAddressAndPort fakeNodeAddress = getLoopbackAddressWithPort(nodeId);
@@ -134,14 +132,12 @@ public class OfflineTokenAllocator
 
             // Allocate tokens
             Collection<Token> tokens = allocation.allocate(fakeNodeAddress);
-            if (verbose)
-                logger.warn("Allocated {} tokens for node {} on rack {}.", tokens.size(), nodeId, rackId);
             allocatedRacks.add(rackId);
 
             return new FakeNode(fakeNodeAddress, rackId, tokens);
         }
 
-        public void validateAllocation()
+        private void validateAllocation(int nodeId)
         {
             for (Integer allocatedRackId : allocatedRacks)
             {
@@ -150,19 +146,22 @@ public class OfflineTokenAllocator
                 if (verbose)
                 {
                     if (oldOwnership != null)
-                        logger.warn("Replicated node load in rack={} before allocation: {}", allocatedRackId, TokenAllocation.statToString(oldOwnership));
-                    logger.warn("Replicated node load in rack={} after allocation: {}", allocatedRackId, TokenAllocation.statToString(newOwnership));
+                        logger.info("Replicated node load in rack={} before allocating node {}: {}", allocatedRackId, nodeId, TokenAllocation.statToString(oldOwnership));
+                    logger.info("Replicated node load in rack={} after allocating node {}: {}", allocatedRackId, nodeId, TokenAllocation.statToString(newOwnership));
                 }
-                if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 && newOwnership.getStandardDeviation() > oldOwnership.getStandardDeviation())
+                if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 && newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > 0.1)
                 {
-                    logger.warn("Unexpected growth in standard deviation on rack {} from {} to {}.", allocatedRackId, String.format("%.5f", oldOwnership.getStandardDeviation()),
-                                 String.format("%.5f", newOwnership.getStandardDeviation()));
+                    logger.warn("Unexpected growth in standard deviation on rack {} from {} to {} after allocating node {}",
+                            allocatedRackId,
+                            String.format("%.5f", oldOwnership.getStandardDeviation()),
+                            String.format("%.5f", newOwnership.getStandardDeviation()),
+                            nodeId);
                 }
             }
         }
     }
 
-    static class FakeSnitch extends SimpleSnitch
+    private static class FakeSnitch extends SimpleSnitch
     {
         final Map<InetAddressAndPort, Integer> nodeByRack = new HashMap<>();
 
@@ -181,7 +180,7 @@ public class OfflineTokenAllocator
         }
         catch (UnknownHostException e)
         {
-            throw new RuntimeException(e); //shouldn't happen
+            throw new IllegalStateException("Unexpected UnknownHostException", e);
         }
     }
 }
