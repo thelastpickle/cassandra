@@ -73,6 +73,11 @@ public class TokenAllocationTest
         DatabaseDescriptor.setPartitionerUnsafe(oldPartitioner);
     }
 
+    private static TokenAllocation createForTest(TokenMetadata tokenMetadata, int replicas, int numTokens)
+    {
+        return TokenAllocation.create(DatabaseDescriptor.getEndpointSnitch(), tokenMetadata, replicas, numTokens);
+    }
+
     @Test
     public void testAllocateTokensForKeyspace() throws UnknownHostException
     {
@@ -104,7 +109,7 @@ public class TokenAllocationTest
 
     private void allocateTokensForLocalReplicationFactor(int vnodes, int rf, TokenMetadata tm, InetAddressAndPort addr)
     {
-        TokenAllocation tokenAllocation = TokenAllocation.createForTest(tm, rf, vnodes);
+        TokenAllocation tokenAllocation = createForTest(tm, rf, vnodes);
         allocateAndVerify(vnodes, addr, tokenAllocation);
     }
 
@@ -246,8 +251,8 @@ public class TokenAllocationTest
         generateFakeEndpoints(tokenMetadata, 10, TOKENS);
 
         // Do not clone token metadata so tokens allocated by different allocators are reflected on the parent TokenMetadata
-        TokenAllocation rf2Allocator = TokenAllocation.createForTest(tokenMetadata, 2, TOKENS);
-        TokenAllocation rf3Allocator = TokenAllocation.createForTest(tokenMetadata, 3, TOKENS);
+        TokenAllocation rf2Allocator = createForTest(tokenMetadata, 2, TOKENS);
+        TokenAllocation rf3Allocator = createForTest(tokenMetadata, 3, TOKENS);
 
         SummaryStatistics rf2StatsBefore = rf2Allocator.getAllocationRingOwnership(FBUtilities.getBroadcastAddressAndPort());
         SummaryStatistics rf3StatsBefore = rf3Allocator.getAllocationRingOwnership(FBUtilities.getBroadcastAddressAndPort());
