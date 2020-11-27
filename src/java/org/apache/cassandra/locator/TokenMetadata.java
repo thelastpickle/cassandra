@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.*;
@@ -113,7 +114,7 @@ public class TokenMetadata
     {
         this(SortedBiMultiValMap.create(),
              HashBiMap.create(),
-             Topology.empty(DatabaseDescriptor.getEndpointSnitch()),
+             Topology.empty(),
              DatabaseDescriptor.getPartitioner());
     }
 
@@ -121,7 +122,7 @@ public class TokenMetadata
     {
         this(SortedBiMultiValMap.create(),
              HashBiMap.create(),
-             Topology.empty(snitch),
+             Topology.builder(() -> snitch).build(),
              DatabaseDescriptor.getPartitioner());
     }
 
@@ -1196,7 +1197,7 @@ public class TokenMetadata
             pendingRanges.clear();
             movingEndpoints.clear();
             sortedTokens.clear();
-            topology = Topology.empty(DatabaseDescriptor.getEndpointSnitch());
+            topology = Topology.empty();
             invalidateCachedRings();
         }
         finally
@@ -1372,7 +1373,7 @@ public class TokenMetadata
         private final ImmutableMap<String, ImmutableMultimap<String, InetAddressAndPort>> dcRacks;
         /** reverse-lookup map for endpoint to current known dc/rack assignment */
         private final ImmutableMap<InetAddressAndPort, Pair<String, String>> currentLocations;
-        private final IEndpointSnitch snitch;
+        private final Supplier<IEndpointSnitch> snitchSupplier;
 
         private Topology(Builder builder)
         {
@@ -1384,7 +1385,7 @@ public class TokenMetadata
             this.dcRacks = dcRackBuilder.build();
 
             this.currentLocations = ImmutableMap.copyOf(builder.currentLocations);
-            this.snitch = builder.snitch;
+            this.snitchSupplier = builder.snitchSupplier;
         }
 
         /**
@@ -1416,14 +1417,14 @@ public class TokenMetadata
             return new Builder(this);
         }
 
-        static Builder builder(IEndpointSnitch snitch)
+        static Builder builder(Supplier<IEndpointSnitch> snitchSupplier)
         {
-            return new Builder(snitch);
+            return new Builder(snitchSupplier);
         }
 
-        static Topology empty(IEndpointSnitch snitch)
+        static Topology empty()
         {
-            return builder(snitch).build();
+            return builder(() -> DatabaseDescriptor.getEndpointSnitch()).build();
         }
 
         private static class Builder
@@ -1434,14 +1435,14 @@ public class TokenMetadata
             private final Map<String, Multimap<String, InetAddressAndPort>> dcRacks;
             /** reverse-lookup map for endpoint to current known dc/rack assignment */
             private final Map<InetAddressAndPort, Pair<String, String>> currentLocations;
-            private final IEndpointSnitch snitch;
+            private final Supplier<IEndpointSnitch> snitchSupplier;
 
-            Builder(IEndpointSnitch snitch)
+            Builder(Supplier<IEndpointSnitch> snitchSupplier)
             {
                 this.dcEndpoints = HashMultimap.create();
                 this.dcRacks = new HashMap<>();
                 this.currentLocations = new HashMap<>();
-                this.snitch = snitch;
+                this.snitchSupplier = snitchSupplier;
             }
 
             Builder(Topology from)
@@ -1453,7 +1454,7 @@ public class TokenMetadata
                     dcRacks.put(entry.getKey(), HashMultimap.create(entry.getValue()));
 
                 this.currentLocations = new HashMap<>(from.currentLocations);
-                this.snitch = from.snitch;
+                this.snitchSupplier = from.snitchSupplier;
             }
 
             /**
@@ -1461,8 +1462,8 @@ public class TokenMetadata
              */
             Builder addEndpoint(InetAddressAndPort ep)
             {
-                String dc = snitch.getDatacenter(ep);
-                String rack = snitch.getRack(ep);
+                String dc = snitchSupplier.get().getDatacenter(ep);
+                String rack = snitchSupplier.get().getRack(ep);
                 Pair<String, String> current = currentLocations.get(ep);
                 if (current != null)
                 {
