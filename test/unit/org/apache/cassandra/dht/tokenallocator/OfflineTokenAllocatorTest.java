@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.tools.Util;
+import org.apache.cassandra.utils.OutputHandler;
 
 public class OfflineTokenAllocatorTest
 {
@@ -39,7 +40,7 @@ public class OfflineTokenAllocatorTest
     @Test(expected = UnsupportedOperationException.class)
     public void testUnsupportedPartitioner()
     {
-        List<OfflineTokenAllocator.FakeNode> nodes = OfflineTokenAllocator.allocate(3, 4, new int[]{1,1,1}, false, ByteOrderedPartitioner.instance);
+        List<OfflineTokenAllocator.FakeNode> nodes = OfflineTokenAllocator.allocate(3, 4, new int[]{1,1,1}, new OutputHandler.SystemOutput(true, true), ByteOrderedPartitioner.instance);
         Assert.assertEquals(3, nodes.size());
     }
 }

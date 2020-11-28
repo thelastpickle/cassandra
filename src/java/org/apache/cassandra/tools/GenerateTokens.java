@@ -37,6 +37,7 @@ import org.apache.cassandra.dht.tokenallocator.OfflineTokenAllocator;
 import org.apache.cassandra.dht.tokenallocator.TokenAllocation;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.utils.FBUtilities;
+import org.apache.cassandra.utils.OutputHandler;
 
 public class GenerateTokens
 {
@@ -53,9 +54,10 @@ public class GenerateTokens
         int rf = 0;
         int tokens = 0;
         int nodes = 0;
-        boolean verbose = false;
         IPartitioner partitioner = null;
         int[] racksDef = null;
+
+        OutputHandler logger = null;
 
         try
         {
@@ -69,7 +71,7 @@ public class GenerateTokens
             rf = Integer.parseInt(cmd.getOptionValue(RF));
             tokens = Integer.parseInt(cmd.getOptionValue(TOKENS));
             nodes = Integer.parseInt(cmd.getOptionValue(NODES));
-            verbose = cmd.hasOption(VERBOSE);
+            logger = new OutputHandler.SystemOutput(cmd.hasOption(VERBOSE), true);
 
             partitioner = FBUtilities.newPartitioner(cmd.getOptionValue(PARTITIONER, Murmur3Partitioner.class.getSimpleName()));
             racksDef = getRacks(cmd.getOptionValue(RACKS, cmd.getOptionValue(NODES)));
@@ -97,20 +99,20 @@ public class GenerateTokens
 
         try
         {
-            System.out.println(String.format("Generating tokens for %d nodes with %d vnodes each for replication factor %d and partitioner %s",
+            logger.output(String.format("Generating tokens for %d nodes with %d vnodes each for replication factor %d and partitioner %s",
                                              nodes, tokens, rf, partitioner.getClass().getSimpleName()));
 
-            for (OfflineTokenAllocator.FakeNode node : OfflineTokenAllocator.allocate(rf, tokens, racksDef, verbose, partitioner))
+            for (OfflineTokenAllocator.FakeNode node : OfflineTokenAllocator.allocate(rf, tokens, racksDef, logger,
+                                                                                      partitioner))
             {
                 if (racksDef != null)
-                    System.out.println(String.format("Node %d rack %d:", node.nodeId(), node.rackId()));
-                System.out.println(node.tokens());
+                    logger.output(String.format("Node %d rack %d:", node.nodeId(), node.rackId()));
+                logger.output(node.tokens().toString());
             }
         }
         catch (Throwable t)
         {
-            System.err.println("Error running tool: ");
-            t.printStackTrace();
+            logger.warn("Error running tool.", t);
             System.exit(1);
         }
     }
