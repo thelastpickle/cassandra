@@ -68,7 +68,6 @@ public class OfflineTokenAllocator
             nodesPerRack[rackId]--;
             rackId = nextRack;
         }
-        allocator.validateAllocation(nodeId);
         return fakeNodes;
     }
 
@@ -106,7 +105,6 @@ public class OfflineTokenAllocator
         private final FakeSnitch fakeSnitch;
         private final TokenMetadata fakeMetadata;
         private final TokenAllocation allocation;
-        private final Set<Integer> allocatedRacks = Sets.newHashSet();
         private final Map<Integer, SummaryStatistics> lastCheckPoint = Maps.newHashMap();
         private final OutputHandler logger;
 
@@ -120,10 +118,6 @@ public class OfflineTokenAllocator
 
         private FakeNode allocateTokensForNode(int nodeId, Integer rackId)
         {
-            // Verify if allocation is balanced after each round across all racks
-            if (allocatedRacks.contains(rackId))
-                validateAllocation(nodeId);
-
             // Update snitch and token metadata info
             InetAddressAndPort fakeNodeAddress = getLoopbackAddressWithPort(nodeId);
             fakeSnitch.nodeByRack.put(fakeNodeAddress, rackId);
@@ -131,29 +125,28 @@ public class OfflineTokenAllocator
 
             // Allocate tokens
             Collection<Token> tokens = allocation.allocate(fakeNodeAddress);
-            allocatedRacks.add(rackId);
+
+            // Validate ownership stats
+            validateAllocation(nodeId, rackId);
 
             return new FakeNode(fakeNodeAddress, rackId, tokens);
         }
 
-        private void validateAllocation(int nodeId)
+        private void validateAllocation(int nodeId, int rackId)
         {
-            for (Integer allocatedRackId : allocatedRacks)
+            SummaryStatistics newOwnership = allocation.getAllocationRingOwnership(SimpleSnitch.DATA_CENTER_NAME, Integer.toString(rackId));
+            SummaryStatistics oldOwnership = lastCheckPoint.put(rackId, newOwnership);
+            if (oldOwnership != null)
+                logger.debug(String.format("Replicated node load in rack=%d before allocating node %d: %s.", rackId, nodeId,
+                                           TokenAllocation.statToString(oldOwnership)));
+            logger.debug(String.format("Replicated node load in rack=%d after allocating node %d: %s.", rackId, nodeId,
+                                       TokenAllocation.statToString(newOwnership)));
+            if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 &&
+                newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > 0.1)
             {
-                SummaryStatistics newOwnership = allocation.getAllocationRingOwnership(SimpleSnitch.DATA_CENTER_NAME, Integer.toString(allocatedRackId));
-                SummaryStatistics oldOwnership = lastCheckPoint.put(allocatedRackId, newOwnership);
-                if (oldOwnership != null)
-                    logger.debug(String.format("Replicated node load in rack=%d before allocating node %d: %s.", allocatedRackId, nodeId,
-                                               TokenAllocation.statToString(oldOwnership)));
-                logger.debug(String.format("Replicated node load in rack=%d after allocating node %d: %s.", allocatedRackId, nodeId,
-                                           TokenAllocation.statToString(newOwnership)));
-                if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 &&
-                        newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > 0.1)
-                {
-                    logger.warn(String.format("Unexpected growth in standard deviation on rack %d from %.5f to %.5f after allocating node %d.",
-                                allocatedRackId, String.format("%.5f", oldOwnership.getStandardDeviation()),
-                                String.format("%.5f", newOwnership.getStandardDeviation()), nodeId));
-                }
+                logger.warn(String.format("Unexpected growth in standard deviation on rack %d from %.5f to %.5f after allocating node %d.",
+                                          rackId, String.format("%.5f", oldOwnership.getStandardDeviation()),
+                                          String.format("%.5f", newOwnership.getStandardDeviation()), nodeId));
             }
         }
     }
