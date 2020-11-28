@@ -46,8 +46,9 @@ import org.apache.cassandra.locator.TokenMetadata.Topology;
 
 public class TokenAllocation
 {
-    private static final Logger logger = LoggerFactory.getLogger(TokenAllocation.class);
+    public static final double MAX_STDEV_GROWTH = 0.05;
 
+    private static final Logger logger = LoggerFactory.getLogger(TokenAllocation.class);
     final TokenMetadata tokenMetadata;
     final AbstractReplicationStrategy replicationStrategy;
     final int numTokens;
@@ -108,8 +109,8 @@ public class TokenAllocation
             logger.warn("Replicated node load in datacenter before allocation {}", statToString(os));
             logger.warn("Replicated node load in datacenter after allocation {}", statToString(ns));
 
-            if (ns.getStandardDeviation() - os.getStandardDeviation() > 0.1)
-                logger.warn("Unexpected growth in standard deviation after allocation.");
+            if (ns.getStandardDeviation() - os.getStandardDeviation() > MAX_STDEV_GROWTH)
+                logger.warn(String.format("Growth in token ownership standard deviation above %.2f%% after allocation.", MAX_STDEV_GROWTH * 100));
         }
 
         return tokens;
