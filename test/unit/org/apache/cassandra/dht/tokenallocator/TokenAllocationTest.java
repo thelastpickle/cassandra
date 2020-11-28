@@ -262,7 +262,9 @@ public class TokenAllocationTest
 
         for (int i=11; i<=20; ++i)
         {
-            current.allocate(InetAddressAndPort.getByName("127.0.0." + (i + 1)));
+            InetAddressAndPort endpoint = InetAddressAndPort.getByName("127.0.0." + (i + 1));
+            Collection<Token> tokens = current.allocate(endpoint);
+            next.tokenMetadata.updateNormalTokens(tokens, endpoint); // Update tokens on next to verify ownership calculation below
             TokenAllocation tmp = current;
             current = next;
             next = tmp;
