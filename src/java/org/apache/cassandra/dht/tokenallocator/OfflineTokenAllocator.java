@@ -41,15 +41,14 @@ import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.locator.SimpleSnitch;
 import org.apache.cassandra.locator.TokenMetadata;
+import org.apache.cassandra.utils.OutputHandler;
 
 public class OfflineTokenAllocator
 {
-    private static final Logger logger = LoggerFactory.getLogger(OfflineTokenAllocator.class);
-
-    public static List<FakeNode> allocate(int rf, int numTokens, int[] nodesPerRack, boolean verbose, IPartitioner partitioner)
+    public static List<FakeNode> allocate(int rf, int numTokens, int[] nodesPerRack, OutputHandler logger, IPartitioner partitioner)
     {
         List<FakeNode> fakeNodes = new ArrayList<>(Arrays.stream(nodesPerRack).sum());
-        MultinodeAllocator allocator = new MultinodeAllocator(rf, numTokens, verbose, partitioner);
+        MultinodeAllocator allocator = new MultinodeAllocator(rf, numTokens, logger, partitioner);
 
         int racks = nodesPerRack.length;
         int nodeId = 0;
@@ -109,14 +108,14 @@ public class OfflineTokenAllocator
         private final TokenAllocation allocation;
         private final Set<Integer> allocatedRacks = Sets.newHashSet();
         private final Map<Integer, SummaryStatistics> lastCheckPoint = Maps.newHashMap();
-        private final boolean verbose;
+        private final OutputHandler logger;
 
-        private MultinodeAllocator(int rf, int numTokens, boolean verbose, IPartitioner partitioner)
+        private MultinodeAllocator(int rf, int numTokens, OutputHandler logger, IPartitioner partitioner)
         {
             this.fakeSnitch = new FakeSnitch();
             this.fakeMetadata = new TokenMetadata(fakeSnitch).cloneWithNewPartitioner(partitioner);
             this.allocation = TokenAllocation.create(fakeSnitch, fakeMetadata, rf, numTokens);
-            this.verbose = verbose;
+            this.logger = logger;
         }
 
         private FakeNode allocateTokensForNode(int nodeId, Integer rackId)
@@ -143,19 +142,17 @@ public class OfflineTokenAllocator
             {
                 SummaryStatistics newOwnership = allocation.getAllocationRingOwnership(SimpleSnitch.DATA_CENTER_NAME, Integer.toString(allocatedRackId));
                 SummaryStatistics oldOwnership = lastCheckPoint.put(allocatedRackId, newOwnership);
-                if (verbose)
+                if (oldOwnership != null)
+                    logger.debug(String.format("Replicated node load in rack=%d before allocating node %d: %s.", allocatedRackId, nodeId,
+                                               TokenAllocation.statToString(oldOwnership)));
+                logger.debug(String.format("Replicated node load in rack=%d after allocating node %d: %s.", allocatedRackId, nodeId,
+                                           TokenAllocation.statToString(newOwnership)));
+                if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 &&
+                        newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > 0.1)
                 {
-                    if (oldOwnership != null)
-                        logger.info("Replicated node load in rack={} before allocating node {}: {}", allocatedRackId, nodeId, TokenAllocation.statToString(oldOwnership));
-                    logger.info("Replicated node load in rack={} after allocating node {}: {}", allocatedRackId, nodeId, TokenAllocation.statToString(newOwnership));
-                }
-                if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 && newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > 0.1)
-                {
-                    logger.warn("Unexpected growth in standard deviation on rack {} from {} to {} after allocating node {}",
-                            allocatedRackId,
-                            String.format("%.5f", oldOwnership.getStandardDeviation()),
-                            String.format("%.5f", newOwnership.getStandardDeviation()),
-                            nodeId);
+                    logger.warn(String.format("Unexpected growth in standard deviation on rack %d from %.5f to %.5f after allocating node %d.",
+                                allocatedRackId, String.format("%.5f", oldOwnership.getStandardDeviation()),
+                                String.format("%.5f", newOwnership.getStandardDeviation()), nodeId));
                 }
             }
         }
