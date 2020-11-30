@@ -149,10 +149,10 @@ public class OfflineTokenAllocator
             logger.debug(String.format("Replicated node load in rack=%d after allocating node %d: %s.", rackId, nodeId,
                                        TokenAllocation.statToString(newOwnership)));
             if (oldOwnership != null && oldOwnership.getStandardDeviation() != 0.0 &&
-                newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > TokenAllocation.MAX_STDEV_GROWTH)
+                newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation() > TokenAllocation.WARN_STDEV_GROWTH)
             {
                 logger.warn(String.format("Growth in token ownership standard deviation above %.4f%% after allocating node %d on rack %d.",
-                                          TokenAllocation.MAX_STDEV_GROWTH * 100, nodeId, rackId));
+                                          TokenAllocation.WARN_STDEV_GROWTH * 100, nodeId, rackId));
             }
         }
     }
