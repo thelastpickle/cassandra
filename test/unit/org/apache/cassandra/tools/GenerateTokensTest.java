@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.slf4j.LoggerFactory;
 
-import junit.framework.AssertionFailedError;
 import org.apache.cassandra.dht.tokenallocator.TokenAllocation;
 
 
@@ -53,5 +52,5 @@ public class GenerateTokensTest
         }
         Assert.assertFalse(LoggerFactory.getLogger(TokenAllocation.class).isWarnEnabled());
     }
-    
+
 }

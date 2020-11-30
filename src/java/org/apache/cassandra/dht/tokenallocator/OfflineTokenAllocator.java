@@ -26,15 +26,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
@@ -47,8 +42,20 @@ public class OfflineTokenAllocator
 {
     public static List<FakeNode> allocate(int rf, int numTokens, int[] nodesPerRack, OutputHandler logger, IPartitioner partitioner)
     {
+        Preconditions.checkArgument(rf > 0, "rf must be greater than zero");
+        Preconditions.checkArgument(numTokens > 0, "num_tokens must be greater than zero");
+        Preconditions.checkNotNull(nodesPerRack);
+        Preconditions.checkArgument(nodesPerRack.length > 0, "nodesPerRack must contain a node count for atleast one rack");
+        Preconditions.checkArgument(Arrays.stream(nodesPerRack).sum() >= rf,
+                                    "not enough nodes %s for rf %s in %s", Arrays.stream(nodesPerRack).sum(), rf, Arrays.toString(nodesPerRack));
+        Preconditions.checkNotNull(logger);
+        Preconditions.checkNotNull(partitioner);
+
         List<FakeNode> fakeNodes = new ArrayList<>(Arrays.stream(nodesPerRack).sum());
         MultinodeAllocator allocator = new MultinodeAllocator(rf, numTokens, logger, partitioner);
+
+        // defensive-copy method argument
+        nodesPerRack = Arrays.copyOf(nodesPerRack, nodesPerRack.length);
 
         int racks = nodesPerRack.length;
         int nodeId = 0;
