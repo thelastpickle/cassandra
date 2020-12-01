@@ -95,13 +95,8 @@ public class GenerateTokens
             logger.output(String.format("Generating tokens for %d nodes with %d vnodes each for replication factor %d and partitioner %s",
                                              nodes, tokens, rf, partitioner.getClass().getSimpleName()));
 
-            for (OfflineTokenAllocator.FakeNode node : OfflineTokenAllocator.allocate(rf, tokens, racksDef, logger,
-                                                                                      partitioner))
-            {
-                if (racksDef != null)
-                    logger.output(String.format("Node %d rack %d:", node.nodeId(), node.rackId()));
-                logger.output(node.tokens().toString());
-            }
+            for (OfflineTokenAllocator.FakeNode node : OfflineTokenAllocator.allocate(rf, tokens, racksDef, logger, partitioner))
+                logger.output(String.format("Node %d rack %d: %s", node.nodeId(), node.rackId(), node.tokens().toString()));
         }
         catch (Throwable t)
         {
