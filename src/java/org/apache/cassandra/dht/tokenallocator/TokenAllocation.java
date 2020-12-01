@@ -102,16 +102,13 @@ public class TokenAllocation
         SummaryStatistics os = logger.isWarnEnabled() ? strategy.replicatedOwnershipStats() : null;
         tokenMetadata.updateNormalTokens(tokens, endpoint);
 
-        if (logger.isWarnEnabled())
-        {
-            SummaryStatistics ns = strategy.replicatedOwnershipStats();
-            logger.info("Selected tokens {}", tokens);
-            logger.debug("Replicated node load in datacenter before allocation {}", statToString(os));
-            logger.debug("Replicated node load in datacenter after allocation {}", statToString(ns));
+        SummaryStatistics ns = strategy.replicatedOwnershipStats();
+        logger.info("Selected tokens {}", tokens);
+        logger.debug("Replicated node load in datacenter before allocation {}", statToString(os));
+        logger.debug("Replicated node load in datacenter after allocation {}", statToString(ns));
 
-            if (ns.getStandardDeviation() - os.getStandardDeviation() > WARN_STDEV_GROWTH)
-                logger.warn(String.format("Growth in token ownership standard deviation above %.2f%% after allocation.", WARN_STDEV_GROWTH * 100));
-        }
+        if (ns.getStandardDeviation() - os.getStandardDeviation() > WARN_STDEV_GROWTH)
+            logger.warn(String.format("Growth in token ownership standard deviation above %.2f%% after allocation.", WARN_STDEV_GROWTH * 100));
 
         return tokens;
     }
