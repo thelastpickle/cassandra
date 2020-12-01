@@ -107,8 +107,12 @@ public class TokenAllocation
         logger.debug("Replicated node load in datacenter before allocation {}", statToString(os));
         logger.debug("Replicated node load in datacenter after allocation {}", statToString(ns));
 
-        if (ns.getStandardDeviation() - os.getStandardDeviation() > WARN_STDEV_GROWTH)
-            logger.warn(String.format("Growth in token ownership standard deviation above %.2f%% after allocation.", WARN_STDEV_GROWTH * 100));
+        double stdDevGrowth = ns.getStandardDeviation() - os.getStandardDeviation();
+        if (stdDevGrowth > TokenAllocation.WARN_STDEV_GROWTH)
+        {
+            logger.warn(String.format("Growth of %.2f%% in token ownership standard deviation after allocation above warning threshold of %.2f%%.",
+                                      stdDevGrowth * 100, TokenAllocation.WARN_STDEV_GROWTH * 100));
+        }
 
         return tokens;
     }
