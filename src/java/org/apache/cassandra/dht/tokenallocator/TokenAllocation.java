@@ -99,7 +99,7 @@ public class TokenAllocation
         Collection<Token> tokens = strategy.createAllocator().addUnit(endpoint, numTokens);
         tokens = strategy.adjustForCrossDatacenterClashes(tokens);
 
-        SummaryStatistics os = logger.isWarnEnabled() ? strategy.replicatedOwnershipStats() : null;
+        SummaryStatistics os = strategy.replicatedOwnershipStats();
         tokenMetadata.updateNormalTokens(tokens, endpoint);
 
         SummaryStatistics ns = strategy.replicatedOwnershipStats();
@@ -110,8 +110,8 @@ public class TokenAllocation
         double stdDevGrowth = ns.getStandardDeviation() - os.getStandardDeviation();
         if (stdDevGrowth > TokenAllocation.WARN_STDEV_GROWTH)
         {
-            logger.warn(String.format("Growth of %.2f%% in token ownership standard deviation after allocation above warning threshold of %.2f%%.",
-                                      stdDevGrowth * 100, TokenAllocation.WARN_STDEV_GROWTH * 100));
+            logger.warn(String.format("Growth of %.2f%% in token ownership standard deviation after allocation above warning threshold of %d%%",
+                                      stdDevGrowth * 100, (int)(TokenAllocation.WARN_STDEV_GROWTH * 100)));
         }
 
         return tokens;
