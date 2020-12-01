@@ -153,8 +153,8 @@ public class OfflineTokenAllocator
                 double stdDevGrowth = newOwnership.getStandardDeviation() - oldOwnership.getStandardDeviation();
                 if (stdDevGrowth > TokenAllocation.WARN_STDEV_GROWTH)
                 {
-                    logger.warn(String.format("Growth of %.2f%% in token ownership standard deviation after allocating node %d on rack %d above warning threshold of %.2f%%.",
-                                              stdDevGrowth * 100, TokenAllocation.WARN_STDEV_GROWTH * 100, nodeId, rackId));
+                    logger.warn(String.format("Growth of %.2f%% in token ownership standard deviation after allocating node %d on rack %d above warning threshold of %d%%",
+                                              stdDevGrowth * 100, nodeId, rackId, (int)(TokenAllocation.WARN_STDEV_GROWTH * 100)));
                 }
             }
         }

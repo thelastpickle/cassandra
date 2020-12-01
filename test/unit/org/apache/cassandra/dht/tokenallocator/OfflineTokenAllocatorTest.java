@@ -45,21 +45,7 @@ import static org.junit.Assert.fail;
 public class OfflineTokenAllocatorTest
 {
     private static final Logger logger = LoggerFactory.getLogger(OfflineTokenAllocatorTest.class);
-
-    private static final OutputHandler FAIL_ON_WARN_OUTPUT = new OutputHandler.SystemOutput(true, true)
-    {
-        @Override
-        public void warn(String msg)
-        {
-            fail(msg);
-        }
-
-        @Override
-        public void warn(String msg, Throwable th)
-        {
-            fail(msg);
-        }
-    };
+    private static final OutputHandler FAIL_ON_WARN_OUTPUT = new SystemOutputImpl();
 
     @Before
     public void setup()
@@ -85,14 +71,20 @@ public class OfflineTokenAllocatorTest
             for (int rf = 1; rf <=5; ++rf)
             {
                 int nodeCount = 32;
-                for (int racks = rf; racks <= Math.min(10, nodeCount); ++racks)
+                for (int racks = 1; racks <= 10; ++racks)
                 {
                     int[] nodeToRack = makeRackCountArray(nodeCount, racks);
                     for (IPartitioner partitioner : new IPartitioner[] { Murmur3Partitioner.instance, RandomPartitioner.instance })
                     {
                         logger.info("Testing offline token allocator for numTokens={}, rf={}, racks={}, nodeToRack={}, partitioner={}",
                                     numTokens, rf, racks, nodeToRack, partitioner);
-                        List<OfflineTokenAllocator.FakeNode> nodes = OfflineTokenAllocator.allocate(rf, numTokens, nodeToRack, FAIL_ON_WARN_OUTPUT, partitioner);
+
+                        List<OfflineTokenAllocator.FakeNode> nodes = OfflineTokenAllocator.allocate(rf,
+                                                                                                    numTokens,
+                                                                                                    nodeToRack,
+                                                                                                    new SystemOutputImpl(rf, racks),
+                                                                                                    partitioner);
+
                         Collection<Token> allTokens = Lists.newArrayList();
                         for (OfflineTokenAllocator.FakeNode node : nodes)
                         {
@@ -151,5 +143,42 @@ public class OfflineTokenAllocatorTest
         OfflineTokenAllocator.allocate(1, 16, new int[]{5, 1, 1}, FAIL_ON_WARN_OUTPUT, Murmur3Partitioner.instance);
         OfflineTokenAllocator.allocate(3, 16, new int[]{5, 1}, FAIL_ON_WARN_OUTPUT, Murmur3Partitioner.instance);
         OfflineTokenAllocator.allocate(3, 16, new int[]{5, 1, 1}, FAIL_ON_WARN_OUTPUT, Murmur3Partitioner.instance);
+    }
+
+    private static class SystemOutputImpl extends OutputHandler.SystemOutput
+    {
+        private final int rf;
+        private final int racks;
+
+        private SystemOutputImpl()
+        {
+            super(true, true);
+            rf = racks = 1;
+        }
+
+        private SystemOutputImpl(int rf, int racks)
+        {
+            super(true, true);
+            this.rf = rf;
+            this.racks = racks;
+        }
+
+        @Override
+        public void warn(String msg)
+        {
+            if (racks == 1 || racks == rf)
+                fail(msg);
+            else
+                super.warn(msg);
+        }
+
+        @Override
+        public void warn(String msg, Throwable th)
+        {
+            if (racks == 1 || racks == rf)
+                fail(msg);
+            else
+                super.warn(msg, th);
+        }
     }
 }
