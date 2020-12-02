@@ -30,24 +30,24 @@ public class GenerateTokensTest
 {
 
     @Test
-    public void testMain() throws Exception
+    public void testMain()
     {
         for (int rf = 1; rf <= 5; ++rf)
         {
             for (int numTokens = 1; numTokens <= 16 ; ++numTokens)
             {
-                GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf});
-                GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--partitioner", "Murmur3Partitioner"});
-                GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--partitioner", "RandomPartitioner"});
-                GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "15"});
+                GenerateTokens.main(new String[]{"-n", "15", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf)});
+                GenerateTokens.main(new String[]{"-n", "15", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--partitioner", "Murmur3Partitioner"});
+                GenerateTokens.main(new String[]{"-n", "15", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--partitioner", "RandomPartitioner"});
+                GenerateTokens.main(new String[]{"-n", "15", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--racks", "15"});
                 if (rf <= 2)
-                    GenerateTokens.main(new String[]{"-n", "10", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "5,5"});
+                    GenerateTokens.main(new String[]{"-n", "10", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--racks", "5,5"});
                 if (rf <= 3)
-                    GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "5,5,5"});
+                    GenerateTokens.main(new String[]{"-n", "15", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--racks", "5,5,5"});
                 if (rf <= 4)
-                    GenerateTokens.main(new String[]{"-n", "16", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "4,4,4,4"});
+                    GenerateTokens.main(new String[]{"-n", "16", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--racks", "4,4,4,4"});
                 if (rf == 5)
-                    GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "3,3,3,3,3"});
+                    GenerateTokens.main(new String[]{"-n", "15", "-t", String.valueOf(numTokens), "--rf", String.valueOf(rf), "--racks", "3,3,3,3,3"});
             }
         }
         Assert.assertFalse(LoggerFactory.getLogger(TokenAllocation.class).isWarnEnabled());

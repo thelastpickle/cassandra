@@ -120,11 +120,7 @@ public class GenerateTokens
 
     private static CommandLine parseCommandLine(String[] args, Options options) throws ParseException
     {
-        CommandLineParser parser = new GnuParser();
-
-        CommandLine cmd = parser.parse(options, args, false);
-
-        return cmd;
+        return new GnuParser().parse(options, args, false);
     }
 
     private static Options getOptions()
@@ -133,7 +129,7 @@ public class GenerateTokens
         options.addOption(requiredOption("n", NODES, true, "Number of nodes."));
         options.addOption(requiredOption("t", TOKENS, true, "Number of tokens/vnodes per node."));
         options.addOption(requiredOption(null, RF, true, "Replication factor."));
-        options.addOption(null, PARTITIONER, true, "Database partitioner, either Murmur3Partitioner or RandomPartitioner.");
+        options.addOption("p", PARTITIONER, true, "Database partitioner, either Murmur3Partitioner or RandomPartitioner.");
         options.addOption(null, RACKS, true,
                           "Number of nodes per rack, separated by commas. Must add up to the total node count.\n" +
                           "For example, 'generate-tokens -n 30 -t 8 --rf 3 --racks 10,10,10' will generate tokens for\n" +

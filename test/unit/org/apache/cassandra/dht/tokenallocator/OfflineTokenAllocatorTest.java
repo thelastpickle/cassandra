@@ -138,20 +138,20 @@ public class OfflineTokenAllocatorTest
         int numTokens = 16;
         // Simple cases, single rack or single replication.
         assertTokensAndNodeCount(numTokens, 1, allocate(1,
-                                                                numTokens,
-                                                                new int[]{1},
-                                                                FAIL_ON_WARN_OUTPUT,
-                                                                Murmur3Partitioner.instance));
+                                                        numTokens,
+                                                        new int[]{1},
+                                                        FAIL_ON_WARN_OUTPUT,
+                                                        Murmur3Partitioner.instance));
         assertTokensAndNodeCount(numTokens, 2, allocate(1,
-                                                                numTokens,
-                                                                new int[]{1, 1},
-                                                                FAIL_ON_WARN_OUTPUT,
-                                                                Murmur3Partitioner.instance));
+                                                        numTokens,
+                                                        new int[]{1, 1},
+                                                        FAIL_ON_WARN_OUTPUT,
+                                                        Murmur3Partitioner.instance));
         assertTokensAndNodeCount(numTokens, 2, allocate(1,
-                                                                numTokens,
-                                                                new int[]{2},
-                                                                FAIL_ON_WARN_OUTPUT,
-                                                                Murmur3Partitioner.instance));
+                                                        numTokens,
+                                                        new int[]{2},
+                                                        FAIL_ON_WARN_OUTPUT,
+                                                        Murmur3Partitioner.instance));
     }
 
     @Test

@@ -46,16 +46,19 @@ public class OfflineTokenAllocator
         Preconditions.checkArgument(rf > 0, "rf must be greater than zero");
         Preconditions.checkArgument(numTokens > 0, "num_tokens must be greater than zero");
         Preconditions.checkNotNull(nodesPerRack);
-        Preconditions.checkArgument(nodesPerRack.length > 0, "nodesPerRack must contain a node count for atleast one rack");
-        Preconditions.checkArgument(Arrays.stream(nodesPerRack).sum() >= rf,
-                                    "not enough nodes %s for rf %s in %s", Arrays.stream(nodesPerRack).sum(), rf, Arrays.toString(nodesPerRack));
+        Preconditions.checkArgument(nodesPerRack.length > 0, "nodesPerRack must contain a node count for at least one rack");
         Preconditions.checkNotNull(logger);
         Preconditions.checkNotNull(partitioner);
 
-        List<FakeNode> fakeNodes = new ArrayList<>(Arrays.stream(nodesPerRack).sum());
+        int nodes = Arrays.stream(nodesPerRack).sum();
+
+        Preconditions.checkArgument(nodes >= rf,
+                                    "not enough nodes %s for rf %s in %s", Arrays.stream(nodesPerRack).sum(), rf, Arrays.toString(nodesPerRack));
+
+        List<FakeNode> fakeNodes = new ArrayList<>(nodes);
         MultinodeAllocator allocator = new MultinodeAllocator(rf, numTokens, logger, partitioner);
 
-        // defensive-copy method argument
+        // Defensive-copy method argument
         nodesPerRack = Arrays.copyOf(nodesPerRack, nodesPerRack.length);
 
         int racks = nodesPerRack.length;
@@ -81,20 +84,21 @@ public class OfflineTokenAllocator
 
     public static class FakeNode
     {
-        private final InetAddressAndPort fakeAddress;
+        private final InetAddressAndPort fakeAddressAndPort;
         private final int rackId;
         private final Collection<Token> tokens;
 
         public FakeNode(InetAddressAndPort address, Integer rackId, Collection<Token> tokens)
         {
-            this.fakeAddress = address;
+            this.fakeAddressAndPort = address;
             this.rackId = rackId;
-            this.tokens = new TreeSet<>(tokens); // sort tokens for better presentation
+            // Sort tokens for better presentation
+            this.tokens = new TreeSet<>(tokens);
         }
 
         public int nodeId()
         {
-            return fakeAddress.port;
+            return fakeAddressAndPort.port;
         }
 
         public int rackId()
@@ -127,17 +131,17 @@ public class OfflineTokenAllocator
         private FakeNode allocateTokensForNode(int nodeId, Integer rackId)
         {
             // Update snitch and token metadata info
-            InetAddressAndPort fakeNodeAddress = getLoopbackAddressWithPort(nodeId);
-            fakeSnitch.nodeByRack.put(fakeNodeAddress, rackId);
-            fakeMetadata.updateTopology(fakeNodeAddress);
+            InetAddressAndPort fakeNodeAddressAndPort = getLoopbackAddressWithPort(nodeId);
+            fakeSnitch.nodeByRack.put(fakeNodeAddressAndPort, rackId);
+            fakeMetadata.updateTopology(fakeNodeAddressAndPort);
 
             // Allocate tokens
-            Collection<Token> tokens = allocation.allocate(fakeNodeAddress);
+            Collection<Token> tokens = allocation.allocate(fakeNodeAddressAndPort);
 
             // Validate ownership stats
             validateAllocation(nodeId, rackId);
 
-            return new FakeNode(fakeNodeAddress, rackId, tokens);
+            return new FakeNode(fakeNodeAddressAndPort, rackId, tokens);
         }
 
         private void validateAllocation(int nodeId, int rackId)
