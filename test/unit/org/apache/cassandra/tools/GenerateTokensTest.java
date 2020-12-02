@@ -50,7 +50,6 @@ public class GenerateTokensTest
                     GenerateTokens.main(new String[]{"-n", "15", "-t", "" + numTokens, "--rf", "" + rf, "--racks", "3,3,3,3,3"});
             }
         }
-        Assert.assertFalse(LoggerFactory.getLogger(TokenAllocation.class).isWarnEnabled());
     }
 
 }
