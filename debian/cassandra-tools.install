@@ -5,3 +5,4 @@ tools/bin/sstableofflinerelevel usr/bin
 tools/bin/sstablerepairedset usr/bin
 tools/bin/sstablesplit usr/bin
 tools/bin/sstabledump usr/bin
+tools/bin/generate-tokens usr/bin
