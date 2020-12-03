@@ -134,7 +134,7 @@ public class TokenAllocation
 
     abstract class StrategyAdapter implements ReplicationStrategy<InetAddressAndPort>
     {
-        // return true if the provided endpoint occurs in the same virtual token-ring we are allocating for
+        // return true iff the provided endpoint occurs in the same virtual token-ring we are allocating for
         // i.e. the set of the nodes that share ownership with the node we are allocating
         // alternatively: return false if the endpoint's ownership is independent of the node we are allocating tokens for
         abstract boolean inAllocationRing(InetAddressAndPort other);

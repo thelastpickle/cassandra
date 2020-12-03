@@ -264,7 +264,8 @@ public class TokenAllocationTest
         {
             InetAddressAndPort endpoint = InetAddressAndPort.getByName("127.0.0." + (i + 1));
             Collection<Token> tokens = current.allocate(endpoint);
-            next.tokenMetadata.updateNormalTokens(tokens, endpoint); // Update tokens on next to verify ownership calculation below
+            // Update tokens on next to verify ownership calculation below
+            next.tokenMetadata.updateNormalTokens(tokens, endpoint);
             TokenAllocation tmp = current;
             current = next;
             next = tmp;
@@ -293,13 +294,13 @@ public class TokenAllocationTest
 
     private void generateFakeEndpoints(TokenMetadata tmd, int nodes, int vnodes, String dc, String rack) throws UnknownHostException
     {
-        System.out.println(String.format("Adding %d nodes to dc=%s, rack=%s.", nodes, dc, rack));
+        System.out.printf("Adding %d nodes to dc=%s, rack=%s.%n", nodes, dc, rack);
         IPartitioner p = tmd.partitioner;
 
         for (int i = 1; i <= nodes; i++)
         {
             // leave .1 for myEndpoint
-            InetAddressAndPort addr = InetAddressAndPort.getByName("127." + dc + "." + rack + "." + (i + 1));
+            InetAddressAndPort addr = InetAddressAndPort.getByName("127." + dc + '.' + rack + '.' + (i + 1));
             List<Token> tokens = Lists.newArrayListWithCapacity(vnodes);
             for (int j = 0; j < vnodes; ++j)
                 tokens.add(p.getRandomToken(rand));

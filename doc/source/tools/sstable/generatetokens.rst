@@ -14,7 +14,7 @@
 .. See the License for the specific language governing permissions and
 .. limitations under the License.
 
-generate-tokens
+generatetokens
 ------------
 
 Pre-generates tokens for a datacenter with the given number of nodes using the token allocation algorithm. Useful in edge-cases when generated tokens needs to be known in advance of bootstrapping nodes. In nearly all cases it is best to just let the bootstrapping nodes automatically generate their own tokens.
@@ -23,7 +23,7 @@ ref: https://issues.apache.org/jira/browse/CASSANDRA-16205
 
 Usage
 ^^^^^
-generate-tokens -n NODES -t TOKENS --rf REPLICATION_FACTOR [--partitioner PARTITIONER] [--racks RACK_NODE_COUNTS]
+generatetokens -n NODES -t TOKENS --rf REPLICATION_FACTOR [--partitioner PARTITIONER] [--racks RACK_NODE_COUNTS]
 
 
 ===================================                   ================================================================================
@@ -31,7 +31,7 @@ generate-tokens -n NODES -t TOKENS --rf REPLICATION_FACTOR [--partitioner PARTIT
     -t,--tokens <arg>                                 Number of tokens/vnodes per node.
     --rf <arg>                                        Replication factor.
     -p,--partitioner <arg>                            Database partitioner, either Murmur3Partitioner or RandomPartitioner.
-    --racks <arg>                                     Number of nodes per rack, separated by commas. Must add up to the total node count. For example, 'generate-tokens -n 30 -t 8 --rf 3 --racks 10,10,10' will generate tokens for three racks of 10 nodes each.
+    --racks <arg>                                     Number of nodes per rack, separated by commas. Must add up to the total node count. For example, 'generatetokens -n 30 -t 8 --rf 3 --racks 10,10,10' will generate tokens for three racks of 10 nodes each.
 ===================================                   ================================================================================
 
 
@@ -42,7 +42,7 @@ Example Output
 ^^^^^^^^^^^^^^
 Example usage and output is
 
-    $ generate-tokens -n 9 -t 4 --rf 3 --racks 3,3,3
+    $ generatetokens -n 9 -t 4 --rf 3 --racks 3,3,3
 
     Generating tokens for 9 nodes with 4 vnodes each for replication factor 3 and partitioner Murmur3Partitioner
     Node 0 rack 0: [-6270077235120413733, -1459727275878514299, 2887564907718879562, 5778609289102954400]

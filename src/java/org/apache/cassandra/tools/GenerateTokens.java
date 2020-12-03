@@ -132,7 +132,7 @@ public class GenerateTokens
         options.addOption("p", PARTITIONER, true, "Database partitioner, either Murmur3Partitioner or RandomPartitioner.");
         options.addOption(null, RACKS, true,
                           "Number of nodes per rack, separated by commas. Must add up to the total node count.\n" +
-                          "For example, 'generate-tokens -n 30 -t 8 --rf 3 --racks 10,10,10' will generate tokens for\n" +
+                          "For example, 'generatetokens -n 30 -t 8 --rf 3 --racks 10,10,10' will generate tokens for\n" +
                           "three racks of 10 nodes each.");
         options.addOption("v", VERBOSE, false, "Verbose logging.");
         return options;
@@ -147,7 +147,7 @@ public class GenerateTokens
 
     public static void printUsage(Options options)
     {
-        String usage = "generate-tokens -n NODES -t TOKENS --rf REPLICATION_FACTOR";
+        String usage = "generatetokens -n NODES -t TOKENS --rf REPLICATION_FACTOR";
         String header = "--\n" +
                         "Generates tokens for a datacenter with the given number of nodes using the token allocation algorithm.\n" +
                         "Options are:";
