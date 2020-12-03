@@ -42,7 +42,7 @@ Example Output
 ^^^^^^^^^^^^^^
 Example usage and output is
 
-    $ generatetokens -n 9 -t 4 --rf 3 --racks 3,3,3
+    $ tools/bin/generatetokens -n 9 -t 4 --rf 3 --racks 3,3,3
 
     Generating tokens for 9 nodes with 4 vnodes each for replication factor 3 and partitioner Murmur3Partitioner
     Node 0 rack 0: [-6270077235120413733, -1459727275878514299, 2887564907718879562, 5778609289102954400]
