@@ -303,6 +303,9 @@ public class SSTableRewriter extends Transactional.AbstractTransactional impleme
         if (newWriter != null)
             writers.add(newWriter.setMaxDataAge(maxAge));
 
+        if (writer != null)
+            writer.releaseMetadataOverhead();
+
         if (writer == null || writer.getFilePointer() == 0)
         {
             if (writer != null)

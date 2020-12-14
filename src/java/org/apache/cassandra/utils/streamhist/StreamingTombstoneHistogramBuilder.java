@@ -69,7 +69,7 @@ public class StreamingTombstoneHistogramBuilder
     private final DataHolder bin;
 
     // Keep a second, larger buffer to spool data in, before finalizing it into `bin`
-    private final Spool spool;
+    private Spool spool;
 
     // voluntarily give up resolution for speed
     private final int roundSeconds;
@@ -100,7 +100,7 @@ public class StreamingTombstoneHistogramBuilder
     {
         point = ceilKey(point, roundSeconds);
 
-        if (spool.capacity > 0)
+        if (spool != null && spool.capacity > 0)
         {
             if (!spool.tryAddOrAccumulate(point, value))
             {
@@ -120,8 +120,21 @@ public class StreamingTombstoneHistogramBuilder
      */
     public void flushHistogram()
     {
-        spool.forEach(this::flushValue);
-        spool.clear();
+        if (spool != null)
+        {
+            spool.forEach(this::flushValue);
+            spool.clear();
+        }
+    }
+
+    /**
+     * Release inner spool buffers. Histogram remains readable and writable, but with lesser performance.
+     * Not intended for use before finalization.
+     */
+    public void releaseBuffers()
+    {
+       flushHistogram();
+       spool = null;
     }
 
     private void flushValue(int key, int spoolValue)
