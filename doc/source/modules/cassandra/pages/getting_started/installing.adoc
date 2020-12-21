@@ -38,20 +38,63 @@ that you have the correct version of Python installed, type
 
 == Choosing an installation method
 
-For most users, installing the binary tarball is the simplest choice.
+There are three methods of installing Cassandra that are common:
+
+* Docker image
+* Tarball binary file
+* Package installation (RPM, YUM)
+
+If you are a current Docker user, installing a Docker image is simple. 
+You'll need to install Docker Desktop for Mac, Docker Desktop for Windows,
+or have `docker` installed on Linux. 
+Pull the appropriate image and then start Cassandra with a run command. 
+
+For most users, installing the binary tarball is also a simple choice.
 The tarball unpacks all its contents into a single location with
 binaries and configuration files located in their own subdirectories.
 The most obvious attribute of the tarball installation is it does not
 require `root` permissions and can be installed on any Linux
 distribution.
 
-Packaged installations require `root` permissions. Install the RPM build
-on CentOS and RHEL-based distributions if you want to install Cassandra
-using YUM. Install the Debian build on Ubuntu and other Debian-based
-distributions if you want to install Cassandra using APT. Note that both
-the YUM and APT methods required `root` permissions and will install the
-binaries and configuration files as the `cassandra` OS user.
+Packaged installations require `root` permissions, and are most appropriate for
+production installs. 
+Install the RPM build on CentOS and RHEL-based distributions if you want to 
+install Cassandra using YUM. 
+Install the Debian build on Ubuntu and other Debian-based
+distributions if you want to install Cassandra using APT. 
+Note that both the YUM and APT methods required `root` permissions and 
+will install the binaries and configuration files as the `cassandra` OS user.
 
+== Installing the docker image
+
+[arabic, start=1]
+. Pull the docker image. For the latest image, use:
+
+[source, shell]
+----
+include::example$BASH/docker_pull.sh[]
+----
+
+This `docker pull` command will get the latest version of the official
+Apache Cassandra image available from the https://hub.docker.com/_/cassandra[Dockerhub].
+
+[arabic, start=2]
+. Start Cassandra with a `docker run` command:
+
+[source, shell]
+----
+include::example$BASH/docker_run.sh[]
+----
+
+`--name` will be the name of the Cassandra cluster created.
+
+[arabic, start=3]
+. Start the CQL shell, `cqlsh` to interact with the Cassandra node created:
+
+[source, shell]
+----
+include::example$BASH/docker_cqlsh.sh[]
+----
 == Installing the binary tarball
 
 include::partial$java_version.adoc[]

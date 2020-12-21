@@ -8,11 +8,11 @@ site:
 
 content:
   sources: 
-  - url: /antora/cassandra
-  #- url: https://github.com/polandll/cassandra.git
+  #- url: /antora/cassandra
+  - url: https://github.com/polandll/cassandra.git
     branches: 
     - 'doc_redo_asciidoc'
-    - 'doc_redo_asciidoc3.11'
+    #- 'doc_redo_asciidoc3.11'
     start_path: doc/source
   - url: https://github.com/polandll/cassandra-website.git
     branches:
