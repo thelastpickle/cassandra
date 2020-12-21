@@ -86,7 +86,7 @@ Apache Cassandra image available from the https://hub.docker.com/_/cassandra[Doc
 include::example$BASH/docker_run.sh[]
 ----
 
-`--name` will be the name of the Cassandra cluster created.
+The `--name` option will be the name of the Cassandra cluster created.
 
 [arabic, start=3]
 . Start the CQL shell, `cqlsh` to interact with the Cassandra node created:
