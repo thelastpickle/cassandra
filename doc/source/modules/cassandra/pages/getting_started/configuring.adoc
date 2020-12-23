@@ -3,6 +3,7 @@
 The `Cassandra` configuration files location varies, depending on the
 type of installation:
 
+* docker: `/etc/cassandra` directory
 * tarball: `conf` directory within the tarball install location
 * package: `/etc/cassandra` directory
 

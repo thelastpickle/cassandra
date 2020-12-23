@@ -1,9 +1,9 @@
 == SASIIndex
 
 https://github.com/apache/cassandra/blob/trunk/src/java/org/apache/cassandra/index/sasi/SASIIndex.java[`SASIIndex`],
-or ``SASI'' for short, is an implementation of Cassandra’s `Index`
+or ``SASI`` for short, is an implementation of Cassandra's `Index`
 interface that can be used as an alternative to the existing
-implementations. SASI’s indexing and querying improves on existing
+implementations. SASI's indexing and querying improves on existing
 implementations by tailoring it specifically to Cassandra’s needs. SASI
 has superior performance in cases where queries would previously require
 filtering. In achieving this performance, SASI aims to be significantly

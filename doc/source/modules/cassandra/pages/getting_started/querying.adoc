@@ -4,7 +4,8 @@ The API for Cassandra is xref:cql/ddl.adoc[`CQL`, the Cassandra Query Language].
 use CQL, you will need to connect to the cluster, using either:
 
 * `cqlsh`, a shell for CQL
-* through a client driver for Cassandra
+* a client driver for Cassandra
+* for the adventurous, check out https://zeppelin.apache.org/docs/0.7.0/interpreter/cassandra.html[Apache Zeppelin], a notebook-style tool
 
 == CQLSH
 

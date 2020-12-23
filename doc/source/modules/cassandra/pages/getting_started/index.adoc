@@ -4,7 +4,8 @@ This section covers how to get started using Apache Cassandra and should
 be the first thing to read if you are new to Cassandra.
 
 * xref:getting_started/installing.adoc[Installing Cassandra]: Installation instructions plus information on choosing a method.  
-** [ xref:getting_started/installing.adoc#installing-the-binary-tarball[tarball] ]
+** [ xref:getting_started/installing.adoc#installing-the-docker-image[Docker] ]
+[ xref:getting_started/installing.adoc#installing-the-binary-tarball[tarball] ]
 [ xref:getting_started/installing.adoc#installing-the-debian-packages[Debian] ]
 [ xref:getting_started/installing.adoc#installing-the-rpm-packages[RPM] ]
 * xref:getting_started/configuring.adoc[Configuring Cassandra]

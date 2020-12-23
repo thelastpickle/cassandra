@@ -30,15 +30,13 @@ functionality supported by a specific driver.
 == Nodejs
 
 * https://github.com/datastax/nodejs-driver[Datastax Nodejs driver]
-* https://github.com/jorgebay/node-cassandra-cql[Node-Cassandra-CQL]
 
 == PHP
 
 * http://code.google.com/a/apache-extras.org/p/cassandra-pdo[CQL | PHP]
 * https://github.com/datastax/php-driver/[Datastax PHP driver]
 * https://github.com/aparkhomenko/php-cassandra[PHP-Cassandra]
-* http://evseevnn.github.io/php-cassandra-binary/[PHP Library for
-Cassandra]
+* https://github.com/duoshuo/php-cassandra[PHP Library for Cassandra]
 
 == C++
 
@@ -65,7 +63,7 @@ connector]
 
 == Go
 
-* http://relops.com/cqlc/[CQLc]
+* https://github.com/relops/cqlc[CQLc]
 * https://github.com/hailocab/gocassa[Gocassa]
 * https://github.com/gocql/gocql[GoCQL]
 
