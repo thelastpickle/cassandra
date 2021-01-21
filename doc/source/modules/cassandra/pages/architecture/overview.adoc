@@ -42,19 +42,19 @@ Cassandra provides the Cassandra Query Language (xref:cql/ddl.adoc[CQL]), an SQL
 language, to create and update database schema and access data. CQL
 allows users to organize data within a cluster of Cassandra nodes using:
 
-* *Keyspace*: defines how a dataset is replicated, for example in which
-datacenters and how many copies. Keyspaces contain tables.
-* *Table*: defines the typed schema for a collection of partitions.
-Cassandra tables have flexible addition of new columns to tables with
-zero downtime. Tables contain partitions, which contain partitions,
-which contain columns.
-* *Partition*: defines the mandatory part of the primary key all rows in
-Cassandra must have. All performant queries supply the partition key in
-the query.
-* *Row*: contains a collection of columns identified by a unique primary
+* *Keyspace*: Defines how a dataset is replicated, per datacenter. 
+Replication is the number of copies saved per cluster.
+Keyspaces contain tables.
+* *Table*: Defines the typed schema for a collection of partitions.
+Tables contain partitions, which contain rows, which contain columns.
+Cassandra tables can flexibly add new columns to tables with zero downtime. 
+* *Partition*: Defines the mandatory part of the primary key all rows in
+Cassandra must have to identify the node in a cluster where the row is stored. 
+All performant queries supply the partition key in the query.
+* *Row*: Contains a collection of columns identified by a unique primary
 key made up of the partition key and optionally additional clustering
 keys.
-* *Column*: A single datum with a type which belong to a row.
+* *Column*: A single datum with a type which belongs to a row.
 
 CQL supports numerous advanced features over a partitioned dataset such
 as:

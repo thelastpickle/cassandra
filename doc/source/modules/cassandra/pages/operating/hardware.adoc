@@ -37,7 +37,10 @@ safeguards to protect against bit level corruption
 your system RAM
 * Heaps smaller than 12GB should consider ParNew/ConcurrentMarkSweep
 garbage collection
-* Heaps larger than 12GB should consider G1GC
+* Heaps larger than 12GB should consider either:
+** 16GB heap with 8-10GB of new gen, a survivor ratio of 4-6, and a maximum
+tenuring threshold of 6
+** G1GC
 
 == Disks
 
@@ -86,6 +89,8 @@ needed in physical space. In EC2, popular options include:
 
 * i2 instances, which provide both a high RAM:CPU ratio and local
 ephemeral SSDs
+* i3 instances with NVMe disks
+** EBS works okay if you want easy backups and replacements
 * m4.2xlarge / c4.4xlarge instances, which provide modern CPUs, enhanced
 networking and work well with EBS GP2 (SSD) storage
 
