@@ -30,6 +30,11 @@ import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.rows.Cell;
 import org.apache.cassandra.db.rows.CellPath;
+<<<<<<< HEAD
+=======
+import org.apache.cassandra.config.ColumnDefinition;
+import org.apache.cassandra.gms.Gossiper;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.io.util.DataInputPlus;
 import org.apache.cassandra.io.util.DataOutputPlus;
 import org.apache.cassandra.net.MessagingService;
@@ -233,7 +238,16 @@ public class ColumnFilter
     public boolean fetchedCellIsQueried(ColumnMetadata column, CellPath path)
     {
         assert path != null;
+<<<<<<< HEAD
         if (!fetchAllRegulars || subSelections == null)
+=======
+
+        // first verify that the column to which the cell belongs is queried
+        if (!fetchedColumnIsQueried(column))
+            return false;
+
+        if (subSelections == null)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             return true;
 
         SortedSet<ColumnSubselection> s = subSelections.get(column.name);
@@ -449,7 +463,15 @@ public class ColumnFilter
                 }
             }
 
+<<<<<<< HEAD
             return new ColumnFilter(isFetchAll, metadata, queried, s);
+=======
+            // see CASSANDRA-15833
+            if (isFetchAll && Gossiper.instance.isAnyNodeOn30())
+                queried = null;
+
+            return new ColumnFilter(isFetchAll, isFetchAll ? metadata.partitionColumns() : null, queried, s);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
     }
 
@@ -587,9 +609,15 @@ public class ColumnFilter
             {
                 if (version >= MessagingService.VERSION_3014)
                 {
+<<<<<<< HEAD
                     Columns statics = Columns.serializer.deserialize(in, metadata);
                     Columns regulars = Columns.serializer.deserialize(in, metadata);
                     fetched = new RegularAndStaticColumns(statics, regulars);
+=======
+                    Columns statics = Columns.serializer.deserializeStatics(in, metadata);
+                    Columns regulars = Columns.serializer.deserializeRegulars(in, metadata);
+                    fetched = new PartitionColumns(statics, regulars);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 }
                 else
                 {
@@ -599,9 +627,15 @@ public class ColumnFilter
 
             if (hasQueried)
             {
+<<<<<<< HEAD
                 Columns statics = Columns.serializer.deserialize(in, metadata);
                 Columns regulars = Columns.serializer.deserialize(in, metadata);
                 queried = new RegularAndStaticColumns(statics, regulars);
+=======
+                Columns statics = Columns.serializer.deserializeStatics(in, metadata);
+                Columns regulars = Columns.serializer.deserializeRegulars(in, metadata);
+                queried = new PartitionColumns(statics, regulars);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             }
 
             SortedSetMultimap<ColumnIdentifier, ColumnSubselection> subSelections = null;
@@ -616,6 +650,7 @@ public class ColumnFilter
                 }
             }
 
+<<<<<<< HEAD
             // Same concern than in serialize/serializedSize: we should be wary of the change in meaning for isFetchAll.
             // If we get a filter with isFetchAll from 3.0/3.x, it actually expects all static columns to be fetched,
             // make sure we do that (note that if queried == null, that's already what we do).
@@ -624,6 +659,11 @@ public class ColumnFilter
             // during upgrade.
             if (version <= MessagingService.VERSION_30 && isFetchAll && queried != null)
                 queried = new RegularAndStaticColumns(metadata.staticColumns(), queried.regulars);
+=======
+            // See CASSANDRA-15833
+            if (version <= MessagingService.VERSION_3014 && isFetchAll)
+                queried = null;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
             return new ColumnFilter(isFetchAll, fetched, queried, subSelections);
         }

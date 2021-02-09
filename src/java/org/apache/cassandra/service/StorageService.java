@@ -30,7 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+<<<<<<< HEAD
 import java.util.stream.Stream;
+=======
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
@@ -134,6 +137,9 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     private static final Logger logger = LoggerFactory.getLogger(StorageService.class);
 
     public static final int RING_DELAY = getRingDelay(); // delay after which we assume ring has stablized
+    public static final int SCHEMA_DELAY_MILLIS = getSchemaDelay();
+
+    private static final boolean REQUIRE_SCHEMAS = !Boolean.getBoolean("cassandra.skip_schema_check");
 
     private final JMXProgressSupport progressSupport = new JMXProgressSupport(this);
 
@@ -147,6 +153,20 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         }
         else
             return 30 * 1000;
+    }
+
+    private static int getSchemaDelay()
+    {
+        String newdelay = System.getProperty("cassandra.schema_delay_ms");
+        if (newdelay != null)
+        {
+            logger.info("Overriding SCHEMA_DELAY_MILLIS to {}ms", newdelay);
+            return Integer.parseInt(newdelay);
+        }
+        else
+        {
+            return 30 * 1000;
+        }
     }
 
     /* This abstraction maintains the token/endpoint metadata information */
@@ -172,6 +192,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         return isShutdown;
     }
 
+<<<<<<< HEAD
     public RangesAtEndpoint getLocalReplicas(String keyspaceName)
     {
         return Keyspace.open(keyspaceName).getReplicationStrategy()
@@ -179,6 +200,18 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     }
 
     public List<Range<Token>> getLocalAndPendingRanges(String ks)
+=======
+    /**
+     * for in-jvm dtest use - forces isShutdown to be set to whatever passed in.
+     */
+    @VisibleForTesting
+    public void setIsShutdownUnsafeForTests(boolean isShutdown)
+    {
+        this.isShutdown = isShutdown;
+    }
+
+    public Collection<Range<Token>> getLocalRanges(String keyspaceName)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         InetAddressAndPort broadcastAddress = FBUtilities.getBroadcastAddressAndPort();
         Keyspace keyspace = Keyspace.open(ks);
@@ -308,7 +341,16 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     {
         if (gossipActive)
         {
+            if (!isNormal())
+                throw new IllegalStateException("Unable to stop gossip because the node is not in the normal state. Try to stop the node instead.");
+
             logger.warn("Stopping gossip by operator request");
+
+            if (isNativeTransportRunning())
+            {
+                logger.warn("Disabling gossip while native transport is still active is unsafe");
+            }
+
             Gossiper.instance.stop();
             gossipActive = false;
         }
@@ -345,6 +387,56 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         return Gossiper.instance.isEnabled();
     }
 
+<<<<<<< HEAD
+=======
+    // should only be called via JMX
+    public synchronized void startRPCServer()
+    {
+        checkServiceAllowedToStart("thrift");
+
+        if (daemon == null)
+        {
+            throw new IllegalStateException("No configured daemon");
+        }
+
+        // We only start transports if bootstrap has completed and we're not in survey mode, OR if we are in
+        // survey mode and streaming has completed but we're not using auth.
+        // OR if we have not joined the ring yet.
+        if (StorageService.instance.hasJoined() &&
+                ((!StorageService.instance.isSurveyMode() && !SystemKeyspace.bootstrapComplete()) ||
+                (StorageService.instance.isSurveyMode() && StorageService.instance.isBootstrapMode())))
+        {
+            throw new IllegalStateException("Node is not yet bootstrapped completely. Use nodetool to check bootstrap state and resume. For more, see `nodetool help bootstrap`");
+        }
+        else if (StorageService.instance.hasJoined() && StorageService.instance.isSurveyMode() &&
+                DatabaseDescriptor.getAuthenticator().requireAuthentication())
+        {
+            // Auth isn't initialised until we join the ring, so if we're in survey mode auth will always fail.
+            throw new IllegalStateException("Not starting RPC server as write_survey mode and authentication is enabled");
+        }
+
+        daemon.startThriftServer();
+    }
+
+    public void stopRPCServer()
+    {
+        if (daemon == null)
+        {
+            throw new IllegalStateException("No configured daemon");
+        }
+        daemon.stopThriftServer();
+    }
+
+    public boolean isRPCServerRunning()
+    {
+        if (daemon == null)
+        {
+            return false;
+        }
+        return daemon.isThriftServerRunning();
+    }
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     public synchronized void startNativeTransport()
     {
         checkServiceAllowedToStart("native transport");
@@ -396,15 +488,27 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
     public void stopTransports()
     {
+<<<<<<< HEAD
         if (isGossipActive())
         {
             logger.error("Stopping gossiper");
             stopGossiping();
+=======
+        if (isRPCServerRunning())
+        {
+            logger.error("Stopping RPC server");
+            stopRPCServer();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
         if (isNativeTransportRunning())
         {
             logger.error("Stopping native transport");
             stopNativeTransport();
+        }
+        if (isGossipActive())
+        {
+            logger.error("Stopping gossiper");
+            stopGossiping();
         }
     }
 
@@ -754,6 +858,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
     private void prepareToJoin() throws ConfigurationException
     {
+        MigrationCoordinator.instance.start();
         if (!joined)
         {
             Map<ApplicationState, VersionedValue> appStates = new EnumMap<>(ApplicationState.class);
@@ -842,10 +947,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         }
     }
 
+
     public void waitForSchema(int delay)
     {
         // first sleep the delay to make sure we see all our peers
-        for (int i = 0; i < delay; i += 1000)
+        for (long i = 0; i < delay; i += 1000)
         {
             // if we see schema, we can proceed to the next check directly
             if (!Schema.instance.isEmpty())
@@ -855,16 +961,25 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             }
             Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
         }
-        // if our schema hasn't matched yet, wait until it has
-        // we do this by waiting for all in-flight migration requests and responses to complete
-        // (post CASSANDRA-1391 we don't expect this to be necessary very often, but it doesn't hurt to be careful)
-        if (!MigrationManager.isReadyForBootstrap())
-        {
-            setMode(Mode.JOINING, "waiting for schema information to complete", true);
-            MigrationManager.waitUntilReadyForBootstrap();
-        }
+
+        boolean schemasReceived = MigrationCoordinator.instance.awaitSchemaRequests(SCHEMA_DELAY_MILLIS);
+
+        if (schemasReceived)
+            return;
+
+        logger.warn(String.format("There are nodes in the cluster with a different schema version than us we did not merged schemas from, " +
+                                  "our version : (%s), outstanding versions -> endpoints : %s",
+                                  Schema.instance.getVersion(),
+                                  MigrationCoordinator.instance.outstandingVersions()));
+
+        if (REQUIRE_SCHEMAS)
+            throw new RuntimeException("Didn't receive schemas for all known versions within the timeout");
     }
 
+<<<<<<< HEAD
+=======
+    @VisibleForTesting
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     private void joinTokenRing(int delay) throws ConfigurationException
     {
         joined = true;
@@ -1255,7 +1370,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                             throw new IllegalArgumentException("Unknown host specified " + stringHost, ex);
                         }
                     }
-                    streamer.addSourceFilter(new RangeStreamer.WhitelistedSourcesFilter(sources));
+                    streamer.addSourceFilter(new RangeStreamer.AllowedSourcesFilter(sources));
                 }
 
                 streamer.addRanges(keyspace, streamRanges.build());
@@ -1473,6 +1588,22 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         DatabaseDescriptor.setIncrementalBackupsEnabled(value);
     }
 
+    @VisibleForTesting // only used by test
+    public void setMovingModeUnsafe()
+    {
+        setMode(Mode.MOVING, true);
+    }
+
+    /**
+     * Only used in jvm dtest when not using GOSSIP.
+     * See org.apache.cassandra.distributed.impl.Instance#initializeRing(org.apache.cassandra.distributed.api.ICluster)
+     */
+    @VisibleForTesting
+    public void setNormalModeUnsafe()
+    {
+        setMode(Mode.NORMAL, true);
+    }
+
     private void setMode(Mode m, boolean log)
     {
         setMode(m, null, log);
@@ -1603,20 +1734,35 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                 @Override
                 public void onSuccess(StreamState streamState)
                 {
+<<<<<<< HEAD
                     bootstrapFinished();
                     if(isSurveyMode)
+=======
+                    try
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                     {
-                        logger.info("Startup complete, but write survey mode is active, not becoming an active ring member. Use JMX (StorageService->joinRing()) to finalize ring joining.");
+                        bootstrapFinished();
+                        if (isSurveyMode)
+                        {
+                            logger.info("Startup complete, but write survey mode is active, not becoming an active ring member. Use JMX (StorageService->joinRing()) to finalize ring joining.");
+                        }
+                        else
+                        {
+                            isSurveyMode = false;
+                            progressSupport.progress("bootstrap", ProgressEvent.createNotification("Joining ring..."));
+                            finishJoiningRing(true, bootstrapTokens);
+                        }
+                        progressSupport.progress("bootstrap", new ProgressEvent(ProgressEventType.COMPLETE, 1, 1, "Resume bootstrap complete"));
+                        if (!isNativeTransportRunning())
+                            daemon.initializeClientTransports();
+                        daemon.start();
+                        logger.info("Resume complete");
                     }
-                    else
+                    catch(Exception e)
                     {
-                        isSurveyMode = false;
-                        progressSupport.progress("bootstrap", ProgressEvent.createNotification("Joining ring..."));
-                        finishJoiningRing(true, bootstrapTokens);
+                        onFailure(e);
+                        throw e;
                     }
-                    progressSupport.progress("bootstrap", new ProgressEvent(ProgressEventType.COMPLETE, 1, 1, "Resume bootstrap complete"));
-                    daemon.start();
-                    logger.info("Resume complete");
                 }
 
                 @Override
@@ -2122,8 +2268,13 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                         }
                         break;
                     case SCHEMA:
+<<<<<<< HEAD
                         SystemKeyspace.updatePeerInfo(endpoint, "schema_version", UUID.fromString(value.value));
                         MigrationManager.instance.scheduleSchemaPull(endpoint, epState);
+=======
+                        SystemKeyspace.updatePeerInfo(endpoint, "schema_version", UUID.fromString(value.value), executor);
+                        MigrationCoordinator.instance.reportEndpointVersion(endpoint, UUID.fromString(value.value));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                         break;
                     case HOST_ID:
                         SystemKeyspace.updatePeerInfo(endpoint, "host_id", UUID.fromString(value.value));
@@ -3015,13 +3166,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         {
             onChange(endpoint, entry.getKey(), entry.getValue());
         }
-        MigrationManager.instance.scheduleSchemaPull(endpoint, epState);
+        MigrationCoordinator.instance.reportEndpointVersion(endpoint, epState);
     }
 
     public void onAlive(InetAddressAndPort endpoint, EndpointState state)
     {
-        MigrationManager.instance.scheduleSchemaPull(endpoint, state);
-
         if (tokenMetadata.isMember(endpoint))
             notifyUp(endpoint);
     }
@@ -3742,7 +3891,154 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             }
             else
             {
+<<<<<<< HEAD
                 Iterables.addAll(option.getRanges(), getLocalReplicas(keyspace).onlyFull().ranges());
+=======
+                option.getRanges().addAll(getLocalRanges(keyspace));
+            }
+        }
+        return forceRepairAsync(keyspace, option, false);
+    }
+
+    @Deprecated
+    public int forceRepairAsync(String keyspace,
+                                boolean isSequential,
+                                Collection<String> dataCenters,
+                                Collection<String> hosts,
+                                boolean primaryRange,
+                                boolean fullRepair,
+                                String... tableNames)
+    {
+        return forceRepairAsync(keyspace, isSequential ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(), dataCenters, hosts, primaryRange, fullRepair, tableNames);
+    }
+
+    @Deprecated
+    public int forceRepairAsync(String keyspace,
+                                int parallelismDegree,
+                                Collection<String> dataCenters,
+                                Collection<String> hosts,
+                                boolean primaryRange,
+                                boolean fullRepair,
+                                String... tableNames)
+    {
+        if (parallelismDegree < 0 || parallelismDegree > RepairParallelism.values().length - 1)
+        {
+            throw new IllegalArgumentException("Invalid parallelism degree specified: " + parallelismDegree);
+        }
+        RepairParallelism parallelism = RepairParallelism.values()[parallelismDegree];
+        if (FBUtilities.isWindows && parallelism != RepairParallelism.PARALLEL)
+        {
+            logger.warn("Snapshot-based repair is not yet supported on Windows.  Reverting to parallel repair.");
+            parallelism = RepairParallelism.PARALLEL;
+        }
+
+        RepairOption options = new RepairOption(parallelism, primaryRange, !fullRepair, false, 1, Collections.<Range<Token>>emptyList(), false, false, false);
+        if (dataCenters != null)
+        {
+            options.getDataCenters().addAll(dataCenters);
+        }
+        if (hosts != null)
+        {
+            options.getHosts().addAll(hosts);
+        }
+        if (primaryRange)
+        {
+            // when repairing only primary range, neither dataCenters nor hosts can be set
+            if (options.getDataCenters().isEmpty() && options.getHosts().isEmpty())
+                options.getRanges().addAll(getPrimaryRanges(keyspace));
+                // except dataCenters only contain local DC (i.e. -local)
+            else if (options.getDataCenters().size() == 1 && options.getDataCenters().contains(DatabaseDescriptor.getLocalDataCenter()))
+                options.getRanges().addAll(getPrimaryRangesWithinDC(keyspace));
+            else
+                throw new IllegalArgumentException("You need to run primary range repair on all nodes in the cluster.");
+        }
+        else
+        {
+            options.getRanges().addAll(getLocalRanges(keyspace));
+        }
+        if (tableNames != null)
+        {
+            for (String table : tableNames)
+            {
+                options.getColumnFamilies().add(table);
+            }
+        }
+        return forceRepairAsync(keyspace, options, true);
+    }
+
+    @Deprecated
+    public int forceRepairAsync(String keyspace,
+                                boolean isSequential,
+                                boolean isLocal,
+                                boolean primaryRange,
+                                boolean fullRepair,
+                                String... tableNames)
+    {
+        Set<String> dataCenters = null;
+        if (isLocal)
+        {
+            dataCenters = Sets.newHashSet(DatabaseDescriptor.getLocalDataCenter());
+        }
+        return forceRepairAsync(keyspace, isSequential, dataCenters, null, primaryRange, fullRepair, tableNames);
+    }
+
+    @Deprecated
+    public int forceRepairRangeAsync(String beginToken,
+                                     String endToken,
+                                     String keyspaceName,
+                                     boolean isSequential,
+                                     Collection<String> dataCenters,
+                                     Collection<String> hosts,
+                                     boolean fullRepair,
+                                     String... tableNames)
+    {
+        return forceRepairRangeAsync(beginToken, endToken, keyspaceName,
+                                     isSequential ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(),
+                                     dataCenters, hosts, fullRepair, tableNames);
+    }
+
+    @Deprecated
+    public int forceRepairRangeAsync(String beginToken,
+                                     String endToken,
+                                     String keyspaceName,
+                                     int parallelismDegree,
+                                     Collection<String> dataCenters,
+                                     Collection<String> hosts,
+                                     boolean fullRepair,
+                                     String... tableNames)
+    {
+        if (parallelismDegree < 0 || parallelismDegree > RepairParallelism.values().length - 1)
+        {
+            throw new IllegalArgumentException("Invalid parallelism degree specified: " + parallelismDegree);
+        }
+        RepairParallelism parallelism = RepairParallelism.values()[parallelismDegree];
+        if (FBUtilities.isWindows && parallelism != RepairParallelism.PARALLEL)
+        {
+            logger.warn("Snapshot-based repair is not yet supported on Windows.  Reverting to parallel repair.");
+            parallelism = RepairParallelism.PARALLEL;
+        }
+
+        if (!fullRepair)
+            logger.warn("Incremental repair can't be requested with subrange repair " +
+                        "because each subrange repair would generate an anti-compacted table. " +
+                        "The repair will occur but without anti-compaction.");
+        Collection<Range<Token>> repairingRange = createRepairRangeFrom(beginToken, endToken);
+
+        RepairOption options = new RepairOption(parallelism, false, !fullRepair, false, 1, repairingRange, true, false, false);
+        if (dataCenters != null)
+        {
+            options.getDataCenters().addAll(dataCenters);
+        }
+        if (hosts != null)
+        {
+            options.getHosts().addAll(hosts);
+        }
+        if (tableNames != null)
+        {
+            for (String table : tableNames)
+            {
+                options.getColumnFamilies().add(table);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             }
         }
         if (option.getRanges().isEmpty() || Keyspace.open(keyspace).getReplicationStrategy().getReplicationFactor().allReplicas < 2)
@@ -4555,6 +4851,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         return operationMode == Mode.DRAINING;
     }
 
+    public boolean isNormal()
+    {
+        return operationMode == Mode.NORMAL;
+    }
+
     public String getDrainProgress()
     {
         return String.format("Drained %s/%s ColumnFamilies", remainingCFs, totalCFs);
@@ -4774,6 +5075,9 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
         if (isShutdown()) // do not rely on operationMode in case it gets changed to decomissioned or other
             throw new IllegalStateException(String.format("Unable to start %s because the node was drained.", service));
+
+        if (!isNormal())
+            throw new IllegalStateException(String.format("Unable to start %s because the node is not in the normal state.", service));
     }
 
     // Never ever do this at home. Used by tests.
@@ -5360,6 +5664,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     public void setTombstoneWarnThreshold(int threshold)
     {
         DatabaseDescriptor.setTombstoneWarnThreshold(threshold);
+        logger.info("updated tombstone_warn_threshold to {}", threshold);
     }
 
     public int getTombstoneFailureThreshold()
@@ -5370,6 +5675,29 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     public void setTombstoneFailureThreshold(int threshold)
     {
         DatabaseDescriptor.setTombstoneFailureThreshold(threshold);
+        logger.info("updated tombstone_failure_threshold to {}", threshold);
+    }
+
+    public int getCachedReplicaRowsWarnThreshold()
+    {
+        return DatabaseDescriptor.getCachedReplicaRowsWarnThreshold();
+    }
+
+    public void setCachedReplicaRowsWarnThreshold(int threshold)
+    {
+        DatabaseDescriptor.setCachedReplicaRowsWarnThreshold(threshold);
+        logger.info("updated replica_filtering_protection.cached_rows_warn_threshold to {}", threshold);
+    }
+
+    public int getCachedReplicaRowsFailThreshold()
+    {
+        return DatabaseDescriptor.getCachedReplicaRowsFailThreshold();
+    }
+
+    public void setCachedReplicaRowsFailThreshold(int threshold)
+    {
+        DatabaseDescriptor.setCachedReplicaRowsFailThreshold(threshold);
+        logger.info("updated replica_filtering_protection.cached_rows_fail_threshold to {}", threshold);
     }
 
     public int getColumnIndexCacheSize()
@@ -5391,6 +5719,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     public void setBatchSizeFailureThreshold(int threshold)
     {
         DatabaseDescriptor.setBatchSizeFailThresholdInKB(threshold);
+<<<<<<< HEAD
         logger.info("Updated batch_size_fail_threshold_in_kb to {}", threshold);
     }
 
@@ -5438,12 +5767,15 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             DatabaseDescriptor.setRangeTombstoneListGrowthFactor(growthFactor);
             logger.info("Updated range_tombstone_resize_factor from {} to {}", originalGrowthFactor, growthFactor);
         }
+=======
+        logger.info("updated batch_size_fail_threshold_in_kb to {}", threshold);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public void setHintedHandoffThrottleInKB(int throttleInKB)
     {
         DatabaseDescriptor.setHintedHandoffThrottleInKB(throttleInKB);
-        logger.info("Updated hinted_handoff_throttle_in_kb to {}", throttleInKB);
+        logger.info("updated hinted_handoff_throttle_in_kb to {}", throttleInKB);
     }
 
     @Override
@@ -5536,6 +5868,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     }
 
     @Override
+<<<<<<< HEAD
     public void enableFullQueryLogger(String path, String rollCycle, Boolean blocking, int maxQueueWeight, long maxLogSize, String archiveCommand, int maxArchiveRetries)
     {
         FullQueryLoggerOptions fqlOptions = DatabaseDescriptor.getFullQueryLogOptions();
@@ -5561,5 +5894,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     public void stopFullQueryLogger()
     {
         FullQueryLogger.instance.stop();
+=======
+    public Map<String, Set<InetAddress>> getOutstandingSchemaVersions()
+    {
+        Map<UUID, Set<InetAddress>> outstanding = MigrationCoordinator.instance.outstandingVersions();
+        return outstanding.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toString(), Entry::getValue));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 }

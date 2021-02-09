@@ -274,7 +274,12 @@ public class StreamCoordinator
         {
             for (StreamSession session : streamSessions.values())
             {
+<<<<<<< HEAD
                 if (!session.state().isFinalState())
+=======
+                StreamSession.State state = session.state();
+                if (!state.isFinalState())
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                     return true;
             }
             return false;
@@ -288,6 +293,7 @@ public class StreamCoordinator
                 StreamSession session = new StreamSession(streamOperation, peer, factory, isFollower(), streamSessions.size(),
                                                           pendingRepair, previewKind);
                 streamSessions.put(++lastReturned, session);
+                sessionInfos.put(lastReturned, session.getSessionInfo());
                 return session;
             }
             // get
@@ -320,6 +326,7 @@ public class StreamCoordinator
             {
                 session = new StreamSession(streamOperation, peer, factory, isFollower(), id, pendingRepair, previewKind);
                 streamSessions.put(id, session);
+                sessionInfos.put(id, session.getSessionInfo());
             }
             return session;
         }

@@ -28,7 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+<<<<<<< HEAD
 import java.util.concurrent.ExecutionException;
+=======
+import java.util.concurrent.CountDownLatch;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -36,6 +40,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,9 +71,15 @@ import org.apache.cassandra.utils.ObjectSizes;
 import org.apache.cassandra.utils.UUIDGen;
 import org.apache.cassandra.utils.asserts.SyncTaskListAssert;
 
+<<<<<<< HEAD
 import static org.apache.cassandra.utils.asserts.SyncTaskAssert.assertThat;
 import static org.apache.cassandra.utils.asserts.SyncTaskListAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
+=======
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 public class RepairJobTest
 {
@@ -78,6 +89,7 @@ public class RepairJobTest
     private static final IPartitioner MURMUR3_PARTITIONER = Murmur3Partitioner.instance;
     private static final String KEYSPACE = "RepairJobTest";
     private static final String CF = "Standard1";
+<<<<<<< HEAD
     private static final Object MESSAGE_LOCK = new Object();
 
     private static final Range<Token> RANGE_1 = range(0, 1);
@@ -92,25 +104,75 @@ public class RepairJobTest
     private static InetAddressAndPort addr4;
     private static InetAddressAndPort addr5;
     private RepairSession session;
+=======
+    private static final Object messageLock = new Object();
+
+    private static final List<Range<Token>> fullRange = Collections.singletonList(new Range<>(MURMUR3_PARTITIONER.getMinimumToken(),
+                                                                                              MURMUR3_PARTITIONER.getRandomToken()));
+    private static InetAddress addr1;
+    private static InetAddress addr2;
+    private static InetAddress addr3;
+    private static InetAddress addr4;
+    private MeasureableRepairSession session;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     private RepairJob job;
     private RepairJobDesc sessionJobDesc;
 
-    // So that threads actually get recycled and we can have accurate memory accounting while testing
-    // memory retention from CASSANDRA-14096
     private static class MeasureableRepairSession extends RepairSession
     {
+<<<<<<< HEAD
         public MeasureableRepairSession(UUID parentRepairSession, UUID id, CommonRange commonRange, String keyspace,
                                         RepairParallelism parallelismDegree, boolean isIncremental, boolean pullRepair,
                                         boolean force, PreviewKind previewKind, boolean optimiseStreams, String... cfnames)
+=======
+        private final CountDownLatch validationCompleteReached = new CountDownLatch(1);
+
+        private volatile boolean simulateValidationsOutstanding;
+
+        public MeasureableRepairSession(UUID parentRepairSession, UUID id, Collection<Range<Token>> ranges,
+                                        String keyspace, RepairParallelism parallelismDegree, Set<InetAddress> endpoints,
+                                        long repairedAt, boolean pullRepair, String... cfnames)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         {
             super(parentRepairSession, id, commonRange, keyspace, parallelismDegree, isIncremental, pullRepair, force, previewKind, optimiseStreams, cfnames);
         }
 
+        // So that threads actually get recycled and we can have accurate memory accounting while testing
+        // memory retention from CASSANDRA-14096
         protected DebuggableThreadPoolExecutor createExecutor()
         {
             DebuggableThreadPoolExecutor executor = super.createExecutor();
             executor.setKeepAliveTime(THREAD_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+<<<<<<< HEAD
             return executor;        }
+=======
+            return executor;
+        }
+
+        void simulateValidationsOutstanding()
+        {
+            simulateValidationsOutstanding = true;
+        }
+
+        @Override
+        public void validationComplete(RepairJobDesc desc, InetAddress endpoint, MerkleTrees trees)
+        {
+            validationCompleteReached.countDown();
+
+            // Do not delegate the validation complete to parent to simulate that the call is still outstanding
+            if (simulateValidationsOutstanding)
+            {
+                return;
+            }
+            super.validationComplete(desc, endpoint, trees);
+        }
+
+        void waitUntilReceivedFirstValidationComplete()
+        {
+            boolean isFirstValidationCompleteReceived = Uninterruptibles.awaitUninterruptibly(validationCompleteReached, TEST_TIMEOUT_S, TimeUnit.SECONDS);
+            assertTrue("First validation completed", isFirstValidationCompleteReceived);
+        }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
     @BeforeClass
     public static void setupClass() throws UnknownHostException
@@ -683,7 +745,50 @@ public class RepairJobTest
         assertDoesntStreamRangeFrom(range, tasks.get(pair(target, doesntStreamFrom)));
     }
 
+<<<<<<< HEAD
     public static void assertDoesntStreamRangeFrom(Range<Token> range, SyncTask task)
+=======
+    /**
+     * CASSANDRA-15902: Verify that repair job will be released after force shutdown on the session
+     */
+    @Test
+    public void releaseThreadAfterSessionForceShutdown() throws Throwable
+    {
+        Map<InetAddress, MerkleTrees> mockTrees = new HashMap<>();
+        mockTrees.put(FBUtilities.getBroadcastAddress(), createInitialTree(false));
+        mockTrees.put(addr2, createInitialTree(false));
+        mockTrees.put(addr3, createInitialTree(false));
+
+        List<MessageOut> observedMessages = new ArrayList<>();
+        interceptRepairMessages(mockTrees, observedMessages);
+
+        session.simulateValidationsOutstanding();
+
+        Thread jobThread = new Thread(() -> job.run());
+        jobThread.start();
+
+        session.waitUntilReceivedFirstValidationComplete();
+
+        session.forceShutdown(new Exception("force shutdown for testing"));
+
+        jobThread.join(TimeUnit.SECONDS.toMillis(TEST_TIMEOUT_S));
+        assertFalse("expect that the job thread has been finished and not waiting on the outstanding validations forever", jobThread.isAlive());
+
+        // RepairJob should send out 3 x SNAPSHOTS -> 1 x VALIDATION -> done
+        // Only one VALIDATION because we shutdown the session after first validation
+        List<RepairMessage.Type> expectedTypes = new ArrayList<>();
+        for (int i = 0; i < 3; i++)
+            expectedTypes.add(RepairMessage.Type.SNAPSHOT);
+
+        expectedTypes.add(RepairMessage.Type.VALIDATION_REQUEST);
+
+        assertEquals(expectedTypes, observedMessages.stream()
+                                                    .map(k -> ((RepairMessage) k.payload).messageType)
+                                                    .collect(Collectors.toList()));
+    }
+
+    private void assertExpectedDifferences(Collection<RemoteSyncTask> tasks, Integer... differences)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         if (task == null)
             return; // Doesn't stream anything

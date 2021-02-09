@@ -132,7 +132,11 @@ public class NodeProbe implements AutoCloseable
     protected StorageProxyMBean spProxy;
     protected HintedHandOffManagerMBean hhProxy;
     protected BatchlogManagerMBean bmProxy;
+<<<<<<< HEAD
     protected ActiveRepairServiceMBean arsProxy;
+=======
+    protected Output output;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     private boolean failed;
 
     /**
@@ -151,6 +155,7 @@ public class NodeProbe implements AutoCloseable
         this.port = port;
         this.username = username;
         this.password = password;
+        this.output = Output.CONSOLE;
         connect();
     }
 
@@ -165,6 +170,7 @@ public class NodeProbe implements AutoCloseable
     {
         this.host = host;
         this.port = port;
+        this.output = Output.CONSOLE;
         connect();
     }
 
@@ -178,6 +184,7 @@ public class NodeProbe implements AutoCloseable
     {
         this.host = host;
         this.port = defaultPort;
+        this.output = Output.CONSOLE;
         connect();
     }
 
@@ -186,6 +193,7 @@ public class NodeProbe implements AutoCloseable
         // this constructor is only used for extensions to rewrite their own connect method
         this.host = "";
         this.port = 0;
+        this.output = Output.CONSOLE;
     }
 
     /**
@@ -268,6 +276,16 @@ public class NodeProbe implements AutoCloseable
         }
     }
 
+    public void setOutput(Output output)
+    {
+        this.output = output;
+    }
+
+    public Output output()
+    {
+        return output;
+    }
+
     public int forceKeyspaceCleanup(int jobs, String keyspaceName, String... tables) throws IOException, ExecutionException, InterruptedException
     {
         return ssProxy.forceKeyspaceCleanup(jobs, keyspaceName, tables);
@@ -296,7 +314,7 @@ public class NodeProbe implements AutoCloseable
     private void checkJobs(PrintStream out, int jobs)
     {
         // TODO this should get the configured number of concurrent_compactors via JMX and not using DatabaseDescriptor
-        DatabaseDescriptor.toolInitialization();
+        DatabaseDescriptor.toolInitialization(false); // if running in dtest, this would fail if true (default)
         if (jobs > DatabaseDescriptor.getConcurrentCompactors())
             out.println(String.format("jobs (%d) is bigger than configured concurrent_compactors (%d) on this host, using at most %d threads", jobs, DatabaseDescriptor.getConcurrentCompactors(), DatabaseDescriptor.getConcurrentCompactors()));
     }

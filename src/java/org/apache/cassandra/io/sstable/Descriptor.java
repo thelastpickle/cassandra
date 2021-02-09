@@ -137,6 +137,11 @@ public class Descriptor
     public String relativeFilenameFor(Component component)
     {
         final StringBuilder buff = new StringBuilder();
+        if (Directories.isSecondaryIndexFolder(directory))
+        {
+            buff.append(directory.getName()).append(File.separator);
+        }
+
         appendFileName(buff);
         buff.append(separator).append(component.name());
         return buff.toString();
@@ -278,8 +283,30 @@ public class Descriptor
         String indexName = "";
         if (tableDir.getName().startsWith(Directories.SECONDARY_INDEX_NAME_SEPARATOR))
         {
+<<<<<<< HEAD
             indexName = tableDir.getName();
             tableDir = parentOf(name, tableDir);
+=======
+            // for 2.1+ read ks and cf names from directory
+            File cfDirectory = parentDirectory;
+            // check if this is secondary index
+            String indexName = "";
+            if (Directories.isSecondaryIndexFolder(cfDirectory))
+            {
+                indexName = cfDirectory.getName();
+                cfDirectory = cfDirectory.getParentFile();
+            }
+            if (cfDirectory.getName().equals(Directories.BACKUPS_SUBDIR))
+            {
+                cfDirectory = cfDirectory.getParentFile();
+            }
+            else if (cfDirectory.getParentFile().getName().equals(Directories.SNAPSHOT_SUBDIR))
+            {
+                cfDirectory = cfDirectory.getParentFile().getParentFile();
+            }
+            cfname = cfDirectory.getName().split("-")[0] + indexName;
+            ksname = cfDirectory.getParentFile().getName();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
 
         // Then it can be a backup or a snapshot

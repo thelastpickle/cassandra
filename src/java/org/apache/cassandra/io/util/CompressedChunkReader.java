@@ -86,11 +86,12 @@ public abstract class CompressedChunkReader extends AbstractReaderFileProxy impl
     public static class Standard extends CompressedChunkReader
     {
         // we read the raw compressed bytes into this buffer, then uncompressed them into the provided one.
-        private final ThreadLocal<ByteBuffer> compressedHolder;
+        ThreadLocalByteBufferHolder bufferHolder;
 
         public Standard(ChannelProxy channel, CompressionMetadata metadata)
         {
             super(channel, metadata);
+<<<<<<< HEAD
             compressedHolder = ThreadLocal.withInitial(this::allocateBuffer);
         }
 
@@ -107,6 +108,9 @@ public abstract class CompressedChunkReader extends AbstractReaderFileProxy impl
         public ByteBuffer allocateBuffer(int size)
         {
             return metadata.compressor().preferredBufferType().allocate(size);
+=======
+            bufferHolder = new ThreadLocalByteBufferHolder(metadata.compressor().preferredBufferType());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
 
         @Override
@@ -119,10 +123,15 @@ public abstract class CompressedChunkReader extends AbstractReaderFileProxy impl
                 assert position <= fileLength;
 
                 CompressionMetadata.Chunk chunk = metadata.chunkFor(position);
+<<<<<<< HEAD
+=======
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 boolean shouldCheckCrc = shouldCheckCrc();
                 int length = shouldCheckCrc ? chunk.length + Integer.BYTES // compressed length + checksum length
                                             : chunk.length;
 
+<<<<<<< HEAD
                 if (chunk.length < maxCompressedLength)
                 {
                     ByteBuffer compressed = compressedHolder.get();
@@ -131,6 +140,18 @@ public abstract class CompressedChunkReader extends AbstractReaderFileProxy impl
                     compressed.clear().limit(length);
                     if (channel.read(compressed, chunk.offset) != length)
                         throw new CorruptBlockException(channel.filePath(), chunk);
+=======
+                int length = shouldCheckCrc ? chunk.length + Integer.BYTES : chunk.length;
+                ByteBuffer compressed = bufferHolder.getBuffer(length);
+
+                if (channel.read(compressed, chunk.offset) != length)
+                    throw new CorruptBlockException(channel.filePath(), chunk);
+
+                compressed.flip();
+                uncompressed.clear();
+
+                compressed.position(0).limit(chunk.length);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
                     compressed.flip();
                     compressed.limit(chunk.length);

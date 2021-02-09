@@ -29,6 +29,7 @@ import org.apache.cassandra.schema.SchemaConstants;
 import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.Keyspace;
+import org.apache.cassandra.db.marshal.IntegerType;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.exceptions.SyntaxException;
 import org.apache.cassandra.schema.SchemaKeyspace;
@@ -631,4 +632,77 @@ public class AlterTest extends CQLTester
 
         assertEmpty(execute("SELECT * FROM %s"));
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * Test for CASSANDRA-13917
+     */
+    @Test
+    public void testAlterWithCompactStaticFormat() throws Throwable
+    {
+        createTable("CREATE TABLE %s (a int PRIMARY KEY, b int, c int) WITH COMPACT STORAGE");
+
+        assertInvalidMessage("Cannot rename unknown column column1 in keyspace",
+                             "ALTER TABLE %s RENAME column1 TO column2");
+
+        assertInvalidMessage("Cannot rename unknown column value in keyspace",
+                             "ALTER TABLE %s RENAME value TO value2");
+    }
+
+    /**
+     * Test for CASSANDRA-13917
+     */
+    @Test
+    public void testAlterWithCompactNonStaticFormat() throws Throwable
+    {
+        createTable("CREATE TABLE %s (a int, b int, PRIMARY KEY (a, b)) WITH COMPACT STORAGE");
+        assertInvalidMessage("Cannot rename unknown column column1 in keyspace",
+                             "ALTER TABLE %s RENAME column1 TO column2");
+
+        createTable("CREATE TABLE %s (a int, b int, v int, PRIMARY KEY (a, b)) WITH COMPACT STORAGE");
+        assertInvalidMessage("Cannot rename unknown column column1 in keyspace",
+                             "ALTER TABLE %s RENAME column1 TO column2");
+    }
+
+    @Test
+    public void testAlterTableAlterType() throws Throwable
+    {
+        createTable("CREATE TABLE %s (a int, b int, PRIMARY KEY (a,b)) WITH COMPACT STORAGE");
+        assertInvalidMessage(String.format("Compact value type can only be changed to BytesType, but %s was given.",
+                                           IntegerType.instance),
+                             "ALTER TABLE %s ALTER value TYPE 'org.apache.cassandra.db.marshal.IntegerType'");
+
+        execute("ALTER TABLE %s ALTER value TYPE 'org.apache.cassandra.db.marshal.BytesType'");
+
+        createTable("CREATE TABLE %s (a int, b int, c int, PRIMARY KEY (a,b)) WITH COMPACT STORAGE");
+        assertInvalidMessage("Altering of types is not allowed",
+                             "ALTER TABLE %s ALTER c TYPE 'org.apache.cassandra.db.marshal.BytesType'");
+
+        createTable("CREATE TABLE %s (a int, value int, PRIMARY KEY (a,value)) WITH COMPACT STORAGE");
+        assertInvalidMessage("Altering of types is not allowed",
+                             "ALTER TABLE %s ALTER value TYPE 'org.apache.cassandra.db.marshal.IntegerType'");
+        execute("ALTER TABLE %s ALTER value1 TYPE 'org.apache.cassandra.db.marshal.BytesType'");
+    }
+
+    @Test
+    public void testAlterTypeUsedInPartitionKey() throws Throwable
+    {
+        // frozen UDT used directly in a partition key
+        String  type1 = createType("CREATE TYPE %s (v1 int)");
+        String table1 = createTable("CREATE TABLE %s (pk frozen<" + type1 + ">, val int, PRIMARY KEY(pk));");
+
+        // frozen UDT used in a frozen UDT used in a partition key
+        String  type2 = createType("CREATE TYPE %s (v1 frozen<" + type1 + ">, v2 frozen<" + type1 + ">)");
+        String table2 = createTable("CREATE TABLE %s (pk frozen<" + type2 + ">, val int, PRIMARY KEY(pk));");
+
+        // frozen UDT used in a frozen collection used in a partition key
+        String table3 = createTable("CREATE TABLE %s (pk frozen<list<frozen<" + type1 + ">>>, val int, PRIMARY KEY(pk));");
+
+        // assert that ALTER fails and that the error message contains all the names of the table referencing it
+        assertInvalidMessage(table1, format("ALTER TYPE %s.%s ADD v2 int;", keyspace(), type1));
+        assertInvalidMessage(table2, format("ALTER TYPE %s.%s ADD v2 int;", keyspace(), type1));
+        assertInvalidMessage(table3, format("ALTER TYPE %s.%s ADD v2 int;", keyspace(), type1));
+    }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 }

@@ -33,9 +33,17 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.annotations.VisibleForTesting;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.codahale.metrics.Timer;
 
+<<<<<<< HEAD
+=======
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.config.SchemaConstants;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.db.Memtable;
@@ -63,9 +71,6 @@ import com.codahale.metrics.RatioGauge;
  */
 public class TableMetrics
 {
-
-    public static final long[] EMPTY = new long[0];
-
     /** Total amount of data stored in the memtable that resides on-heap, including column related overhead and partitions overwritten. */
     public final Gauge<Long> memtableOnHeapSize;
     /** Total amount of data stored in the memtable that resides off-heap, including column related overhead and partitions overwritten. */
@@ -329,6 +334,16 @@ public class TableMetrics
 
     public final Meter readRepairRequests;
     public final Meter shortReadProtectionRequests;
+    
+    public final Meter replicaFilteringProtectionRequests;
+    
+    /**
+     * This histogram records the maximum number of rows {@link org.apache.cassandra.service.ReplicaFilteringProtection}
+     * caches at a point in time per query. With no replica divergence, this is equivalent to the maximum number of
+     * cached rows in a single partition during a query. It can be helpful when choosing appropriate values for the
+     * replica_filtering_protection thresholds in cassandra.yaml. 
+     */
+    public final Histogram rfpRowsCachedPerQuery;
 
     public final EnumMap<SamplerType, Sampler<?>> samplers;
     /**
@@ -351,34 +366,32 @@ public class TableMetrics
         Iterator<SSTableReader> iterator = sstables.iterator();
         if (!iterator.hasNext())
         {
-            return EMPTY;
+            return ArrayUtils.EMPTY_LONG_ARRAY;
         }
         long[] firstBucket = getHistogram.getHistogram(iterator.next()).getBuckets(false);
-        long[] values = new long[firstBucket.length];
-        System.arraycopy(firstBucket, 0, values, 0, values.length);
+        long[] values = Arrays.copyOf(firstBucket, firstBucket.length);
 
         while (iterator.hasNext())
         {
             long[] nextBucket = getHistogram.getHistogram(iterator.next()).getBuckets(false);
-            if (nextBucket.length > values.length)
-            {
-                long[] newValues = new long[nextBucket.length];
-                System.arraycopy(firstBucket, 0, newValues, 0, firstBucket.length);
-                for (int i = 0; i < newValues.length; i++)
-                {
-                    newValues[i] += nextBucket[i];
-                }
-                values = newValues;
-            }
-            else
-            {
-                for (int i = 0; i < values.length; i++)
-                {
-                    values[i] += nextBucket[i];
-                }
-            }
+            values = addHistogram(values, nextBucket);
         }
         return values;
+    }
+
+    @VisibleForTesting
+    public static long[] addHistogram(long[] sums, long[] buckets)
+    {
+        if (buckets.length > sums.length)
+        {
+            sums = Arrays.copyOf(sums, buckets.length);
+        }
+
+        for (int i = 0; i < buckets.length; i++)
+        {
+            sums[i] += buckets[i];
+        }
+        return sums;
     }
 
     /**
@@ -929,6 +942,7 @@ public class TableMetrics
         casPropose = new LatencyMetrics(factory, "CasPropose", cfs.keyspace.metric.casPropose);
         casCommit = new LatencyMetrics(factory, "CasCommit", cfs.keyspace.metric.casCommit);
 
+<<<<<<< HEAD
         repairsStarted = createTableCounter("RepairJobsStarted");
         repairsCompleted = createTableCounter("RepairJobsCompleted");
 
@@ -967,6 +981,12 @@ public class TableMetrics
             }
             return cnt;
         });
+=======
+        readRepairRequests = createTableMeter("ReadRepairRequests");
+        shortReadProtectionRequests = createTableMeter("ShortReadProtectionRequests");
+        replicaFilteringProtectionRequests = createTableMeter("ReplicaFilteringProtectionRequests");
+        rfpRowsCachedPerQuery = createHistogram("ReplicaFilteringProtectionRowsCachedPerQuery", true);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public void updateSSTableIterated(int count)
@@ -1073,6 +1093,25 @@ public class TableMetrics
             });
         }
         return cfCounter;
+    }
+
+    private Meter createTableMeter(final String name)
+    {
+        return createTableMeter(name, name);
+    }
+
+    private Meter createTableMeter(final String name, final String alias)
+    {
+        Meter tableMeter = Metrics.meter(factory.createMetricName(name), aliasFactory.createMetricName(alias));
+        register(name, alias, tableMeter);
+        return tableMeter;
+    }
+    
+    private Histogram createHistogram(String name, boolean considerZeroes)
+    {
+        Histogram histogram = Metrics.histogram(factory.createMetricName(name), aliasFactory.createMetricName(name), considerZeroes);
+        register(name, name, histogram);
+        return histogram;
     }
 
     /**

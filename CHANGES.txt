@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 4.0-alpha5
  * Only calculate dynamicBadnessThreshold once per loop in DynamicEndpointSnitch (CASSANDRA-15798)
  * Cleanup redundant nodetool commands added in 4.0 (CASSANDRA-15256)
@@ -24,7 +25,95 @@
  * Replace array iterators with get by index (CASSANDRA-15394)
  * Minimize BTree iterator allocations (CASSANDRA-15389)
 Merged from 3.11:
+=======
+3.11.11
+Merged from 2.2:
+ * Make TokenMetadata's ring version increments atomic (CASSANDRA-16286)
+
+
+3.11.10
+ * Fix digest computation for queries with fetched but non queried columns (CASSANDRA-15962)
+ * Reduce amount of allocations during batch statement execution (CASSANDRA-16201)
+ * Update jflex-1.6.0.jar to match upstream (CASSANDRA-16393)
+ * Fix DecimalDeserializer#toString OOM (CASSANDRA-14925)
+ * Rate limit validation compactions using compaction_throughput_mb_per_sec (CASSANDRA-16161)
+ * SASI's `max_compaction_flush_memory_in_mb` settings over 100GB revert to default of 1GB (CASSANDRA-16071)
 Merged from 3.0:
+ * Prevent unbounded number of pending flushing tasks (CASSANDRA-16261)
+ * Improve empty hint file handling during startup (CASSANDRA-16162)
+ * Allow empty string in collections with COPY FROM in cqlsh (CASSANDRA-16372)
+ * Fix skipping on pre-3.0 created compact storage sstables due to missing primary key liveness (CASSANDRA-16226)
+ * Extend the exclusion of replica filtering protection to other indices instead of just SASI (CASSANDRA-16311)
+ * Synchronize transaction logs for JBOD (CASSANDRA-16225)
+ * Fix the counting of cells per partition (CASSANDRA-16259)
+ * Fix serial read/non-applying CAS linearizability (CASSANDRA-12126)
+ * Avoid potential NPE in JVMStabilityInspector (CASSANDRA-16294)
+ * Improved check of num_tokens against the length of initial_token (CASSANDRA-14477)
+ * Fix a race condition on ColumnFamilyStore and TableMetrics (CASSANDRA-16228)
+ * Remove the SEPExecutor blocking behavior (CASSANDRA-16186)
+ * Fix invalid cell value skipping when reading from disk (CASSANDRA-16223)
+ * Prevent invoking enable/disable gossip when not in NORMAL (CASSANDRA-16146)
+ * Wait for schema agreement when bootstrapping (CASSANDRA-15158)
+Merged from 2.2:
+ * Fix the histogram merge of the table metrics (CASSANDRA-16259)
+
+3.11.9
+ * Synchronize Keyspace instance store/clear (CASSANDRA-16210)
+ * Fix ColumnFilter to avoid querying cells of unselected complex columns (CASSANDRA-15977)
+ * Fix memory leak in CompressedChunkReader (CASSANDRA-15880)
+ * Don't attempt value skipping with mixed version cluster (CASSANDRA-15833)
+ * Avoid failing compactions with very large partitions (CASSANDRA-15164)
+ * Make sure LCS handles duplicate sstable added/removed notifications correctly (CASSANDRA-14103)
+Merged from 3.0:
+ * Fix OOM when terminating repair session (CASSANDRA-15902)
+ * Avoid marking shutting down nodes as up after receiving gossip shutdown message (CASSANDRA-16094)
+ * Check SSTables for latest version before dropping compact storage (CASSANDRA-16063)
+ * Handle unexpected columns due to schema races (CASSANDRA-15899)
+ * Add flag to ignore unreplicated keyspaces during repair (CASSANDRA-15160)
+Merged from 2.2:
+ * Package tools/bin scripts as executable (CASSANDRA-16151)
+ * Fixed a NullPointerException when calling nodetool enablethrift (CASSANDRA-16127)
+
+3.11.8
+ * Correctly interpret SASI's `max_compaction_flush_memory_in_mb` setting in megabytes not bytes (CASSANDRA-16071)
+ * Fix short read protection for GROUP BY queries (CASSANDRA-15459)
+ * Frozen RawTuple is not annotated with frozen in the toString method (CASSANDRA-15857)
+Merged from 3.0:
+ * Use IF NOT EXISTS for index and UDT create statements in snapshot schema files (CASSANDRA-13935)
+ * Fix gossip shutdown order (CASSANDRA-15816)
+ * Remove broken 'defrag-on-read' optimization (CASSANDRA-15432)
+ * Check for endpoint collision with hibernating nodes (CASSANDRA-14599)
+ * Operational improvements and hardening for replica filtering protection (CASSANDRA-15907)
+ * stop_paranoid disk failure policy is ignored on CorruptSSTableException after node is up (CASSANDRA-15191)
+ * Forbid altering UDTs used in partition keys (CASSANDRA-15933)
+ * Fix empty/null json string representation (CASSANDRA-15896)
+ * 3.x fails to start if commit log has range tombstones from a column which is also deleted (CASSANDRA-15970)
+ * Handle difference in timestamp precision between java8 and java11 in LogFIle.java (CASSANDRA-16050)
+Merged from 2.2:
+ * Fix CQL parsing of collections when the column type is reversed (CASSANDRA-15814)
+Merged from 2.1:
+ * Only allow strings to be passed to JMX authentication (CASSANDRA-16077)
+
+3.11.7
+ * Fix cqlsh output when fetching all rows in batch mode (CASSANDRA-15905)
+ * Upgrade Jackson to 2.9.10 (CASSANDRA-15867)
+ * Fix CQL formatting of read command restrictions for slow query log (CASSANDRA-15503)
+ * Allow sstableloader to use SSL on the native port (CASSANDRA-14904)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
+Merged from 3.0:
+ * Backport CASSANDRA-12189: escape string literals (CASSANDRA-15948)
+ * Avoid hinted handoff per-host throttle being arounded to 0 in large cluster (CASSANDRA-15859)
+ * Avoid emitting empty range tombstones from RangeTombstoneList (CASSANDRA-15924)
+ * Avoid thread starvation, and improve compare-and-swap performance, in the slab allocators (CASSANDRA-15922)
+ * Add token to tombstone warning and error messages (CASSANDRA-15890)
+ * Fixed range read concurrency factor computation and capped as 10 times tpc cores (CASSANDRA-15752)
+ * Catch exception on bootstrap resume and init native transport (CASSANDRA-15863)
+ * Fix replica-side filtering returning stale data with CL > ONE (CASSANDRA-8272, CASSANDRA-8273)
+ * Fix duplicated row on 2.x upgrades when multi-rows range tombstones interact with collection ones (CASSANDRA-15805)
+ * Rely on snapshotted session infos on StreamResultFuture.maybeComplete to avoid race conditions (CASSANDRA-15667)
+ * EmptyType doesn't override writeValue so could attempt to write bytes when expected not to (CASSANDRA-15790)
+ * Fix index queries on partition key columns when some partitions contains only static data (CASSANDRA-13666)
+ * Avoid creating duplicate rows during major upgrades (CASSANDRA-15789)
  * liveDiskSpaceUsed and totalDiskSpaceUsed get corrupted if IndexSummaryRedistribution gets interrupted (CASSANDRA-15674)
  * Fix Debian init start/stop (CASSANDRA-15770)
  * Fix infinite loop on index query paging in tables with clustering (CASSANDRA-14242)
@@ -84,9 +173,16 @@ Merged from 3.0:
  * Memtable memory allocations may deadlock (CASSANDRA-15367)
  * Run evictFromMembership in GossipStage (CASSANDRA-15592)
 Merged from 2.2:
+<<<<<<< HEAD
+=======
+ * Fix nomenclature of allow and deny lists (CASSANDRA-15862)
+ * Remove generated files from source artifact (CASSANDRA-15849)
+ * Remove duplicated tools binaries from tarballs (CASSANDRA-15768)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
  * Duplicate results with DISTINCT queries in mixed mode (CASSANDRA-15501)
  * Disable JMX rebinding (CASSANDRA-15653)
 Merged from 2.1:
+ * Fix writing of snapshot manifest when the table has table-backed secondary indexes (CASSANDRA-10968)
  * Fix parse error in cqlsh COPY FROM and formatting for map of blobs (CASSANDRA-15679)
  * Fix Commit log replays when static column clustering keys are collections (CASSANDRA-14365)
  * Fix Red Hat init script on newer systemd versions (CASSANDRA-15273)

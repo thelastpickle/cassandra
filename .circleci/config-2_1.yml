@@ -12,7 +12,7 @@ default_env_vars: &default_env_vars
     #Skip all syncing to disk to avoid performance issues in flaky CI environments
     CASSANDRA_SKIP_SYNC: true
     DTEST_REPO: git://github.com/apache/cassandra-dtest.git
-    DTEST_BRANCH: master
+    DTEST_BRANCH: trunk
     CCM_MAX_HEAP_SIZE: 1024M
     CCM_HEAP_NEWSIZE: 256M
 
@@ -277,7 +277,11 @@ executors:
         type: string
         default: medium
     docker:
+<<<<<<< HEAD
       - image: nastra/cassandra-testing-ubuntu1910-java11-w-dependencies:20200406
+=======
+      - image: apache/cassandra-testing-ubuntu2004-java11-w-dependencies:20210105
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     resource_class: << parameters.exec_resource_class >>
     working_directory: ~/
     shell: /bin/bash -eo pipefail -l
@@ -760,6 +764,7 @@ commands:
         command: |
           export PATH=$JAVA_HOME/bin:$PATH
           cd ~/cassandra
+          mkdir ~/dtest_jars
           git remote add apache git://github.com/apache/cassandra.git
           for branch in cassandra-2.2 cassandra-3.0 cassandra-3.11 trunk; do
             # check out the correct cassandra version:
@@ -768,9 +773,10 @@ commands:
             git checkout $branch
             # Loop to prevent failure due to maven-ant-tasks not downloading a jar..
             for x in $(seq 1 3); do
-                ${ANT_HOME}/bin/ant clean jar dtest-jar
+                ${ANT_HOME}/bin/ant realclean; ${ANT_HOME}/bin/ant jar dtest-jar
                 RETURN="$?"
                 if [ "${RETURN}" -eq "0" ]; then
+                    cp build/dtest*.jar ~/dtest_jars
                     break
                 fi
             done
@@ -783,14 +789,18 @@ commands:
           # and build the dtest-jar for the branch under test
           git checkout origin/$CIRCLE_BRANCH
           for x in $(seq 1 3); do
-              ${ANT_HOME}/bin/ant clean jar dtest-jar
+              ${ANT_HOME}/bin/ant realclean; ${ANT_HOME}/bin/ant jar dtest-jar
               RETURN="$?"
               if [ "${RETURN}" -eq "0" ]; then
+                  cp build/dtest*.jar ~/dtest_jars
                   break
               fi
           done
-          mkdir ~/dtest_jars
-          cp build/dtest*.jar ~/dtest_jars
+          # Exit, if we didn't build successfully
+          if [ "${RETURN}" -ne "0" ]; then
+              echo "Build failed with exit code: ${RETURN}"
+              exit ${RETURN}
+          fi
           ls -l ~/dtest_jars
         no_output_timeout: 15m
 
@@ -912,7 +922,11 @@ commands:
           # if additional dependencies were added to requirmeents.txt and the docker image hasn't been updated
           # we'd have to install it here at runtime -- which will make things slow, so do yourself a favor and
           # rebuild the docker image! (it automatically pulls the latest requirements.txt on build)
+<<<<<<< HEAD
           source ~/env<<parameters.python_version>>/bin/activate
+=======
+          source ~/env3.6/bin/activate
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
           export PATH=$JAVA_HOME/bin:$PATH
           pip3 install --upgrade -r ~/cassandra-dtest/requirements.txt
           pip3 uninstall -y cqlsh
@@ -945,7 +959,11 @@ commands:
           # which we do via the `circleci` cli tool.
 
           cd cassandra-dtest
+<<<<<<< HEAD
           source ~/env<<parameters.python_version>>/bin/activate
+=======
+          source ~/env3.6/bin/activate
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
           export PATH=$JAVA_HOME/bin:$PATH
 
           if [ -n '<<parameters.extra_env_args>>' ]; then
@@ -985,7 +1003,11 @@ commands:
             echo "cat /tmp/split_dtest_tests_<<parameters.file_tag>>_final.txt"
             cat /tmp/split_dtest_tests_<<parameters.file_tag>>_final.txt
 
+<<<<<<< HEAD
             source ~/env<<parameters.python_version>>/bin/activate
+=======
+            source ~/env3.6/bin/activate
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             export PATH=$JAVA_HOME/bin:$PATH
             if [ -n '<<parameters.extra_env_args>>' ]; then
               export <<parameters.extra_env_args>>

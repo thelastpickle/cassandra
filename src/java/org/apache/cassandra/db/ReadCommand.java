@@ -362,7 +362,17 @@ public abstract class ReadCommand extends AbstractReadQuery
     }
 
 
+<<<<<<< HEAD
     @SuppressWarnings("resource")
+=======
+    /**
+     * Whether the underlying {@code ClusteringIndexFilter} is reversed or not.
+     *
+     * @return whether the underlying {@code ClusteringIndexFilter} is reversed or not.
+     */
+    public abstract boolean isReversed();
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     public ReadResponse createResponse(UnfilteredPartitionIterator iterator)
     {
         // validate that the sequence of RT markers is correct: open is followed by close, deletion times for both
@@ -595,8 +605,8 @@ public abstract class ReadCommand extends AbstractReadQuery
                 if (warnTombstones)
                 {
                     String msg = String.format(
-                            "Read %d live rows and %d tombstone cells for query %1.512s (see tombstone_warn_threshold)",
-                            liveRows, tombstones, ReadCommand.this.toCQLString());
+                            "Read %d live rows and %d tombstone cells for query %1.512s; token %s (see tombstone_warn_threshold)",
+                            liveRows, tombstones, ReadCommand.this.toCQLString(), currentKey.getToken());
                     ClientWarn.instance.warn(msg);
                     if (tombstones < failureThreshold)
                     {
@@ -610,7 +620,7 @@ public abstract class ReadCommand extends AbstractReadQuery
                         liveRows, tombstones,
                         (warnTombstones ? " (see tombstone_warn_threshold)" : ""));
             }
-        };
+        }
 
         return Transformation.apply(iter, new MetricRecording());
     }
@@ -823,7 +833,35 @@ public abstract class ReadCommand extends AbstractReadQuery
             this.postLimitAdditionalPartitions = postLimitAdditionalPartitions;
         }
 
+<<<<<<< HEAD
         void addMemtableIterator(T iter)
+=======
+        public long serializedSize(ReadCommand command, int version)
+        {
+            assert version < MessagingService.VERSION_30;
+            assert command.kind == Kind.SINGLE_PARTITION;
+            SinglePartitionReadCommand singleReadCommand = (SinglePartitionReadCommand) command;
+            singleReadCommand = maybeConvertNamesToSlice(singleReadCommand);
+
+            int keySize = singleReadCommand.partitionKey().getKey().remaining();
+
+            CFMetaData metadata = singleReadCommand.metadata();
+
+            long size = 1;  // message type (single byte)
+            size += TypeSizes.sizeof(command.isDigestQuery());
+            size += TypeSizes.sizeof(metadata.ksName);
+            size += TypeSizes.sizeof(metadata.cfName);
+            size += TypeSizes.sizeof((short) keySize) + keySize;
+            size += TypeSizes.sizeof((long) command.nowInSec());
+
+            if (singleReadCommand.clusteringIndexFilter().kind() == ClusteringIndexFilter.Kind.SLICE)
+                return size + serializedSliceCommandSize(singleReadCommand);
+            else
+                return size + serializedNamesCommandSize(singleReadCommand);
+        }
+
+        private void serializeNamesCommand(SinglePartitionReadCommand command, DataOutputPlus out) throws IOException
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         {
             unrepairedIters.add(iter);
         }

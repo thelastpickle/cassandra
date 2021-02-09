@@ -23,8 +23,14 @@ import java.util.function.LongPredicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
+<<<<<<< HEAD
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.schema.TableMetadata;
+=======
+import org.apache.cassandra.config.CFMetaData;
+
+import org.apache.cassandra.db.transform.DuplicateRowChecker;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.filter.ColumnFilter;
 import org.apache.cassandra.db.partitions.PurgeFunction;
@@ -101,12 +107,21 @@ public class CompactionIterator extends CompactionInfo.Holder implements Unfilte
         this.activeCompactions.beginCompaction(this); // note that CompactionTask also calls this, but CT only creates CompactionIterator with a NOOP ActiveCompactions
 
         UnfilteredPartitionIterator merged = scanners.isEmpty()
+<<<<<<< HEAD
                                            ? EmptyIterators.unfilteredPartition(controller.cfs.metadata())
                                            : UnfilteredPartitionIterators.merge(scanners, listener());
         merged = Transformation.apply(merged, new GarbageSkipper(controller));
         merged = Transformation.apply(merged, new Purger(controller, nowInSec));
         compacted = Transformation.apply(merged, new AbortableUnfilteredPartitionTransformation(this));
         sstables = scanners.stream().map(ISSTableScanner::getBackingSSTables).flatMap(Collection::stream).collect(ImmutableSet.toImmutableSet());
+=======
+                                             ? EmptyIterators.unfilteredPartition(controller.cfs.metadata, false)
+                                             : UnfilteredPartitionIterators.merge(scanners, nowInSec, listener());
+        boolean isForThrift = merged.isForThrift(); // to stop capture of iterator in Purger, which is confusing for debug
+        merged = Transformation.apply(merged, new GarbageSkipper(controller, nowInSec));
+        merged = Transformation.apply(merged, new Purger(isForThrift, controller, nowInSec));
+        this.compacted = DuplicateRowChecker.duringCompaction(merged, type);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public TableMetadata metadata()
@@ -203,11 +218,12 @@ public class CompactionIterator extends CompactionInfo.Holder implements Unfilte
                     {
                     }
 
-                    public void onMergedRows(Row merged, Row[] versions)
+                    public Row onMergedRows(Row merged, Row[] versions)
                     {
                         indexTransaction.start();
                         indexTransaction.onRowMerge(merged, versions);
                         indexTransaction.commit();
+                        return merged;
                     }
 
                     public void onMergedRangeTombstoneMarkers(RangeTombstoneMarker mergedMarker, RangeTombstoneMarker[] versions)

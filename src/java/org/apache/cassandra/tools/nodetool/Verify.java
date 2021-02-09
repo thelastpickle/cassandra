@@ -79,7 +79,11 @@ public class Verify extends NodeToolCmd
         {
             try
             {
+<<<<<<< HEAD
                 probe.verify(System.out, extendedVerify, checkVersion, diskFailurePolicy, mutateRepairStatus, checkOwnsTokens, quick, keyspace, tableNames);
+=======
+                probe.verify(probe.output().out, extendedVerify, keyspace, tableNames);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             } catch (Exception e)
             {
                 throw new RuntimeException("Error occurred during verifying", e);

@@ -44,11 +44,16 @@ public abstract class Maps
 
     public static ColumnSpecification keySpecOf(ColumnSpecification column)
     {
+<<<<<<< HEAD
         return new ColumnSpecification(column.ksName, column.cfName, new ColumnIdentifier("key(" + column.name + ")", true), ((MapType<? , ?>)column.type).getKeysType());
+=======
+        return new ColumnSpecification(column.ksName, column.cfName, new ColumnIdentifier("key(" + column.name + ")", true), keysType(column.type));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public static ColumnSpecification valueSpecOf(ColumnSpecification column)
     {
+<<<<<<< HEAD
         return new ColumnSpecification(column.ksName, column.cfName, new ColumnIdentifier("value(" + column.name + ")", true), ((MapType<?, ?>)column.type).getValuesType());
     }
 
@@ -127,6 +132,24 @@ public abstract class Maps
                 return MapType.getInstance(keyType, valueType, false);
         }
         return null;
+=======
+        return new ColumnSpecification(column.ksName, column.cfName, new ColumnIdentifier("value(" + column.name + ")", true), valuesType(column.type));
+    }
+
+    private static AbstractType<?> unwrap(AbstractType<?> type)
+    {
+        return type.isReversed() ? unwrap(((ReversedType<?>) type).baseType) : type;
+    }
+
+    private static AbstractType<?> keysType(AbstractType<?> type)
+    {
+        return ((MapType) unwrap(type)).getKeysType();
+    }
+
+    private static AbstractType<?> valuesType(AbstractType<?> type)
+    {
+        return ((MapType) unwrap(type)).getValuesType();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public static class Literal extends Term.Raw
@@ -159,13 +182,19 @@ public abstract class Maps
 
                 values.put(k, v);
             }
+<<<<<<< HEAD
             DelayedValue value = new DelayedValue(((MapType<?, ?>)receiver.type).getKeysType(), values);
+=======
+            DelayedValue value = new DelayedValue(keysType(receiver.type), values);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             return allTerminal ? value.bind(QueryOptions.DEFAULT) : value;
         }
 
         private void validateAssignableTo(String keyspace, ColumnSpecification receiver) throws InvalidRequestException
         {
-            if (!(receiver.type instanceof MapType))
+            AbstractType<?> type = unwrap(receiver.type);
+
+            if (!(type instanceof MapType))
                 throw new InvalidRequestException(String.format("Invalid map literal for %s of type %s", receiver.name, receiver.type.asCQL3Type()));
 
             ColumnSpecification keySpec = Maps.keySpecOf(receiver);

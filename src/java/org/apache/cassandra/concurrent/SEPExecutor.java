@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.metrics.ThreadPoolMetrics;
 import org.apache.cassandra.utils.MBeanWrapper;
 import org.apache.cassandra.utils.concurrent.SimpleCondition;
-import org.apache.cassandra.utils.concurrent.WaitQueue;
 
 import static org.apache.cassandra.concurrent.SEPWorker.Work;
 
@@ -42,17 +41,19 @@ public class SEPExecutor extends AbstractLocalAwareExecutorService implements SE
     private final AtomicInteger maximumPoolSize;
     private final MaximumPoolSizeListener maximumPoolSizeListener;
     public final String name;
+<<<<<<< HEAD
     private final String mbeanName;
     public final int maxTasksQueued;
     private final ThreadPoolMetrics metrics;
+=======
+    private final SEPMetrics metrics;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
     // stores both a set of work permits and task permits:
     //  bottom 32 bits are number of queued tasks, in the range [0..maxTasksQueued]   (initially 0)
     //  top 32 bits are number of work permits available in the range [-resizeDelta..maximumPoolSize]   (initially maximumPoolSize)
     private final AtomicLong permits = new AtomicLong();
 
-    // producers wait on this when there is no room on the queue
-    private final WaitQueue hasRoom = new WaitQueue();
     private final AtomicLong completedTasks = new AtomicLong();
 
     volatile boolean shuttingDown = false;
@@ -61,6 +62,7 @@ public class SEPExecutor extends AbstractLocalAwareExecutorService implements SE
     // TODO: see if other queue implementations might improve throughput
     protected final ConcurrentLinkedQueue<FutureTask<?>> tasks = new ConcurrentLinkedQueue<>();
 
+<<<<<<< HEAD
     SEPExecutor(SharedExecutorPool pool, int maximumPoolSize, MaximumPoolSizeListener maximumPoolSizeListener, int maxTasksQueued, String jmxPath, String name)
     {
         this.pool = pool;
@@ -72,6 +74,15 @@ public class SEPExecutor extends AbstractLocalAwareExecutorService implements SE
         this.permits.set(combine(0, maximumPoolSize));
         this.metrics = new ThreadPoolMetrics(this, jmxPath, name).register();
         MBeanWrapper.instance.registerMBean(this, mbeanName);
+=======
+    SEPExecutor(SharedExecutorPool pool, int maxWorkers, String jmxPath, String name)
+    {
+        this.pool = pool;
+        this.name = name;
+        this.maxWorkers = maxWorkers;
+        this.permits.set(combine(0, maxWorkers));
+        this.metrics = new SEPMetrics(this, jmxPath, name);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     protected void onCompletion()
@@ -121,29 +132,6 @@ public class SEPExecutor extends AbstractLocalAwareExecutorService implements SE
             // worker, we simply start a worker in a spinning state
             pool.maybeStartSpinningWorker();
         }
-        else if (taskPermits >= maxTasksQueued)
-        {
-            // register to receive a signal once a task is processed bringing the queue below its threshold
-            WaitQueue.Signal s = hasRoom.register();
-
-            // we will only be signalled once the queue drops below full, so this creates equivalent external behaviour
-            // however the advantage is that we never wake-up spuriously;
-            // we choose to always sleep, even if in the intervening time the queue has dropped below limit,
-            // so long as we _will_ eventually receive a signal
-            if (taskPermits(permits.get()) > maxTasksQueued)
-            {
-                // if we're blocking, we might as well directly schedule a worker if we aren't already at max
-                if (takeWorkPermit(true))
-                    pool.schedule(new Work(this));
-
-                metrics.totalBlocked.inc();
-                metrics.currentBlocked.inc();
-                s.awaitUninterruptibly();
-                metrics.currentBlocked.dec();
-            }
-            else // don't propagate our signal when we cancel, just cancel
-                s.cancel();
-        }
     }
 
     public enum TakeTaskPermitResult
@@ -181,9 +169,13 @@ public class SEPExecutor extends AbstractLocalAwareExecutorService implements SE
             }
             if (permits.compareAndSet(current, updated))
             {
+<<<<<<< HEAD
                 if (taskPermits == maxTasksQueued && hasRoom.hasWaiters())
                     hasRoom.signalAll();
                 return result;
+=======
+                return true;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             }
         }
     }
@@ -201,8 +193,6 @@ public class SEPExecutor extends AbstractLocalAwareExecutorService implements SE
                 return false;
             if (permits.compareAndSet(current, combine(taskPermits - taskDelta, workPermits - 1)))
             {
-                if (takeTaskPermit && taskPermits == maxTasksQueued && hasRoom.hasWaiters())
-                    hasRoom.signalAll();
                 return true;
             }
         }

@@ -48,13 +48,13 @@ import org.apache.cassandra.schema.*;
 
 import static org.junit.Assert.assertTrue;
 
-public class BlacklistingCompactionsTest
+public class CorruptedSSTablesCompactionsTest
 {
-    private static final Logger logger = LoggerFactory.getLogger(BlacklistingCompactionsTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(CorruptedSSTablesCompactionsTest.class);
 
     private static Random random;
 
-    private static final String KEYSPACE1 = "BlacklistingCompactionsTest";
+    private static final String KEYSPACE1 = "CorruptedSSTablesCompactionsTest";
     private static final String STANDARD_STCS = "Standard_STCS";
     private static final String STANDARD_LCS = "Standard_LCS";
     private static int maxValueSize;
@@ -72,8 +72,11 @@ public class BlacklistingCompactionsTest
     public static void defineSchema() throws ConfigurationException
     {
         long seed = System.nanoTime();
+
         //long seed = 754271160974509L; // CASSANDRA-9530: use this seed to reproduce compaction failures if reading empty rows
         //long seed = 2080431860597L; // CASSANDRA-12359: use this seed to reproduce undetected corruptions
+        //long seed = 9823169134884L; // CASSANDRA-15879: use this seed to reproduce duplicate clusterings
+
         logger.info("Seed {}", seed);
         random = new Random(seed);
 
@@ -113,18 +116,19 @@ public class BlacklistingCompactionsTest
     }
 
     @Test
-    public void testBlacklistingWithSizeTieredCompactionStrategy() throws Exception
+    public void testCorruptedSSTablesWithSizeTieredCompactionStrategy() throws Exception
     {
-        testBlacklisting(STANDARD_STCS);
+        testCorruptedSSTables(STANDARD_STCS);
     }
 
     @Test
-    public void testBlacklistingWithLeveledCompactionStrategy() throws Exception
+    public void testCorruptedSSTablesWithLeveledCompactionStrategy() throws Exception
     {
-        testBlacklisting(STANDARD_LCS);
+        testCorruptedSSTables(STANDARD_LCS);
     }
 
-    private void testBlacklisting(String tableName) throws Exception
+
+    public void testCorruptedSSTables(String tableName) throws Exception
     {
         // this test does enough rows to force multiple block indexes to be used
         Keyspace keyspace = Keyspace.open(KEYSPACE1);
@@ -148,7 +152,7 @@ public class BlacklistingCompactionsTest
         {
             for (int i = 0; i < ROWS_PER_SSTABLE; i++)
             {
-                DecoratedKey key = Util.dk(String.valueOf(i));
+                DecoratedKey key = Util.dk(String.valueOf(i), LongType.instance);
                 long timestamp = j * ROWS_PER_SSTABLE + i;
                 new RowUpdateBuilder(cfs.metadata(), timestamp, key.getKey())
                         .clustering(Long.valueOf(i))

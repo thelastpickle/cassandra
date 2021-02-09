@@ -17,13 +17,18 @@
  */
 package org.apache.cassandra.tools.nodetool;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.management.openmbean.TabularData;
 
+<<<<<<< HEAD
 import io.airlift.airline.Command;
 
+=======
+import io.airlift.command.Command;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
@@ -35,14 +40,15 @@ public class ListSnapshots extends NodeToolCmd
     @Override
     public void execute(NodeProbe probe)
     {
+        PrintStream out = probe.output().out;
         try
         {
-            System.out.println("Snapshot Details: ");
+            out.println("Snapshot Details: ");
 
             final Map<String,TabularData> snapshotDetails = probe.getSnapshotDetails();
             if (snapshotDetails.isEmpty())
             {
-                System.out.println("There are no snapshots");
+                out.println("There are no snapshots");
                 return;
             }
 
@@ -61,9 +67,9 @@ public class ListSnapshots extends NodeToolCmd
                     table.add(value.toArray(new String[value.size()]));
                 }
             }
-            table.printTo(System.out);
+            table.printTo(out);
 
-            System.out.println("\nTotal TrueDiskSpaceUsed: " + FileUtils.stringifyFileSize(trueSnapshotsSize) + "\n");
+            out.println("\nTotal TrueDiskSpaceUsed: " + FileUtils.stringifyFileSize(trueSnapshotsSize) + "\n");
         }
         catch (Exception e)
         {

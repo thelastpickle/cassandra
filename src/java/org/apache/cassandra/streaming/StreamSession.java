@@ -215,7 +215,11 @@ public class StreamSession implements IEndpointStateChangeSubscriber
          */
         public boolean isFinalState()
         {
+<<<<<<< HEAD
              return finalState;
+=======
+            return finalState;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
     }
 

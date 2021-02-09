@@ -30,7 +30,12 @@ import java.util.UUID;
 
 import org.junit.Test;
 
+<<<<<<< HEAD
 import org.junit.Assert;
+=======
+import junit.framework.Assert;
+import org.apache.cassandra.transport.ProtocolVersion;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.UUIDGen;
 import org.slf4j.Logger;
@@ -42,6 +47,13 @@ public class UUIDTypeTest
     private static final Logger logger = LoggerFactory.getLogger(UUIDTypeTest.class);
 
     UUIDType uuidType = new UUIDType();
+
+    @Test //CASSANDRA-15896
+    public void testToJsonEmptyValue()
+    {
+        String res = uuidType.toJSONString(uuidType.fromJSONObject("").bindAndGet(null), ProtocolVersion.CURRENT);
+        assertEquals("\"\"", res);
+    }
 
     @Test
     public void testRandomCompare()

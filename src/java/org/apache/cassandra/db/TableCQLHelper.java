@@ -269,25 +269,45 @@ public class TableCQLHelper
                     options.put(k, v);
             });
 
+<<<<<<< HEAD:src/java/org/apache/cassandra/db/TableCQLHelper.java
             return String.format("CREATE CUSTOM INDEX %s ON %s (%s) USING '%s'%s;",
                                  indexMetadata.toCQLString(),
                                  baseTable.toString(),
+=======
+            return String.format("CREATE CUSTOM INDEX IF NOT EXISTS %s ON %s.%s (%s) USING '%s'%s;",
+                                 quoteIdentifier(indexMetadata.name),
+                                 quoteIdentifier(keyspace),
+                                 quoteIdentifier(cf),
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:src/java/org/apache/cassandra/db/ColumnFamilyStoreCQLHelper.java
                                  indexMetadata.options.get(IndexTarget.TARGET_OPTION_NAME),
                                  indexMetadata.options.get(IndexTarget.CUSTOM_INDEX_OPTION_NAME),
                                  options.isEmpty() ? "" : " WITH OPTIONS " + toCQL(options));
         }
         else
         {
+<<<<<<< HEAD:src/java/org/apache/cassandra/db/TableCQLHelper.java
             return String.format("CREATE INDEX %s ON %s (%s);",
                                  indexMetadata.toCQLString(),
                                  baseTable.toString(),
+=======
+            return String.format("CREATE INDEX IF NOT EXISTS %s ON %s.%s (%s);",
+                                 quoteIdentifier(indexMetadata.name),
+                                 quoteIdentifier(keyspace),
+                                 quoteIdentifier(cf),
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:src/java/org/apache/cassandra/db/ColumnFamilyStoreCQLHelper.java
                                  indexMetadata.options.get(IndexTarget.TARGET_OPTION_NAME));
         }
     }
     private static String toCQL(UserType userType)
     {
         StringBuilder sb = new StringBuilder();
+<<<<<<< HEAD:src/java/org/apache/cassandra/db/TableCQLHelper.java
         sb.append("CREATE TYPE ").append(userType.toCQLString()).append(" (");
+=======
+        sb.append(String.format("CREATE TYPE IF NOT EXISTS %s.%s(",
+                                quoteIdentifier(userType.keyspace),
+                                quoteIdentifier(userType.getNameAsString())));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:src/java/org/apache/cassandra/db/ColumnFamilyStoreCQLHelper.java
 
         Consumer<StringBuilder> commaAppender = commaAppender(" ");
         for (int i = 0; i < userType.size(); i++)

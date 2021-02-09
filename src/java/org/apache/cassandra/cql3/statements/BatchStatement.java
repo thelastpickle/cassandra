@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -261,6 +263,7 @@ public class BatchStatement implements CQLStatement
         return statements;
     }
 
+<<<<<<< HEAD
     private List<? extends IMutation> getMutations(BatchQueryOptions options,
                                                          boolean local,
                                                          long batchTimestamp,
@@ -269,6 +272,26 @@ public class BatchStatement implements CQLStatement
     {
         Set<String> tablesWithZeroGcGs = null;
         BatchUpdatesCollector collector = new BatchUpdatesCollector(updatedColumns, updatedRows());
+=======
+    @VisibleForTesting
+    public Collection<? extends IMutation> getMutations(BatchQueryOptions options, boolean local, long now, long queryStartNanoTime)
+    throws RequestExecutionException, RequestValidationException
+    {
+        Set<String> tablesWithZeroGcGs = null;
+        List<List<ByteBuffer>> partitionKeys = new ArrayList<>(statements.size());
+        Map<UUID, HashMultiset<ByteBuffer>> partitionCounts = Maps.newHashMapWithExpectedSize(updatedColumns.size());
+        for (int i = 0, isize = statements.size(); i < isize; i++)
+        {
+            ModificationStatement stmt = statements.get(i);
+            List<ByteBuffer> stmtPartitionKeys = stmt.buildPartitionKeyNames(options.forStatement(i));
+            partitionKeys.add(stmtPartitionKeys);
+            HashMultiset<ByteBuffer> perKeyCountsForTable = partitionCounts.computeIfAbsent(stmt.cfm.cfId, k -> HashMultiset.create());
+            for (int stmtIdx = 0, stmtSize = stmtPartitionKeys.size(); stmtIdx < stmtSize; stmtIdx++)
+                perKeyCountsForTable.add(stmtPartitionKeys.get(stmtIdx));
+        }
+
+        UpdatesCollector collector = new UpdatesCollector(updatedColumns, partitionCounts);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         for (int i = 0; i < statements.size(); i++)
         {
             ModificationStatement statement = statements.get(i);
@@ -279,8 +302,13 @@ public class BatchStatement implements CQLStatement
                 tablesWithZeroGcGs.add(statement.metadata.toString());
             }
             QueryOptions statementOptions = options.forStatement(i);
+<<<<<<< HEAD
             long timestamp = attrs.getTimestamp(batchTimestamp, statementOptions);
             statement.addUpdates(collector, statementOptions, local, timestamp, nowInSeconds, queryStartNanoTime);
+=======
+            long timestamp = attrs.getTimestamp(now, statementOptions);
+            statement.addUpdates(collector, partitionKeys.get(i), statementOptions, local, timestamp, queryStartNanoTime);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
 
         if (tablesWithZeroGcGs != null)
@@ -292,13 +320,6 @@ public class BatchStatement implements CQLStatement
                                                      .getMessage());
         }
         return collector.toMutations();
-    }
-
-    private int updatedRows()
-    {
-        // Note: it's possible for 2 statements to actually apply to the same row, but that's just an estimation
-        // for sizing our PartitionUpdate backing array, so it's good enough.
-        return statements.size();
     }
 
     /**

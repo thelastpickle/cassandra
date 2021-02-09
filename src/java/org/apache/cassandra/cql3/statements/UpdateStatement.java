@@ -88,8 +88,13 @@ public class UpdateStatement extends ModificationStatement
                 updates = Collections.<Operation>singletonList(new Constants.Setter(metadata().compactValueColumn, EMPTY));
             }
 
+<<<<<<< HEAD
             for (Operation op : updates)
                 op.execute(updateBuilder.partitionKey(), params);
+=======
+            for (int i = 0, isize = updates.size(); i < isize; i++)
+                updates.get(i).execute(update.partitionKey(), params);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
             updateBuilder.add(params.buildRow());
         }
@@ -97,9 +102,16 @@ public class UpdateStatement extends ModificationStatement
         if (updatesStaticRow())
         {
             params.newRow(Clustering.STATIC_CLUSTERING);
+<<<<<<< HEAD
             for (Operation op : getStaticOperations())
                 op.execute(updateBuilder.partitionKey(), params);
             updateBuilder.add(params.buildRow());
+=======
+            List<Operation> staticOps = getStaticOperations();
+            for (int i = 0, isize = staticOps.size(); i < isize; i++)
+                staticOps.get(i).execute(update.partitionKey(), params);
+            update.add(params.buildRow());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
     }
 

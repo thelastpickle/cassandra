@@ -33,13 +33,18 @@ public class FailureDetectorInfo extends NodeToolCmd
     @Override
     public void execute(NodeProbe probe)
     {
+<<<<<<< HEAD
         TabularData data = probe.getFailureDetectorPhilValues(printPort);
         System.out.printf("%10s,%16s%n", "Endpoint", "Phi");
+=======
+        TabularData data = probe.getFailureDetectorPhilValues();
+        probe.output().out.printf("%10s,%16s%n", "Endpoint", "Phi");
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         for (Object o : data.keySet())
         {
             @SuppressWarnings({ "rawtypes", "unchecked" })
             CompositeData datum = data.get(((List) o).toArray(new Object[((List) o).size()]));
-            System.out.printf("%10s,%16.8f%n",datum.get("Endpoint"), datum.get("PHI"));
+            probe.output().out.printf("%10s,%16.8f%n", datum.get("Endpoint"), datum.get("PHI"));
         }
     }
 }

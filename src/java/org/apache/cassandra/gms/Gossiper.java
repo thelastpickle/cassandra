@@ -33,8 +33,12 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+<<<<<<< HEAD
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ImmutableSet;
+=======
+import com.google.common.collect.Sets;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import com.google.common.util.concurrent.ListenableFutureTask;
 import com.google.common.util.concurrent.Uninterruptibles;
 
@@ -54,6 +58,11 @@ import org.apache.cassandra.concurrent.DebuggableScheduledThreadPoolExecutor;
 import org.apache.cassandra.concurrent.JMXEnabledThreadPoolExecutor;
 import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.config.DatabaseDescriptor;
+<<<<<<< HEAD
+=======
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.db.SystemKeyspace;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.net.RequestCallback;
 import org.apache.cassandra.net.Message;
@@ -756,9 +765,12 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
                 tokens = Collections.singletonList(StorageService.instance.getTokenMetadata().partitioner.getRandomToken());
             }
 
+<<<<<<< HEAD
             // do not pass go, do not collect 200 dollars, just gtfo
             long expireTime = computeExpireTime();
             epState.addApplicationState(ApplicationState.STATUS_WITH_PORT, StorageService.instance.valueFactory.left(tokens, expireTime));
+=======
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             epState.addApplicationState(ApplicationState.STATUS, StorageService.instance.valueFactory.left(tokens, computeExpireTime()));
             handleMajorStateChange(endpoint, epState);
             Uninterruptibles.sleepUninterruptibly(intervalInMillis * 4, TimeUnit.MILLISECONDS);
@@ -785,14 +797,22 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
      */
     private boolean sendGossip(Message<GossipDigestSyn> message, Set<InetAddressAndPort> epSet)
     {
+<<<<<<< HEAD
         List<InetAddressAndPort> liveEndpoints = ImmutableList.copyOf(epSet);
+=======
+        List<InetAddress> endpoints = ImmutableList.copyOf(epSet);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
-        int size = liveEndpoints.size();
+        int size = endpoints.size();
         if (size < 1)
             return false;
         /* Generate a random number from 0 -> size */
         int index = (size == 1) ? 0 : random.nextInt(size);
+<<<<<<< HEAD
         InetAddressAndPort to = liveEndpoints.get(index);
+=======
+        InetAddress to = endpoints.get(index);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         if (logger.isTraceEnabled())
             logger.trace("Sending a GossipDigestSyn to {} ...", to);
         if (firstSynSendAt == 0)
@@ -824,7 +844,8 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
             double prob = unreachableEndpointCount / (liveEndpointCount + 1);
             double randDbl = random.nextDouble();
             if (randDbl < prob)
-                sendGossip(message, unreachableEndpoints.keySet());
+                sendGossip(message, Sets.filter(unreachableEndpoints.keySet(),
+                                                ep -> !isDeadState(endpointStateMap.get(ep))));
         }
     }
 
@@ -883,13 +904,25 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
                                     Map<InetAddressAndPort, EndpointState> epStates)
     {
         EndpointState epState = epStates.get(endpoint);
-        // if there's no previous state, or the node was previously removed from the cluster, we're good
-        if (epState == null || isDeadState(epState))
+        // if there's no previous state, we're good
+        if (epState == null)
+            return true;
+
+        String status = getGossipStatus(epState);
+
+        if (status.equals(VersionedValue.HIBERNATE)
+            && !SystemKeyspace.bootstrapComplete())
+        {
+            logger.warn("A node with the same IP in hibernate status was detected. Was a replacement already attempted?");
+            return false;
+        }
+
+        //the node was previously removed from the cluster
+        if (isDeadState(epState))
             return true;
 
         if (isBootstrapping)
         {
-            String status = getGossipStatus(epState);
             // these states are not allowed to join the cluster as it would not be safe
             final List<String> unsafeStatuses = new ArrayList<String>()
             {{
@@ -1826,6 +1859,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
 
     public boolean isEnabled()
     {
+        ScheduledFuture<?> scheduledGossipTask = this.scheduledGossipTask;
         return (scheduledGossipTask != null) && (!scheduledGossipTask.isCancelled());
     }
 

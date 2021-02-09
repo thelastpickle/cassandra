@@ -51,6 +51,11 @@ import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.schema.IndexMetadata;
 import org.apache.cassandra.service.DefaultFSErrorHandler;
 import org.apache.cassandra.utils.ByteBufferUtil;
+<<<<<<< HEAD
+=======
+import org.apache.cassandra.utils.JVMStabilityInspector;
+import org.apache.cassandra.utils.Pair;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -336,13 +341,13 @@ public class DirectoriesTest
             {
                 String[] path = new String[] {KS, "bad"};
                 File dir = new File(Directories.dataDirectories[0].location, StringUtils.join(path, File.separator));
-                FileUtils.handleFSError(new FSWriteError(new IOException("Unable to create directory " + dir), dir));
+                JVMStabilityInspector.inspectThrowable(new FSWriteError(new IOException("Unable to create directory " + dir), dir));
             }
 
             for (DataDirectory dd : Directories.dataDirectories)
             {
                 File file = new File(dd.location, new File(KS, "bad").getPath());
-                assertTrue(BlacklistedDirectories.isUnwritable(file));
+                assertTrue(DisallowedDirectories.isUnwritable(file));
             }
         } 
         finally 

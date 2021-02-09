@@ -71,6 +71,7 @@ public interface StorageProxyMBean
 
     public int getNumberOfTables();
 
+<<<<<<< HEAD
     public String getIdealConsistencyLevel();
     public String setIdealConsistencyLevel(String cl);
 
@@ -92,4 +93,16 @@ public interface StorageProxyMBean
     void enableSnapshotOnRepairedDataMismatch();
     void disableSnapshotOnRepairedDataMismatch();
     boolean getSnapshotOnRepairedDataMismatchEnabled();
+=======
+    void enableSnapshotOnDuplicateRowDetection();
+    void disableSnapshotOnDuplicateRowDetection();
+    boolean getSnapshotOnDuplicateRowDetectionEnabled();
+
+    boolean getCheckForDuplicateRowsDuringReads();
+    void enableCheckForDuplicateRowsDuringReads();
+    void disableCheckForDuplicateRowsDuringReads();
+    boolean getCheckForDuplicateRowsDuringCompaction();
+    void enableCheckForDuplicateRowsDuringCompaction();
+    void disableCheckForDuplicateRowsDuringCompaction();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 }

@@ -436,7 +436,11 @@ public class Columns extends AbstractCollection<ColumnMetadata> implements Colle
             return size;
         }
 
+<<<<<<< HEAD
         public Columns deserialize(DataInputPlus in, TableMetadata metadata) throws IOException
+=======
+        public Columns deserialize(DataInputPlus in, CFMetaData metadata, boolean isStatic) throws IOException
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         {
             int length = (int)in.readUnsignedVInt();
             BTree.Builder<ColumnMetadata> builder = BTree.builder(Comparator.naturalOrder());
@@ -450,13 +454,34 @@ public class Columns extends AbstractCollection<ColumnMetadata> implements Colle
                     // If we don't find the definition, it could be we have data for a dropped column, and we shouldn't
                     // fail deserialization because of that. So we grab a "fake" ColumnMetadata that ensure proper
                     // deserialization. The column will be ignore later on anyway.
+<<<<<<< HEAD
                     column = metadata.getDroppedColumn(name);
                     if (column == null)
                         throw new UnknownColumnException("Unknown column " + UTF8Type.instance.getString(name) + " during deserialization");
+=======
+                    column = metadata.getDroppedColumnDefinition(name);
+
+                    // If there's no dropped column, it may be for a column we haven't received a schema update for yet
+                    // so we create a placeholder column. If this is a read, the placeholder column will let the response
+                    // serializer know we're not serializing all requested columns when it writes the row flags, but it
+                    // will cause mutations that try to write values for this column to fail.
+                    if (column == null)
+                        column = ColumnDefinition.placeholder(metadata, name, isStatic);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 }
                 builder.add(column);
             }
             return new Columns(builder.build());
+        }
+
+        public Columns deserializeStatics(DataInputPlus in, CFMetaData metadata) throws IOException
+        {
+            return deserialize(in, metadata, true);
+        }
+
+        public Columns deserializeRegulars(DataInputPlus in, CFMetaData metadata) throws IOException
+        {
+            return deserialize(in, metadata, false);
         }
 
         /**

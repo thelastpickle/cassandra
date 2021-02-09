@@ -19,6 +19,11 @@ package org.apache.cassandra.service;
  * under the License.
  *
  */
+<<<<<<< HEAD
+=======
+
+import org.apache.cassandra.gms.EchoMessage;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.net.IVerbHandler;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessagingService;
@@ -35,7 +40,20 @@ public class EchoVerbHandler implements IVerbHandler<NoPayload>
 
     public void doVerb(Message<NoPayload> message)
     {
+<<<<<<< HEAD
         logger.trace("Sending ECHO_RSP to {}", message.from());
         MessagingService.instance().send(message.emptyResponse(), message.from());
+=======
+        if (!StorageService.instance.isShutdown())
+        {
+            logger.trace("Sending a EchoMessage reply {}", message.from);
+            MessageOut<EchoMessage> echoMessage = new MessageOut<EchoMessage>(MessagingService.Verb.REQUEST_RESPONSE, EchoMessage.instance, EchoMessage.serializer);
+            MessagingService.instance().sendReply(echoMessage, id, message.from);
+        }
+        else
+        {
+            logger.trace("Not sending EchoMessage reply to {} - we are shutdown", message.from);
+        }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 }

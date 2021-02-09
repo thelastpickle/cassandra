@@ -20,7 +20,12 @@ package org.apache.cassandra.db.rows;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+<<<<<<< HEAD
 import org.apache.cassandra.schema.ColumnMetadata;
+=======
+import org.apache.cassandra.config.ColumnDefinition;
+import org.apache.cassandra.utils.ByteBufferUtil;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.utils.ObjectSizes;
 import org.apache.cassandra.utils.concurrent.OpOrder;
 import org.apache.cassandra.utils.memory.MemoryUtil;
@@ -151,6 +156,11 @@ public class NativeCell extends AbstractCell
     public Cell withUpdatedColumn(ColumnMetadata column)
     {
         return new BufferCell(column, timestamp(), ttl(), localDeletionTime(), value(), path());
+    }
+
+    public Cell withSkippedValue()
+    {
+        return new BufferCell(column, timestamp(), ttl(), localDeletionTime(), ByteBufferUtil.EMPTY_BYTE_BUFFER, path());
     }
 
     public long unsharedHeapSizeExcludingData()

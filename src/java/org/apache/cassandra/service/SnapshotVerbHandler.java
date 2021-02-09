@@ -30,6 +30,7 @@ import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.net.IVerbHandler;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessagingService;
+import org.apache.cassandra.utils.DiagnosticSnapshotService;
 
 public class SnapshotVerbHandler implements IVerbHandler<SnapshotCommand>
 {
@@ -46,9 +47,15 @@ public class SnapshotVerbHandler implements IVerbHandler<SnapshotCommand>
         {
             Keyspace.clearSnapshot(command.snapshot_name, command.keyspace);
         }
+<<<<<<< HEAD
         else if (command.snapshot_name.startsWith(REPAIRED_DATA_MISMATCH_SNAPSHOT_PREFIX))
         {
             REPAIRED_DATA_MISMATCH_SNAPSHOT_EXECUTOR.execute(new RepairedDataSnapshotTask(command, message.from()));
+=======
+        else if (DiagnosticSnapshotService.isDiagnosticSnapshotRequest(command))
+        {
+            DiagnosticSnapshotService.snapshot(command, message.from);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
         else
         {

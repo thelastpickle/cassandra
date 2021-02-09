@@ -15,18 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.cassandra.db;
 
-import java.io.File;
-import java.util.Set;
+package org.apache.cassandra.tools;
 
-public interface BlacklistedDirectoriesMBean
+import java.io.PrintStream;
+
+public class Output
 {
-    public Set<File> getUnreadableDirectories();
-    
-    public Set<File> getUnwritableDirectories();
+    public final static Output CONSOLE = new Output(System.out, System.err);
 
-    public void markUnreadable(String path);
+    public final PrintStream out;
+    public final PrintStream err;
 
-    public void markUnwritable(String path);
+    public Output(PrintStream out, PrintStream err)
+    {
+        this.out = out;
+        this.err = err;
+    }
 }

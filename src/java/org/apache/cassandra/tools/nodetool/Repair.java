@@ -94,6 +94,7 @@ public class Repair extends NodeToolCmd
     @Option(title = "pull_repair", name = {"-pl", "--pull"}, description = "Use --pull to perform a one way repair where data is only streamed from a remote node to this node.")
     private boolean pullRepair = false;
 
+<<<<<<< HEAD
     @Option(title = "optimise_streams", name = {"-os", "--optimise-streams"}, description = "Use --optimise-streams to try to reduce the number of streams we do (EXPERIMENTAL, see CASSANDRA-3200).")
     private boolean optimiseStreams = false;
 
@@ -117,6 +118,10 @@ public class Repair extends NodeToolCmd
             return PreviewKind.NONE;
         }
     }
+=======
+    @Option(title = "ignore_unreplicated_keyspaces", name = {"-iuk","--ignore-unreplicated-keyspaces"}, description = "Use --ignore-unreplicated-keyspaces to ignore keyspaces which are not replicated, otherwise the repair will fail")
+    private boolean ignoreUnreplicatedKeyspaces = false;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
     @Override
     public void execute(NodeProbe probe)
@@ -146,9 +151,14 @@ public class Repair extends NodeToolCmd
             options.put(RepairOption.TRACE_KEY, Boolean.toString(trace));
             options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(cfnames, ","));
             options.put(RepairOption.PULL_REPAIR_KEY, Boolean.toString(pullRepair));
+<<<<<<< HEAD
             options.put(RepairOption.FORCE_REPAIR_KEY, Boolean.toString(force));
             options.put(RepairOption.PREVIEW, getPreviewKind().toString());
             options.put(RepairOption.OPTIMISE_STREAMS_KEY, Boolean.toString(optimiseStreams));
+=======
+            options.put(RepairOption.IGNORE_UNREPLICATED_KS, Boolean.toString(ignoreUnreplicatedKeyspaces));
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             if (!startToken.isEmpty() || !endToken.isEmpty())
             {
                 options.put(RepairOption.RANGES_KEY, startToken + ":" + endToken);
@@ -164,7 +174,7 @@ public class Repair extends NodeToolCmd
             options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
             try
             {
-                probe.repairAsync(System.out, keyspace, options);
+                probe.repairAsync(probe.output().out, keyspace, options);
             } catch (Exception e)
             {
                 throw new RuntimeException("Error occurred during repair", e);

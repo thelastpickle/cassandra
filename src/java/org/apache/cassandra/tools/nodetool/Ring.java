@@ -22,6 +22,7 @@ import io.airlift.airline.Arguments;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
@@ -51,7 +52,21 @@ public class Ring extends NodeToolCmd
     @Override
     public void execute(NodeProbe probe)
     {
+<<<<<<< HEAD
         try
+=======
+        PrintStream out = probe.output().out;
+        Map<String, String> tokensToEndpoints = probe.getTokenToEndpointMap();
+        LinkedHashMultimap<String, String> endpointsToTokens = LinkedHashMultimap.create();
+        boolean haveVnodes = false;
+        for (Map.Entry<String, String> entry : tokensToEndpoints.entrySet())
+        {
+            haveVnodes |= endpointsToTokens.containsKey(entry.getValue());
+            endpointsToTokens.put(entry.getValue(), entry.getKey());
+        }
+
+        int maxAddressLength = Collections.max(endpointsToTokens.keys(), new Comparator<String>()
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         {
             Map<String, String> tokensToEndpoints = probe.getTokenToEndpointMap(printPort);
             LinkedHashMultimap<String, String> endpointsToTokens = LinkedHashMultimap.create();
@@ -71,12 +86,35 @@ public class Ring extends NodeToolCmd
                 }
             }).length();
 
+<<<<<<< HEAD
             String formatPlaceholder = "%%-%ds  %%-12s%%-7s%%-8s%%-16s%%-20s%%-44s%%n";
             String format = format(formatPlaceholder, maxAddressLength);
+=======
+        StringBuilder errors = new StringBuilder();
+        boolean showEffectiveOwnership = true;
+        // Calculate per-token ownership of the ring
+        Map<InetAddress, Float> ownerships;
+        try
+        {
+            ownerships = probe.effectiveOwnership(keyspace);
+        }
+        catch (IllegalStateException ex)
+        {
+            ownerships = probe.getOwnership();
+            errors.append("Note: ").append(ex.getMessage()).append("%n");
+            showEffectiveOwnership = false;
+        }
+        catch (IllegalArgumentException ex)
+        {
+            out.printf("%nError: %s%n", ex.getMessage());
+            return;
+        }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
             StringBuilder errors = new StringBuilder();
             boolean showEffectiveOwnership = true;
 
+<<<<<<< HEAD
             if (printPort)
             {
                 // Calculate per-token ownership of the ring
@@ -129,6 +167,11 @@ public class Ring extends NodeToolCmd
                     System.out.printf("%nError: %s%n", ex.getMessage());
                     return;
                 }
+=======
+        out.println();
+        for (Entry<String, SetHostStat> entry : NodeTool.getOwnershipByDc(probe, resolveIp, tokensToEndpoints, ownerships).entrySet())
+            printDc(probe, format, entry.getKey(), endpointsToTokens, entry.getValue(),showEffectiveOwnership);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 
                 System.out.println();
@@ -145,9 +188,17 @@ public class Ring extends NodeToolCmd
             }
         } catch (Exception e)
         {
+<<<<<<< HEAD
             e.printStackTrace();
             throw e;
         }
+=======
+            out.println("  Warning: \"nodetool ring\" is used to output all the tokens of a node.");
+            out.println("  To view status related info of a node use \"nodetool status\" instead.\n");
+        }
+
+        out.printf("%n  " + errors.toString());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     private void printDc(NodeProbe probe, String format,
@@ -155,15 +206,25 @@ public class Ring extends NodeToolCmd
                          LinkedHashMultimap<String, String> endpointsToTokens,
                          SetHostStat hoststats,boolean showEffectiveOwnership)
     {
+<<<<<<< HEAD
         Collection<String> liveNodes = probe.getLiveNodes(false);
         Collection<String> deadNodes = probe.getUnreachableNodes(false);
         Collection<String> joiningNodes = probe.getJoiningNodes(false);
         Collection<String> leavingNodes = probe.getLeavingNodes(false);
         Collection<String> movingNodes = probe.getMovingNodes(false);
         Map<String, String> loadMap = probe.getLoadMap(false);
+=======
+        PrintStream out = probe.output().out;
+        Collection<String> liveNodes = probe.getLiveNodes();
+        Collection<String> deadNodes = probe.getUnreachableNodes();
+        Collection<String> joiningNodes = probe.getJoiningNodes();
+        Collection<String> leavingNodes = probe.getLeavingNodes();
+        Collection<String> movingNodes = probe.getMovingNodes();
+        Map<String, String> loadMap = probe.getLoadMap();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
-        System.out.println("Datacenter: " + dc);
-        System.out.println("==========");
+        out.println("Datacenter: " + dc);
+        out.println("==========");
 
         // get the total amount of replicas for this dc and the last token in this dc's ring
         List<String> tokens = new ArrayList<>();
@@ -175,12 +236,12 @@ public class Ring extends NodeToolCmd
             lastToken = tokens.get(tokens.size() - 1);
         }
 
-        System.out.printf(format, "Address", "Rack", "Status", "State", "Load", "Owns", "Token");
+        out.printf(format, "Address", "Rack", "Status", "State", "Load", "Owns", "Token");
 
         if (hoststats.size() > 1)
-            System.out.printf(format, "", "", "", "", "", "", lastToken);
+            out.printf(format, "", "", "", "", "", "", lastToken);
         else
-            System.out.println();
+            out.println();
 
         for (HostStat stat : hoststats)
         {
@@ -214,9 +275,9 @@ public class Ring extends NodeToolCmd
                     ? loadMap.get(endpoint)
                     : "?";
             String owns = stat.owns != null && showEffectiveOwnership? new DecimalFormat("##0.00%").format(stat.owns) : "?";
-            System.out.printf(format, stat.ipOrDns(), rack, status, state, load, owns, stat.token);
+            out.printf(format, stat.ipOrDns(), rack, status, state, load, owns, stat.token);
         }
-        System.out.println();
+        out.println();
     }
 
     private void printDc(NodeProbe probe, String format,

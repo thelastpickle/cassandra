@@ -36,6 +36,7 @@ import org.apache.cassandra.db.rows.*;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.Int32Type;
 import org.apache.cassandra.db.marshal.ListType;
+import org.apache.cassandra.db.marshal.ReversedType;
 import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.serializers.CollectionSerializer;
 import org.apache.cassandra.serializers.MarshalException;
@@ -57,6 +58,7 @@ public abstract class Lists
 
     public static ColumnSpecification valueSpecOf(ColumnSpecification column)
     {
+<<<<<<< HEAD
         return new ColumnSpecification(column.ksName, column.cfName, new ColumnIdentifier("value(" + column.name + ")", true), ((ListType<?>)column.type).getElementsType());
     }
 
@@ -118,6 +120,19 @@ public abstract class Lists
     {
         Optional<AbstractType<?>> type = items.stream().map(mapper).filter(Objects::nonNull).findFirst();
         return type.isPresent() ? ListType.getInstance(type.get(), false) : null;
+=======
+        return new ColumnSpecification(column.ksName, column.cfName, new ColumnIdentifier("value(" + column.name + ")", true), elementsType(column.type));
+    }
+
+    private static AbstractType<?> unwrap(AbstractType<?> type)
+    {
+        return type.isReversed() ? unwrap(((ReversedType<?>) type).baseType) : type;
+    }
+
+    private static AbstractType<?> elementsType(AbstractType<?> type)
+    {
+        return ((ListType) unwrap(type)).getElementsType();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public static class Literal extends Term.Raw
@@ -154,7 +169,9 @@ public abstract class Lists
 
         private void validateAssignableTo(String keyspace, ColumnSpecification receiver) throws InvalidRequestException
         {
-            if (!(receiver.type instanceof ListType))
+            AbstractType<?> type = unwrap(receiver.type);
+
+            if (!(type instanceof ListType))
                 throw new InvalidRequestException(String.format("Invalid list literal for %s of type %s", receiver.name, receiver.type.asCQL3Type()));
 
             ColumnSpecification valueSpec = Lists.valueSpecOf(receiver);

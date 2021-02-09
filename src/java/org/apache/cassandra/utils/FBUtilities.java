@@ -42,8 +42,12 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+<<<<<<< HEAD
 import org.apache.cassandra.auth.AllowAllNetworkAuthorizer;
 import org.apache.cassandra.audit.IAuditLogger;
+=======
+import io.netty.util.concurrent.FastThreadLocal;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.auth.IAuthorizer;
 import org.apache.cassandra.auth.INetworkAuthorizer;
@@ -68,8 +72,11 @@ import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.net.AsyncOneResponse;
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 public class FBUtilities
 {
     static
@@ -456,6 +463,15 @@ public class FBUtilities
         }
     }
 
+<<<<<<< HEAD
+=======
+    public static void waitOnFutures(List<AsyncOneResponse<?>> results, long ms) throws TimeoutException
+    {
+        for (AsyncOneResponse<?> result : results)
+            result.get(ms, TimeUnit.MILLISECONDS);
+    }
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     public static <T> Future<? extends T> waitOnFirstFuture(Iterable<? extends Future<? extends T>> futures)
     {
         return waitOnFirstFuture(futures, 100);

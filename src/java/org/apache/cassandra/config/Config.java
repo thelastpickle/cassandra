@@ -83,7 +83,7 @@ public class Config
 
     /* initial token in the ring */
     public String initial_token;
-    public int num_tokens = 1;
+    public Integer num_tokens;
     /** Triggers automatic allocation of tokens if set, using the replication strategy of the referenced keyspace */
     public String allocate_tokens_for_keyspace = null;
     /** Triggers automatic allocation of tokens if set, based on the provided replica count for a datacenter */
@@ -331,6 +331,8 @@ public class Config
     public volatile int tombstone_warn_threshold = 1000;
     public volatile int tombstone_failure_threshold = 100000;
 
+    public final ReplicaFilteringProtectionOptions replica_filtering_protection = new ReplicaFilteringProtectionOptions();
+
     public volatile Long index_summary_capacity_in_mb;
     public volatile int index_summary_resize_interval_in_minutes = 60;
 
@@ -504,6 +506,24 @@ public class Config
     }
 
     /**
+     * If true, when rows with duplicate clustering keys are detected during a read or compaction
+     * a snapshot will be taken. In the read case, each a snapshot request will be issued to each
+     * replica involved in the query, for compaction the snapshot will be created locally.
+     * These are limited at the replica level so that only a single snapshot per-day can be taken
+     * via this method.
+     *
+     * This requires check_for_duplicate_rows_during_reads and/or check_for_duplicate_rows_during_compaction
+     * below to be enabled
+     */
+    public volatile boolean snapshot_on_duplicate_row_detection = false;
+    /**
+     * If these are enabled duplicate keys will get logged, and if snapshot_on_duplicate_row_detection
+     * is enabled, the table will get snapshotted for offline investigation
+     */
+    public volatile boolean check_for_duplicate_rows_during_reads = true;
+    public volatile boolean check_for_duplicate_rows_during_compaction = true;
+
+    /**
      * Client mode means that the process is a pure client, that uses C* code base but does
      * not read or write local C* database files.
      *
@@ -606,6 +626,7 @@ public class Config
     private static final List<String> SENSITIVE_KEYS = new ArrayList<String>() {{
         add("client_encryption_options");
         add("server_encryption_options");
+        add("encryption_options");
     }};
 
     public static void log(Config config)

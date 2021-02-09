@@ -92,8 +92,23 @@ public class MockSchema
         return sstable(generation, size, keepRef, generation, generation, cfs);
     }
 
+<<<<<<< HEAD:test/unit/org/apache/cassandra/schema/MockSchema.java
     public static SSTableReader sstable(int generation, int size, boolean keepRef, long firstToken, long lastToken, ColumnFamilyStore cfs)
     {
+=======
+    public static SSTableReader sstableWithLevel(int generation, long firstToken, long lastToken, int level, ColumnFamilyStore cfs)
+    {
+        return sstable(generation, 0, false, firstToken, lastToken, level, cfs);
+    }
+
+    public static SSTableReader sstable(int generation, int size, boolean keepRef, long firstToken, long lastToken, ColumnFamilyStore cfs)
+    {
+        return sstable(generation, size, keepRef, firstToken, lastToken, 0, cfs);
+    }
+
+    public static SSTableReader sstable(int generation, int size, boolean keepRef, long firstToken, long lastToken, int level, ColumnFamilyStore cfs)
+    {
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:test/unit/org/apache/cassandra/MockSchema.java
         Descriptor descriptor = new Descriptor(cfs.getDirectories().getDirectoryForNewSSTables(),
                                                cfs.keyspace.getName(),
                                                cfs.getTableName(),
@@ -128,9 +143,16 @@ public class MockSchema
                 throw new RuntimeException(e);
             }
         }
+<<<<<<< HEAD:test/unit/org/apache/cassandra/schema/MockSchema.java
         SerializationHeader header = SerializationHeader.make(cfs.metadata(), Collections.emptyList());
         StatsMetadata metadata = (StatsMetadata) new MetadataCollector(cfs.metadata().comparator)
                                                  .finalizeMetadata(cfs.metadata().partitioner.getClass().getCanonicalName(), 0.01f, UNREPAIRED_SSTABLE, null, false, header)
+=======
+        SerializationHeader header = SerializationHeader.make(cfs.metadata, Collections.emptyList());
+        StatsMetadata metadata = (StatsMetadata) new MetadataCollector(cfs.metadata.comparator)
+                                                 .sstableLevel(level)
+                                                 .finalizeMetadata(cfs.metadata.partitioner.getClass().getCanonicalName(), 0.01f, UNREPAIRED_SSTABLE, header)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:test/unit/org/apache/cassandra/MockSchema.java
                                                  .get(MetadataType.STATS);
         SSTableReader reader = SSTableReader.internalOpen(descriptor, components, cfs.metadata,
                                                           fileHandle.sharedCopy(), fileHandle.sharedCopy(), indexSummary.sharedCopy(),
@@ -167,6 +189,7 @@ public class MockSchema
         return new ColumnFamilyStore(ks, metadata.name, 0, new TableMetadataRef(metadata), new Directories(metadata), false, false, false);
     }
 
+<<<<<<< HEAD:test/unit/org/apache/cassandra/schema/MockSchema.java
     public static TableMetadata newTableMetadata(String ksname)
     {
         return newTableMetadata(ksname, "mockcf" + (id.incrementAndGet()));
@@ -193,8 +216,11 @@ public class MockSchema
     }
 
     public static BufferDecoratedKey readerBounds(long generation)
+=======
+    public static BufferDecoratedKey readerBounds(long token)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:test/unit/org/apache/cassandra/MockSchema.java
     {
-        return new BufferDecoratedKey(new Murmur3Partitioner.LongToken(generation), ByteBufferUtil.EMPTY_BYTE_BUFFER);
+        return new BufferDecoratedKey(new Murmur3Partitioner.LongToken(token), ByteBufferUtil.EMPTY_BYTE_BUFFER);
     }
 
     private static File temp(String id)

@@ -28,6 +28,13 @@ public class ResetFullQueryLog extends NodeToolCmd
     @Override
     public void execute(NodeProbe probe)
     {
+<<<<<<< HEAD:src/java/org/apache/cassandra/tools/nodetool/ResetFullQueryLog.java
         probe.resetFullQueryLogger();
+=======
+        probe.output().out.println(
+                probe.isThriftServerRunning()
+                ? "running"
+                : "not running");
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:src/java/org/apache/cassandra/tools/nodetool/StatusThrift.java
     }
 }

@@ -97,9 +97,14 @@ public final class FileUtils
         }
         catch (Throwable t)
         {
+<<<<<<< HEAD
             logger.error("FATAL: Cannot initialize optimized memory deallocator.");
             JVMStabilityInspector.inspectThrowable(t);
             throw new RuntimeException(t); // causes ExceptionInInitializerError, will prevent startup
+=======
+            logger.error("Cannot initialize un-mmaper.  (Are you using a non-Oracle JVM?)  Compacted data files will not be removed promptly.  Consider using an Oracle JVM or using standard disk access mode", t);
+            JVMStabilityInspector.inspectThrowable(t);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
     }
 
@@ -602,7 +607,7 @@ public final class FileUtils
      */
     public static void handleFSErrorAndPropagate(FSError e)
     {
-        handleFSError(e);
+        JVMStabilityInspector.inspectThrowable(e);
         throw propagate(e);
     }
 

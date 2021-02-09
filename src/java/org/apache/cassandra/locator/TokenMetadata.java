@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.*;
 import org.apache.cassandra.locator.ReplicaCollection.Builder.Conflict;
@@ -103,7 +105,8 @@ public class TokenMetadata
     public final IPartitioner partitioner;
 
     // signals replication strategies that nodes have joined or left the ring and they need to recompute ownership
-    private volatile long ringVersion = 0;
+    @GuardedBy("lock")
+    private long ringVersion = 0;
 
     public TokenMetadata()
     {
@@ -469,7 +472,7 @@ public class TokenMetadata
             }
             endpointToHostIdMap.remove(endpoint);
             sortedTokens = sortTokens();
-            invalidateCachedRings();
+            invalidateCachedRingsUnsafe();
         }
         finally
         {
@@ -489,7 +492,7 @@ public class TokenMetadata
         {
             logger.info("Updating topology for {}", endpoint);
             topology = topology.unbuild().updateEndpoint(endpoint).build();
-            invalidateCachedRings();
+            invalidateCachedRingsUnsafe();
             return topology;
         }
         finally
@@ -509,7 +512,7 @@ public class TokenMetadata
         {
             logger.info("Updating topology for all endpoints that have changed");
             topology = topology.unbuild().updateEndpoints().build();
-            invalidateCachedRings();
+            invalidateCachedRingsUnsafe();
             return topology;
         }
         finally
@@ -538,7 +541,7 @@ public class TokenMetadata
                 }
             }
 
-            invalidateCachedRings();
+            invalidateCachedRingsUnsafe();
         }
         finally
         {
@@ -1181,7 +1184,7 @@ public class TokenMetadata
             movingEndpoints.clear();
             sortedTokens.clear();
             topology = Topology.empty();
-            invalidateCachedRings();
+            invalidateCachedRingsUnsafe();
         }
         finally
         {
@@ -1330,10 +1333,33 @@ public class TokenMetadata
 
     public long getRingVersion()
     {
-        return ringVersion;
+        lock.readLock().lock();
+
+        try
+        {
+            return ringVersion;
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
     }
 
     public void invalidateCachedRings()
+    {   
+        lock.writeLock().lock();
+
+        try
+        {   
+            invalidateCachedRingsUnsafe();
+        }
+        finally
+        {
+            lock.writeLock().unlock();
+        }
+    }
+    
+    private void invalidateCachedRingsUnsafe()
     {
         ringVersion++;
         cachedTokenMap.set(null);

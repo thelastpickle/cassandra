@@ -589,16 +589,25 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
                     }
                     catch (CorruptSSTableException ex)
                     {
-                        FileUtils.handleCorruptSSTable(ex);
+                        JVMStabilityInspector.inspectThrowable(ex);
                         logger.error("Corrupt sstable {}; skipping table", entry, ex);
                         return;
                     }
                     catch (FSError ex)
                     {
-                        FileUtils.handleFSError(ex);
+                        JVMStabilityInspector.inspectThrowable(ex);
                         logger.error("Cannot read sstable {}; file system error, skipping table", entry, ex);
                         return;
                     }
+<<<<<<< HEAD
+=======
+                    catch (IOException ex)
+                    {
+                        JVMStabilityInspector.inspectThrowable(new CorruptSSTableException(ex, entry.getKey().filenameFor(Component.DATA)));
+                        logger.error("Cannot read sstable {}; other IO error, skipping table", entry, ex);
+                        return;
+                    }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                     sstables.add(sstable);
                 }
             };
@@ -1742,7 +1751,7 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     public void markSuspect()
     {
         if (logger.isTraceEnabled())
-            logger.trace("Marking {} as a suspect for blacklisting.", getFilename());
+            logger.trace("Marking {} as a suspect to be excluded from reads.", getFilename());
 
         isSuspect.getAndSet(true);
     }

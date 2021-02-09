@@ -295,8 +295,8 @@ public class DatabaseDescriptor
 
         String loaderClass = System.getProperty(Config.PROPERTY_PREFIX + "config.loader");
         ConfigurationLoader loader = loaderClass == null
-                                   ? new YamlConfigurationLoader()
-                                   : FBUtilities.<ConfigurationLoader>construct(loaderClass, "configuration loading");
+                                     ? new YamlConfigurationLoader()
+                                     : FBUtilities.construct(loaderClass, "configuration loading");
         Config config = loader.loadConfig();
 
         if (!hasLoggedConfig)
@@ -354,7 +354,13 @@ public class DatabaseDescriptor
 
         applySnitch();
 
+<<<<<<< HEAD
         applyInitialTokens();
+=======
+        applyRequestScheduler();
+
+        applyTokensConfig();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         applySeedProvider();
 
@@ -564,11 +570,28 @@ public class DatabaseDescriptor
 
         if (conf.cdc_enabled)
         {
+<<<<<<< HEAD
             // Windows memory-mapped CommitLog files is incompatible with CDC as we hard-link files in cdc_raw. Confirm we don't have both enabled.
             if (FBUtilities.isWindows && conf.commitlog_compression == null)
                 throw new ConfigurationException("Cannot enable cdc on Windows with uncompressed commitlog.");
 
             if (conf.cdc_raw_directory == null)
+=======
+            int preferredSize = 4096;
+            int minSize;
+            try
+            {
+                // use 1/8th of available space.  See discussion on #10013 and #10199 on the CL, taking half that for CDC
+                minSize = Ints.saturatedCast((guessFileStore(conf.cdc_raw_directory).getTotalSpace() / 1048576) / 8);
+            }
+            catch (IOException e)
+            {
+                logger.debug("Error checking disk space", e);
+                throw new ConfigurationException(String.format("Unable to check disk space available to %s. Perhaps the Cassandra user does not have the necessary permissions",
+                                                               conf.cdc_raw_directory), e);
+            }
+            if (minSize < preferredSize)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             {
                 conf.cdc_raw_directory = storagedirFor("cdc_raw");
             }
@@ -674,10 +697,14 @@ public class DatabaseDescriptor
         if (conf.concurrent_compactors <= 0)
             throw new ConfigurationException("concurrent_compactors should be strictly greater than 0, but was " + conf.concurrent_compactors, false);
 
+<<<<<<< HEAD
         if (conf.concurrent_materialized_view_builders <= 0)
             throw new ConfigurationException("concurrent_materialized_view_builders should be strictly greater than 0, but was " + conf.concurrent_materialized_view_builders, false);
 
         if (conf.num_tokens > MAX_NUM_TOKENS)
+=======
+        if (conf.num_tokens != null && conf.num_tokens > MAX_NUM_TOKENS)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             throw new ConfigurationException(String.format("A maximum number of %d tokens per node is supported", MAX_NUM_TOKENS), false);
 
         try
@@ -737,6 +764,21 @@ public class DatabaseDescriptor
             throw new ConfigurationException("index_summary_capacity_in_mb option was set incorrectly to '"
                                              + conf.index_summary_capacity_in_mb + "', it should be a non-negative integer.", false);
 
+<<<<<<< HEAD
+=======
+        if (conf.index_interval != null)
+            logger.warn("index_interval has been deprecated and should be removed from cassandra.yaml");
+
+        if (conf.encryption_options != null)
+        {
+            logger.warn("Please rename encryption_options as server_encryption_options in the yaml");
+            //operate under the assumption that server_encryption_options is not set in yaml rather than both
+            conf.server_encryption_options = conf.encryption_options;
+        }
+
+        conf.server_encryption_options.validate();
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         if (conf.user_defined_function_fail_timeout < 0)
             throw new ConfigurationException("user_defined_function_fail_timeout must not be negative", false);
         if (conf.user_defined_function_warn_timeout < 0)
@@ -896,7 +938,7 @@ public class DatabaseDescriptor
             }
             catch (UnknownHostException e)
             {
-                throw new ConfigurationException("Unknown listen_address '" + config.listen_address + "'", false);
+                throw new ConfigurationException("Unknown listen_address '" + config.listen_address + '\'', false);
             }
 
             if (listenAddress.isAnyLocalAddress())
@@ -916,7 +958,7 @@ public class DatabaseDescriptor
             }
             catch (UnknownHostException e)
             {
-                throw new ConfigurationException("Unknown broadcast_address '" + config.broadcast_address + "'", false);
+                throw new ConfigurationException("Unknown broadcast_address '" + config.broadcast_address + '\'', false);
             }
 
             if (broadcastAddress.isAnyLocalAddress())
@@ -957,7 +999,7 @@ public class DatabaseDescriptor
             }
             catch (UnknownHostException e)
             {
-                throw new ConfigurationException("Unknown broadcast_rpc_address '" + config.broadcast_rpc_address + "'", false);
+                throw new ConfigurationException("Unknown broadcast_rpc_address '" + config.broadcast_rpc_address + '\'', false);
             }
 
             if (broadcastRpcAddress.isAnyLocalAddress())
@@ -1011,20 +1053,56 @@ public class DatabaseDescriptor
             throw new ConfigurationException("The seed provider lists no seeds.", false);
     }
 
+<<<<<<< HEAD
     @VisibleForTesting
     static void checkForLowestAcceptedTimeouts(Config conf)
+=======
+    public static void applyTokensConfig()
+    {
+        applyTokensConfig(conf);
+    }
+
+    static void applyTokensConfig(Config conf)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         if(conf.read_request_timeout_in_ms < LOWEST_ACCEPTED_TIMEOUT)
         {
+<<<<<<< HEAD
            logInfo("read_request_timeout_in_ms", conf.read_request_timeout_in_ms, LOWEST_ACCEPTED_TIMEOUT);
            conf.read_request_timeout_in_ms = LOWEST_ACCEPTED_TIMEOUT;
         }
+=======
+            Collection<String> tokens = tokensFromString(conf.initial_token);
+            if (conf.num_tokens == null)
+            {
+                if (tokens.size() == 1)
+                    conf.num_tokens = 1;
+                else
+                    throw new ConfigurationException("initial_token was set but num_tokens is not!", false);
+            }
+
+            if (tokens.size() != conf.num_tokens)
+            {
+                throw new ConfigurationException(String.format("The number of initial tokens (by initial_token) specified (%s) is different from num_tokens value (%s)",
+                                                               tokens.size(),
+                                                               conf.num_tokens),
+                                                 false);
+            }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         if(conf.range_request_timeout_in_ms < LOWEST_ACCEPTED_TIMEOUT)
         {
            logInfo("range_request_timeout_in_ms", conf.range_request_timeout_in_ms, LOWEST_ACCEPTED_TIMEOUT);
            conf.range_request_timeout_in_ms = LOWEST_ACCEPTED_TIMEOUT;
         }
+<<<<<<< HEAD
+=======
+        else if (conf.num_tokens == null)
+        {
+            conf.num_tokens = 1;
+        }
+    }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         if(conf.request_timeout_in_ms < LOWEST_ACCEPTED_TIMEOUT)
         {
@@ -1086,10 +1164,17 @@ public class DatabaseDescriptor
         snitch = createEndpointSnitch(conf.dynamic_snitch, conf.endpoint_snitch);
         EndpointSnitchInfo.create();
 
+<<<<<<< HEAD
         localDC = snitch.getLocalDatacenter();
         localComparator = (replica1, replica2) -> {
             boolean local1 = localDC.equals(snitch.getDatacenter(replica1));
             boolean local2 = localDC.equals(snitch.getDatacenter(replica2));
+=======
+        localDC = snitch.getDatacenter(FBUtilities.getBroadcastAddress());
+        localComparator = (endpoint1, endpoint2) -> {
+            boolean local1 = localDC.equals(snitch.getDatacenter(endpoint1));
+            boolean local2 = localDC.equals(snitch.getDatacenter(endpoint2));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             if (local1 && !local2)
                 return -1;
             if (local2 && !local1)
@@ -1475,7 +1560,7 @@ public class DatabaseDescriptor
 
     public static Collection<String> tokensFromString(String tokenString)
     {
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         if (tokenString != null)
             for (String token : StringUtils.split(tokenString, ','))
                 tokens.add(token.trim());
@@ -1870,6 +1955,26 @@ public class DatabaseDescriptor
     public static void setTombstoneFailureThreshold(int threshold)
     {
         conf.tombstone_failure_threshold = threshold;
+    }
+
+    public static int getCachedReplicaRowsWarnThreshold()
+    {
+        return conf.replica_filtering_protection.cached_rows_warn_threshold;
+    }
+
+    public static void setCachedReplicaRowsWarnThreshold(int threshold)
+    {
+        conf.replica_filtering_protection.cached_rows_warn_threshold = threshold;
+    }
+
+    public static int getCachedReplicaRowsFailThreshold()
+    {
+        return conf.replica_filtering_protection.cached_rows_fail_threshold;
+    }
+
+    public static void setCachedReplicaRowsFailThreshold(int threshold)
+    {
+        conf.replica_filtering_protection.cached_rows_fail_threshold = threshold;
     }
 
     /**
@@ -2313,7 +2418,7 @@ public class DatabaseDescriptor
     public static File getSerializedCachePath(CacheType cacheType, String version, String extension)
     {
         String name = cacheType.toString()
-                + (version == null ? "" : "-" + version + "." + extension);
+                + (version == null ? "" : '-' + version + '.' + extension);
         return new File(conf.saved_caches_directory, name);
     }
 
@@ -3021,6 +3126,7 @@ public class DatabaseDescriptor
         return strictRuntimeChecks;
     }
 
+<<<<<<< HEAD
     public static boolean useOffheapMerkleTrees()
     {
         return conf.use_offheap_merkle_trees;
@@ -3109,4 +3215,36 @@ public class DatabaseDescriptor
     {
         conf.range_tombstone_list_growth_factor = resizeFactor;
     }
+=======
+    public static boolean snapshotOnDuplicateRowDetection()
+    {
+        return conf.snapshot_on_duplicate_row_detection;
+    }
+
+    public static void setSnapshotOnDuplicateRowDetection(boolean enabled)
+    {
+        conf.snapshot_on_duplicate_row_detection = enabled;
+    }
+
+    public static boolean checkForDuplicateRowsDuringReads()
+    {
+        return conf.check_for_duplicate_rows_during_reads;
+    }
+
+    public static void setCheckForDuplicateRowsDuringReads(boolean enabled)
+    {
+        conf.check_for_duplicate_rows_during_reads = enabled;
+    }
+
+    public static boolean checkForDuplicateRowsDuringCompaction()
+    {
+        return conf.check_for_duplicate_rows_during_compaction;
+    }
+
+    public static void setCheckForDuplicateRowsDuringCompaction(boolean enabled)
+    {
+        conf.check_for_duplicate_rows_during_compaction = enabled;
+    }
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 }

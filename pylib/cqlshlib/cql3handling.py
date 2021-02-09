@@ -487,8 +487,12 @@ def ks_prop_val_mapender_completer(ctxt, cass):
 
 
 def cf_prop_name_completer(ctxt, cass):
+<<<<<<< HEAD
     return [c[0] for c in (CqlRuleSet.columnfamily_layout_options
                            + CqlRuleSet.columnfamily_layout_map_options)]
+=======
+    return [c[0] for c in (CqlRuleSet.columnfamily_layout_options + CqlRuleSet.columnfamily_layout_map_options)]
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 
 def cf_prop_val_completer(ctxt, cass):

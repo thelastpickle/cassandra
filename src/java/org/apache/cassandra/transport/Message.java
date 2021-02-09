@@ -462,8 +462,11 @@ public abstract class Message
     public static class Dispatcher extends SimpleChannelInboundHandler<Request>
     {
         private static final LocalAwareExecutorService requestExecutor = SHARED.newExecutor(DatabaseDescriptor.getNativeTransportMaxThreads(),
+<<<<<<< HEAD
                                                                                             DatabaseDescriptor::setNativeTransportMaxThreads,
                                                                                             Integer.MAX_VALUE,
+=======
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                                                                                             "transport",
                                                                                             "Native-Transport-Requests");
 

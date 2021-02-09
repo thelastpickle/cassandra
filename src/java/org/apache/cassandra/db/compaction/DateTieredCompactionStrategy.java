@@ -36,6 +36,12 @@ import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.schema.CompactionParams;
 import org.apache.cassandra.utils.Pair;
+<<<<<<< HEAD
+=======
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 import static com.google.common.collect.Iterables.filter;
 

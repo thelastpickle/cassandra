@@ -47,6 +47,7 @@ import org.apache.cassandra.io.sstable.*;
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.utils.DirectorySizeCalculator;
 import org.apache.cassandra.utils.FBUtilities;
+import org.apache.cassandra.utils.JVMStabilityInspector;
 import org.apache.cassandra.utils.Pair;
 
 /**
@@ -251,7 +252,7 @@ public class Directories
             {
                 // don't just let the default exception handler do this, we need the create loop to continue
                 logger.error("Failed to create {} directory", dir);
-                FileUtils.handleFSError(e);
+                JVMStabilityInspector.inspectThrowable(e);
             }
         }
 
@@ -324,10 +325,10 @@ public class Directories
 
     /**
      * Basically the same as calling {@link #getWriteableLocationAsFile(long)} with an unknown size ({@code -1L}),
-     * which may return any non-blacklisted directory - even a data directory that has no usable space.
+     * which may return any allowed directory - even a data directory that has no usable space.
      * Do not use this method in production code.
      *
-     * @throws FSWriteError if all directories are blacklisted.
+     * @throws FSWriteError if all directories are disallowed.
      */
     public File getDirectoryForNewSSTables()
     {
@@ -335,9 +336,9 @@ public class Directories
     }
 
     /**
-     * Returns a non-blacklisted data directory that _currently_ has {@code writeSize} bytes as usable space.
+     * Returns an allowed directory that _currently_ has {@code writeSize} bytes as usable space.
      *
-     * @throws FSWriteError if all directories are blacklisted.
+     * @throws FSWriteError if all directories are disallowed.
      */
     public File getWriteableLocationAsFile(long writeSize)
     {
@@ -348,6 +349,7 @@ public class Directories
     }
 
     /**
+<<<<<<< HEAD
      * Returns a data directory to load the file {@code sourceFile}. If the sourceFile is on same disk partition as any
      * data directory then use that one as data directory otherwise use {@link #getWriteableLocationAsFile(long)} to
      * find suitable data directory.
@@ -384,10 +386,13 @@ public class Directories
 
     /**
      * Returns a temporary subdirectory on non-blacklisted data directory
+=======
+     * Returns a temporary subdirectory on allowed data directory
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
      * that _currently_ has {@code writeSize} bytes as usable space.
      * This method does not create the temporary directory.
      *
-     * @throws IOError if all directories are blacklisted.
+     * @throws IOError if all directories are disallowed.
      */
     public File getTemporaryWriteableDirectoryAsFile(long writeSize)
     {
@@ -411,10 +416,9 @@ public class Directories
     }
 
     /**
-     * Returns a non-blacklisted data directory that _currently_ has {@code writeSize} bytes as usable space, null if
-     * there is not enough space left in all directories.
+     * Returns an allowed data directory that _currently_ has {@code writeSize} bytes as usable space.
      *
-     * @throws FSWriteError if all directories are blacklisted.
+     * @throws FSWriteError if all directories are disallowed.
      */
     public DataDirectory getWriteableLocation(long writeSize)
     {
@@ -422,13 +426,13 @@ public class Directories
 
         long totalAvailable = 0L;
 
-        // pick directories with enough space and so that resulting sstable dirs aren't blacklisted for writes.
+        // pick directories with enough space and so that resulting sstable dirs aren't disallowed for writes.
         boolean tooBig = false;
         for (DataDirectory dataDir : paths)
         {
-            if (BlacklistedDirectories.isUnwritable(getLocationForDisk(dataDir)))
+            if (DisallowedDirectories.isUnwritable(getLocationForDisk(dataDir)))
             {
-                logger.trace("removing blacklisted candidate {}", dataDir.location);
+                logger.trace("removing disallowed candidate {}", dataDir.location);
                 continue;
             }
             DataDirectoryCandidate candidate = new DataDirectoryCandidate(dataDir);
@@ -447,7 +451,7 @@ public class Directories
             if (tooBig)
                 throw new FSDiskFullWriteError(new IOException("Insufficient disk space to write " + writeSize + " bytes"), "");
             else
-                throw new FSWriteError(new IOException("All configured data directories have been blacklisted as unwritable for erroring out"), "");
+                throw new FSWriteError(new IOException("All configured data directories have been disallowed as unwritable for erroring out"), "");
 
         // shortcut for single data directory systems
         if (candidates.size() == 1)
@@ -492,8 +496,8 @@ public class Directories
 
         for (DataDirectory dataDir : paths)
         {
-            if (BlacklistedDirectories.isUnwritable(getLocationForDisk(dataDir)))
-                continue;
+            if (DisallowedDirectories.isUnwritable(getLocationForDisk(dataDir)))
+                  continue;
             DataDirectoryCandidate candidate = new DataDirectoryCandidate(dataDir);
             // exclude directory if its total writeSize does not fit to data directory
             if (candidate.availableSpace < writeSize)
@@ -505,14 +509,14 @@ public class Directories
 
     public DataDirectory[] getWriteableLocations()
     {
-        List<DataDirectory> nonBlacklistedDirs = new ArrayList<>();
+        List<DataDirectory> allowedDirs = new ArrayList<>();
         for (DataDirectory dir : paths)
         {
-            if (!BlacklistedDirectories.isUnwritable(dir.location))
-                nonBlacklistedDirs.add(dir);
+            if (!DisallowedDirectories.isUnwritable(dir.location))
+                allowedDirs.add(dir);
         }
 
-        Collections.sort(nonBlacklistedDirs, new Comparator<DataDirectory>()
+        Collections.sort(allowedDirs, new Comparator<DataDirectory>()
         {
             @Override
             public int compare(DataDirectory o1, DataDirectory o2)
@@ -520,7 +524,7 @@ public class Directories
                 return o1.location.compareTo(o2.location);
             }
         });
-        return nonBlacklistedDirs.toArray(new DataDirectory[nonBlacklistedDirs.size()]);
+        return allowedDirs.toArray(new DataDirectory[allowedDirs.size()]);
     }
 
     public static File getSnapshotDirectory(Descriptor desc, String snapshotName)
@@ -541,7 +545,7 @@ public class Directories
      */
     public static File getSnapshotDirectory(File location, String snapshotName)
     {
-        if (location.getName().startsWith(SECONDARY_INDEX_NAME_SEPARATOR))
+        if (isSecondaryIndexFolder(location))
         {
             return getOrCreate(location.getParentFile(), SNAPSHOT_SUBDIR, snapshotName, location.getName());
         }
@@ -581,7 +585,7 @@ public class Directories
 
     public static File getBackupsDirectory(File location)
     {
-        if (location.getName().startsWith(SECONDARY_INDEX_NAME_SEPARATOR))
+        if (isSecondaryIndexFolder(location))
         {
             return getOrCreate(location.getParentFile(), BACKUPS_SUBDIR, location.getName());
         }
@@ -780,7 +784,7 @@ public class Directories
 
             for (File location : dataPaths)
             {
-                if (BlacklistedDirectories.isUnreadable(location))
+                if (DisallowedDirectories.isUnreadable(location))
                     continue;
 
                 if (snapshotName != null)
@@ -877,9 +881,9 @@ public class Directories
         final List<File> snapshots = new LinkedList<>();
         for (final File dir : dataPaths)
         {
-            File snapshotDir = dir.getName().startsWith(SECONDARY_INDEX_NAME_SEPARATOR) ?
-                                       new File(dir.getParent(), SNAPSHOT_SUBDIR) :
-                                       new File(dir, SNAPSHOT_SUBDIR);
+            File snapshotDir = isSecondaryIndexFolder(dir)
+                               ? new File(dir.getParent(), SNAPSHOT_SUBDIR)
+                               : new File(dir, SNAPSHOT_SUBDIR);
             if (snapshotDir.exists() && snapshotDir.isDirectory())
             {
                 final File[] snapshotDirs  = snapshotDir.listFiles();
@@ -902,7 +906,7 @@ public class Directories
         for (File dir : dataPaths)
         {
             File snapshotDir;
-            if (dir.getName().startsWith(SECONDARY_INDEX_NAME_SEPARATOR))
+            if (isSecondaryIndexFolder(dir))
             {
                 snapshotDir = new File(dir.getParentFile(), join(SNAPSHOT_SUBDIR, snapshotName, dir.getName()));
             }
@@ -961,9 +965,9 @@ public class Directories
         long result = 0L;
         for (File dir : dataPaths)
         {
-            File snapshotDir = dir.getName().startsWith(SECONDARY_INDEX_NAME_SEPARATOR) ?
-                                       new File(dir.getParent(), SNAPSHOT_SUBDIR) :
-                                       new File(dir, SNAPSHOT_SUBDIR);
+            File snapshotDir = isSecondaryIndexFolder(dir)
+                               ? new File(dir.getParent(), SNAPSHOT_SUBDIR)
+                               : new File(dir, SNAPSHOT_SUBDIR);
             result += getTrueAllocatedSizeIn(snapshotDir);
         }
         return result;
@@ -1023,6 +1027,11 @@ public class Directories
             }
         }
         return result;
+    }
+
+    public static boolean isSecondaryIndexFolder(File dir)
+    {
+        return dir.getName().startsWith(SECONDARY_INDEX_NAME_SEPARATOR);
     }
 
     public List<File> getCFDirectories()

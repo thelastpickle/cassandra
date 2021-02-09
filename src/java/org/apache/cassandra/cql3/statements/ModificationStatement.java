@@ -20,7 +20,11 @@ package org.apache.cassandra.cql3.statements;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+<<<<<<< HEAD
 import com.google.common.collect.ImmutableList;
+=======
+import com.google.common.collect.HashMultiset;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -362,12 +366,7 @@ public abstract class ModificationStatement implements CQLStatement
 
     public boolean requiresRead()
     {
-        // Lists SET operation incurs a read.
-        for (Operation op : allOperations())
-            if (op.requiresRead())
-                return true;
-
-        return false;
+        return !requiresRead.isEmpty();
     }
 
     private Map<DecoratedKey, Partition> readRequiredLists(Collection<ByteBuffer> partitionKeys,
@@ -676,6 +675,7 @@ public abstract class ModificationStatement implements CQLStatement
      *
      * @return list of the mutations
      */
+<<<<<<< HEAD
     private List<? extends IMutation> getMutations(QueryOptions options,
                                                          boolean local,
                                                          long timestamp,
@@ -684,17 +684,30 @@ public abstract class ModificationStatement implements CQLStatement
     {
         UpdatesCollector collector = new SingleTableUpdatesCollector(metadata, updatedColumns, 1);
         addUpdates(collector, options, local, timestamp, nowInSeconds, queryStartNanoTime);
+=======
+    private Collection<? extends IMutation> getMutations(QueryOptions options, boolean local, long now, long queryStartNanoTime)
+    {
+        List<ByteBuffer> keys = buildPartitionKeyNames(options);
+        HashMultiset<ByteBuffer> perPartitionKeyCounts = HashMultiset.create();
+        for (int i = 0; i < keys.size(); i++)
+            perPartitionKeyCounts.add(keys.get(i)); // avoid .addAll since that allocates an iterator
+
+        UpdatesCollector collector = new UpdatesCollector(Collections.singletonMap(cfm.cfId, updatedColumns), Collections.singletonMap(cfm.cfId, perPartitionKeyCounts));
+        addUpdates(collector, keys, options, local, now, queryStartNanoTime);
+        collector.validateIndexedColumns();
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         return collector.toMutations();
     }
 
     final void addUpdates(UpdatesCollector collector,
+                          List<ByteBuffer> keys,
                           QueryOptions options,
                           boolean local,
                           long timestamp,
                           int nowInSeconds,
                           long queryStartNanoTime)
     {
-        List<ByteBuffer> keys = buildPartitionKeyNames(options);
 
         if (hasSlices())
         {
@@ -709,6 +722,7 @@ public abstract class ModificationStatement implements CQLStatement
                                                            options,
                                                            DataLimits.NONE,
                                                            local,
+<<<<<<< HEAD
                                                            timestamp,
                                                            nowInSeconds,
                                                            queryStartNanoTime);
@@ -716,6 +730,16 @@ public abstract class ModificationStatement implements CQLStatement
             {
                 Validation.validateKey(metadata(), key);
                 DecoratedKey dk = metadata().partitioner.decorateKey(key);
+=======
+                                                           now,
+                                                           queryStartNanoTime,
+                                                           (int) (collector.createdAt / 1000));
+            for (int i = 0, isize = keys.size(); i < isize; i++)
+            {
+                ByteBuffer key = keys.get(i);
+                ThriftValidation.validateKey(cfm, key);
+                DecoratedKey dk = cfm.decorateKey(key);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
                 PartitionUpdate.Builder updateBuilder = collector.getPartitionUpdateBuilder(metadata(), dk, options.getConsistency());
 
@@ -731,12 +755,22 @@ public abstract class ModificationStatement implements CQLStatement
             if (restrictions.hasClusteringColumnsRestrictions() && clusterings.isEmpty())
                 return;
 
+<<<<<<< HEAD
             UpdateParameters params = makeUpdateParameters(keys, clusterings, options, local, timestamp, nowInSeconds, queryStartNanoTime);
+=======
+            UpdateParameters params = makeUpdateParameters(keys, clusterings, options, local, now, queryStartNanoTime, (int) (collector.createdAt / 1000));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
-            for (ByteBuffer key : keys)
+            for (int i = 0, isize = keys.size(); i < isize; i++)
             {
+<<<<<<< HEAD
                 Validation.validateKey(metadata(), key);
                 DecoratedKey dk = metadata().partitioner.decorateKey(key);
+=======
+                ByteBuffer key = keys.get(i);
+                ThriftValidation.validateKey(cfm, key);
+                DecoratedKey dk = cfm.decorateKey(key);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
                 PartitionUpdate.Builder updateBuilder = collector.getPartitionUpdateBuilder(metadata(), dk, options.getConsistency());
 
@@ -774,9 +808,15 @@ public abstract class ModificationStatement implements CQLStatement
                                                   NavigableSet<Clustering> clusterings,
                                                   QueryOptions options,
                                                   boolean local,
+<<<<<<< HEAD
                                                   long timestamp,
                                                   int nowInSeconds,
                                                   long queryStartNanoTime)
+=======
+                                                  long now,
+                                                  long queryStartNanoTime,
+                                                  int nowInSec)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         if (clusterings.contains(Clustering.STATIC_CLUSTERING))
             return makeUpdateParameters(keys,
@@ -784,18 +824,30 @@ public abstract class ModificationStatement implements CQLStatement
                                         options,
                                         DataLimits.cqlLimits(1),
                                         local,
+<<<<<<< HEAD
                                         timestamp,
                                         nowInSeconds,
                                         queryStartNanoTime);
+=======
+                                        now,
+                                        queryStartNanoTime,
+                                        nowInSec);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         return makeUpdateParameters(keys,
                                     new ClusteringIndexNamesFilter(clusterings, false),
                                     options,
                                     DataLimits.NONE,
                                     local,
+<<<<<<< HEAD
                                     timestamp,
                                     nowInSeconds,
                                     queryStartNanoTime);
+=======
+                                    now,
+                                    queryStartNanoTime,
+                                    nowInSec);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     private UpdateParameters makeUpdateParameters(Collection<ByteBuffer> keys,
@@ -803,9 +855,15 @@ public abstract class ModificationStatement implements CQLStatement
                                                   QueryOptions options,
                                                   DataLimits limits,
                                                   boolean local,
+<<<<<<< HEAD
                                                   long timestamp,
                                                   int nowInSeconds,
                                                   long queryStartNanoTime)
+=======
+                                                  long now,
+                                                  long queryStartNanoTime,
+                                                  int nowInSec)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         // Some lists operation requires reading
         Map<DecoratedKey, Partition> lists =

@@ -513,6 +513,11 @@ public interface CQL3Type
             return false;
         }
 
+        public boolean isTuple()
+        {
+            return false;
+        }
+
         public String keyspace()
         {
             return null;
@@ -665,7 +670,8 @@ public interface CQL3Type
             {
                 assert values != null : "Got null values type for a collection";
 
-                if (!frozen && values.supportsFreezing() && !values.frozen)
+                // skip if innerType is tuple, since tuple is implicitly forzen
+                if (!frozen && values.supportsFreezing() && !values.frozen && !values.isTuple())
                     throwNestedNonFrozenError(values);
 
                 // we represent supercolumns as maps, internally, and we do allow counters in supercolumns. Thus,
@@ -706,8 +712,6 @@ public interface CQL3Type
                     throw new InvalidRequestException("Non-frozen collections are not allowed inside collections: " + this);
                 else if (innerType.isUDT())
                     throw new InvalidRequestException("Non-frozen UDTs are not allowed inside collections: " + this);
-                else
-                    throw new InvalidRequestException("Non-frozen tuples are not allowed inside collections: " + this);
             }
 
             public boolean referencesUserType(String name)
@@ -807,8 +811,13 @@ public interface CQL3Type
 
             private RawTuple(List<CQL3Type.Raw> types, boolean frozen)
             {
+<<<<<<< HEAD
                 super(frozen);
+=======
+                frozen = true;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 this.types = types;
+                freeze();
             }
 
             public boolean supportsFreezing()
@@ -828,10 +837,15 @@ public interface CQL3Type
 
             public CQL3Type prepare(String keyspace, Types udts) throws InvalidRequestException
             {
+<<<<<<< HEAD
                 RawTuple raw = frozen ? this : freeze();
 
                 List<AbstractType<?>> ts = new ArrayList<>(raw.types.size());
                 for (CQL3Type.Raw t : raw.types)
+=======
+                List<AbstractType<?>> ts = new ArrayList<>(types.size());
+                for (CQL3Type.Raw t : types)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 {
                     if (t.isCounter())
                         throw new InvalidRequestException("Counters are not allowed inside tuples");
@@ -839,6 +853,11 @@ public interface CQL3Type
                     ts.add(t.prepare(keyspace, udts).getType());
                 }
                 return new Tuple(new TupleType(ts));
+            }
+
+            public boolean isTuple()
+            {
+                return true;
             }
 
             public boolean referencesUserType(String name)

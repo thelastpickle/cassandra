@@ -46,7 +46,11 @@ Commitlogs are an append only log of all mutations local to a Cassandra node. An
     - ``commitlog_sync_period_in_ms``: Time to wait between "periodic" fsyncs
     *Default Value:* 10000
 
+<<<<<<< HEAD
 *Default Value:* batch
+=======
+*Default Value:* periodic
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 *** NOTE: In the event of an unexpected shutdown, Cassandra can lose up to the sync period or more if the sync is delayed. If using "batch" mode, it is recommended to store commitlogs in a separate, dedicated device.**
 

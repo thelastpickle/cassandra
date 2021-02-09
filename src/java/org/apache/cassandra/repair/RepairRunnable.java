@@ -325,9 +325,30 @@ public class RepairRunnable implements Runnable, ProgressEventNotifier
                                                                            options.getDataCenters(),
                                                                            options.getHosts());
 
+<<<<<<< HEAD
             addRangeToNeighbors(commonRanges, range, neighbors);
             allNeighbors.addAll(neighbors.endpoints());
         }
+=======
+                if (neighbors.isEmpty())
+                {
+                    if (options.ignoreUnreplicatedKeyspaces())
+                    {
+                        logger.info("Found no neighbors for range {} for {} - ignoring since repairing with --ignore-unreplicated-keyspaces", range, keyspace);
+                        continue;
+                    }
+                    else
+                    {
+                        String errorMessage = String.format("Nothing to repair for %s in %s - aborting", range, keyspace);
+                        logger.error("Repair {}",  errorMessage);
+                        fireErrorAndComplete(tag, progress.get(), totalProgress, errorMessage);
+                        return;
+                    }
+                }
+                addRangeToNeighbors(commonRanges, range, neighbors);
+                allNeighbors.addAll(neighbors);
+            }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         progressCounter.incrementAndGet();
 
@@ -350,9 +371,29 @@ public class RepairRunnable implements Runnable, ProgressEventNotifier
         }
     }
 
+<<<<<<< HEAD
     private void maybeStoreParentRepairSuccess(Collection<Range<Token>> successfulRanges)
     {
         if (!options.isPreview())
+=======
+        if (options.ignoreUnreplicatedKeyspaces() && allNeighbors.isEmpty())
+        {
+            String ignoreUnreplicatedMessage = String.format("Nothing to repair for %s in %s - unreplicated keyspace is ignored since repair was called with --ignore-unreplicated-keyspaces",
+                                                             options.getRanges(),
+                                                             keyspace);
+
+            logger.info("Repair {}", ignoreUnreplicatedMessage);
+            fireProgressEvent(tag, new ProgressEvent(ProgressEventType.COMPLETE,
+                                                     progress.get(),
+                                                     totalProgress,
+                                                     ignoreUnreplicatedMessage));
+            return;
+        }
+
+        // Validate columnfamilies
+        List<ColumnFamilyStore> columnFamilyStores = new ArrayList<>();
+        try
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         {
             SystemDistributedKeyspace.successfulParentRepair(parentSession, successfulRanges);
         }

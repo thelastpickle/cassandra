@@ -34,6 +34,8 @@ import org.junit.Test;
 import com.datastax.driver.core.Row;
 import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.cql3.UntypedResultSet;
+import org.apache.cassandra.transport.Event.SchemaChange.Change;
+import org.apache.cassandra.transport.Event.SchemaChange.Target;
 import org.apache.cassandra.transport.ProtocolVersion;
 import org.apache.cassandra.utils.UUIDGen;
 
@@ -452,6 +454,7 @@ public class UFTypesTest extends CQLTester
         execute("INSERT INTO %s (a, b) VALUES (?, ?)", 2, tuple(4, 5));
         execute("INSERT INTO %s (a, b) VALUES (?, ?)", 3, tuple(7, 8));
 
+<<<<<<< HEAD
         assertInvalidMessage("Argument 'tuple<int, int>' cannot be frozen; remove frozen<> modifier from 'tuple<int, int>'",
                              "CREATE OR REPLACE FUNCTION " + KEYSPACE + ".withFrozenArg(values frozen<tuple<int, int>>) " +
                              "CALLED ON NULL INPUT " +
@@ -465,6 +468,22 @@ public class UFTypesTest extends CQLTester
                              "RETURNS frozen<tuple<int, int>> " +
                              "LANGUAGE java\n" +
                              "AS 'return values;';");
+=======
+        // Tuples are always frozen. Both 'tuple' and 'frozen tuple' have the same effect.
+        // So allows to create function with explicit frozen tuples as argument and return types.
+        String toDrop = createFunction(KEYSPACE,
+                                       "frozen<tuple<int, int>>",
+                                       "CREATE FUNCTION %s (values frozen<tuple<int, int>>) " +
+                                       "CALLED ON NULL INPUT " +
+                                       "RETURNS frozen<tuple<int, int>> " +
+                                       "LANGUAGE java\n" +
+                                       "AS 'return values;';");
+        // Same as above, dropping a function with explicity frozen tuple should be allowed.
+        assertSchemaChange("DROP FUNCTION " + toDrop + "(frozen<tuple<int, int>>);",
+                           Change.DROPPED, Target.FUNCTION,
+                           KEYSPACE, shortFunctionName(toDrop),
+                           "frozen<tuple<int, int>>");
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         String functionName = createFunction(KEYSPACE,
                                              "tuple<int, int>",
@@ -490,8 +509,16 @@ public class UFTypesTest extends CQLTester
         assertRows(execute("SELECT a FROM %s WHERE b = " + functionName + "(?)", tuple(1, 2)),
                    row(1));
 
+<<<<<<< HEAD
         assertInvalidMessage("Argument 'tuple<int, int>' cannot be frozen; remove frozen<> modifier from 'tuple<int, int>'",
                              "DROP FUNCTION " + functionName + "(frozen<tuple<int, int>>);");
+=======
+        assertSchemaChange("DROP FUNCTION " + functionName + "(frozen<tuple<int, int>>);",
+                           Change.DROPPED,
+                           Target.FUNCTION,
+                           KEYSPACE, shortFunctionName(functionName),
+                           "frozen<tuple<int, int>>");
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     @Test

@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -693,10 +694,24 @@ public interface StorageServiceMBean extends NotificationEmitter
     /** Sets the threshold for abandoning queries with many tombstones */
     public void setTombstoneFailureThreshold(int tombstoneDebugThreshold);
 
+<<<<<<< HEAD
     /** Returns the threshold for skipping the column index when caching partition info **/
     public int getColumnIndexCacheSize();
     /** Sets the threshold for skipping the column index when caching partition info **/
     public void setColumnIndexCacheSize(int cacheSizeInKB);
+=======
+    /** Returns the number of rows cached at the coordinator before filtering/index queries log a warning. */
+    public int getCachedReplicaRowsWarnThreshold();
+
+    /** Sets the number of rows cached at the coordinator before filtering/index queries log a warning. */
+    public void setCachedReplicaRowsWarnThreshold(int threshold);
+
+    /** Returns the number of rows cached at the coordinator before filtering/index queries fail outright. */
+    public int getCachedReplicaRowsFailThreshold();
+
+    /** Sets the number of rows cached at the coordinator before filtering/index queries fail outright. */
+    public void setCachedReplicaRowsFailThreshold(int threshold);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
     /** Returns the threshold for rejecting queries due to a large batch size */
     public int getBatchSizeFailureThreshold();
@@ -719,6 +734,7 @@ public interface StorageServiceMBean extends NotificationEmitter
      */
     public boolean resumeBootstrap();
 
+<<<<<<< HEAD
     /** Gets the concurrency settings for processing stages*/
     static class StageConcurrency implements Serializable
     {
@@ -780,4 +796,11 @@ public interface StorageServiceMBean extends NotificationEmitter
 
     /** Returns the resize factor to use when growing/resizing a RangeTombstoneList */
     public double getRangeTombstoneResizeListGrowthFactor();
+=======
+    /** Returns the max version that this node will negotiate for native protocol connections */
+    public int getMaxNativeProtocolVersion();
+
+    /** Returns a map of schema version -> list of endpoints reporting that version that we need schema updates for */
+    public Map<String, Set<InetAddress>> getOutstandingSchemaVersions();
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 }

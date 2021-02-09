@@ -435,6 +435,7 @@ public class DatabaseDescriptorTest
     }
 
     @Test
+<<<<<<< HEAD
     public void testCalculateDefaultSpaceInMB()
     {
         // check prefered size is used for a small storage volume
@@ -454,5 +455,95 @@ public class DatabaseDescriptorTest
 
         assertEquals(100, // total size is more than preferred so keep the configured limit
                      DatabaseDescriptor.calculateDefaultSpaceInMB("type", "/path", "setting_name", preferredInMB, spaceInBytes, numerator, denominator));
+=======
+    public void testApplyTokensConfigInitialTokensSetNumTokensSetAndDoesMatch()
+    {
+        Config config = DatabaseDescriptor.loadConfig();
+        config.initial_token = "0,256,1024";
+        config.num_tokens = 3;
+
+        try
+        {
+            DatabaseDescriptor.applyTokensConfig(config);
+            Assert.assertEquals(Integer.valueOf(3), config.num_tokens);
+            Assert.assertEquals(3, DatabaseDescriptor.tokensFromString(config.initial_token).size());
+        }
+        catch (ConfigurationException e)
+        {
+            Assert.fail("number of tokens in initial_token=0,256,1024 does not match num_tokens = 3");
+        }
+    }
+
+    @Test
+    public void testApplyTokensConfigInitialTokensSetNumTokensSetAndDoesntMatch()
+    {
+        Config config = DatabaseDescriptor.loadConfig();
+        config.initial_token = "0,256,1024";
+        config.num_tokens = 10;
+
+        try
+        {
+            DatabaseDescriptor.applyTokensConfig(config);
+
+            Assert.fail("initial_token = 0,256,1024 and num_tokens = 10 but applyTokensConfig() did not fail!");
+        }
+        catch (ConfigurationException ex)
+        {
+            Assert.assertEquals("The number of initial tokens (by initial_token) specified (3) is different from num_tokens value (10)",
+                                ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testApplyTokensConfigInitialTokensSetNumTokensNotSet()
+    {
+        Config config = DatabaseDescriptor.loadConfig();
+        config.initial_token = "0,256,1024";
+
+        try
+        {
+            DatabaseDescriptor.applyTokensConfig(config);
+            Assert.fail("setting initial_token and not setting num_tokens is invalid");
+        }
+        catch (ConfigurationException ex)
+        {
+            Assert.assertEquals("initial_token was set but num_tokens is not!", ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testApplyTokensConfigInitialTokensNotSetNumTokensSet()
+    {
+        Config config = DatabaseDescriptor.loadConfig();
+        config.num_tokens = 3;
+
+        DatabaseDescriptor.applyTokensConfig(config);
+
+        Assert.assertEquals(Integer.valueOf(3), config.num_tokens);
+        Assert.assertTrue(DatabaseDescriptor.tokensFromString(config.initial_token).isEmpty());
+    }
+
+    @Test
+    public void testApplyTokensConfigInitialTokensNotSetNumTokensNotSet()
+    {
+        Config config = DatabaseDescriptor.loadConfig();
+        DatabaseDescriptor.applyTokensConfig(config);
+
+        Assert.assertEquals(Integer.valueOf(1), config.num_tokens);
+        Assert.assertTrue(DatabaseDescriptor.tokensFromString(config.initial_token).isEmpty());
+    }
+
+    @Test
+    public void testApplyTokensConfigInitialTokensOneNumTokensNotSet()
+    {
+        Config config = DatabaseDescriptor.loadConfig();
+        config.initial_token = "123";
+        config.num_tokens = null;
+
+        DatabaseDescriptor.applyTokensConfig(config);
+
+        Assert.assertEquals(Integer.valueOf(1), config.num_tokens);
+        Assert.assertEquals(1, DatabaseDescriptor.tokensFromString(config.initial_token).size());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 }

@@ -26,6 +26,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.cassandra.cql3.QueryOptions;
 import org.apache.cassandra.transport.ProtocolVersion;
 import org.apache.cassandra.utils.UUIDGen;
+<<<<<<< HEAD
+=======
+import com.fasterxml.jackson.databind.ObjectMapper;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.junit.Test;
 
 public class JsonConversionTest

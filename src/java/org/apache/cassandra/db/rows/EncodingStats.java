@@ -20,8 +20,11 @@ package org.apache.cassandra.db.rows;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+<<<<<<< HEAD
 
 import com.google.common.collect.Iterables;
+=======
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.partitions.PartitionStatisticsCollector;
@@ -119,15 +122,25 @@ public class EncodingStats
             return function.apply(values.get(0));
 
         Collector collector = new Collector();
+<<<<<<< HEAD
         for (int i=0, isize=values.size(); i<isize; i++)
+=======
+        for (int i = 0, iSize = values.size(); i < iSize; i++)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         {
             V v = values.get(i);
             EncodingStats stats = function.apply(v);
             if (stats.minTimestamp != TIMESTAMP_EPOCH)
                 collector.updateTimestamp(stats.minTimestamp);
+<<<<<<< HEAD
             if(stats.minLocalDeletionTime != DELETION_TIME_EPOCH)
                 collector.updateLocalDeletionTime(stats.minLocalDeletionTime);
             if(stats.minTTL != TTL_EPOCH)
+=======
+            if (stats.minLocalDeletionTime != DELETION_TIME_EPOCH)
+                collector.updateLocalDeletionTime(stats.minLocalDeletionTime);
+            if (stats.minTTL != TTL_EPOCH)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 collector.updateTTL(stats.minTTL);
         }
         return collector.get();

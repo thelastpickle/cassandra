@@ -17,8 +17,19 @@
  */
 package org.apache.cassandra.config;
 
+<<<<<<< HEAD
 import java.util.List;
 import java.util.Objects;
+=======
+import javax.net.ssl.SSLSocketFactory;
+import java.net.InetAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.cassandra.locator.IEndpointSnitch;
+import org.apache.cassandra.utils.FBUtilities;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
 import com.google.common.collect.ImmutableList;
 
@@ -27,6 +38,7 @@ import org.apache.cassandra.locator.InetAddressAndPort;
 
 public class EncryptionOptions
 {
+<<<<<<< HEAD
     public final String keystore;
     public final String keystore_password;
     public final String truststore;
@@ -129,6 +141,20 @@ public class EncryptionOptions
                                            protocol, algorithm, store_type, require_client_auth, require_endpoint_verification,
                                            enabled, optional);
     }
+=======
+    private static final Logger logger = LoggerFactory.getLogger(EncryptionOptions.class);
+
+    public String keystore = "conf/.keystore";
+    public String keystore_password = "cassandra";
+    public String truststore = "conf/.truststore";
+    public String truststore_password = "cassandra";
+    public String[] cipher_suites = ((SSLSocketFactory)SSLSocketFactory.getDefault()).getDefaultCipherSuites();
+    public String protocol = "TLS";
+    public String algorithm = "SunX509";
+    public String store_type = "JKS";
+    public boolean require_client_auth = false;
+    public boolean require_endpoint_verification = false;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
     public EncryptionOptions withProtocol(String protocol)
     {
@@ -236,6 +262,7 @@ public class EncryptionOptions
             all, none, dc, rack
         }
 
+<<<<<<< HEAD
         public final InternodeEncryption internode_encryption;
         public final boolean enable_legacy_ssl_storage_port;
 
@@ -261,6 +288,15 @@ public class EncryptionOptions
         public boolean shouldEncrypt(InetAddressAndPort endpoint)
         {
             IEndpointSnitch snitch = DatabaseDescriptor.getEndpointSnitch();
+=======
+        public InternodeEncryption internode_encryption = InternodeEncryption.none;
+
+        public boolean shouldEncrypt(InetAddress endpoint)
+        {
+            IEndpointSnitch snitch = DatabaseDescriptor.getEndpointSnitch();
+            InetAddress local = FBUtilities.getBroadcastAddress();
+
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
             switch (internode_encryption)
             {
                 case none:
@@ -268,19 +304,29 @@ public class EncryptionOptions
                 case all:
                     break;
                 case dc:
+<<<<<<< HEAD
                     if (snitch.getDatacenter(endpoint).equals(snitch.getLocalDatacenter()))
+=======
+                    if (snitch.getDatacenter(endpoint).equals(snitch.getDatacenter(local)))
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                         return false;
                     break;
                 case rack:
                     // for rack then check if the DC's are the same.
+<<<<<<< HEAD
                     if (snitch.getRack(endpoint).equals(snitch.getLocalRack())
                         && snitch.getDatacenter(endpoint).equals(snitch.getLocalDatacenter()))
+=======
+                    if (snitch.getRack(endpoint).equals(snitch.getRack(local))
+                        && snitch.getDatacenter(endpoint).equals(snitch.getDatacenter(local)))
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                         return false;
                     break;
             }
             return true;
         }
 
+<<<<<<< HEAD
 
         public ServerEncryptionOptions withKeyStore(String keystore)
         {
@@ -387,5 +433,18 @@ public class EncryptionOptions
                                                enabled, optional, internode_encryption, enable_legacy_ssl_storage_port);
         }
 
+=======
+        public void validate()
+        {
+            if (require_client_auth && (internode_encryption == InternodeEncryption.rack || internode_encryption == InternodeEncryption.dc))
+            {
+                logger.warn("Setting require_client_auth is incompatible with 'rack' and 'dc' internode_encryption values."
+                          + " It is possible for an internode connection to pretend to be in the same rack/dc by spoofing"
+                          + " its broadcast address in the handshake and bypass authentication. To ensure that mutual TLS"
+                          + " authentication is not bypassed, please set internode_encryption to 'all'. Continuing with"
+                          + " insecure configuration.");
+            }
+        }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 }

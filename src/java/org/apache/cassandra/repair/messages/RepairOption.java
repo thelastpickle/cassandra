@@ -48,9 +48,13 @@ public class RepairOption
     public static final String TRACE_KEY = "trace";
     public static final String SUB_RANGE_REPAIR_KEY = "sub_range_repair";
     public static final String PULL_REPAIR_KEY = "pullRepair";
+<<<<<<< HEAD
     public static final String FORCE_REPAIR_KEY = "forceRepair";
     public static final String PREVIEW = "previewKind";
     public static final String OPTIMISE_STREAMS_KEY = "optimiseStreams";
+=======
+    public static final String IGNORE_UNREPLICATED_KS = "ignoreUnreplicatedKeyspaces";
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
     // we don't want to push nodes too much for repair
     public static final int MAX_JOB_THREADS = 4;
@@ -155,6 +159,7 @@ public class RepairOption
         boolean trace = Boolean.parseBoolean(options.get(TRACE_KEY));
         boolean force = Boolean.parseBoolean(options.get(FORCE_REPAIR_KEY));
         boolean pullRepair = Boolean.parseBoolean(options.get(PULL_REPAIR_KEY));
+        boolean ignoreUnreplicatedKeyspaces = Boolean.parseBoolean(options.get(IGNORE_UNREPLICATED_KS));
 
         int jobThreads = 1;
         if (options.containsKey(JOB_THREADS_KEY))
@@ -189,7 +194,11 @@ public class RepairOption
         }
         boolean asymmetricSyncing = Boolean.parseBoolean(options.get(OPTIMISE_STREAMS_KEY));
 
+<<<<<<< HEAD
         RepairOption option = new RepairOption(parallelism, primaryRange, incremental, trace, jobThreads, ranges, !ranges.isEmpty(), pullRepair, force, previewKind, asymmetricSyncing);
+=======
+        RepairOption option = new RepairOption(parallelism, primaryRange, incremental, trace, jobThreads, ranges, !ranges.isEmpty(), pullRepair, ignoreUnreplicatedKeyspaces);
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         // data centers
         String dataCentersStr = options.get(DATACENTERS_KEY);
@@ -265,16 +274,24 @@ public class RepairOption
     private final int jobThreads;
     private final boolean isSubrangeRepair;
     private final boolean pullRepair;
+<<<<<<< HEAD
     private final boolean forceRepair;
     private final PreviewKind previewKind;
     private final boolean optimiseStreams;
+=======
+    private final boolean ignoreUnreplicatedKeyspaces;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
     private final Collection<String> columnFamilies = new HashSet<>();
     private final Collection<String> dataCenters = new HashSet<>();
     private final Collection<String> hosts = new HashSet<>();
     private final Collection<Range<Token>> ranges = new HashSet<>();
 
+<<<<<<< HEAD
     public RepairOption(RepairParallelism parallelism, boolean primaryRange, boolean incremental, boolean trace, int jobThreads, Collection<Range<Token>> ranges, boolean isSubrangeRepair, boolean pullRepair, boolean forceRepair, PreviewKind previewKind, boolean optimiseStreams)
+=======
+    public RepairOption(RepairParallelism parallelism, boolean primaryRange, boolean incremental, boolean trace, int jobThreads, Collection<Range<Token>> ranges, boolean isSubrangeRepair, boolean pullRepair, boolean ignoreUnreplicatedKeyspaces)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         if (FBUtilities.isWindows &&
             (DatabaseDescriptor.getDiskAccessMode() != Config.DiskAccessMode.standard || DatabaseDescriptor.getIndexAccessMode() != Config.DiskAccessMode.standard) &&
@@ -293,9 +310,13 @@ public class RepairOption
         this.ranges.addAll(ranges);
         this.isSubrangeRepair = isSubrangeRepair;
         this.pullRepair = pullRepair;
+<<<<<<< HEAD
         this.forceRepair = forceRepair;
         this.previewKind = previewKind;
         this.optimiseStreams = optimiseStreams;
+=======
+        this.ignoreUnreplicatedKeyspaces = ignoreUnreplicatedKeyspaces;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public RepairParallelism getParallelism()
@@ -378,15 +399,23 @@ public class RepairOption
         return dataCenters.size() == 1 && dataCenters.contains(DatabaseDescriptor.getLocalDataCenter());
     }
 
+<<<<<<< HEAD
     public boolean optimiseStreams()
     {
         return optimiseStreams;
     }
 
+=======
+    public boolean ignoreUnreplicatedKeyspaces()
+    {
+        return ignoreUnreplicatedKeyspaces;
+    }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     @Override
     public String toString()
     {
         return "repair options (" +
+<<<<<<< HEAD
                "parallelism: " + parallelism +
                ", primary range: " + primaryRange +
                ", incremental: " + incremental +
@@ -400,6 +429,19 @@ public class RepairOption
                ", force repair: " + forceRepair +
                ", optimise streams: "+ optimiseStreams +
                ')';
+=======
+                       "parallelism: " + parallelism +
+                       ", primary range: " + primaryRange +
+                       ", incremental: " + incremental +
+                       ", job threads: " + jobThreads +
+                       ", ColumnFamilies: " + columnFamilies +
+                       ", dataCenters: " + dataCenters +
+                       ", hosts: " + hosts +
+                       ", # of ranges: " + ranges.size() +
+                       ", pull repair: " + pullRepair +
+                       ", ignore unreplicated keyspaces: "+ ignoreUnreplicatedKeyspaces +
+                       ')';
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 
     public Map<String, String> asMap()

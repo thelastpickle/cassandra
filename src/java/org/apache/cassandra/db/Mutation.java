@@ -55,12 +55,22 @@ public class Mutation implements IMutation
     // map of column family id to mutations for that column family.
     private final ImmutableMap<TableId, PartitionUpdate> modifications;
 
+<<<<<<< HEAD
     // Time at which this mutation or the builder that built it was instantiated
     final long approxCreatedAtNanos;
+=======
+    // Time at which this mutation was instantiated
+    public final long createdAt;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     // keep track of when mutation has started waiting for a MV partition lock
     final AtomicLong viewLockAcquireStart = new AtomicLong(0);
 
     private final boolean cdcEnabled;
+
+    public Mutation(String keyspaceName, DecoratedKey key, long createdAt, boolean cdcEnabled)
+    {
+        this(keyspaceName, key, new HashMap<>(), createdAt, cdcEnabled);
+    }
 
     public Mutation(PartitionUpdate update)
     {
@@ -69,9 +79,33 @@ public class Mutation implements IMutation
 
     public Mutation(String keyspaceName, DecoratedKey key, ImmutableMap<TableId, PartitionUpdate> modifications, long approxCreatedAtNanos)
     {
+        this(keyspaceName, key, modifications, System.currentTimeMillis());
+    }
+
+    private Mutation(String keyspaceName, DecoratedKey key, Map<UUID, PartitionUpdate> modifications, long createdAt)
+    {
+        this(keyspaceName, key, modifications, createdAt, cdcEnabled(modifications));
+    }
+
+    private Mutation(String keyspaceName, DecoratedKey key, Map<UUID, PartitionUpdate> modifications, long createdAt, boolean cdcEnabled)
+    {
         this.keyspaceName = keyspaceName;
         this.key = key;
         this.modifications = modifications;
+<<<<<<< HEAD
+=======
+        this.cdcEnabled = cdcEnabled;
+        this.createdAt = createdAt;
+    }
+
+    private static boolean cdcEnabled(Map<UUID, PartitionUpdate> modifications)
+    {
+        boolean cdcEnabled = false;
+        for (PartitionUpdate pu : modifications.values())
+            cdcEnabled |= pu.metadata().params.cdc;
+        return cdcEnabled;
+    }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         boolean cdc = false;
         for (PartitionUpdate pu : modifications.values())

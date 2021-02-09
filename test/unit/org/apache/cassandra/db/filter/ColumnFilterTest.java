@@ -23,7 +23,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+<<<<<<< HEAD
 import org.apache.cassandra.db.RegularAndStaticColumns;
+=======
+import junit.framework.Assert;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ColumnDefinition;
+import org.apache.cassandra.db.PartitionColumns;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.db.marshal.Int32Type;
 import org.apache.cassandra.db.marshal.SetType;
 import org.apache.cassandra.db.rows.CellPath;
@@ -39,9 +46,11 @@ import org.junit.Test;
 
 import org.junit.Assert;
 
+import static org.junit.Assert.assertEquals;
+
 public class ColumnFilterTest
 {
-    final static ColumnFilter.Serializer serializer = new ColumnFilter.Serializer();
+    private static final ColumnFilter.Serializer serializer = new ColumnFilter.Serializer();
 
     @Test
     public void testColumnFilterSerialisationRoundTrip() throws Exception
@@ -84,6 +93,7 @@ public class ColumnFilterTest
                                 .addRegularColumn("v3", Int32Type.instance)
                                 .build();
 
+<<<<<<< HEAD
         v1 = metadata.getColumn(ByteBufferUtil.bytes("v1"));
         ColumnMetadata s1 = metadata.getColumn(ByteBufferUtil.bytes("s1"));
 
@@ -199,6 +209,13 @@ public class ColumnFilterTest
     }
 
     static void testRoundTrip(ColumnFilter columnFilter, ColumnFilter expected, TableMetadata metadata, int version) throws Exception
+=======
+        testRoundTrip(ColumnFilter.selection(metadata.partitionColumns().without(v1)), metadata, MessagingService.VERSION_30);
+        testRoundTrip(ColumnFilter.selection(metadata.partitionColumns().without(v1)), metadata, MessagingService.VERSION_3014);
+    }
+
+    private static void testRoundTrip(ColumnFilter columnFilter, CFMetaData metadata, int version) throws Exception
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         DataOutputBuffer output = new DataOutputBuffer();
         serializer.serialize(columnFilter, output, version);
@@ -206,5 +223,111 @@ public class ColumnFilterTest
         DataInputPlus input = new DataInputBuffer(output.buffer(), false);
         ColumnFilter deserialized = serializer.deserialize(input, version, metadata);
         Assert.assertEquals(deserialized, expected);
+    }
+
+    /**
+     * Tests whether a filter fetches and/or queries columns and cells.
+     */
+    @Test
+    public void testFetchedQueried()
+    {
+        CFMetaData metadata = CFMetaData.Builder.create("ks", "table")
+                                              .withPartitioner(Murmur3Partitioner.instance)
+                                              .addPartitionKey("k", Int32Type.instance)
+                                              .addRegularColumn("simple", Int32Type.instance)
+                                              .addRegularColumn("complex", SetType.getInstance(Int32Type.instance, true))
+                                              .build();
+
+        ColumnDefinition simple = metadata.getColumnDefinition(ByteBufferUtil.bytes("simple"));
+        ColumnDefinition complex = metadata.getColumnDefinition(ByteBufferUtil.bytes("complex"));
+        CellPath path1 = CellPath.create(ByteBufferUtil.bytes(1));
+        CellPath path2 = CellPath.create(ByteBufferUtil.bytes(2));
+        ColumnFilter filter;
+
+        // select only the simple column, without table metadata
+        filter = ColumnFilter.selection(PartitionColumns.builder().add(simple).build());
+        assertFetchedQueried(true, true, filter, simple);
+        assertFetchedQueried(false, false, filter, complex);
+        assertFetchedQueried(false, false, filter, complex, path1);
+        assertFetchedQueried(false, false, filter, complex, path2);
+
+        // select only the complex column, without table metadata
+        filter = ColumnFilter.selection(PartitionColumns.builder().add(complex).build());
+        assertFetchedQueried(false, false, filter, simple);
+        assertFetchedQueried(true, true, filter, complex);
+        assertFetchedQueried(true, true, filter, complex, path1);
+        assertFetchedQueried(true, true, filter, complex, path2);
+
+        // select both the simple and complex columns, without table metadata
+        filter = ColumnFilter.selection(PartitionColumns.builder().add(simple).add(complex).build());
+        assertFetchedQueried(true, true, filter, simple);
+        assertFetchedQueried(true, true, filter, complex);
+        assertFetchedQueried(true, true, filter, complex, path1);
+        assertFetchedQueried(true, true, filter, complex, path2);
+
+        // select only the simple column, with table metadata
+        filter = ColumnFilter.selection(metadata, PartitionColumns.builder().add(simple).build());
+        assertFetchedQueried(true, true, filter, simple);
+        assertFetchedQueried(true, false, filter, complex);
+        assertFetchedQueried(true, false, filter, complex, path1);
+        assertFetchedQueried(true, false, filter, complex, path2);
+
+        // select only the complex column, with table metadata
+        filter = ColumnFilter.selection(metadata, PartitionColumns.builder().add(complex).build());
+        assertFetchedQueried(true, false, filter, simple);
+        assertFetchedQueried(true, true, filter, complex);
+        assertFetchedQueried(true, true, filter, complex, path1);
+        assertFetchedQueried(true, true, filter, complex, path2);
+
+        // select both the simple and complex columns, with table metadata
+        filter = ColumnFilter.selection(metadata, PartitionColumns.builder().add(simple).add(complex).build());
+        assertFetchedQueried(true, true, filter, simple);
+        assertFetchedQueried(true, true, filter, complex);
+        assertFetchedQueried(true, true, filter, complex, path1);
+        assertFetchedQueried(true, true, filter, complex, path2);
+
+        // select only the simple column, with selection builder
+        filter = ColumnFilter.selectionBuilder().add(simple).build();
+        assertFetchedQueried(true, true, filter, simple);
+        assertFetchedQueried(false, false, filter, complex);
+        assertFetchedQueried(false, false, filter, complex, path1);
+        assertFetchedQueried(false, false, filter, complex, path2);
+
+        // select only a cell of the complex column, with selection builder
+        filter = ColumnFilter.selectionBuilder().select(complex, path1).build();
+        assertFetchedQueried(false, false, filter, simple);
+        assertFetchedQueried(true, true, filter, complex);
+        assertFetchedQueried(true, true, filter, complex, path1);
+        assertFetchedQueried(true, false, filter, complex, path2);
+
+        // select both the simple column and a cell of the complex column, with selection builder
+        filter = ColumnFilter.selectionBuilder().add(simple).select(complex, path1).build();
+        assertFetchedQueried(true, true, filter, simple);
+        assertFetchedQueried(true, true, filter, complex);
+        assertFetchedQueried(true, true, filter, complex, path1);
+        assertFetchedQueried(true, false, filter, complex, path2);
+    }
+
+    private static void assertFetchedQueried(boolean expectedFetched,
+                                             boolean expectedQueried,
+                                             ColumnFilter filter,
+                                             ColumnDefinition column)
+    {
+        assert !expectedQueried || expectedFetched;
+        boolean actualFetched = filter.fetches(column);
+        assertEquals(expectedFetched, actualFetched);
+        assertEquals(expectedQueried, actualFetched && filter.fetchedColumnIsQueried(column));
+    }
+
+    private static void assertFetchedQueried(boolean expectedFetched,
+                                             boolean expectedQueried,
+                                             ColumnFilter filter,
+                                             ColumnDefinition column,
+                                             CellPath path)
+    {
+        assert !expectedQueried || expectedFetched;
+        boolean actualFetched = filter.fetches(column);
+        assertEquals(expectedFetched, actualFetched);
+        assertEquals(expectedQueried, actualFetched && filter.fetchedCellIsQueried(column, path));
     }
 }

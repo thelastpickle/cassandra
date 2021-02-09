@@ -20,6 +20,7 @@ package org.apache.cassandra.tools.nodetool;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 
+import java.io.PrintStream;
 import java.util.Set;
 
 import org.apache.cassandra.io.util.FileUtils;
@@ -41,12 +42,14 @@ public class NetStats extends NodeToolCmd
     @Override
     public void execute(NodeProbe probe)
     {
-        System.out.printf("Mode: %s%n", probe.getOperationMode());
+        PrintStream out = probe.output().out;
+        out.printf("Mode: %s%n", probe.getOperationMode());
         Set<StreamState> statuses = probe.getStreamStatus();
         if (statuses.isEmpty())
-            System.out.println("Not sending any streams.");
+            out.println("Not sending any streams.");
         for (StreamState status : statuses)
         {
+<<<<<<< HEAD
             System.out.printf("%s %s%n", status.streamOperation.getDescription(), status.planId.toString());
             for (SessionInfo info : status.sessions)
             {
@@ -55,28 +58,46 @@ public class NetStats extends NodeToolCmd
                 if (!info.peer.equals(info.connecting))
                 {
                     System.out.printf(" (using %s)", info.connecting.toString(printPort));
+=======
+            out.printf("%s %s%n", status.description, status.planId.toString());
+            for (SessionInfo info : status.sessions)
+            {
+                out.printf("    %s", info.peer.toString());
+                // print private IP when it is used
+                if (!info.peer.equals(info.connecting))
+                {
+                    out.printf(" (using %s)", info.connecting.toString());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                 }
-                System.out.printf("%n");
+                out.printf("%n");
                 if (!info.receivingSummaries.isEmpty())
                 {
                     if (humanReadable)
-                        System.out.printf("        Receiving %d files, %s total. Already received %d files, %s total%n", info.getTotalFilesToReceive(), FileUtils.stringifyFileSize(info.getTotalSizeToReceive()), info.getTotalFilesReceived(), FileUtils.stringifyFileSize(info.getTotalSizeReceived()));
+                        out.printf("        Receiving %d files, %s total. Already received %d files, %s total%n", info.getTotalFilesToReceive(), FileUtils.stringifyFileSize(info.getTotalSizeToReceive()), info.getTotalFilesReceived(), FileUtils.stringifyFileSize(info.getTotalSizeReceived()));
                     else
-                        System.out.printf("        Receiving %d files, %d bytes total. Already received %d files, %d bytes total%n", info.getTotalFilesToReceive(), info.getTotalSizeToReceive(), info.getTotalFilesReceived(), info.getTotalSizeReceived());
+                        out.printf("        Receiving %d files, %d bytes total. Already received %d files, %d bytes total%n", info.getTotalFilesToReceive(), info.getTotalSizeToReceive(), info.getTotalFilesReceived(), info.getTotalSizeReceived());
                     for (ProgressInfo progress : info.getReceivingFiles())
                     {
+<<<<<<< HEAD
                         System.out.printf("            %s%n", progress.toString(printPort));
+=======
+                        out.printf("            %s%n", progress.toString());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                     }
                 }
                 if (!info.sendingSummaries.isEmpty())
                 {
                     if (humanReadable)
-                        System.out.printf("        Sending %d files, %s total. Already sent %d files, %s total%n", info.getTotalFilesToSend(), FileUtils.stringifyFileSize(info.getTotalSizeToSend()), info.getTotalFilesSent(), FileUtils.stringifyFileSize(info.getTotalSizeSent()));
+                        out.printf("        Sending %d files, %s total. Already sent %d files, %s total%n", info.getTotalFilesToSend(), FileUtils.stringifyFileSize(info.getTotalSizeToSend()), info.getTotalFilesSent(), FileUtils.stringifyFileSize(info.getTotalSizeSent()));
                     else
-                        System.out.printf("        Sending %d files, %d bytes total. Already sent %d files, %d bytes total%n", info.getTotalFilesToSend(), info.getTotalSizeToSend(), info.getTotalFilesSent(), info.getTotalSizeSent());
+                        out.printf("        Sending %d files, %d bytes total. Already sent %d files, %d bytes total%n", info.getTotalFilesToSend(), info.getTotalSizeToSend(), info.getTotalFilesSent(), info.getTotalSizeSent());
                     for (ProgressInfo progress : info.getSendingFiles())
                     {
+<<<<<<< HEAD
                         System.out.printf("            %s%n", progress.toString(printPort));
+=======
+                        out.printf("            %s%n", progress.toString());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
                     }
                 }
             }
@@ -84,14 +105,14 @@ public class NetStats extends NodeToolCmd
 
         if (!probe.isStarting())
         {
-            System.out.printf("Read Repair Statistics:%nAttempted: %d%nMismatch (Blocking): %d%nMismatch (Background): %d%n", probe.getReadRepairAttempted(), probe.getReadRepairRepairedBlocking(), probe.getReadRepairRepairedBackground());
+            out.printf("Read Repair Statistics:%nAttempted: %d%nMismatch (Blocking): %d%nMismatch (Background): %d%n", probe.getReadRepairAttempted(), probe.getReadRepairRepairedBlocking(), probe.getReadRepairRepairedBackground());
 
             MessagingServiceMBean ms = probe.getMessagingServiceProxy();
-            System.out.printf("%-25s", "Pool Name");
-            System.out.printf("%10s", "Active");
-            System.out.printf("%10s", "Pending");
-            System.out.printf("%15s", "Completed");
-            System.out.printf("%10s%n", "Dropped");
+            out.printf("%-25s", "Pool Name");
+            out.printf("%10s", "Active");
+            out.printf("%10s", "Pending");
+            out.printf("%15s", "Completed");
+            out.printf("%10s%n", "Dropped");
 
             int pending;
             long completed;
@@ -106,7 +127,7 @@ public class NetStats extends NodeToolCmd
             dropped = 0;
             for (long n : ms.getLargeMessageDroppedTasks().values())
                 dropped += n;
-            System.out.printf("%-25s%10s%10s%15s%10s%n", "Large messages", "n/a", pending, completed, dropped);
+            out.printf("%-25s%10s%10s%15s%10s%n", "Large messages", "n/a", pending, completed, dropped);
 
             pending = 0;
             for (int n : ms.getSmallMessagePendingTasks().values())
@@ -117,7 +138,7 @@ public class NetStats extends NodeToolCmd
             dropped = 0;
             for (long n : ms.getSmallMessageDroppedTasks().values())
                 dropped += n;
-            System.out.printf("%-25s%10s%10s%15s%10s%n", "Small messages", "n/a", pending, completed, dropped);
+            out.printf("%-25s%10s%10s%15s%10s%n", "Small messages", "n/a", pending, completed, dropped);
 
             pending = 0;
             for (int n : ms.getGossipMessagePendingTasks().values())
@@ -128,7 +149,7 @@ public class NetStats extends NodeToolCmd
             dropped = 0;
             for (long n : ms.getGossipMessageDroppedTasks().values())
                 dropped += n;
-            System.out.printf("%-25s%10s%10s%15s%10s%n", "Gossip messages", "n/a", pending, completed, dropped);
+            out.printf("%-25s%10s%10s%15s%10s%n", "Gossip messages", "n/a", pending, completed, dropped);
         }
     }
 }

@@ -235,7 +235,29 @@ public class PartitionRangeReadCommand extends ReadCommand implements PartitionR
                                              indexMetadata());
     }
 
+<<<<<<< HEAD
     public long getTimeout(TimeUnit unit)
+=======
+    public long getTimeout()
+    {
+        return DatabaseDescriptor.getRangeRpcTimeout();
+    }
+
+    public boolean isReversed()
+    {
+        return dataRange.isReversed();
+    }
+
+    public boolean selectsKey(DecoratedKey key)
+    {
+        if (!dataRange().contains(key))
+            return false;
+
+        return rowFilter().partitionKeyRestrictionsAreSatisfiedBy(key, metadata().getKeyValidator());
+    }
+
+    public boolean selectsClustering(DecoratedKey key, Clustering clustering)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         return DatabaseDescriptor.getRangeRpcTimeout(unit);
     }

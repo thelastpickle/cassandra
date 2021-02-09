@@ -44,6 +44,7 @@ public class GetEndpoints extends NodeToolCmd
 
         if (printPort)
         {
+<<<<<<< HEAD
             for (String endpoint : probe.getEndpointsWithPort(ks, table, key))
             {
                 System.out.println(endpoint);
@@ -56,6 +57,9 @@ public class GetEndpoints extends NodeToolCmd
             {
                 System.out.println(endpoint.getHostAddress());
             }
+=======
+            probe.output().out.println(endpoint.getHostAddress());
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
     }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.cassandra.transport.frame.checksum;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import io.netty.buffer.ByteBuf;
@@ -30,11 +31,16 @@ import org.apache.cassandra.utils.ByteBufferUtil;
  *
  * This class is not thread safe.
  */
+<<<<<<< HEAD:test/unit/org/apache/cassandra/transport/frame/checksum/ReusableBuffer.java
 public final class ReusableBuffer
+=======
+public class UnknownColumnException extends IOException
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:src/java/org/apache/cassandra/db/UnknownColumnException.java
 {
     public final byte[] bytes;
     public int length;
 
+<<<<<<< HEAD:test/unit/org/apache/cassandra/transport/frame/checksum/ReusableBuffer.java
     public ReusableBuffer(byte[] bytes)
     {
         this.bytes = bytes;
@@ -46,6 +52,20 @@ public final class ReusableBuffer
     }
 
     public String toString()
+=======
+    public UnknownColumnException(String ksName, String cfName, ByteBuffer columnName)
+    {
+        super(String.format("Unknown column %s in table %s.%s", stringify(columnName), ksName, cfName));
+        this.columnName = columnName;
+    }
+
+    public UnknownColumnException(CFMetaData metadata, ByteBuffer columnName)
+    {
+        this(metadata.ksName, metadata.cfName, columnName);
+    }
+
+    private static String stringify(ByteBuffer name)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc:src/java/org/apache/cassandra/db/UnknownColumnException.java
     {
         return ByteBufferUtil.bytesToHex(ByteBuffer.wrap(bytes, 0, length));
     }

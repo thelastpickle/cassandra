@@ -18,14 +18,45 @@
 package org.apache.cassandra.db.partition;
 
 import org.apache.cassandra.UpdateBuilder;
+<<<<<<< HEAD
 import org.apache.cassandra.schema.TableMetadata;
+=======
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
+import org.apache.cassandra.config.CFMetaData;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 import org.apache.cassandra.cql3.CQLTester;
+import org.apache.cassandra.db.Clustering;
+import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.DeletionTime;
+import org.apache.cassandra.db.Mutation;
 import org.apache.cassandra.db.RowUpdateBuilder;
+import org.apache.cassandra.db.filter.ColumnFilter;
 import org.apache.cassandra.db.partitions.PartitionUpdate;
+import org.apache.cassandra.db.rows.BTreeRow;
+import org.apache.cassandra.db.rows.BufferCell;
+import org.apache.cassandra.db.rows.Cell;
+import org.apache.cassandra.db.rows.CellPath;
+import org.apache.cassandra.db.rows.EncodingStats;
+import org.apache.cassandra.db.rows.Row;
+import org.apache.cassandra.db.rows.RowAndDeletionMergeIterator;
+import org.apache.cassandra.db.rows.Rows;
+import org.apache.cassandra.db.rows.UnfilteredRowIterator;
+import org.apache.cassandra.dht.Murmur3Partitioner;
+import org.apache.cassandra.io.sstable.ISSTableScanner;
+import org.apache.cassandra.io.sstable.format.SSTableReader;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.junit.Test;
 
 import org.junit.Assert;
+
+import static org.junit.Assert.assertEquals;
+
 
 public class PartitionUpdateTest extends CQLTester
 {
@@ -84,5 +115,122 @@ public class PartitionUpdateTest extends CQLTester
 
         Assert.assertTrue(pu.maxTimestamp() > 0);
         Assert.assertTrue(pu2.maxTimestamp() == 0);
+    }
+
+    /**
+     * Makes sure we merge duplicate rows, see CASSANDRA-15789
+     */
+    @Test
+    public void testDuplicate()
+    {
+        createTable("CREATE TABLE %s (pk int, ck int, v map<text, text>, PRIMARY KEY (pk, ck))");
+        CFMetaData cfm = currentTableMetadata();
+
+        DecoratedKey dk = Murmur3Partitioner.instance.decorateKey(ByteBufferUtil.bytes(1));
+
+        List<Row> rows = new ArrayList<>();
+        Row.Builder builder = BTreeRow.unsortedBuilder(FBUtilities.nowInSeconds());
+        builder.newRow(Clustering.make(ByteBufferUtil.bytes(2)));
+        builder.addComplexDeletion(cfm.getColumnDefinition(ByteBufferUtil.bytes("v")), new DeletionTime(2, 1588586647));
+
+        Cell c = BufferCell.live(cfm.getColumnDefinition(ByteBufferUtil.bytes("v")), 3, ByteBufferUtil.bytes("h"), CellPath.create(ByteBufferUtil.bytes("g")));
+        builder.addCell(c);
+
+        Row r = builder.build();
+        rows.add(r);
+
+        builder.newRow(Clustering.make(ByteBufferUtil.bytes(2)));
+        builder.addRowDeletion(new Row.Deletion(new DeletionTime(1588586647, 1), false));
+        r = builder.build();
+        rows.add(r);
+
+        RowAndDeletionMergeIterator rmi = new RowAndDeletionMergeIterator(cfm,
+                                                                          dk,
+                                                                          DeletionTime.LIVE,
+                                                                          ColumnFilter.all(cfm),
+                                                                          Rows.EMPTY_STATIC_ROW,
+                                                                          false,
+                                                                          EncodingStats.NO_STATS,
+                                                                          rows.iterator(),
+                                                                          Collections.emptyIterator(),
+                                                                          true);
+
+        PartitionUpdate pu = PartitionUpdate.fromPre30Iterator(rmi, ColumnFilter.all(cfm));
+        pu.iterator();
+
+        Mutation m = new Mutation(getCurrentColumnFamilyStore().keyspace.getName(), dk);
+        m.add(pu);
+        m.apply();
+        getCurrentColumnFamilyStore().forceBlockingFlush();
+
+        SSTableReader sst = getCurrentColumnFamilyStore().getLiveSSTables().iterator().next();
+        int count = 0;
+        try (ISSTableScanner scanner = sst.getScanner())
+        {
+            while (scanner.hasNext())
+            {
+                try (UnfilteredRowIterator iter = scanner.next())
+                {
+                    while (iter.hasNext())
+                    {
+                        iter.next();
+                        count++;
+                    }
+                }
+            }
+        }
+        assertEquals(1, count);
+    }
+
+    /**
+     * Makes sure we don't create duplicates when merging 2 partition updates
+     */
+    @Test
+    public void testMerge()
+    {
+        createTable("CREATE TABLE %s (pk int, ck int, v map<text, text>, PRIMARY KEY (pk, ck))");
+        CFMetaData cfm = currentTableMetadata();
+
+        DecoratedKey dk = Murmur3Partitioner.instance.decorateKey(ByteBufferUtil.bytes(1));
+
+        Row.Builder builder = BTreeRow.unsortedBuilder(FBUtilities.nowInSeconds());
+        builder.newRow(Clustering.make(ByteBufferUtil.bytes(2)));
+        builder.addComplexDeletion(cfm.getColumnDefinition(ByteBufferUtil.bytes("v")), new DeletionTime(2, 1588586647));
+        Cell c = BufferCell.live(cfm.getColumnDefinition(ByteBufferUtil.bytes("v")), 3, ByteBufferUtil.bytes("h"), CellPath.create(ByteBufferUtil.bytes("g")));
+        builder.addCell(c);
+        Row r = builder.build();
+
+        PartitionUpdate p1 = new PartitionUpdate(cfm, dk, cfm.partitionColumns(), 2);
+        p1.add(r);
+
+        builder.newRow(Clustering.make(ByteBufferUtil.bytes(2)));
+        builder.addRowDeletion(new Row.Deletion(new DeletionTime(1588586647, 1), false));
+        r = builder.build();
+        PartitionUpdate p2 = new PartitionUpdate(cfm, dk, cfm.partitionColumns(), 2);
+        p2.add(r);
+
+        Mutation m = new Mutation(getCurrentColumnFamilyStore().keyspace.getName(), dk);
+        m.add(PartitionUpdate.merge(Lists.newArrayList(p1, p2)));
+        m.apply();
+
+        getCurrentColumnFamilyStore().forceBlockingFlush();
+
+        SSTableReader sst = getCurrentColumnFamilyStore().getLiveSSTables().iterator().next();
+        int count = 0;
+        try (ISSTableScanner scanner = sst.getScanner())
+        {
+            while (scanner.hasNext())
+            {
+                try (UnfilteredRowIterator iter = scanner.next())
+                {
+                    while (iter.hasNext())
+                    {
+                        iter.next();
+                        count++;
+                    }
+                }
+            }
+        }
+        assertEquals(1, count);
     }
 }

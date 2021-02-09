@@ -138,6 +138,7 @@ public class Accumulator<E>
         return (E) values[i];
     }
 
+<<<<<<< HEAD
     public Collection<E> snapshot()
     {
         int count = presentCount;
@@ -155,5 +156,15 @@ public class Accumulator<E>
                 return count;
             }
         };
+=======
+    /**
+     * Removes element at the speficied index from this accumulator.
+     *
+     * This method is not thread-safe when used concurrently with {@link #add(Object)}.
+     */
+    public void clearUnsafe(int i)
+    {
+        values[i] = null;
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     }
 }

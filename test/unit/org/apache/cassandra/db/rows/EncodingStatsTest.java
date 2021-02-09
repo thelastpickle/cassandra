@@ -26,19 +26,28 @@ import org.junit.Test;
 
 import org.apache.cassandra.db.LivenessInfo;
 
+<<<<<<< HEAD
 import static org.quicktheories.QuickTheory.qt;
 import static org.quicktheories.generators.SourceDSL.integers;
 import static org.quicktheories.generators.SourceDSL.longs;
 
+=======
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 public class EncodingStatsTest
 {
     @Test
     public void testCollectWithNoStats()
     {
         EncodingStats none = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             EncodingStats.NO_STATS,
             EncodingStats.NO_STATS,
             EncodingStats.NO_STATS
+=======
+        EncodingStats.NO_STATS,
+        EncodingStats.NO_STATS,
+        EncodingStats.NO_STATS
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(none, EncodingStats.NO_STATS);
     }
@@ -47,9 +56,15 @@ public class EncodingStatsTest
     public void testCollectWithNoStatsWithEmpty()
     {
         EncodingStats none = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             EncodingStats.NO_STATS,
             EncodingStats.NO_STATS,
             new EncodingStats(LivenessInfo.NO_TIMESTAMP, LivenessInfo.NO_EXPIRATION_TIME, 0)
+=======
+        EncodingStats.NO_STATS,
+        EncodingStats.NO_STATS,
+        new EncodingStats(LivenessInfo.NO_TIMESTAMP, LivenessInfo.NO_EXPIRATION_TIME, 0)
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(none, EncodingStats.NO_STATS);
     }
@@ -59,10 +74,17 @@ public class EncodingStatsTest
     {
         EncodingStats single = new EncodingStats(1, LivenessInfo.NO_EXPIRATION_TIME, 0);
         EncodingStats result = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             EncodingStats.NO_STATS,
             EncodingStats.NO_STATS,
             single,
             EncodingStats.NO_STATS
+=======
+        EncodingStats.NO_STATS,
+        EncodingStats.NO_STATS,
+        single,
+        EncodingStats.NO_STATS
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(single, result);
     }
@@ -84,9 +106,15 @@ public class EncodingStatsTest
     {
         EncodingStats single = new EncodingStats(LivenessInfo.NO_TIMESTAMP, LivenessInfo.NO_EXPIRATION_TIME, 1);
         EncodingStats result = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             EncodingStats.NO_STATS,
             single,
             EncodingStats.NO_STATS
+=======
+        EncodingStats.NO_STATS,
+        single,
+        EncodingStats.NO_STATS
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(single, result);
     }
@@ -98,9 +126,15 @@ public class EncodingStatsTest
         EncodingStats exp = new EncodingStats(LivenessInfo.NO_TIMESTAMP, 1, 0);
         EncodingStats ttl = new EncodingStats(LivenessInfo.NO_TIMESTAMP, LivenessInfo.NO_EXPIRATION_TIME, 1);
         EncodingStats result = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             tsp,
             exp,
             ttl
+=======
+        tsp,
+        exp,
+        ttl
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(new EncodingStats(1, 1, 1), result);
     }
@@ -112,9 +146,15 @@ public class EncodingStatsTest
         EncodingStats two = new EncodingStats(2, LivenessInfo.NO_EXPIRATION_TIME, 0);
         EncodingStats thr = new EncodingStats(3, LivenessInfo.NO_EXPIRATION_TIME, 0);
         EncodingStats result = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             one,
             two,
             thr
+=======
+        one,
+        two,
+        thr
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(one, result);
     }
@@ -126,9 +166,15 @@ public class EncodingStatsTest
         EncodingStats two = new EncodingStats(LivenessInfo.NO_TIMESTAMP,2, 0);
         EncodingStats thr = new EncodingStats(LivenessInfo.NO_TIMESTAMP,3, 0);
         EncodingStats result = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             one,
             two,
             thr
+=======
+        one,
+        two,
+        thr
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         ), Function.identity());
         Assert.assertEquals(one, result);
     }
@@ -140,6 +186,7 @@ public class EncodingStatsTest
         EncodingStats two = new EncodingStats(LivenessInfo.NO_TIMESTAMP, LivenessInfo.NO_EXPIRATION_TIME,2);
         EncodingStats thr = new EncodingStats(LivenessInfo.NO_TIMESTAMP, LivenessInfo.NO_EXPIRATION_TIME,3);
         EncodingStats result = EncodingStats.merge(ImmutableList.of(
+<<<<<<< HEAD
             thr,
             one,
             two
@@ -167,4 +214,12 @@ public class EncodingStatsTest
                    });
     }
 
+=======
+        thr,
+        one,
+        two
+        ), Function.identity());
+        Assert.assertEquals(one, result);
+    }
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 }

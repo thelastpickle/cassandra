@@ -517,11 +517,23 @@ public class SelectStatement implements CQLStatement
 
         RowFilter rowFilter = getRowFilter(options);
 
+<<<<<<< HEAD
         List<DecoratedKey> decoratedKeys = new ArrayList<>(keys.size());
         for (ByteBuffer key : keys)
         {
             QueryProcessor.validateKey(key);
             decoratedKeys.add(table.partitioner.decorateKey(ByteBufferUtil.clone(key)));
+=======
+        // Note that we use the total limit for every key, which is potentially inefficient.
+        // However, IN + LIMIT is not a very sensible choice.
+        List<SinglePartitionReadCommand> commands = new ArrayList<>(keys.size());
+        ColumnFilter columnFilter = createColumnFilter(options);
+        for (ByteBuffer key : keys)
+        {
+            QueryProcessor.validateKey(key);
+            DecoratedKey dk = cfm.decorateKey(ByteBufferUtil.clone(key));
+            commands.add(SinglePartitionReadCommand.create(cfm, nowInSec, columnFilter, rowFilter, limit, dk, filter));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
         }
 
         return SinglePartitionReadQuery.createGroup(table, nowInSec, columnFilter, rowFilter, limit, decoratedKeys, filter);
@@ -584,8 +596,13 @@ public class SelectStatement implements CQLStatement
         if (keyBounds == null)
             return ReadQuery.empty(table);
 
+<<<<<<< HEAD
         ReadQuery command =
             PartitionRangeReadQuery.create(table, nowInSec, columnFilter, rowFilter, limit, new DataRange(keyBounds, clusteringIndexFilter));
+=======
+        PartitionRangeReadCommand command =
+            PartitionRangeReadCommand.create(false, cfm, nowInSec, createColumnFilter(options), rowFilter, limit, new DataRange(keyBounds, clusteringIndexFilter));
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
 
         // If there's a secondary index that the command can use, have it validate the request parameters.
         command.maybeValidateIndex();
@@ -920,7 +937,18 @@ public class SelectStatement implements CQLStatement
         Collections.sort(cqlRows.rows, orderingComparator);
     }
 
+<<<<<<< HEAD
     public static class RawStatement extends QualifiedStatement
+=======
+    private ColumnFilter createColumnFilter(QueryOptions options)
+    {
+        return (cfm.isSuper() && cfm.isDense())
+               ? SuperColumnCompatibility.getColumnFilter(cfm, options, restrictions.getSuperColumnRestrictions())
+               : queriedColumns;
+    }
+
+    public static class RawStatement extends CFStatement
+>>>>>>> aa92e8868800460908717f1a1a9dbb7ac67d79cc
     {
         public final Parameters parameters;
         public final List<RawSelector> selectClause;
