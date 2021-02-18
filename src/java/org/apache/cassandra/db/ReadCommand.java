@@ -367,6 +367,13 @@ public abstract class ReadCommand extends AbstractReadQuery
              : 0;
     }
 
+    public Index getIndex(ColumnFamilyStore cfs)
+    {
+        return null != indexQueryPlan
+             ? indexQueryPlan.getFirst()
+             : null;
+    }
+
     static Index.QueryPlan findIndexQueryPlan(TableMetadata table, RowFilter rowFilter)
     {
         if (table.indexes.isEmpty() || rowFilter.isEmpty())
@@ -819,7 +826,7 @@ public abstract class ReadCommand extends AbstractReadQuery
     // Skip purgeable tombstones. We do this because it's safe to do (post-merge of the memtable and sstable at least), it
     // can save us some bandwith, and avoid making us throw a TombstoneOverwhelmingException for purgeable tombstones (which
     // are to some extend an artefact of compaction lagging behind and hence counting them is somewhat unintuitive).
-    protected UnfilteredPartitionIterator withoutPurgeableTombstones(UnfilteredPartitionIterator iterator, 
+    protected UnfilteredPartitionIterator withoutPurgeableTombstones(UnfilteredPartitionIterator iterator,
                                                                      ColumnFamilyStore cfs,
                                                                      ReadExecutionController controller)
     {
@@ -908,7 +915,7 @@ public abstract class ReadCommand extends AbstractReadQuery
         {
             this.repairedDataInfo = controller.getRepairedDataInfo();
             this.isTrackingRepairedStatus = controller.isTrackingRepairedStatus();
-            
+
             if (isTrackingRepairedStatus)
             {
                 for (SSTableReader sstable : view.sstables)
@@ -1118,9 +1125,9 @@ public abstract class ReadCommand extends AbstractReadQuery
             // better complain loudly than doing the wrong thing.
             if (isForThrift(flags))
                 throw new IllegalStateException("Received a command with the thrift flag set. "
-                                              + "This means thrift is in use in a mixed 3.0/3.X and 4.0+ cluster, "
-                                              + "which is unsupported. Make sure to stop using thrift before "
-                                              + "upgrading to 4.0");
+                                               + "This means thrift is in use in a mixed 3.0/3.X and 4.0+ cluster, "
+                                               + "which is unsupported. Make sure to stop using thrift before "
+                                               + "upgrading to 4.0");
 
             boolean hasIndex = hasIndex(flags);
             int digestVersion = isDigest ? in.readUnsignedVInt32() : 0;

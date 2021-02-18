@@ -444,6 +444,23 @@ public interface Index
     public AbstractType<?> customExpressionValueType();
 
     /**
+     * If the index supports custom search expressions using the
+     * {@code SELECT * FROM table WHERE expr(index_name, expression)} syntax, this method should return a new
+     * {@link RowFilter.CustomExpression} for the specified expression value. Index implementations may provide their
+     * own implementations using method {@link RowFilter.CustomExpression#isSatisfiedBy(TableMetadata, DecoratedKey, Row)}
+     * to filter reconciled rows in the coordinator. Otherwise, the default implementation will accept all rows.
+     * See DB-2185 and DSP-16537 for further details.
+     *
+     * @param metadata the indexed table metadata
+     * @param value the custom expression value
+     * @return a custom index expression for the specified value
+     */
+    default RowFilter.CustomExpression customExpressionFor(TableMetadata metadata, ByteBuffer value)
+    {
+        return new RowFilter.CustomExpression(metadata, getIndexMetadata(), value);
+    }
+
+    /**
      * Transform an initial RowFilter into the filter that will still need to applied
      * to a set of Rows after the index has performed it's initial scan.
      * Used in ReadCommand#executeLocal to reduce the amount of filtering performed on the
@@ -527,8 +544,7 @@ public interface Index
      * @param ctx WriteContext spanning the update operation
      * @param transactionType indicates what kind of update is being performed on the base data
      *                        i.e. a write time insert/update/delete or the result of compaction
-     * @param memtable current memtable that the write goes into. It's to make sure memtable and index memtable
-     *                 are in sync.
+     * @param memtable The current memtable that is the source of the updates
      * @return the newly created indexer or {@code null} if the index is not interested by the update
      * (this could be because the index doesn't care about that particular partition, doesn't care about
      * that type of transaction, ...).
@@ -655,6 +671,24 @@ public interface Index
      */
     default void validate(ReadCommand command) throws InvalidRequestException
     {
+    }
+
+    /**
+     * Tells whether this index supports replica fitering protection or not.
+     *
+     * Replica filtering protection might need to run the query row filter in the coordinator to detect stale results.
+     * An index implementation will be compatible with this protection mechanism if it returns the same results for the
+     * row filter as CQL will return with {@code ALLOW FILTERING} and without using the index. This means that index
+     * implementations using custom query syntax or applying transformations to the indexed data won't support it.
+     * See CASSANDRA-8272 for further details.
+     *
+     * @param rowFilter rowFilter of query to decide if it supports replica filtering protection or not
+     * @return true if this index supports replica filtering protection, false otherwise
+     */
+    //TODO Need to confirm whether SAI needs to implement this as false
+    default boolean supportsReplicaFilteringProtection(RowFilter rowFilter)
+    {
+        return true;
     }
 
     /**
@@ -847,6 +881,14 @@ public interface Index
          * @return the SSTable components created by this group
          */
         Set<Component> getComponents();
+
+        /**
+         * @return true if this index group is capable of supporting multiple contains restrictions, false otherwise
+         */
+        default boolean supportsMultipleContains()
+        {
+            return false;
+        }
 
         /**
          * Validates all indexes in the group against the specified SSTables.

@@ -60,6 +60,7 @@ public class RangeCommandIterator extends AbstractIterator<RowIterator> implemen
 {
     private static final Logger logger = LoggerFactory.getLogger(RangeCommandIterator.class);
 
+    @VisibleForTesting
     public static final ClientRangeRequestMetrics rangeMetrics = new ClientRangeRequestMetrics("RangeSlice");
 
     final CloseableIterator<ReplicaPlan.ForRangeRead> replicaPlans;
@@ -268,6 +269,7 @@ public class RangeCommandIterator extends AbstractIterator<RowIterator> implemen
         finally
         {
             long latency = nanoTime() - startTime;
+            rangeMetrics.roundTrips.update(batchesRequested);
             rangeMetrics.addNano(latency);
             rangeMetrics.roundTrips.update(batchesRequested);
             Keyspace.openAndGetStore(command.metadata()).metric.coordinatorScanLatency.update(latency, TimeUnit.NANOSECONDS);
