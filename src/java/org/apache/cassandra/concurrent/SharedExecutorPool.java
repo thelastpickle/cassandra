@@ -104,8 +104,14 @@ public class SharedExecutorPool
         // in general the workers manage spinningCount directly; however if it is zero, we increment it atomically
         // ourselves to avoid starting a worker unless we have to
         int current = spinningCount.get();
-        if (current == 0 && spinningCount.compareAndSet(0, 1))
+        if (current == 0 && spinningCount.compareAndSet(0, 1)) {
             schedule(Work.SPINNING);
+        } else {
+            // workers are already spinning, but may likely be parked; unpark the first worker's thread
+            Map.Entry<Long, SEPWorker> entry = spinning.pollFirstEntry();
+            if (entry != null)
+                LockSupport.unpark(entry.getValue().thread);
+        }
     }
 
     public synchronized LocalAwareExecutorService newExecutor(int maxConcurrency, String jmxPath, String name)
