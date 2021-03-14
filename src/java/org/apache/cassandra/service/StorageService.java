@@ -151,7 +151,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
     private static int getRingDelay()
     {
-        String newdelay = System.getProperty("cassandra.ring_delay_ms");
+        String newdelay = System.getProperty("cassandra.ring_delay_ms".indent(0));
         if (newdelay != null)
         {
             logger.info("Overriding RING_DELAY to {}ms", newdelay);
