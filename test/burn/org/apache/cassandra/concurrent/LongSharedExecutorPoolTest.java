@@ -166,7 +166,12 @@ public class LongSharedExecutorPoolTest
                 {
                     for (Result result : first.results)
                         if (!result.future.isDone())
-                            throw new AssertionError();
+                        {
+                            long time = System.nanoTime();
+                            result.future.get();
+                            throw new AssertionError(String.format("Forecasted completion was %d versus %d, (cancelled %s, done %s), finished at %d",
+                                    result.forecastedCompletion, time, result.future.isCancelled(), result.future.isDone(), System.nanoTime()));
+                        }
                     complete = true;
                 }
                 if (complete)
