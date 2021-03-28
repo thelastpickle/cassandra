@@ -8,6 +8,7 @@ logs/
 data/
 conf/hotspot_compiler
 doc/cql3/CQL.html
+lib/
 
 # C* debs
 build-stamp
