@@ -8,6 +8,7 @@ logs/
 data/
 conf/hotspot_compiler
 doc/cql3/CQL.html
+doc/build/
 lib/
 
 # C* debs
@@ -71,3 +72,7 @@ doc/source/tools/nodetool
 
 # Python virtual environment
 venv/
+
+# build-scripts will put cassandra-builds into the directory
+cassandra-builds/
+cassandra-dtest/

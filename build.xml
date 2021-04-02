@@ -886,7 +886,7 @@
         </javac>
     </target>
 
-    <target depends="init,gen-cql3-grammar,generate-cql-html,generate-jflex-java,rat-report"
+    <target depends="init,gen-cql3-grammar,generate-cql-html,generate-jflex-java,rat-check"
             name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
         <!-- Order matters! -->
@@ -1208,43 +1208,6 @@
           <include name="${final.name}-src.tar.gz" />
         </fileset>
       </checksum>
-    </target>
-
-    <target name="rat" depends="rat-init" description="License checks on artifacts">
-      <rat:report xmlns:rat="antlib:org.apache.rat.anttasks"
-                  reportFile="${build.dir}/${final.name}-bin.rat.txt">
-        <tarfileset>
-          <gzipresource>
-            <file file="${build.dir}/${final.name}-bin.tar.gz" />
-          </gzipresource>
-        </tarfileset>
-      </rat:report>
-      <rat:report xmlns:rat="antlib:org.apache.rat.anttasks"
-                  reportFile="${build.dir}/${final.name}-src.rat.txt">
-        <tarfileset>
-          <gzipresource>
-            <file file="${build.dir}/${final.name}-src.tar.gz" />
-          </gzipresource>
-        </tarfileset>
-      </rat:report>
-    </target>
-
-    <target name="rat-report" depends="rat-init" description="License checks on source" >
-      <rat:report xmlns:rat="antlib:org.apache.rat.anttasks"
-                  reportFile="${build.dir}/src.rat.txt">
-        <fileset dir="src/java"/>
-        <fileset dir="test/unit"/>
-        <fileset dir="test/distributed"/>
-      </rat:report>
-      <fail message="Some files have missing or incorrect license information. Check RAT report in ${build.dir}/src.rat.txt for more details!">
-        <condition>
-          <and>
-            <not>
-              <resourcecontains resource="${build.dir}/src.rat.txt" substring="0 Unknown Licenses" casesensitive="false" />
-            </not>
-          </and>
-        </condition>
-      </fail>
     </target>
 
   <target name="build-jmh" depends="build-test, jar" description="Create JMH uber jar">
@@ -1731,37 +1694,6 @@
   <target name="jacoco-cleanup" description="Destroy JaCoCo exec data and reports">
     <delete file="${jacoco.partialexecfile}"/>
     <delete dir="${jacoco.export.dir}"/>
-  </target>
-
-  <!--
-    License audit tool
-  -->
-  <target name="rat-init" depends="resolver-init">
-    <typedef uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
-  </target>
-
-  <target name="rat-check" depends="rat-init">
-    <rat:report xmlns:rat="antlib:org.apache.rat.anttasks"
-                reportFile="${build.dir}/rat-report.log">
-      <fileset dir="."  excludesfile=".rat-excludes" />
-    </rat:report>
-    <condition property="rat.passed">
-      <isfileselected file="${build.dir}/rat-report.log">
-        <containsregexp expression="^0 Unknown Licenses"/>
-      </isfileselected>
-    </condition>
-    <fail unless="rat.passed">Unknown licenses: See build/rat-report.log.</fail>
-  </target>
-
-  <target name="rat-write" depends="rat-init">
-    <echo>RAT: invoking addLicense to write missing headers</echo>
-    <java classname="org.apache.rat.Report" fork="true"
-          output="${build.dir}/rat-report.log">
-      <classpath refid="rat.classpath" />
-      <arg value="-a" />
-      <arg value="--force" />
-      <arg value="." />
-    </java>
   </target>
 
   <target name="javadoc" depends="build" description="Create javadoc" unless="no-javadoc">
@@ -2275,4 +2207,5 @@
   </target>
 
   <import file="${basedir}/.build/build-resolver.xml"/>
+  <import file="${basedir}/.build/build-rat.xml"/>
 </project>
