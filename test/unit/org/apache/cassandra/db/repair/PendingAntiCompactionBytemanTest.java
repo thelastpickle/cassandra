@@ -18,6 +18,8 @@
 
 package org.apache.cassandra.db.repair;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,10 +27,20 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
+import org.awaitility.Awaitility;
+import org.awaitility.pollinterval.FibonacciPollInterval;
+import org.jboss.byteman.agent.TransformListener;
+import org.jboss.byteman.contrib.bmunit.BMRule;
+import org.jboss.byteman.contrib.bmunit.BMRules;
+import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
+
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.apache.cassandra.db.compaction.CompactionInterruptedException;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.dht.Range;
@@ -36,17 +48,33 @@ import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.locator.RangesAtEndpoint;
 import org.apache.cassandra.locator.Replica;
-import org.jboss.byteman.contrib.bmunit.BMRule;
-import org.jboss.byteman.contrib.bmunit.BMRules;
-import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+
 @RunWith(BMUnitRunner.class)
 public class PendingAntiCompactionBytemanTest extends AbstractPendingAntiCompactionTest
 {
+    @BeforeClass
+    public static void waitForBytemanAgent()
+    {
+        // wait until the byteman agent listener default port is available
+        Awaitility
+                .with().pollInterval(FibonacciPollInterval.fibonacci())
+                .await().atMost(5, TimeUnit.MINUTES).until(() ->
+        {
+            try (ServerSocket ignored = new ServerSocket(TransformListener.DEFAULT_PORT))
+            {
+                ignored.setReuseAddress(true);
+                return true;
+            }
+            catch (IOException ignored) {}
+            return false;
+        });
+    }
+
     @BMRules(rules = { @BMRule(name = "Throw exception anticompaction",
                                targetClass = "Range$OrderedRangeContainmentChecker",
                                targetMethod = "test",

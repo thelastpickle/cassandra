@@ -20,11 +20,20 @@ package org.apache.cassandra.db.commitlog;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import org.awaitility.Awaitility;
+import org.awaitility.pollinterval.FibonacciPollInterval;
+import org.jboss.byteman.agent.TransformListener;
+import org.jboss.byteman.contrib.bmunit.BMRule;
+import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,8 +48,6 @@ import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.marshal.AsciiType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.schema.KeyspaceParams;
-import org.jboss.byteman.contrib.bmunit.BMRule;
-import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
 
 /**
  * Tests the commitlog to make sure we can replay it - explicitly for the case where we update the chained markers
@@ -51,6 +58,24 @@ public class CommitLogChainedMarkersTest
 {
     private static final String KEYSPACE1 = "CommitLogTest";
     private static final String STANDARD1 = "CommitLogChainedMarkersTest";
+
+    @BeforeClass
+    public static void waitForBytemanAgent()
+    {
+        // wait until the byteman agent listener default port is available
+        Awaitility
+                .with().pollInterval(FibonacciPollInterval.fibonacci())
+                .await().atMost(5, TimeUnit.MINUTES).until(() ->
+        {
+            try (ServerSocket ignored = new ServerSocket(TransformListener.DEFAULT_PORT))
+            {
+                ignored.setReuseAddress(true);
+                return true;
+            }
+            catch (IOException ignored) {}
+            return false;
+        });
+    }
 
     @Test
     @BMRule(name = "force all calls to sync() to not flush to disk",

@@ -18,6 +18,8 @@
 
 package org.apache.cassandra.db.compaction;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,6 +31,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Uninterruptibles;
+import org.awaitility.Awaitility;
+import org.awaitility.pollinterval.FibonacciPollInterval;
+import org.jboss.byteman.agent.TransformListener;
+import org.jboss.byteman.contrib.bmunit.BMRule;
+import org.jboss.byteman.contrib.bmunit.BMRules;
+import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
+
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,9 +54,6 @@ import org.apache.cassandra.locator.RangesAtEndpoint;
 import org.apache.cassandra.locator.Replica;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.utils.FBUtilities;
-import org.jboss.byteman.contrib.bmunit.BMRule;
-import org.jboss.byteman.contrib.bmunit.BMRules;
-import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,6 +61,24 @@ import static org.junit.Assert.assertFalse;
 @RunWith(BMUnitRunner.class)
 public class AntiCompactionBytemanTest extends CQLTester
 {
+    @BeforeClass
+    public static void waitForBytemanAgent()
+    {
+        // wait until the byteman agent listener default port is available
+        Awaitility
+                .with().pollInterval(FibonacciPollInterval.fibonacci())
+                .await().atMost(5, TimeUnit.MINUTES).until(() ->
+        {
+            try (ServerSocket ignored = new ServerSocket(TransformListener.DEFAULT_PORT))
+            {
+                ignored.setReuseAddress(true);
+                return true;
+            }
+            catch (IOException ignored) {}
+            return false;
+        });
+    }
+
     @Test
     @BMRules(rules = { @BMRule(name = "Insert delay after first prepareToCommit",
              targetClass = "CompactionManager",

@@ -20,14 +20,24 @@
  */
 package org.apache.cassandra.db.commitlog;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableMap;
+import org.awaitility.Awaitility;
+import org.awaitility.pollinterval.FibonacciPollInterval;
+import org.jboss.byteman.agent.TransformListener;
+import org.jboss.byteman.contrib.bmunit.BMRule;
+import org.jboss.byteman.contrib.bmunit.BMRules;
+import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,9 +54,6 @@ import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.marshal.AsciiType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.schema.KeyspaceParams;
-import org.jboss.byteman.contrib.bmunit.BMRule;
-import org.jboss.byteman.contrib.bmunit.BMRules;
-import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
 
 /**
  * Since this test depends on byteman rules being setup during initialization, you shouldn't add tests to this class
@@ -62,6 +69,24 @@ public class CommitLogSegmentBackpressureTest
     private static final String STANDARD2 = "Standard2";
 
     private final static byte[] entropy = new byte[1024 * 256];
+
+    @BeforeClass
+    public static void waitForBytemanAgent()
+    {
+        // wait until the byteman agent listener default port is available
+        Awaitility
+                .with().pollInterval(FibonacciPollInterval.fibonacci())
+                .await().atMost(5, TimeUnit.MINUTES).until(() ->
+        {
+            try (ServerSocket ignored = new ServerSocket(TransformListener.DEFAULT_PORT))
+            {
+                ignored.setReuseAddress(true);
+                return true;
+            }
+            catch (IOException ignored) {}
+            return false;
+        });
+    }
 
     @Test
     @BMRules(rules = {@BMRule(name = "Acquire Semaphore before sync",

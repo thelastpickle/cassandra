@@ -17,20 +17,28 @@
  */
 package org.apache.cassandra.hints;
 
-import org.apache.cassandra.Util;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.collect.ImmutableList;
+import org.awaitility.Awaitility;
+import org.awaitility.pollinterval.FibonacciPollInterval;
+import org.jboss.byteman.agent.TransformListener;
 import org.jboss.byteman.contrib.bmunit.BMRule;
 import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.cassandra.Util;
 
 import static junit.framework.Assert.*;
 
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 @RunWith(BMUnitRunner.class)
 public class HintsBufferPoolTest
@@ -39,6 +47,19 @@ public class HintsBufferPoolTest
     @BeforeClass
     public static void defineSchema()
     {
+        // wait until the byteman agent listener default port is available
+        Awaitility
+                .with().pollInterval(FibonacciPollInterval.fibonacci())
+                .await().atMost(5, TimeUnit.MINUTES).until(() ->
+        {
+            try (ServerSocket ignored = new ServerSocket(TransformListener.DEFAULT_PORT))
+            {
+                ignored.setReuseAddress(true);
+                return true;
+            }
+            catch (IOException ignored) {}
+            return false;
+        });
         HintsBufferTest.defineSchema();
     }
 
