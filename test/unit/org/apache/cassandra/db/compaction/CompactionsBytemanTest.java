@@ -24,9 +24,11 @@ import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.apache.cassandra.PortResource;
 import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.Keyspace;
@@ -34,6 +36,7 @@ import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.io.sstable.Descriptor;
 import org.apache.cassandra.utils.FBUtilities;
+import org.jboss.byteman.agent.TransformListener;
 import org.jboss.byteman.contrib.bmunit.BMRule;
 import org.jboss.byteman.contrib.bmunit.BMRules;
 import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
@@ -42,9 +45,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+
 @RunWith(BMUnitRunner.class)
 public class CompactionsBytemanTest extends CQLTester
 {
+    @ClassRule
+    public static final PortResource bytemanAgentListener = new PortResource(TransformListener.DEFAULT_HOST, TransformListener.DEFAULT_PORT);
+
     /*
     Return false for the first time hasAvailableDiskSpace is called. i.e first SSTable is too big
     Create 5 SSTables. After compaction, there should be 2 left - 1 as the 9 SStables which were merged,
