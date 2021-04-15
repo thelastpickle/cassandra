@@ -1424,6 +1424,7 @@
   <macrodef name="testlist">
     <attribute name="test.file.list"/>
     <sequential>
+        <echo message="@{test.file.list}"/>
       <testmacrohelper inputdir="${test.dir}/${test.classlistprefix}" filelist="@{test.file.list}" exclude="**/*.java" timeout="${test.timeout}">
         <jvmarg value="-Dlegacy-sstable-root=${test.data}/legacy-sstables"/>
         <jvmarg value="-Dinvalid-legacy-sstable-root=${test.data}/invalid-legacy-sstables"/>
