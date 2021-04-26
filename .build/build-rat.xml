@@ -25,7 +25,15 @@
     -->
 
     <condition property="rat.enabled">
-        <available file=".gitignore" />
+        <and>
+            <available file=".gitignore" />
+            <not>
+                <or>
+                    <isset property="rat.skip"/>
+                    <available file=".rat.skip" />
+                </or>
+            </not>
+        </and>
     </condition>
 
     <target name="_rat_init" depends="resolver-init">
