@@ -52,7 +52,7 @@ public class MigrateDropColumnsTest extends UpgradeTestBase
     public void dropColumns() throws Throwable
     {
         new TestCase()
-        .upgrade(Versions.Major.v22, Versions.Major.v30)
+        .upgradesFrom(Versions.Major.v22)
 //        .upgrade(Versions.Major.v22, Versions.Major.v3X)
 //        .upgrade(Versions.Major.v30, Versions.Major.v3X)
 //        .upgrade(Versions.Major.v22, Versions.Major.v30, Versions.Major.v3X)
