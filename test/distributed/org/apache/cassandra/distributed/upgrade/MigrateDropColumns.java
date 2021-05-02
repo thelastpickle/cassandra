@@ -50,21 +50,24 @@ public abstract class MigrateDropColumns extends UpgradeTestBase
     private static final MapType MAP_TYPE = MapType.getInstance(Int32Type.instance, Int32Type.instance, true);
 
     private final Versions.Major initial;
-    private final Versions.Major[] upgrade;
+    private final Versions.Major[] upgrades;
 
     protected MigrateDropColumns(Versions.Major initial, Versions.Major... upgrade)
     {
         this.initial = Objects.requireNonNull(initial, "initial");
-        this.upgrade = Objects.requireNonNull(upgrade, "upgrade");
+        this.upgrades = Objects.requireNonNull(upgrade, "upgrade");
     }
 
     @Test
     public void dropColumns() throws Throwable
     {
-        new TestCase()
-        .upgrade(initial, upgrade)
-        .withConfig(c -> c.with(Feature.NATIVE_PROTOCOL))
-        .setup(cluster -> {
+        TestCase testcase = new TestCase();
+				for (Semver upgrade : upgrades)
+            testcase = testcase.singleUpgrade(initial, upgrade);
+        
+				testcase
+			    .withConfig(c -> c.with(Feature.NATIVE_PROTOCOL))
+          .setup(cluster -> {
             cluster.schemaChange(withKeyspace("CREATE TABLE %s.tbl(pk int, tables map<int, int>, PRIMARY KEY (pk))"));
 
             ICoordinator coordinator = cluster.coordinator(1);
