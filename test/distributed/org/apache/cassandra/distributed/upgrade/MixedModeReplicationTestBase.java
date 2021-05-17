@@ -21,8 +21,9 @@ package org.apache.cassandra.distributed.upgrade;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vdurmont.semver4j.Semver;
+
 import org.apache.cassandra.distributed.api.ConsistencyLevel;
-import org.apache.cassandra.distributed.shared.Versions;
 
 import static org.apache.cassandra.distributed.shared.AssertUtils.assertRows;
 import static org.apache.cassandra.distributed.shared.AssertUtils.row;
@@ -32,12 +33,12 @@ import static org.apache.cassandra.distributed.shared.AssertUtils.row;
  */
 public class MixedModeReplicationTestBase extends UpgradeTestBase
 {
-    protected void testSimpleStrategy(Versions.Major from) throws Throwable
+    protected void testSimpleStrategy(Semver from) throws Throwable
     {
         testSimpleStrategy(from, UpgradeTestBase.CURRENT);
     }
 
-    protected void testSimpleStrategy(Versions.Major from, Versions.Major to) throws Throwable
+    protected void testSimpleStrategy(Semver from, Semver to) throws Throwable
     {
         String insert = "INSERT INTO test_simple.names (key, name) VALUES (?, ?)";
         String select = "SELECT * FROM test_simple.names WHERE key = ?";

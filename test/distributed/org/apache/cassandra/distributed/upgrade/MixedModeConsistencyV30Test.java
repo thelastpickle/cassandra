@@ -30,6 +30,6 @@ public class MixedModeConsistencyV30Test extends MixedModeConsistencyTestBase
     @Test
     public void testConsistency() throws Throwable
     {
-        testConsistency(Versions.Major.v30);
+        testConsistency(v30);
     }
 }
