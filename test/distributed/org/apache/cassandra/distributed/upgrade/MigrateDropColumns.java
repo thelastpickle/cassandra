@@ -25,6 +25,7 @@ import java.util.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.vdurmont.semver4j.Semver;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -49,10 +50,10 @@ public abstract class MigrateDropColumns extends UpgradeTestBase
 {
     private static final MapType MAP_TYPE = MapType.getInstance(Int32Type.instance, Int32Type.instance, true);
 
-    private final Versions.Major initial;
-    private final Versions.Major[] upgrades;
+    private final Semver initial;
+    private final Semver[] upgrades;
 
-    protected MigrateDropColumns(Versions.Major initial, Versions.Major... upgrade)
+    protected MigrateDropColumns(Semver initial, Semver... upgrade)
     {
         this.initial = Objects.requireNonNull(initial, "initial");
         this.upgrades = Objects.requireNonNull(upgrade, "upgrade");

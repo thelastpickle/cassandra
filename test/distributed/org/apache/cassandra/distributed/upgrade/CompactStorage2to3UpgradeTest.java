@@ -44,7 +44,7 @@ public class CompactStorage2to3UpgradeTest extends UpgradeTestBase
     public void multiColumn() throws Throwable
     {
         new TestCase()
-        .upgradesFrom(Versions.Major.v22)
+        .upgradesFrom(v22)
         .setup(cluster -> {
             assert cluster.size() == 3;
             int rf = cluster.size() - 1;
