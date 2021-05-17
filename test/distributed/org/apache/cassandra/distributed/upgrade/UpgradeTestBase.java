@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.google.common.collect.ImmutableList;
+import com.vdurmont.semver4j.Semver;
+import com.vdurmont.semver4j.Semver.SemverType;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.After;
@@ -38,7 +41,6 @@ import org.apache.cassandra.distributed.shared.Versions;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.Pair;
 
-import static org.apache.cassandra.distributed.shared.Versions.Major;
 import static org.apache.cassandra.distributed.shared.Versions.Version;
 import static org.apache.cassandra.distributed.shared.Versions.find;
 
@@ -74,14 +76,12 @@ public class UpgradeTestBase extends DistributedTestBase
         public void run(UpgradeableCluster cluster, int node) throws Throwable;
     }
 
-    public static final List<Pair<Versions.Major,Versions.Major>> SUPPORTED_UPGRADE_PATHS = ImmutableList.of(
-        Pair.create(Versions.Major.v22, Versions.Major.v30),
-        Pair.create(Versions.Major.v22, Versions.Major.v3X),
-        Pair.create(Versions.Major.v30, Versions.Major.v3X),
-        Pair.create(Versions.Major.v30, Versions.Major.v40),
-        Pair.create(Versions.Major.v3X, Versions.Major.v40));
+    public static final Semver v22 = new Semver("2.2.0-beta1", SemverType.LOOSE);
 
-    public static final Versions.Major CURRENT = SUPPORTED_UPGRADE_PATHS.get(SUPPORTED_UPGRADE_PATHS.size() - 1).right;
+    protected static final List<Pair<Semver,Semver>> SUPPORTED_UPGRADE_PATHS = ImmutableList.of(Pair.create(v22, v22));
+
+    // the last is always the current
+    public static final Semver CURRENT = SUPPORTED_UPGRADE_PATHS.get(SUPPORTED_UPGRADE_PATHS.size() - 1).right;
 
     public static class TestVersions
     {
@@ -122,14 +122,14 @@ public class UpgradeTestBase extends DistributedTestBase
             return this;
         }
 
-        /** Will test all supported upgrade paths, starting from **/
-        public TestCase upgradesFrom(Major from)
+        /** performs all supported upgrade paths that exist in between from and CURRENT (inclusive) **/
+        public TestCase upgradesFrom(Semver from)
         {
             return upgrades(from, CURRENT);
         }
 
-        /** Will test all supported upgrade paths, in between from and to, inclusively **/
-        public TestCase upgrades(Major from, Major to)
+        /** performs all supported upgrade paths that exist in between from and to (inclusive) **/
+        public TestCase upgrades(Semver from, Semver to)
         {
             SUPPORTED_UPGRADE_PATHS.stream()
                 .filter(upgradePath -> (upgradePath.left.compareTo(from) >= 0 && upgradePath.right.compareTo(to) <= 0))
@@ -142,7 +142,7 @@ public class UpgradeTestBase extends DistributedTestBase
         }
 
         /** Will test this specific upgrade path **/
-        public TestCase singleUpgrade(Major from, Major to)
+        public TestCase singleUpgrade(Semver from, Semver to)
         {
             this.upgrade.add(new TestVersions(versions.getLatest(from), versions.getLatest(to)));
             return this;
@@ -177,7 +177,7 @@ public class UpgradeTestBase extends DistributedTestBase
             if (setup == null)
                 throw new AssertionError();
             if (upgrade.isEmpty())
-                throw new AssertionError();
+                throw new AssertionError("no upgrade paths have been specified (or exist)");
             if (runAfterClusterUpgrade == null && runAfterNodeUpgrade == null)
                 throw new AssertionError();
             if (runAfterClusterUpgrade == null)
@@ -190,6 +190,7 @@ public class UpgradeTestBase extends DistributedTestBase
 
             for (TestVersions upgrade : this.upgrade)
             {
+                System.out.printf("testing upgrade from %s to %s%n", upgrade.initial.version, upgrade.upgrade.version);
                 try (UpgradeableCluster cluster = init(UpgradeableCluster.create(nodeCount, upgrade.initial, configConsumer)))
                 {
                     setup.run(cluster);
@@ -220,7 +221,7 @@ public class UpgradeTestBase extends DistributedTestBase
     protected TestCase allUpgrades(int nodes, int... toUpgrade)
     {
         return new TestCase().nodes(nodes)
-                             .upgradesFrom(Versions.Major.v22)
+                             .upgradesFrom(v22)
                              .nodesToUpgrade(toUpgrade);
     }
 

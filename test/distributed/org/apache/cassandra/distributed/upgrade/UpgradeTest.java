@@ -33,7 +33,7 @@ public class UpgradeTest extends UpgradeTestBase
     public void upgradeTest() throws Throwable
     {
         new TestCase()
-        .upgradesFrom(Versions.Major.v22)
+        .upgradesFrom(v22)
         .setup((cluster) -> {
             cluster.schemaChange("CREATE TABLE " + KEYSPACE + ".tbl (pk int, ck int, v int, PRIMARY KEY (pk, ck))");
 
