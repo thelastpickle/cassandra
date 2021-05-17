@@ -35,7 +35,7 @@ public class CompactStorage3to4UpgradeTest extends UpgradeTestBase
     public void testNullClusteringValues() throws Throwable
     {
         new TestCase().nodes(1)
-                      .upgradesFrom(Versions.Major.v30)
+                      .upgradesFrom(v30)
                       .withConfig(config -> config.with(GOSSIP, NETWORK, NATIVE_PROTOCOL))
                       .setup(cluster -> {
                           String create = "CREATE TABLE %s.%s(k int, c1 int, c2 int, v int, PRIMARY KEY (k, c1, c2)) " +

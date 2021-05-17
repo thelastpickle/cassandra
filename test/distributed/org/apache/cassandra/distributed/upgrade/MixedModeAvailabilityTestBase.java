@@ -22,9 +22,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import com.vdurmont.semver4j.Semver;
+
 import org.apache.cassandra.distributed.api.ConsistencyLevel;
 import org.apache.cassandra.distributed.api.ICoordinator;
-import org.apache.cassandra.distributed.shared.Versions;
 import org.apache.cassandra.exceptions.ReadTimeoutException;
 import org.apache.cassandra.exceptions.WriteTimeoutException;
 import org.apache.cassandra.net.Verb;
@@ -50,20 +51,20 @@ public class MixedModeAvailabilityTestBase extends UpgradeTestBase
                                                               new Tester(ALL, ONE));
 
 
-    protected static void testAvailability(Versions.Major initial) throws Throwable
+    protected static void testAvailability(Semver initial) throws Throwable
     {
         testAvailability(initial, UpgradeTestBase.CURRENT);
     }
 
-    protected static void testAvailability(Versions.Major initial, Versions.Major upgrade) throws Throwable
+    protected static void testAvailability(Semver initial, Semver upgrade) throws Throwable
     {
         testAvailability(true, initial, upgrade);
         testAvailability(false, initial, upgrade);
     }
 
     private static void testAvailability(boolean upgradedCoordinator,
-                                         Versions.Major initial,
-                                         Versions.Major upgrade) throws Throwable
+                                         Semver initial,
+                                         Semver upgrade) throws Throwable
     {
         new TestCase()
         .nodes(NUM_NODES)

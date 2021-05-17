@@ -24,10 +24,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.vdurmont.semver4j.Semver;
+
 import org.apache.cassandra.distributed.UpgradeableCluster;
 import org.apache.cassandra.distributed.api.ConsistencyLevel;
 import org.apache.cassandra.distributed.api.IUpgradeableInstance;
-import org.apache.cassandra.distributed.shared.Versions;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -39,12 +40,12 @@ import static org.apache.cassandra.distributed.shared.AssertUtils.row;
 
 public class MixedModeConsistencyTestBase extends UpgradeTestBase
 {
-    protected static void testConsistency(Versions.Major initial) throws Throwable
+    protected static void testConsistency(Semver initial) throws Throwable
     {
         testConsistency(initial, UpgradeTestBase.CURRENT);
     }
 
-    protected static void testConsistency(Versions.Major initial, Versions.Major upgrade) throws Throwable
+    protected static void testConsistency(Semver initial, Semver upgrade) throws Throwable
     {
         List<Tester> testers = new ArrayList<>();
         testers.addAll(Tester.create(1, ALL));

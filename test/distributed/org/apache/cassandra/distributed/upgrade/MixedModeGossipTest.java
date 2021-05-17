@@ -50,7 +50,7 @@ public class MixedModeGossipTest extends UpgradeTestBase
         .withConfig(c -> c.with(Feature.GOSSIP, Feature.NETWORK))
         .nodes(3)
         .nodesToUpgradeOrdered(1, 2, 3)
-        .upgradesFrom(Versions.Major.v30)
+        .upgradesFrom(v30)
         .setup(c -> {})
         .runAfterNodeUpgrade((cluster, node) -> {
             if (node == 1) {
@@ -84,7 +84,7 @@ public class MixedModeGossipTest extends UpgradeTestBase
         .withConfig(c -> c.with(Feature.GOSSIP, Feature.NETWORK))
         .nodes(3)
         .nodesToUpgradeOrdered(1, 2, 3)
-        .upgradesFrom(Versions.Major.v30)
+        .upgradesFrom(v30)
         .setup(cluster -> {
             // node2 and node3 gossiper cannot talk with each other
             cluster.filters().verbs(Verb.GOSSIP_DIGEST_SYN.id).from(2).to(3).drop();
