@@ -30,6 +30,6 @@ public class MixedModeAvailabilityV30Test extends MixedModeAvailabilityTestBase
     @Test
     public void testAvailability() throws Throwable
     {
-        testAvailability(Versions.Major.v30);
+        testAvailability(v30);
     }
 }
