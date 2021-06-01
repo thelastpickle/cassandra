@@ -1,0 +1,128 @@
+--- a/CHANGES.txt
++++ b/CHANGES.txt
+@@ -1,4 +1,7 @@
+-<<<<<<<
++Future version (tbd)
++ * Require only MODIFY permission on base when updating table with MV (STAR-564)
++
++
+ 5.0-beta2
+  * Align buffer with commitlog segment size (CASSANDRA-19471)
+  * Ensure SAI indexes empty byte buffers for types that allow them as a valid input (CASSANDRA-19461)
+@@ -78,10 +81,6 @@
+  * Remove completed coordinator sessions (CASSANDRA-18903)
+ Merged from 3.0:
+  * Do not set RPC_READY to false on transports shutdown in order to not fail counter updates for deployments with coordinator and storage nodes with transports turned off (CASSANDRA-18935)
+-=======
+-Future version (tbd)
+- * Require only MODIFY permission on base when updating table with MV (STAR-564)
+->>>>>>>
+ 
+ 
+ 5.0-alpha2
+diff --cc CHANGES.txt
+index e879141be7,02056923cf..0000000000
+--- a/CHANGES.txt
++++ b/CHANGES.txt
+@@@ -1,97 -1,8 +1,101 @@@
++ Future version (tbd)
++  * Require only MODIFY permission on base when updating table with MV (STAR-564)
++ 
++ 
+ +5.0-beta2
+ + * Align buffer with commitlog segment size (CASSANDRA-19471)
+ + * Ensure SAI indexes empty byte buffers for types that allow them as a valid input (CASSANDRA-19461)
+ + * Deprecate Python 3.7 and earlier, but allow cqlsh to run with Python 3.6-3.11 (CASSANDRA-19467)
+ + * Set uuid_sstable_identifiers_enabled to true in cassandra-latest.yaml (CASSANDRA-19460)
+ + * Revert switching to approxTime in Dispatcher (CASSANDRA-19454)
+ + * Add an optimized default configuration to tests and make it available for new users (CASSANDRA-18753)
+ + * Fix remote JMX under Java17 (CASSANDRA-19453)
+ + * Avoid consistency violations for SAI intersections over unrepaired data at consistency levels requiring reconciliation (CASSANDRA-19018)
+ + * Fix NullPointerException in ANN+WHERE when adding rows in another partition (CASSANDRA-19404)
+ + * Record latencies for SAI post-filtering reads against local storage (CASSANDRA-18940)
+ + * Fix VectorMemoryIndex#update logic to compare vectors. Fix Index view (CASSANDRA-19168)
+ + * Deprecate native_transport_port_ssl (CASSANDRA-19392)
+ + * Update packaging shell includes (CASSANDRA-19283)
+ + * Fix data corruption in VectorCodec when using heap buffers (CASSANDRA-19167)
+ + * Avoid over-skipping of key iterators from static column indexes during mixed intersections (CASSANDRA-19278)
+ + * Make concurrent_index_builders configurable at runtime (CASSANDRA-19266)
+ + * Fix storage_compatibility_mode for streaming (CASSANDRA-19126)
+ + * Add support of vector type to cqlsh COPY command (CASSANDRA-19118)
+ + * Make CQLSSTableWriter to support building of SAI indexes (CASSANDRA-18714)
+ + * Append additional JVM options when using JDK17+ (CASSANDRA-19001)
+ + * Upgrade Python driver to 3.29.0 (CASSANDRA-19245)
+ + * Creating a SASI index after creating an SAI index does not break secondary index queries (CASSANDRA-18939)
+ + * Optionally fail when a non-partition-restricted query is issued against an index (CASSANDRA-18796)
+ + * Add a startup check to fail startup when using invalid configuration with certain Kernel and FS type (CASSANDRA-19196)
+ + * UCS min_sstable_size should not be lower than target_sstable_size lower bound (CASSANDRA-19112)
+ + * Fix the correspondingMessagingVersion of SSTable format and improve TTL overflow tests coverage (CASSANDRA-19197)
+ + * Fix resource cleanup after SAI query timeouts (CASSANDRA-19177)
+ + * Suppress CVE-2023-6481 (CASSANDRA-19184)
+ +Merged from 4.1:
+ + * Do not go to disk for reading hints file sizes (CASSANDRA-19477)
+ + * Fix system_views.settings to handle array types (CASSANDRA-19475)
+ + * Memoize Cassandra verion and add a backoff interval for failed schema pulls (CASSANDRA-18902)
+ + * Fix StackOverflowError on ALTER after many previous schema changes (CASSANDRA-19166)
+ +Merged from 4.0:
+ + * Push LocalSessions info logs to debug (CASSANDRA-18335)
+ + * Filter remote DC replicas out when constructing the initial replica plan for the local read repair (CASSANDRA-19120)
+ + * Remove redundant code in StorageProxy#sendToHintedReplicas (CASSANDRA-19412)
+ + * Remove bashisms for mx4j tool in cassandra-env.sh (CASSANDRA-19416)
+ + * Add new concurrent_merkle_tree_requests config property to prevent OOM during multi-range and/or multi-table repairs (CASSANDRA-19336)
+ + * Skip version check if an endpoint is dead state in Gossiper#upgradeFromVersionSupplier (CASSANDRA-19187)
+ + * Fix Gossiper::hasMajorVersion3Nodes to return false during minor upgrade (CASSANDRA-18999)
+ + * Revert unnecessary read lock acquisition when reading ring version in TokenMetadata introduced in CASSANDRA-16286 (CASSANDRA-19107)
+ +Merged from 3.11:
+ + * Move ClientWarn.State#warnings to a thread-safe list (CASSANDRA-19427)
+ +Merged from 3.0:
+ + * Fix SCM URL link (CASSANDRA-19422)
+ + * Backport CASSANDRA-16418 to 3.x (CASSANDRA-18824)
+ +
+ +
+ +5.0-beta1
+ + * Fix SAI intersection queries (CASSANDRA-19011)
+ + * Clone EndpointState before sending GossipShutdown message (CASSANDRA-19115)
+ + * SAI indexes are marked queryable during truncation (CASSANDRA-19032)
+ + * Enable Direct-IO feature for CommitLog files using Java native API's. (CASSANDRA-18464)
+ + * SAI fixes for composite partitions, and static and non-static rows intersections (CASSANDRA-19034)
+ + * Improve SAI IndexContext handling of indexed and non-indexed columns in queries (CASSANDRA-18166)
+ + * Fixed bug where UnifiedCompactionTask constructor was calling the wrong base constructor of CompactionTask (CASSANDRA-18757)
+ + * Fix SAI unindexed contexts not considering CONTAINS KEY (CASSANDRA-19040)
+ + * Ensure that empty SAI column indexes do not fail on validation after full-SSTable streaming (CASSANDRA-19017)
+ + * SAI in-memory index should check max term size (CASSANDRA-18926)
+ + * Set default disk_access_mode to mmap_index_only (CASSANDRA-19021)
+ + * Exclude net.java.dev.jna:jna dependency from dependencies of org.caffinitas.ohc:ohc-core (CASSANDRA-18992)
+ + * Add UCS sstable_growth and min_sstable_size options (CASSANDRA-18945)
+ + * Make cqlsh's min required Python version 3.7+ instead of 3.6+ (CASSANDRA-18960)
+ + * Fix incorrect seeking through the sstable iterator by IndexState (CASSANDRA-18932)
+ + * Upgrade Python driver to 3.28.0 (CASSANDRA-18960)
+ + * Add retries to IR messages (CASSANDRA-18962)
+ + * Add metrics and logging to repair retries (CASSANDRA-18952)
+ + * Remove deprecated code in Cassandra 1.x and 2.x (CASSANDRA-18959)
+ + * ClientRequestSize metrics should not treat CONTAINS restrictions as being equality-based (CASSANDRA-18896)
+ +Merged from 4.0:
+ + * Support max SSTable size in sorted CQLSSTableWriter (CASSANDRA-18941)
+ + * Fix nodetool repair_admin summarize-pending command to not throw exception (CASSANDRA-19014)
+ + * Fix cassandra-stress in simplenative mode with prepared statements (CASSANDRA-18744)
+ + * Fix filtering system ks sstables for relocation on startup (CASSANDRA-18963)
+ + * Remove completed coordinator sessions (CASSANDRA-18903)
+ +Merged from 3.0:
+ + * Do not set RPC_READY to false on transports shutdown in order to not fail counter updates for deployments with coordinator and storage nodes with transports turned off (CASSANDRA-18935)
+ +
+ +
+  5.0-alpha2
+ + * Add support for vector search in SAI (CASSANDRA-18715)
+ + * Remove crc_check_chance from CompressionParams (CASSANDRA-18872)
+ + * Fix schema loading of UDTs inside vectors inside UDTs (CASSANDRA-18964)
+ + * Add cqlsh autocompletion for the vector data type (CASSANDRA-18946)
+ + * Fix nodetool tablehistograms output to avoid printing repeated information and ensure at most two arguments (CASSANDRA-18955)
+ + * Change the checksum algorithm SAI-related files use from CRC32 to CRC32C (CASSANDRA-18836)
+ + * Correctly remove Index.Group from IndexRegistry (CASSANDRA-18905)
+ + * Fix vector type to support DDM's mask_default function (CASSANDRA-18889)
+ + * Remove unnecessary reporter-config3 dependency (CASSANDRA-18907)
+ + * Remove support for empty values on the vector data type (CASSANDRA-18876)
+ + * Upgrade Dropwizard Metrics to 4.2.19 (CASSANDRA-14667)
+ + * Upgrade caffeine cache and fix CIDR permissions cache invalidation (CASSANDRA-18805)
+   * Remove deprecated properties in CompressionParams (CASSANDRA-18742)
+   * Add support for repair coordinator to retry messages that timeout (CASSANDRA-18816)
+   * Upgrade slf4j-api to 1.7.36 (CASSANDRA-18882)
