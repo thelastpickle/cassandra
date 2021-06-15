@@ -1,0 +1,38 @@
+--- a/src/java/org/apache/cassandra/utils/FilterFactory.java
++++ b/src/java/org/apache/cassandra/utils/FilterFactory.java
+@@ -78,12 +78,8 @@
+         return createFilter(spec.K, numElements, spec.bucketsPerElement, memoryLimiter);
+     }
+ 
+-<<<<<<<
+     @SuppressWarnings("resource")
+     private static IFilter createFilter(int hash, long numElements, int bucketsPer, MemoryLimiter memoryLimiter)
+-=======
+-    private static IFilter createFilter(int hash, long numElements, int bucketsPer)
+->>>>>>>
+     {
+         try
+         {
+--- a/src/java/org/apache/cassandra/utils/obs/OffHeapBitSet.java
++++ b/src/java/org/apache/cassandra/utils/obs/OffHeapBitSet.java
+@@ -171,12 +171,8 @@
+         return TypeSizes.sizeof((int) bytes.size()) + bytes.size();
+     }
+ 
+-<<<<<<<
+     @SuppressWarnings("resource")
+     public static <I extends InputStream & DataInput> OffHeapBitSet deserialize(I in, boolean oldBfFormat, MemoryLimiter memoryLimiter) throws IOException, MemoryLimiter.ReachedMemoryLimitException
+-=======
+-    public static <I extends InputStream & DataInput> OffHeapBitSet deserialize(I in, boolean oldBfFormat) throws IOException
+->>>>>>>
+     {
+         long byteCount = in.readInt() * 8L;
+         Memory memory = allocate(byteCount, memoryLimiter);
+diff --cc src/java/org/apache/cassandra/utils/FilterFactory.java
+index 50dbffb7d1,571b99f611..0000000000
+--- a/src/java/org/apache/cassandra/utils/FilterFactory.java
++++ b/src/java/org/apache/cassandra/utils/FilterFactory.java
+diff --cc src/java/org/apache/cassandra/utils/obs/OffHeapBitSet.java
+index be0ecf556f,c150454fa9..0000000000
+--- a/src/java/org/apache/cassandra/utils/obs/OffHeapBitSet.java
++++ b/src/java/org/apache/cassandra/utils/obs/OffHeapBitSet.java
