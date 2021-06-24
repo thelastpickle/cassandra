@@ -316,14 +316,14 @@
                 </or></not>
             </condition>
         </fail>
-        <fail message="-Duse.jdk11=true or $CASSANDRA_USE_JDK11=true must be set when building from java 11">
+       <!-- <fail message="-Duse.jdk11=true or $CASSANDRA_USE_JDK11=true must be set when building from java 11">
             <condition>
                 <not><or>
                     <isset property="java.version.8"/>
                     <isset property="use-jdk11"/>
                 </or></not>
             </condition>
-        </fail>
+        </fail> -->
     </target>
 
     <!--
