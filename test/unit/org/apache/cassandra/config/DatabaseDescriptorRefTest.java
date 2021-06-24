@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
  * unexpected threads.
  *
  * {@link DatabaseDescriptor#toolInitialization()} is tested via unit tests extending
- * {@link org.apache.cassandra.tools.ToolsTester}.
+ * {@link org.apache.cassandra.tools.OfflineToolUtils}.
  */
 public class DatabaseDescriptorRefTest
 {
@@ -140,7 +140,6 @@ public class DatabaseDescriptorRefTest
     "org.apache.cassandra.locator.Replica",
     "org.apache.cassandra.locator.SimpleSeedProvider",
     "org.apache.cassandra.locator.SeedProvider",
-    "org.apache.cassandra.net.BackPressureStrategy",
     "org.apache.cassandra.security.EncryptionContext",
     "org.apache.cassandra.service.CacheService$CacheType",
     "org.apache.cassandra.utils.binlog.BinLogOptions",
