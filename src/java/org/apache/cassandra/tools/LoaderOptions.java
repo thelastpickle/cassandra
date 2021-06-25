@@ -439,8 +439,10 @@ public class LoaderOptions
                 else
                     sslStoragePort = config.ssl_storage_port;
                 throttle = config.stream_throughput_outbound_megabits_per_sec;
-                clientEncOptions = config.client_encryption_options;
+                // Copy the encryption options and apply the config so that argument parsing can accesss isEnabled.
+                clientEncOptions = config.client_encryption_options.applyConfig();
                 serverEncOptions = config.server_encryption_options;
+                serverEncOptions.applyConfig();
 
                 if (cmd.hasOption(THROTTLE_MBITS))
                 {

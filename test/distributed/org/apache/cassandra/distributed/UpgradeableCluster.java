@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import org.apache.cassandra.distributed.api.IInstanceConfig;
 import org.apache.cassandra.distributed.api.IUpgradeableInstance;
 import org.apache.cassandra.distributed.impl.AbstractCluster;
-import org.apache.cassandra.distributed.shared.AbstractBuilder;
 import org.apache.cassandra.distributed.shared.Versions;
 
 /**
@@ -43,6 +42,7 @@ public class UpgradeableCluster extends AbstractCluster<IUpgradeableInstance> im
 
     protected IUpgradeableInstance newInstanceWrapper(int generation, Versions.Version version, IInstanceConfig config)
     {
+        config.set(Constants.KEY_DTEST_API_CONFIG_CHECK, false);
         return new Wrapper(generation, version, config);
     }
 

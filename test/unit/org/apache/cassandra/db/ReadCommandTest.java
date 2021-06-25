@@ -172,7 +172,7 @@ public class ReadCommandTest
 
         TableMetadata.Builder metadata7 =
         TableMetadata.builder(KEYSPACE, CF7)
-                     .flags(EnumSet.of(TableMetadata.Flag.COUNTER))
+                     .flags(EnumSet.of(TableMetadata.Flag.COUNTER, TableMetadata.Flag.COMPOUND))
                      .addPartitionKeyColumn("key", BytesType.instance)
                      .addClusteringColumn("col", AsciiType.instance)
                      .addRegularColumn("c", CounterColumnType.instance);
@@ -328,9 +328,9 @@ public class ReadCommandTest
 
         List<ByteBuffer> buffers = new ArrayList<>(groups.length);
         int nowInSeconds = FBUtilities.nowInSeconds();
-        ColumnFilter columnFilter = ColumnFilter.allRegularColumnsBuilder(cfs.metadata()).build();
+        ColumnFilter columnFilter = ColumnFilter.allRegularColumnsBuilder(cfs.metadata(), false).build();
         RowFilter rowFilter = RowFilter.create();
-        Slice slice = Slice.make(ClusteringBound.BOTTOM, ClusteringBound.TOP);
+        Slice slice = Slice.make(BufferClusteringBound.BOTTOM, BufferClusteringBound.TOP);
         ClusteringIndexSliceFilter sliceFilter = new ClusteringIndexSliceFilter(Slices.with(cfs.metadata().comparator, slice), false);
 
         for (String[][] group : groups)
@@ -495,9 +495,9 @@ public class ReadCommandTest
 
         List<ByteBuffer> buffers = new ArrayList<>(groups.length);
         int nowInSeconds = FBUtilities.nowInSeconds();
-        ColumnFilter columnFilter = ColumnFilter.allRegularColumnsBuilder(cfs.metadata()).build();
+        ColumnFilter columnFilter = ColumnFilter.allRegularColumnsBuilder(cfs.metadata(), false).build();
         RowFilter rowFilter = RowFilter.create();
-        Slice slice = Slice.make(ClusteringBound.BOTTOM, ClusteringBound.TOP);
+        Slice slice = Slice.make(BufferClusteringBound.BOTTOM, BufferClusteringBound.TOP);
         ClusteringIndexSliceFilter sliceFilter = new ClusteringIndexSliceFilter(
                 Slices.with(cfs.metadata().comparator, slice), false);
 
@@ -571,9 +571,9 @@ public class ReadCommandTest
 
         List<ByteBuffer> buffers = new ArrayList<>(groups.length);
         int nowInSeconds = FBUtilities.nowInSeconds();
-        ColumnFilter columnFilter = ColumnFilter.allRegularColumnsBuilder(cfs.metadata()).build();
+        ColumnFilter columnFilter = ColumnFilter.allRegularColumnsBuilder(cfs.metadata(), false).build();
         RowFilter rowFilter = RowFilter.create();
-        Slice slice = Slice.make(ClusteringBound.BOTTOM, ClusteringBound.TOP);
+        Slice slice = Slice.make(BufferClusteringBound.BOTTOM, BufferClusteringBound.TOP);
         ClusteringIndexSliceFilter sliceFilter = new ClusteringIndexSliceFilter(
                 Slices.with(cfs.metadata().comparator, slice), false);
 
@@ -825,7 +825,7 @@ public class ReadCommandTest
                 Row r = (Row)u;
                 assertTrue(!r.hasDeletion(cmd.nowInSec())
                            || (key.equals(keys[2]) && r.clustering()
-                                                       .get(0)
+                                                       .bufferAt(0)
                                                        .equals(AsciiType.instance.fromString("cc"))));
 
             });

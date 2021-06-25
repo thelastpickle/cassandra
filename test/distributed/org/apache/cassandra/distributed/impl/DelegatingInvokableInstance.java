@@ -20,6 +20,7 @@ package org.apache.cassandra.distributed.impl;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
@@ -92,6 +93,12 @@ public abstract class DelegatingInvokableInstance implements IInvokableInstance
     public void setMessagingVersion(InetSocketAddress endpoint, int version)
     {
         delegate().setMessagingVersion(endpoint, version);
+    }
+
+    @Override
+    public String getReleaseVersionString()
+    {
+        return delegate().getReleaseVersionString();
     }
 
     public void flush(String keyspace)

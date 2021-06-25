@@ -182,7 +182,7 @@ public abstract class UDFunction extends AbstractFunction implements ScalarFunct
         return false;
     }
 
-    // setup the UDF class loader with no parent class loader so that we have full control about what class/resource UDF uses
+    // setup the UDF class loader with a context class loader as a parent so that we have full control about what class/resource UDF uses
     static final ClassLoader udfClassLoader = new UDFClassLoader();
 
     protected UDFunction(FunctionName name,
@@ -309,12 +309,17 @@ public abstract class UDFunction extends AbstractFunction implements ScalarFunct
     }
 
     @Override
-    public String toCqlString(boolean withInternals)
+    public String toCqlString(boolean withInternals, boolean ifNotExists)
     {
         CqlBuilder builder = new CqlBuilder();
-        builder.append("CREATE FUNCTION ")
-               .append(name())
-               .append("(");
+        builder.append("CREATE FUNCTION ");
+
+        if (ifNotExists)
+        {
+            builder.append("IF NOT EXISTS ");
+        }
+
+        builder.append(name()).append("(");
 
         for (int i = 0, m = argNames().size(); i < m; i++)
         {
@@ -737,6 +742,11 @@ public abstract class UDFunction extends AbstractFunction implements ScalarFunct
     {
         // insecureClassLoader is the C* class loader
         static final ClassLoader insecureClassLoader = Thread.currentThread().getContextClassLoader();
+
+        private UDFClassLoader()
+        {
+            super(insecureClassLoader);
+        }
 
         public URL getResource(String name)
         {

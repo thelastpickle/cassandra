@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -110,7 +109,8 @@ public class OutboundConnection
 
     private final OutboundMessageCallbacks callbacks;
     private final OutboundDebugCallbacks debug;
-    private final OutboundMessageQueue queue;
+    @VisibleForTesting
+    final OutboundMessageQueue queue;
     /** the number of bytes we permit to queue to the network without acquiring any shared resource permits */
     private final long pendingCapacityInBytes;
     /** the number of messages and bytes queued for flush to the network,
@@ -470,10 +470,10 @@ public class OutboundConnection
      */
     private boolean onExpired(Message<?> message)
     {
+        noSpamLogger.warn("{} dropping message of type {} whose timeout expired before reaching the network", id(), message.verb());
         releaseCapacity(1, canonicalSize(message));
         expiredCount += 1;
         expiredBytes += canonicalSize(message);
-        noSpamLogger.warn("{} dropping message of type {} whose timeout expired before reaching the network", id(), message.verb());
         callbacks.onExpired(message, template.to);
         return true;
     }
@@ -485,11 +485,11 @@ public class OutboundConnection
      */
     private void onFailedSerialize(Message<?> message, int messagingVersion, int bytesWrittenToNetwork, Throwable t)
     {
-        JVMStabilityInspector.inspectThrowable(t, false);
+        logger.warn("{} dropping message of type {} due to error", id(), message.verb(), t);
+        JVMStabilityInspector.inspectThrowable(t);
         releaseCapacity(1, canonicalSize(message));
         errorCount += 1;
         errorBytes += message.serializedSize(messagingVersion);
-        logger.warn("{} dropping message of type {} due to error", id(), message.verb(), t);
         callbacks.onFailedSerialize(message, template.to, messagingVersion, bytesWrittenToNetwork, t);
     }
 
@@ -1047,7 +1047,7 @@ public class OutboundConnection
 
     private void invalidateChannel(Established established, Throwable cause)
     {
-        JVMStabilityInspector.inspectThrowable(cause, false);
+        JVMStabilityInspector.inspectThrowable(cause);
 
         if (state != established)
             return; // do nothing; channel already invalidated
@@ -1093,7 +1093,7 @@ public class OutboundConnection
                 else
                     noSpamLogger.error("{} failed to connect", id(), cause);
 
-                JVMStabilityInspector.inspectThrowable(cause, false);
+                JVMStabilityInspector.inspectThrowable(cause);
 
                 if (hasPending())
                 {
@@ -1151,7 +1151,7 @@ public class OutboundConnection
                                     id(true),
                                     success.messagingVersion,
                                     settings.framing,
-                                    encryptionLogStatement(settings.encryption));
+                                    encryptionConnectionSummary(channel));
                         break;
 
                     case RETRY:

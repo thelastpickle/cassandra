@@ -18,7 +18,6 @@
 
 package org.apache.cassandra.tools;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,218 +27,36 @@ import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Preconditions;
-
-import org.apache.commons.io.IOUtils;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.cql3.CQLTester;
-import org.apache.cassandra.tools.OfflineToolUtils.SystemExitException;
+import org.apache.cassandra.distributed.api.IInstance;
+import org.apache.cassandra.distributed.api.NodeToolResult;
+import org.apache.cassandra.utils.Pair;
+import org.assertj.core.util.Lists;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class ToolRunner implements AutoCloseable
+public class ToolRunner
 {
     protected static final Logger logger = LoggerFactory.getLogger(ToolRunner.class);
-    
-    private final List<String> allArgs = new ArrayList<>();
-    private Process process;
-    private final ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
-    private final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
-    private InputStream stdin;
-    private boolean stdinAutoClose;
-    private long defaultTimeoutMillis = TimeUnit.SECONDS.toMillis(30);
-    private Thread ioWatcher;
-    private Map<String, String> envs;
-    private boolean runOutOfProcess = true;
 
-    public ToolRunner(List<String> args)
-    {
-        this.allArgs.addAll(args);
-    }
-    
-    public ToolRunner(List<String> args, boolean runOutOfProcess)
-    {
-        this.allArgs.addAll(args);
-        this.runOutOfProcess = runOutOfProcess;
-    }
+    private static final ImmutableList<String> DEFAULT_CLEANERS = ImmutableList.of("(?im)^picked up.*\\R");
 
-    public ToolRunner withStdin(InputStream stdin, boolean autoClose)
-    {
-        this.stdin = stdin;
-        this.stdinAutoClose = autoClose;
-        return this;
-    }
-
-    public ToolRunner withEnvs(Map<String, String> envs)
-    {
-        Preconditions.checkArgument(runOutOfProcess, "Not supported");
-        this.envs = envs;
-        return this;
-    }
-
-    public ToolRunner start()
-    {
-        if (process != null)
-            throw new IllegalStateException("Process already started. Create a new ToolRunner instance for each invocation.");
-
-        logger.debug("Starting {} with args {}", runOutOfProcess ? "process" : "class" , argsToLogString());
-
-        try
-        {
-            if (runOutOfProcess)
-            {
-                ProcessBuilder pb = new ProcessBuilder(allArgs);
-                if (envs != null)
-                    pb.environment().putAll(envs);
-                process = pb.start();
-            }
-            else
-            {
-                PrintStream originalSysOut = System.out;
-                PrintStream originalSysErr = System.err;
-                InputStream originalSysIn = System.in;
-                originalSysOut.flush();
-                originalSysErr.flush();
-                ByteArrayOutputStream toolOut = new ByteArrayOutputStream();
-                ByteArrayOutputStream toolErr = new ByteArrayOutputStream();
-                
-                System.setIn(stdin == null ? originalSysIn : stdin);
-                int exit = 0;
-                try (PrintStream newOut = new PrintStream(toolOut); PrintStream newErr = new PrintStream(toolErr);)
-                {
-                    System.setOut(newOut);
-                    System.setErr(newErr);
-                    String clazz = allArgs.get(0);
-                    String[] clazzArgs = allArgs.subList(1, allArgs.size()).toArray(new String[0]);
-                    exit = runClassAsTool(clazz, clazzArgs);
-                }
-                
-                final int exitCode = exit;
-                System.setOut(originalSysOut);
-                System.setErr(originalSysErr);
-                System.setIn(originalSysIn);
-                
-                process = new Process() {
-
-                    @Override
-                    public void destroy()
-                    {
-                    }
-
-                    @Override
-                    public int exitValue()
-                    {
-                        return exitCode;
-                    }
-
-                    @Override
-                    public InputStream getErrorStream()
-                    {
-                        return new ByteArrayInputStream(toolErr.toByteArray());
-                    }
-
-                    @Override
-                    public InputStream getInputStream()
-                    {
-                        return new ByteArrayInputStream(toolOut.toByteArray());
-                    }
-
-                    @Override
-                    public OutputStream getOutputStream()
-                    {
-                        if (stdin == null)
-                            return null;
-                        
-                        ByteArrayOutputStream out = null;
-                        try
-                        {
-                            out = new ByteArrayOutputStream(stdin.available());
-                            IOUtils.copy(stdin, out);
-                        }
-                        catch(IOException e)
-                        {
-                            throw new RuntimeException("Failed to get stdin", e);
-                        }
-                        return out;
-                    }
-
-                    @Override
-                    public int waitFor() throws InterruptedException
-                    {
-                        return exitValue();
-                    }
-                    
-                };
-            }
-            
-            ioWatcher = new Thread(this::watchIO);
-            ioWatcher.setDaemon(true);
-            ioWatcher.start();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Failed to start " + allArgs, e);
-        }
-
-        return this;
-    }
-
-    private void watchIO()
-    {
-        OutputStream in = process.getOutputStream();
-        InputStream err = process.getErrorStream();
-        InputStream out = process.getInputStream();
-        while (true)
-        {
-            boolean errHandled;
-            boolean outHandled;
-            try
-            {
-                if (stdin != null)
-                {
-                    IOUtils.copy(stdin, in);
-                    if (stdinAutoClose)
-                    {
-                        in.close();
-                        stdin = null;
-                    }
-                }
-                errHandled = IOUtils.copy(err, errBuffer) > 0;
-                outHandled = IOUtils.copy(out, outBuffer) > 0;
-            }
-            catch(IOException e1)
-            {
-                logger.error("Error trying to use in/err/out from process");
-                Thread.currentThread().interrupt();
-                break;
-            }
-            if (!errHandled && !outHandled)
-            {
-                if (!process.isAlive())
-                    return;
-                try
-                {
-                    Thread.sleep(50L);
-                }
-                catch (InterruptedException e)
-                {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-    }
-    
-    public int runClassAsTool(String clazz, String... args)
+    public static int runClassAsTool(String clazz, String... args)
     {
         try
         {
@@ -295,143 +112,543 @@ public class ToolRunner implements AutoCloseable
         }
     }
 
-    public boolean isRunning()
+    private static final class StreamGobbler<T extends OutputStream> implements Runnable
     {
-        return process != null && process.isAlive();
+        private static final int BUFFER_SIZE = 8_192;
+
+        private final InputStream input;
+        private final T out;
+
+        private StreamGobbler(InputStream input, T out)
+        {
+            this.input = input;
+            this.out = out;
+        }
+
+        public void run()
+        {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            while (true)
+            {
+                try
+                {
+                    int read = input.read(buffer);
+                    if (read == -1)
+                    {
+                        return;
+                    }
+                    out.write(buffer, 0, read);
+                }
+                catch (IOException e)
+                {
+                    logger.error("Unexpected IO Error while reading stream", e);
+                    return;
+                }
+            }
+        }
     }
 
-    public boolean waitFor()
+    /**
+     * Invokes Cqlsh. The first arg is the cql to execute
+     */
+    public static ToolResult invokeCqlsh(String... args)
     {
-        return waitFor(defaultTimeoutMillis, TimeUnit.MILLISECONDS);
+        return invokeCqlsh(Arrays.asList(args));
     }
 
-    public boolean waitFor(long time, TimeUnit timeUnit)
+    /**
+     * Invokes Cqlsh. The first arg is the cql to execute
+     */
+    public static ToolResult invokeCqlsh(List<String> args)
     {
+        return invoke(CQLTester.buildCqlshArgs(args));
+    }
+
+    public static ToolResult invokeCassandraStress(String... args)
+    {
+        return invokeCassandraStress(Arrays.asList(args));
+    }
+
+    public static ToolResult invokeCassandraStress(List<String> args)
+    {
+        return invoke(CQLTester.buildCassandraStressArgs(args));
+    }
+
+    public static ToolResult invokeNodetool(String... args)
+    {
+        return invokeNodetool(Arrays.asList(args));
+    }
+
+    public static ToolResult invokeNodetool(List<String> args)
+    {
+        return invoke(CQLTester.buildNodetoolArgs(args));
+    }
+
+    public static ToolResult invoke(List<String> args)
+    {
+        return invoke(args.toArray(new String[args.size()]));
+    }
+
+    public static ToolResult invoke(String... args) 
+    {
+        try (ObservableTool  t = invokeAsync(args))
+        {
+            return t.waitComplete();
+        }
+    }
+
+    public static ObservableTool invokeAsync(String... args)
+    {
+        return invokeAsync(Collections.emptyMap(), null, Arrays.asList(args));
+    }
+
+    public static ToolResult invoke(Map<String, String> env, InputStream stdin, List<String> args)
+    {
+        try (ObservableTool  t = invokeAsync(env, stdin, args))
+        {
+            return t.waitComplete();
+        }
+    }
+
+    public static ObservableTool invokeAsync(Map<String, String> env, InputStream stdin, List<String> args)
+    {
+        ProcessBuilder pb = new ProcessBuilder(args);
+        if (env != null && !env.isEmpty())
+            pb.environment().putAll(env);
         try
         {
-            if (!process.waitFor(time, timeUnit))
-                return false;
-            ioWatcher.join();
+            return new ForkedObservableTool(pb.start(), stdin, args);
+        }
+        catch (IOException e)
+        {
+            return new FailedObservableTool(e, args);
+        }
+    }
+
+    public static ToolResult invokeClass(String klass,  String... args)
+    {
+        return invokeClass(klass, null, args);
+    }
+
+    public static ToolResult invokeClass(Class<?> klass,  String... args)
+    {
+        return invokeClass(klass.getName(), null, args);
+    }
+
+    public static ToolResult invokeClass(String klass, InputStream stdin, String... args)
+    {
+        List<String> allArgs = new ArrayList<>();
+        allArgs.add(klass);
+        allArgs.addAll(Arrays.asList(args));
+        
+        Supplier<Integer> runMe = new Supplier<Integer>()
+        {
+            @Override
+            public Integer get()
+            {
+                return runClassAsTool(klass, args);
+            }
+        };
+
+        Pair<Integer, ToolResult> res = invokeSupplier(runMe, stdin);
+        return new ToolResult(allArgs,
+                              res.right.getExitCode() == -1 ? -1 : res.left,
+                              res.right.getStdout(),
+                              res.right.getStderr(),
+                              res.right.getException());
+
+    }
+    
+    public static ToolResult invokeNodetoolJvmDtest(IInstance node, String... args)
+    {
+        Supplier<NodeToolResult> runMe = new Supplier<NodeToolResult>()
+        {
+            @Override
+            public NodeToolResult get()
+            {
+                return node.nodetoolResult(args);
+            }
+        };
+
+        Pair<NodeToolResult, ToolResult> res = invokeSupplier(runMe);
+        // Some jvm dtest nodetool commands capture stdout/err in the NodeToolResult, some don't. So we have to concat both.
+        return new ToolResult(Arrays.asList(args),
+                              res.left,
+                              res.right.getExitCode() == -1 ? -1 : res.left.getRc(),
+                              res.right.getStdout() + res.left.getStdout(),
+                              res.right.getStderr() + res.left.getStderr(),
+                              res.right.getException());
+    }
+
+    public static <T> Pair<T, ToolResult> invokeSupplier(Supplier<T> runMe)
+    {
+        return invokeSupplier(runMe, null);
+    }
+
+    public static <T> Pair<T, ToolResult> invokeSupplier(Supplier<T> runMe, InputStream stdin)
+    {
+        PrintStream originalSysOut = System.out;
+        PrintStream originalSysErr = System.err;
+        InputStream originalSysIn = System.in;
+        originalSysOut.flush();
+        originalSysErr.flush();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        System.setIn(stdin == null ? originalSysIn : stdin);
+
+        T res = null;
+        try(PrintStream newOut = new PrintStream(out); PrintStream newErr = new PrintStream(err))
+        {
+            System.setOut(newOut);
+            System.setErr(newErr);
+            res = runMe.get();
+            out.flush();
+            err.flush();
+            return Pair.create(res, new ToolResult(Lists.emptyList(), 0, out.toString(), err.toString(), null));
+        }
+        catch(Exception e)
+        {
+            return Pair.create(res,
+                               new ToolResult(Lists.emptyList(),
+                                              -1,
+                                              out.toString(),
+                                              err.toString() + "\n" + Throwables.getStackTraceAsString(e),
+                                              e));
+        }
+        finally
+        {
+            System.setOut(originalSysOut);
+            System.setErr(originalSysErr);
+            System.setIn(originalSysIn);
+        }
+    }
+
+    public static Builder builder(List<String> args)
+    {
+        return new Builder(args);
+    }
+
+    public static final class ToolResult
+    {
+        private final List<String> allArgs;
+        private final int exitCode;
+        private final String stdout;
+        private final String stderr;
+        private final Exception e;
+        private final NodeToolResult ntRes;
+
+        private ToolResult(List<String> allArgs, int exitCode, String stdout, String stderr, Exception e)
+        {
+            this.allArgs = allArgs;
+            this.exitCode = exitCode;
+            this.stdout = stdout;
+            this.stderr = stderr;
+            this.e = e;
+            this.ntRes = null;
+        }
+        
+        private ToolResult(List<String> allArgs, NodeToolResult ntRes, int exitCode, String stdout, String stderr, Exception e)
+        {
+            this.allArgs = allArgs;
+            this.exitCode = exitCode;
+            this.stdout = stdout;
+            this.stderr = stderr;
+            this.e = e;
+            this.ntRes = ntRes;
+        }
+        
+        public NodeToolResult getNodeToolResult()
+        {
+            return ntRes;
+        }
+
+        public int getExitCode()
+        {
+            return exitCode;
+        }
+
+        public String getStdout()
+        {
+            return stdout;
+        }
+
+        public String getStderr()
+        {
+            return stderr;
+        }
+        
+        public Exception getException()
+        {
+            return e;
+        }
+        
+        /**
+         * Checks if the stdErr is empty after removing any potential JVM env info output and other noise
+         * 
+         * Some JVM configs may output env info on stdErr. We need to remove those to see what was the tool's actual
+         * stdErr
+         * 
+         * @return The ToolRunner instance
+         */
+        public void assertCleanStdErr()
+        {
+            assertTrue("Failed because cleaned stdErr wasn't empty: " + getCleanedStderr(),
+                       getCleanedStderr().isEmpty());
+        }
+
+        public void assertOnExitCode()
+        {
+            assertExitCode(getExitCode());
+        }
+
+        private void assertExitCode(int code)
+        {
+            if (code != 0)
+                fail(String.format("%s%nexited with code %d%nstderr:%n%s%nstdout:%n%s",
+                                   argsToLogString(),
+                                   code,
+                                   getStderr(),
+                                   getStdout()));
+        }
+
+        public String argsToLogString()
+        {
+            return allArgs.stream().collect(Collectors.joining(",\n    ", "[", "]"));
+        }
+
+        /**
+         * Returns stdErr after removing any potential JVM env info output through the provided cleaners
+         * 
+         * Some JVM configs may output env info on stdErr. We need to remove those to see what was the tool's actual
+         * stdErr
+         * 
+         * @param regExpCleaners
+         *            List of regExps to remove from stdErr
+         * @return The stdErr with all excludes removed
+         */
+        public String getCleanedStderr(List<String> regExpCleaners)
+        {
+            String sanitizedStderr = getStderr();
+            for (String regExp : regExpCleaners)
+                sanitizedStderr = sanitizedStderr.replaceAll(regExp, "");
+            return sanitizedStderr;
+        }
+
+        /**
+         * Returns stdErr after removing any potential JVM env info output. Uses default list of excludes
+         * 
+         * {@link #getCleanedStderr(List)}
+         */
+        public String getCleanedStderr()
+        {
+            return getCleanedStderr(DEFAULT_CLEANERS);
+        }
+        
+        public void assertOnCleanExit()
+        {
+            assertOnExitCode();
+            assertCleanStdErr();
+        }
+    }
+
+    public interface ObservableTool extends AutoCloseable
+    {
+        String getPartialStdout();
+
+        String getPartialStderr();
+
+        boolean isDone();
+
+        ToolResult waitComplete();
+
+        @Override
+        void close();
+    }
+
+    private static final class FailedObservableTool implements ObservableTool
+    {
+        private final List<String> args;
+        private final IOException error;
+
+        private FailedObservableTool(IOException error, List<String> args)
+        {
+            this.args = args;
+            this.error = error;
+        }
+
+        @Override
+        public String getPartialStdout()
+        {
+            return "";
+        }
+
+        @Override
+        public String getPartialStderr()
+        {
+            return error.getMessage();
+        }
+
+        @Override
+        public boolean isDone()
+        {
             return true;
         }
-        catch (InterruptedException e)
+
+        @Override
+        public ToolResult waitComplete()
         {
-            throw new RuntimeException(e);
+            return new ToolResult(args, -1, getPartialStdout(), getPartialStderr(), error);
+        }
+
+        @Override
+        public void close()
+        {
+
         }
     }
 
-    public ToolRunner waitAndAssertOnExitCode()
+    private static final class ForkedObservableTool implements ObservableTool
     {
-        assertTrue(String.format("Tool %s didn't terminate",
-                           argsToLogString()),
-                   waitFor());
-        return assertOnExitCode();
-    }
-    
-    public ToolRunner waitAndAssertOnCleanExit()
-    {
-        return waitAndAssertOnExitCode().assertEmptyStdErr();
-    }
-    
-    public ToolRunner assertEmptyStdErr()
-    {
-        assertTrue(getStderr().isEmpty());
-        return this;
-    }
+        @SuppressWarnings("resource")
+        private final ByteArrayOutputStream err = new ByteArrayOutputStream();
+        @SuppressWarnings("resource")
+        private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        @SuppressWarnings("resource")
+        private final InputStream stdin;
+        private final Process process;
+        private final Thread[] ioWatchers;
+        private final List<String> args;
 
-    public ToolRunner assertOnExitCode()
-    {
-        int code = getExitCode();
-        if (code != 0)
-            fail(String.format("%s%nexited with code %d%nstderr:%n%s%nstdout:%n%s",
-                               argsToLogString(),
-                               code,
-                               getStderr(),
-                               getStdout()));
-        return this;
-    }
-
-    public String argsToLogString()
-    {
-        return allArgs.stream().collect(Collectors.joining(",\n    ", "[", "]"));
-    }
-
-    public int getExitCode()
-    {
-        return process.exitValue();
-    }
-
-    public String getStdout()
-    {
-        return outBuffer.toString();
-    }
-
-    public String getStderr()
-    {
-        return errBuffer.toString();
-    }
-
-    public void forceKill()
-    {
-        try
+        private ForkedObservableTool(Process process, InputStream stdin, List<String> args)
         {
-            process.exitValue();
-            // process no longer alive - just ignore that fact
+            this.process = process;
+            this.args = args;
+            this.stdin = stdin;
+
+            // Each stream tends to use a bounded buffer, so need to process each stream in its own thread else we
+            // might block on an idle stream, not consuming the other stream which is blocked in the other process
+            // as nothing is consuming
+            int numWatchers = 2;
+            // only need a stdin watcher when forking
+            boolean includeStdinWatcher = stdin != null;
+            if (includeStdinWatcher)
+                numWatchers = 3;
+            ioWatchers = new Thread[numWatchers];
+            ioWatchers[0] = new Thread(new StreamGobbler<>(process.getErrorStream(), err));
+            ioWatchers[0].setDaemon(true);
+            ioWatchers[0].setName("IO Watcher stderr");
+            ioWatchers[0].start();
+
+            ioWatchers[1] = new Thread(new StreamGobbler<>(process.getInputStream(), out));
+            ioWatchers[1].setDaemon(true);
+            ioWatchers[1].setName("IO Watcher stdout");
+            ioWatchers[1].start();
+
+            if (includeStdinWatcher)
+            {
+                ioWatchers[2] = new Thread(new StreamGobbler<>(stdin, process.getOutputStream()));
+                ioWatchers[2].setDaemon(true);
+                ioWatchers[2].setName("IO Watcher stdin");
+                ioWatchers[2].start();
+            }
         }
-        catch (IllegalThreadStateException e)
+
+        @Override
+        public String getPartialStdout()
         {
+            return out.toString();
+        }
+
+        @Override
+        public String getPartialStderr()
+        {
+            return err.toString();
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            return !process.isAlive();
+        }
+
+        @Override
+        public ToolResult waitComplete()
+        {
+            try
+            {
+                int rc = process.waitFor();
+                onComplete();
+                return new ToolResult(args, rc, out.toString(), err.toString(), null);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void onComplete() throws InterruptedException
+        {
+            try
+            {
+                if (stdin != null)
+                    stdin.close();
+            }
+            catch (IOException e)
+            {
+                logger.warn("Error closing stdin", e);
+            }
+            for (Thread t : ioWatchers)
+                t.join();
+        }
+
+        @Override
+        public void close()
+        {
+            if (!process.isAlive())
+                return;
             process.destroyForcibly();
         }
     }
 
-    @Override
-    public void close()
+    public static final class Builder
     {
-        forceKill();
-    }
-    
-    static class Runners
-    {
-        protected ToolRunner invokeNodetool(String... args)
+        private final Map<String, String> env = new HashMap<>();
+        private final List<String> args;
+        private InputStream stdin;
+
+        public Builder(List<String> args)
         {
-            return invokeNodetool(Arrays.asList(args));
+            this.args = Objects.requireNonNull(args);
         }
 
-        protected ToolRunner invokeNodetool(List<String> args)
+        public Builder withEnv(String key, String value)
         {
-            return invokeTool(buildNodetoolArgs(args), true);
+            env.put(key, value);
+            return this;
         }
 
-        private static List<String> buildNodetoolArgs(List<String> args)
+        public Builder withEnvs(Map<String, String> map)
         {
-            return CQLTester.buildNodetoolArgs(args);
-        }
-        
-        protected ToolRunner invokeClassAsTool(String... args)
-        {
-            return invokeClassAsTool(Arrays.asList(args));
-        }
-        
-        protected ToolRunner invokeClassAsTool(List<String> args)
-        {
-            return invokeTool(args, false);
+            env.putAll(map);
+            return this;
         }
 
-        protected ToolRunner invokeTool(String... args)
+        public Builder withStdin(InputStream input)
         {
-            return invokeTool(Arrays.asList(args));
+            this.stdin = input;
+            return this;
         }
 
-        protected ToolRunner invokeTool(List<String> args)
+        public ObservableTool invokeAsync()
         {
-            return invokeTool(args, true);
+            return ToolRunner.invokeAsync(env, stdin, args);
         }
 
-        protected ToolRunner invokeTool(List<String> args, boolean runOutOfProcess)
+        public ToolResult invoke()
         {
-            ToolRunner runner = new ToolRunner(args, runOutOfProcess);
-            runner.start().waitFor();
-            return runner;
+            return ToolRunner.invoke(env, stdin, args);
         }
     }
 }

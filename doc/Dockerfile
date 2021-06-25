@@ -68,3 +68,5 @@ COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD [""]
 
+CMD CASSANDRA_USE_JDK11=true ant realclean gen-doc \
+    && echo "The locally built documentation can be found here:\n\n    build/html/index.html\n\n"

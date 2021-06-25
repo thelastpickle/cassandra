@@ -22,7 +22,9 @@ from __future__ import unicode_literals, with_statement
 import locale
 import os
 import re
+import subprocess
 import sys
+import six
 import unittest
 
 from .basecase import (BaseTestCase, TEST_HOST, TEST_PORT,
@@ -36,6 +38,7 @@ from .ansi_colors import (ColoredText, ansi_seq, lookup_colorcode,
 CONTROL_C = '\x03'
 CONTROL_D = '\x04'
 
+
 class TestCqlshOutput(BaseTestCase):
 
     @classmethod
@@ -47,15 +50,13 @@ class TestCqlshOutput(BaseTestCase):
         remove_db()
 
     def setUp(self):
-        env = os.environ
+        env = os.environ.copy()
         env['COLUMNS'] = '100000'
         # carry forward or override locale LC_CTYPE for UTF-8 encoding
         if (locale.getpreferredencoding() != 'UTF-8'):
             env['LC_CTYPE'] = 'en_US.utf8'
         else:
             env['LC_CTYPE'] = os.environ.get('LC_CTYPE', 'en_US.utf8')
-        if ('PATH' in os.environ.keys()):
-            env['PATH'] = os.environ['PATH']
         self.default_env = env
 
     def tearDown(self):
@@ -737,7 +738,7 @@ class TestCqlshOutput(BaseTestCase):
         ringinfo_re = r'''
             Range[ ]ownership: \n
             (
-              [ ] .*? [ ][ ] \[ ( \d+ \. ){3} \d+ : \d+ \] \n
+              [ ] .*? [ ][ ] \[ .*? / ( \d+ \. ){3} \d+ : \d+ \] \n
             )+
             \n
         '''
@@ -777,8 +778,25 @@ class TestCqlshOutput(BaseTestCase):
 
             output = c.cmd_and_response('show host;')
             self.assertHasColors(output)
-            self.assertRegex(output, '^Connected to .* at %s:%d\.$'
+            self.assertRegex(output, '^Connected to .* at %s:%d$'
                                              % (re.escape(TEST_HOST), TEST_PORT))
+
+    @unittest.skipIf(six.PY3, 'Will not emit warning when running Python 3')
+    def test_warn_py2(self):
+        # has the warning
+        with testrun_cqlsh(tty=True, env=self.default_env) as c:
+            self.assertIn('Python 2.7 support is deprecated.', c.output_header, 'cqlsh did not output expected warning.')
+
+        # can suppress
+        env = self.default_env.copy()
+        env['CQLSH_NO_WARN_PY2'] = '1'
+        with testrun_cqlsh(tty=True, env=env) as c:
+            self.assertNotIn('Python 2.7 support is deprecated.', c.output_header, 'cqlsh did not output expected warning.')
+
+    @unittest.skipIf(six.PY2, 'Warning will be emitted when running Python 2.7')
+    def test_no_warn_py3(self):
+        with testrun_cqlsh(tty=True, env=self.default_env) as c:
+            self.assertNotIn('Python 2.7 support is deprecated.', c.output_header, 'cqlsh did not output expected warning.')
 
     @unittest.skipIf(sys.platform == "win32", 'EOF signaling not supported on Windows')
     def test_eof_prints_newline(self):
@@ -910,3 +928,13 @@ class TestCqlshOutput(BaseTestCase):
             nnnnnnnn
             """),
         ))
+
+    def test_expanded_output_counts_past_page(self):
+        query = "PAGING 5; EXPAND ON; SELECT * FROM twenty_rows_table;"
+        output, result = testcall_cqlsh(prompt=None, env=self.default_env,
+                                        tty=False, input=query)
+        self.assertEqual(0, result)
+        # format is "@ Row 1"
+        row_headers = [s for s in output.splitlines() if "@ Row" in s]
+        row_ids = [int(s.split(' ')[2]) for s in row_headers]
+        self.assertEqual([i for i in range(1, 21)], row_ids)

@@ -86,6 +86,7 @@ public class DatabaseDescriptorRefTest
     "org.apache.cassandra.config.EncryptionOptions$ServerEncryptionOptions",
     "org.apache.cassandra.config.EncryptionOptions$ServerEncryptionOptions$InternodeEncryption",
     "org.apache.cassandra.config.EncryptionOptions$ServerEncryptionOptions$OutgoingEncryptedPortSource",
+    "org.apache.cassandra.config.ReplicaFilteringProtectionOptions",
     "org.apache.cassandra.config.YamlConfigurationLoader",
     "org.apache.cassandra.config.YamlConfigurationLoader$PropertiesChecker",
     "org.apache.cassandra.config.YamlConfigurationLoader$PropertiesChecker$1",
@@ -140,6 +141,7 @@ public class DatabaseDescriptorRefTest
     "org.apache.cassandra.locator.Replica",
     "org.apache.cassandra.locator.SimpleSeedProvider",
     "org.apache.cassandra.locator.SeedProvider",
+    "org.apache.cassandra.security.SSLFactory",
     "org.apache.cassandra.security.EncryptionContext",
     "org.apache.cassandra.service.CacheService$CacheType",
     "org.apache.cassandra.utils.binlog.BinLogOptions",
@@ -147,7 +149,6 @@ public class DatabaseDescriptorRefTest
     "org.apache.cassandra.utils.FBUtilities$1",
     "org.apache.cassandra.utils.CloseableIterator",
     "org.apache.cassandra.utils.Pair",
-    "org.apache.cassandra.OffsetAwareConfigurationLoader",
     "org.apache.cassandra.ConsoleAppender",
     "org.apache.cassandra.ConsoleAppender$1",
     "org.apache.cassandra.LogbackStatusListener",
@@ -256,7 +257,7 @@ public class DatabaseDescriptorRefTest
         for (String methodName : new String[]{
             "clientInitialization",
             "applyAddressConfig",
-            "applyInitialTokens",
+            "applyTokensConfig",
             // no seed provider in default configuration for clients
             // "applySeedProvider",
             // definitely not safe for clients - implicitly instantiates schema

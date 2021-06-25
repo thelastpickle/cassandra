@@ -53,7 +53,13 @@ import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.utils.NativeLibrary;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.JavaUtils;
+import org.apache.cassandra.utils.NoSpamLogger;
 import org.apache.cassandra.utils.SigarLibrary;
+
+import static java.lang.String.format;
+import static org.apache.cassandra.config.CassandraRelevantProperties.COM_SUN_MANAGEMENT_JMXREMOTE_PORT;
+import static org.apache.cassandra.config.CassandraRelevantProperties.JAVA_VERSION;
+import static org.apache.cassandra.config.CassandraRelevantProperties.JAVA_VM_NAME;
 
 /**
  * Verifies that the system and environment is in a fit state to be started.
@@ -77,7 +83,6 @@ import org.apache.cassandra.utils.SigarLibrary;
 public class StartupChecks
 {
     private static final Logger logger = LoggerFactory.getLogger(StartupChecks.class);
-
     // List of checks to run before starting up. If any test reports failure, startup will be halted.
     private final List<StartupCheck> preFlightChecks = new ArrayList<>();
 
@@ -195,7 +200,7 @@ public class StartupChecks
     {
         public void execute()
         {
-            if (System.getProperty("com.sun.management.jmxremote.port") != null)
+            if (COM_SUN_MANAGEMENT_JMXREMOTE_PORT.isPresent())
             {
                 logger.warn("Use of com.sun.management.jmxremote.port at startup is deprecated. " +
                             "Please use cassandra.jmx.remote.port instead.");
@@ -211,7 +216,7 @@ public class StartupChecks
             if (!DatabaseDescriptor.hasLargeAddressSpace())
                 logger.warn("32bit JVM detected.  It is recommended to run Cassandra on a 64bit JVM for better performance.");
 
-            String javaVmName = System.getProperty("java.vm.name");
+            String javaVmName = JAVA_VM_NAME.getString();
             if (!(javaVmName.contains("HotSpot") || javaVmName.contains("OpenJDK")))
             {
                 logger.warn("Non-Oracle JVM detected.  Some features, such as immediate unmap of compacted SSTables, may not work as intended");
@@ -227,7 +232,7 @@ public class StartupChecks
          */
         private void checkOutOfMemoryHandling()
         {
-            if (JavaUtils.supportExitOnOutOfMemory(System.getProperty("java.version")))
+            if (JavaUtils.supportExitOnOutOfMemory(JAVA_VERSION.getString()))
             {
                 if (!jvmOptionsContainsOneOf("-XX:OnOutOfMemoryError=", "-XX:+ExitOnOutOfMemoryError", "-XX:+CrashOnOutOfMemoryError"))
                     logger.warn("The JVM is not configured to stop on OutOfMemoryError which can cause data corruption."
@@ -334,6 +339,7 @@ public class StartupChecks
                                                  Arrays.asList(DatabaseDescriptor.getCommitLogLocation(),
                                                                DatabaseDescriptor.getSavedCachesLocation(),
                                                                DatabaseDescriptor.getHintsDirectory().getAbsolutePath()));
+
         for (String dataDir : dirs)
         {
             logger.debug("Checking directory {}", dataDir);

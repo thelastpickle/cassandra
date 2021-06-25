@@ -20,22 +20,18 @@
  */
 package org.apache.cassandra.net;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.*;
 import java.util.regex.Matcher;
 
-import com.google.common.collect.Iterables;
 import com.google.common.net.InetAddresses;
 
 import com.codahale.metrics.Timer;
@@ -60,7 +56,6 @@ import static org.junit.Assert.*;
 
 public class MessagingServiceTest
 {
-    private final static long ONE_SECOND = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
     private final static long[] bucketOffsets = new EstimatedHistogram(160).getBucketOffsets();
     public static final IInternodeAuthenticator ALLOW_NOTHING_AUTHENTICATOR = new IInternodeAuthenticator()
     {
@@ -91,12 +86,10 @@ public class MessagingServiceTest
         originalListenAddress = InetAddressAndPort.getByAddressOverrideDefaults(DatabaseDescriptor.getListenAddress(), DatabaseDescriptor.getStoragePort());
     }
 
-    private static int metricScopeId = 0;
-
     @Before
     public void before() throws UnknownHostException
     {
-        messagingService.metrics.resetDroppedMessages(Integer.toString(metricScopeId++));
+        messagingService.metrics.resetDroppedMessages();
         messagingService.closeOutbound(InetAddressAndPort.getByName("127.0.0.2"));
         messagingService.closeOutbound(InetAddressAndPort.getByName("127.0.0.3"));
     }
@@ -151,7 +144,7 @@ public class MessagingServiceTest
     }
 
     @Test
-    public void testDCLatency() throws Exception
+    public void testDCLatency()
     {
         int latency = 100;
         ConcurrentHashMap<String, MessagingMetrics.DCLatencyRecorder> dcLatency = MessagingService.instance().metrics.dcLatency;
@@ -198,7 +191,7 @@ public class MessagingServiceTest
     }
 
     @Test
-    public void testNegativeQueueWaitLatency() throws Exception
+    public void testNegativeQueueWaitLatency()
     {
         int latency = -100;
         Verb verb = Verb.MUTATION_REQ;
@@ -211,7 +204,7 @@ public class MessagingServiceTest
         assertNull(queueWaitLatency.get(verb));
     }
 
-    private static void addDCLatency(long sentAt, long nowTime) throws IOException
+    private static void addDCLatency(long sentAt, long nowTime)
     {
         MessagingService.instance().metrics.internodeLatencyRecorder(InetAddressAndPort.getLocalHost()).accept(nowTime - sentAt, MILLISECONDS);
     }
@@ -366,11 +359,11 @@ public class MessagingServiceTest
             for (InboundSockets.InboundSocket socket : connections.sockets())
             {
                 Assert.assertEquals(serverEncryptionOptions.isEnabled(), socket.settings.encryption.isEnabled());
-                Assert.assertEquals(serverEncryptionOptions.optional, socket.settings.encryption.optional);
+                Assert.assertEquals(serverEncryptionOptions.isOptional(), socket.settings.encryption.isOptional());
                 if (!serverEncryptionOptions.isEnabled())
-                    Assert.assertFalse(legacySslPort == socket.settings.bindAddress.port);
+                    assertNotEquals(legacySslPort, socket.settings.bindAddress.port);
                 if (legacySslPort == socket.settings.bindAddress.port)
-                    Assert.assertFalse(socket.settings.encryption.optional);
+                    Assert.assertFalse(socket.settings.encryption.isOptional());
                 Assert.assertTrue(socket.settings.bindAddress.toString(), expect.remove(socket.settings.bindAddress));
             }
         }

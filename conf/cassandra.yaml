@@ -1,3 +1,4 @@
+
 # Cassandra storage config YAML
 
 # NOTE:
@@ -20,7 +21,10 @@ cluster_name: 'Test Cluster'
 # Specifying initial_token will override this setting on the node's initial start,
 # on subsequent starts, this setting will apply even if initial token is set.
 #
-num_tokens: 256
+# See https://cassandra.apache.org/doc/latest/getting_started/production.html#tokens for
+# best practice information about num_tokens.
+#
+num_tokens: 16
 
 # Triggers automatic allocation of num_tokens tokens for this node. The allocation
 # algorithm attempts to choose tokens in a way that optimizes replicated load over
@@ -37,7 +41,7 @@ num_tokens: 256
 
 # Replica factor is explicitly set, regardless of keyspace or datacenter.
 # This is the replica factor within the datacenter, like NTS.
-# allocate_tokens_for_local_replication_factor: 3
+allocate_tokens_for_local_replication_factor: 3
 
 # initial_token allows you to specify tokens manually.  While you can use it with
 # vnodes (num_tokens > 1, above) -- in which case you should provide a 
@@ -202,6 +206,13 @@ partitioner: org.apache.cassandra.dht.Murmur3Partitioner
 # If not set, the default directory is $CASSANDRA_HOME/data/data.
 # data_file_directories:
 #     - /var/lib/cassandra/data
+
+# Directory were Cassandra should store the data of the local system keyspaces.
+# By default Cassandra will store the data of the local system keyspaces in the first of the data directories specified
+# by data_file_directories.
+# This approach ensures that if one of the other disks is lost Cassandra can continue to operate. For extra security
+# this setting allows to store those data on a different directory that provides redundancy.
+# local_system_data_file_directory:
 
 # commit log.  when running on magnetic HDD, this should be a
 # separate spindle than the data directories.
@@ -469,9 +480,22 @@ concurrent_counter_writes: 32
 # be limited by the less of concurrent reads or concurrent writes.
 concurrent_materialized_view_writes: 32
 
+# Maximum memory to use for inter-node and client-server networking buffers.
+#
+# Defaults to the smaller of 1/16 of heap or 128MB. This pool is allocated off-heap,
+# so is in addition to the memory allocated for heap. The cache also has on-heap
+# overhead which is roughly 128 bytes per chunk (i.e. 0.2% of the reserved size
+# if the default 64k chunk size is used).
+# Memory is only allocated when needed.
+# networking_cache_size_in_mb: 128
+
+# Enable the sstable chunk cache.  The chunk cache will store recently accessed
+# sections of the sstable in-memory as uncompressed buffers.
+# file_cache_enabled: false
+
 # Maximum memory to use for sstable chunk cache and buffer pooling.
-# 32MB of this are reserved for pooling buffers, the rest is used as an
-# cache that holds uncompressed sstable chunks.
+# 32MB of this are reserved for pooling buffers, the rest is used for chunk cache
+# that holds uncompressed sstable chunks.
 # Defaults to the smaller of 1/4 of heap or 512MB. This pool is allocated off-heap,
 # so is in addition to the memory allocated for heap. The cache also has on-heap
 # overhead which is roughly 128 bytes per chunk (i.e. 0.2% of the reserved size
@@ -686,10 +710,6 @@ native_transport_port: 9042
 # you may want to adjust max_value_size_in_mb accordingly. This should be positive and less than 2048.
 # native_transport_max_frame_size_in_mb: 256
 
-# If checksumming is enabled as a protocol option, denotes the size of the chunks into which frame
-# are bodies will be broken and checksummed.
-# native_transport_frame_block_size_in_kb: 32
-
 # The maximum number of concurrent client connections.
 # The default is -1, which means unlimited.
 # native_transport_max_concurrent_connections: -1
@@ -778,6 +798,13 @@ snapshot_before_compaction: false
 # lose data on truncation or drop.
 auto_snapshot: true
 
+# The act of creating or clearing a snapshot involves creating or removing
+# potentially tens of thousands of links, which can cause significant performance
+# impact, especially on consumer grade SSDs. A non-zero value here can
+# be used to throttle these links to avoid negative performance impact of
+# taking and clearing snapshots
+snapshot_links_per_second: 0
+
 # Granularity of the collation index of rows within a partition.
 # Increase if your rows are large, or if you have a very large
 # number of rows per partition.  The competing goals are these:
@@ -849,9 +876,7 @@ sstable_preemptive_open_interval_in_mb: 50
 # Enabling this will reduce the GC pressure on sending and receiving node.
 # When unset, the default is enabled. While this feature tries to keep the
 # disks balanced, it cannot guarantee it. This feature will be automatically
-# disabled if internode encryption is enabled. Currently this can be used with
-# Leveled Compaction. Once CASSANDRA-14586 is fixed other compaction strategies
-# will benefit as well when used in combination with CASSANDRA-6696.
+# disabled if internode encryption is enabled.
 # stream_entire_sstables: true
 
 # Throttles all outbound streaming file transfers on this node to the
@@ -904,6 +929,10 @@ request_timeout_in_ms: 10000
 # (it takes much longer than 30s) as of Linux 4.12. If you want something that high set this to 0
 # which picks up the OS default and configure the net.ipv4.tcp_retries2 sysctl to be ~8.
 # internode_tcp_user_timeout_in_ms = 30000
+
+# The amount of time unacknowledged data is allowed on a streaming connection.
+# The default is 5 minutes. Increase it or set it to 0 in order to increase the timeout.
+# internode_streaming_tcp_user_timeout_in_ms = 300000
 
 # The maximum continuous period a connection may be unwritable in application space
 # internode_application_timeout_in_ms = 30000
@@ -1042,7 +1071,7 @@ dynamic_snitch_reset_interval_in_ms: 600000
 # expressed as a double which represents a percentage.  Thus, a value of
 # 0.2 means Cassandra would continue to prefer the static snitch values
 # until the pinned host was 20% worse than the fastest.
-dynamic_snitch_badness_threshold: 0.1
+dynamic_snitch_badness_threshold: 1.0
 
 # Configure server-to-server internode encryption
 #
@@ -1226,6 +1255,26 @@ transparent_data_encryption_options:
 tombstone_warn_threshold: 1000
 tombstone_failure_threshold: 100000
 
+# Filtering and secondary index queries at read consistency levels above ONE/LOCAL_ONE use a
+# mechanism called replica filtering protection to ensure that results from stale replicas do
+# not violate consistency. (See CASSANDRA-8272 and CASSANDRA-15907 for more details.) This
+# mechanism materializes replica results by partition on-heap at the coordinator. The more possibly
+# stale results returned by the replicas, the more rows materialized during the query.
+replica_filtering_protection:
+    # These thresholds exist to limit the damage severely out-of-date replicas can cause during these
+    # queries. They limit the number of rows from all replicas individual index and filtering queries
+    # can materialize on-heap to return correct results at the desired read consistency level.
+    #
+    # "cached_replica_rows_warn_threshold" is the per-query threshold at which a warning will be logged.
+    # "cached_replica_rows_fail_threshold" is the per-query threshold at which the query will fail.
+    #
+    # These thresholds may also be adjusted at runtime using the StorageService mbean.
+    #
+    # If the failure threshold is breached, it is likely that either the current page/fetch size
+    # is too large or one or more replicas is severely out-of-sync and in need of repair.
+    cached_rows_warn_threshold: 2000
+    cached_rows_fail_threshold: 32000
+
 # Log WARN on any multiple-partition batch size exceeding this value. 5kb per batch by default.
 # Caution should be taken on increasing the size of this threshold as it can lead to node instability.
 batch_size_warn_threshold_in_kb: 5
@@ -1364,6 +1413,12 @@ repaired_data_tracking_for_partition_reads_enabled: false
 # mismatches are less actionable than confirmed ones.
 report_unconfirmed_repaired_data_mismatches: false
 
+# Having many tables and/or keyspaces negatively affects performance of many operations in the
+# cluster. When the number of tables/keyspaces in the cluster exceeds the following thresholds
+# a client warning will be sent back to the user when creating a table or keyspace.
+# table_count_warn_threshold: 150
+# keyspace_count_warn_threshold: 40
+
 #########################
 # EXPERIMENTAL FEATURES #
 #########################
@@ -1379,3 +1434,7 @@ enable_sasi_indexes: false
 # Enables creation of transiently replicated keyspaces on this node.
 # Transient replication is experimental and is not recommended for production use.
 enable_transient_replication: false
+
+# Enables the used of 'ALTER ... DROP COMPACT STORAGE' statements on this node.
+# 'ALTER ... DROP COMPACT STORAGE' is considered experimental and is not recommended for production use.
+enable_drop_compact_storage: false
