@@ -1,6 +1,6 @@
 name: Cassandra
 version: '4.0'
-prerelease: -beta1
+prerelease: '-rc1'
 nav:
 - modules/ROOT/nav.adoc
 - modules/cassandra/nav.adoc
