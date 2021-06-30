@@ -44,7 +44,7 @@ replicates its data, a table to hold the data, and insert some data:
 ----
 include::example$CQL/qs_create_ks.cql[]
 include::example$CQL/qs_create_table.cql[]
-include::example$CQL/qs_insert_datacql[]
+include::example$CQL/qs_insert_data.cql[]
 ----
 
 You should now have a _cqlshrc_ file and _<currentdir>/scripts/data.cql_ file.
@@ -68,9 +68,9 @@ so you can start running queries.
 
 *STEP 5: READ SOME DATA*
 
-[source, plaintext]
+[source, shell]
 ----
-SELECT * FROM store.shopping_cart;
+include::example$CQL/qs_select_data.cql[]
 ----
 
 *STEP 6: WRITE SOME MORE DATA*

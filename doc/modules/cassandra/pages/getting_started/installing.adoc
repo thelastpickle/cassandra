@@ -36,9 +36,9 @@ that you have the correct version of Python installed, type
 
 There are three methods of installing Cassandra that are common:
 
-* xref:installing.adoc#docker[Docker image]
-* xref:installing.adoc#tarball[Tarball binary file]
-* xref:installing.adoc#package[Package installation (RPM, YUM)]
+* xref:#docker[Docker image]
+* xref:#tarball[Tarball binary file]
+* xref:#package[Package installation (RPM, YUM)]
 
 If you are a current Docker user, installing a Docker image is simple.
 You'll need to install Docker Desktop for Mac, Docker Desktop for Windows,
