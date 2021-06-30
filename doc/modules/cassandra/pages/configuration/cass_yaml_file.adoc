@@ -315,9 +315,10 @@ If not set, the default directory is $CASSANDRA_HOME/data/data.
 
 _Default Value (complex option)_:
 
-....
+[source, plaintext]
+----
     #     - /var/lib/cassandra/data
-....
+----
 
 == `local_system_data_file_directory`
 
