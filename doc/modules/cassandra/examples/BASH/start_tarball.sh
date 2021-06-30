@@ -1,1 +1,1 @@
-$ cd apache-cassandra-4.0.0/ && bin/cassandra
+$ cd apache-cassandra-{cass-tag-3x}/ && bin/cassandra

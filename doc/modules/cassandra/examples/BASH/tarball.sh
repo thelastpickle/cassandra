@@ -1,1 +1,1 @@
-$ tar xzvf apache-cassandra-4.0.0-bin.tar.gz
+$ tar xzvf apache-cassandra-{cass-tag-3x}-bin.tar.gz

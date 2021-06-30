@@ -1,1 +1,1 @@
-$ curl -OL http://apache.mirror.digitalpacific.com.au/cassandra/4.0.0/apache-cassandra-4.0.0-bin.tar.gz
+$ curl -OL http://apache.mirror.digitalpacific.com.au/cassandra/{cass-tag-3x}/apache-cassandra-{cass-tag-3x}-bin.tar.gz

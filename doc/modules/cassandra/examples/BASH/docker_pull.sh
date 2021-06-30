@@ -1,1 +1,1 @@
-docker pull cassandra:latest
+docker pull cassandra:{cass-docker-tag-3x}
