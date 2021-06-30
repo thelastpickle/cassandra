@@ -21,7 +21,6 @@ and will use the initial_token as described below.
 Specifying initial_token will override this setting on the node's initial start,
 on subsequent starts, this setting will apply even if initial token is set.
 
-
 _Default Value:_ 256
 
 == `allocate_tokens_for_keyspace`
@@ -320,24 +319,22 @@ _Default Value (complex option)_:
     #     - /var/lib/cassandra/data
 ....
 
-== `commitlog_directory`
+== `local_system_data_file_directory`
 
-``local_system_data_file_directory``
--------------------------
 *This option is commented out by default.*
 
-Directory were Cassandra should store the data of the local system keyspaces.
+Directory where Cassandra stores the data of the local system keyspaces.
 By default Cassandra will store the data of the local system keyspaces (at the exception of the system.batches,
 system.paxos, system.compaction_history, system.prepared_statements and system.repair tables) in the first of the data
 directories specified by data_file_directories.
 This approach ensures that if one of the other disks is lost Cassandra can continue to operate. For extra security
 this setting allows to store those data on a different directory that provides redundancy.
 
-``commitlog_directory``
------------------------
+== `commitlog_directory`
 
 *This option is commented out by default.*
-commit log.  when running on magnetic HDD, this should be a
+
+Directory where Cassandra stores the commit log.  when running on magnetic HDD, this should be a
 separate spindle than the data directories.
 If not set, the default directory is $CASSANDRA_HOME/data/commitlog.
 

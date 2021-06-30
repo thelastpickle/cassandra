@@ -36,9 +36,9 @@ that you have the correct version of Python installed, type
 
 There are three methods of installing Cassandra that are common:
 
-* xref:installing.adoc#docker[Docker image]
-* xref:installing.adoc#tarball[Tarball binary file]
-* xref:installing.adoc#package[Package installation (RPM, YUM)]
+* xref:getting_started/installing.adoc#docker[Docker image]
+* xref:getting_started/installing.adoc#tarball[Tarball binary file]
+* xref:getting_started/installing.adoc#package[Package installation (RPM, YUM)]
 
 If you are a current Docker user, installing a Docker image is simple.
 You'll need to install Docker Desktop for Mac, Docker Desktop for Windows,
@@ -156,7 +156,7 @@ Result::
 --
 [source,plaintext]
 ----
-28757dde589f70410f9a6a95c39ee7e6cde63440e2b06b91ae6b200614fa364d
+include::example$RESULTS/curl_verify_sha.result[]
 ----
 --
 ====
@@ -169,7 +169,7 @@ Result::
 include::example$BASH/tarball.sh[]
 ----
 
-The files will be extracted to the `apache-cassandra-4.0.0/` directory.
+The files will be extracted to the `apache-cassandra-{cass-tag-3x}/` directory.
 This is the tarball installation location.
 
 [arabic, start=5]
