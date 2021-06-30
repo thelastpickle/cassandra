@@ -40,7 +40,7 @@ Create a _scripts_ directory and change to that directory.
 The following _data.cql_ file will create a keyspace, the layer at which Cassandra
 replicates its data, a table to hold the data, and insert some data:
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$CQL/qs_create_ks.cql[]
 include::example$CQL/qs_create_table.cql[]

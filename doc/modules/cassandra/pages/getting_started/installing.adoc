@@ -36,9 +36,9 @@ that you have the correct version of Python installed, type
 
 There are three methods of installing Cassandra that are common:
 
-* xref:#docker[Docker image]
-* xref:#tarball[Tarball binary file]
-* xref:#package[Package installation (RPM, YUM)]
+* xref:installing.adoc#docker[Docker image]
+* xref:installing.adoc#tarball[Tarball binary file]
+* xref:installing.adoc#package[Package installation (RPM, YUM)]
 
 If you are a current Docker user, installing a Docker image is simple.
 You'll need to install Docker Desktop for Mac, Docker Desktop for Windows,
@@ -67,7 +67,7 @@ will install the binaries and configuration files as the `cassandra` OS user.
 [arabic, start=1]
 . Pull the docker image. For the latest image, use:
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$BASH/docker_pull.sh[]
 ----
@@ -78,7 +78,7 @@ Apache Cassandra image available from the https://hub.docker.com/_/cassandra[Doc
 [arabic, start=2]
 . Start Cassandra with a `docker run` command:
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$BASH/docker_run.sh[]
 ----
@@ -88,7 +88,7 @@ The `--name` option will be the name of the Cassandra cluster created.
 [arabic, start=3]
 . Start the CQL shell, `cqlsh` to interact with the Cassandra node created:
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$BASH/docker_cqlsh.sh[]
 ----
@@ -103,7 +103,7 @@ include::partial$java_version.adoc[]
 http://cassandra.apache.org/download/[Apache Cassandra Download] site.
 For example, to download Cassandra {40_version}:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/curl_install.sh[]
 ----
@@ -122,7 +122,7 @@ example, to verify the hash of the downloaded file using GPG:
 Command::
 +
 --
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/verify_gpg.sh[]
 ----
@@ -145,7 +145,7 @@ Compare the signature with the SHA256 file from the Downloads site:
 Command::
 +
 --
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/curl_verify_sha.sh[]
 ----
@@ -164,7 +164,7 @@ Result::
 [arabic, start=4]
 . Unpack the tarball:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/tarball.sh[]
 ----
@@ -193,7 +193,7 @@ Cassandra].
 [arabic, start=6]
 . Start Cassandra:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/start_tarball.sh[]
 ----
@@ -208,7 +208,7 @@ You can monitor the progress of the startup with:
 Command::
 +
 --
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/tail_syslog.sh[]
 ----
@@ -238,7 +238,7 @@ include::partial$java_version.adoc[]
 `cassandra.sources.list`.
 include::partial$package_versions.adoc[]
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/get_deb_package.sh[]
 ----
@@ -252,7 +252,7 @@ on the server:
 Command::
 +
 --
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/add_repo_keys.sh[]
 ----
@@ -271,7 +271,7 @@ include::example$RESULTS/add_repo_keys.result[]
 [arabic, start=4]
 . Update the package index from sources:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/apt-get_update.sh[]
 ----
@@ -279,7 +279,7 @@ include::example$BASH/apt-get_update.sh[]
 [arabic, start=5]
 . Install Cassandra with APT:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/apt-get_cass.sh[]
 ----
@@ -309,7 +309,7 @@ include::example$RESULTS/add_yum_repo.result[]
 [arabic, start=3]
 . Update the package index from sources:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/yum_update.sh[]
 ----
@@ -317,7 +317,7 @@ include::example$BASH/yum_update.sh[]
 [arabic, start=4]
 . Install Cassandra with YUM:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/yum_cass.sh[]
 ----
@@ -328,7 +328,7 @@ installation. The Cassandra service will also be run as this user.
 [arabic, start=5]
 . Start the Cassandra service:
 
-[source,shell]
+[source,shell, subs="attributes+"]
 ----
 include::example$BASH/yum_start.sh[]
 ----

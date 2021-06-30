@@ -335,7 +335,7 @@ this setting allows to store those data on a different directory that provides r
 
 ``commitlog_directory``
 -----------------------
->>>>>>> d7aaaa50013d1e275bc5836a48c64893e1365f43:doc/source/configuration/cass_yaml_file.rst
+
 *This option is commented out by default.*
 commit log.  when running on magnetic HDD, this should be a
 separate spindle than the data directories.
