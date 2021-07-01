@@ -8,7 +8,7 @@ _Interested in getting started with Cassandra? Follow these instructions._
 You'll need to have Docker Desktop for Mac, Docker Desktop for Windows, or
 similar software installed on your computer.
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$BASH/docker_pull.sh[]
 ----
@@ -17,7 +17,7 @@ Apache Cassandra is also available as a https://cassandra.apache.org/download/[t
 
 *STEP 2: START CASSANDRA*
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$BASH/docker_run.sh[]
 ----
@@ -56,11 +56,9 @@ nodes with  peer-to-peer replication. The Cassandra Query Language (CQL) is
 similar to SQL but suited for the JOINless structure of Cassandra. The CQL
 shell, or `cqlsh`, is one tool to use in interacting with the database.
 
-[source, plaintext]
+[source, shell, subs="attributes+"]
 ----
-docker run --rm -it -v /<currentdir>/scripts:/scripts  \
--v /<currentdir/cqlshrc:/.cassandra/cqlshrc  \
---env CQLSH_HOST=host.docker.internal --env CQLSH_PORT=9042  nuvo/docker-cqlsh
+include::example$BASH/docker_run_qs.sh[]
 ----
 
 For this quickstart, this cqlsh docker image also loads some data automatically,
@@ -68,23 +66,23 @@ so you can start running queries.
 
 *STEP 5: READ SOME DATA*
 
-[source, shell]
+[source, shell, subs="attributes+"]
 ----
 include::example$CQL/qs_select_data.cql[]
 ----
 
 *STEP 6: WRITE SOME MORE DATA*
 
-[source, plaintext]
+[source, shell, subs="attributes+"]
 ----
-INSERT (userid, item_count) VALUES (4567, 20) INTO store.shopping_cart;
+include::example$CQL/qs_insert_data_again.cql[]
 ----
 
 *STEP 7: TERMINATE CASSANDRA*
 
-[source, plaintext]
+[source, shell, subs="attributes+"]
 ----
-docker rm cassandra
+include::example$BASH/docker_remove.sh[]
 ----
 
 *CONGRATULATIONS!*
