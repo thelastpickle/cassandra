@@ -1,1 +1,1 @@
-$ gpg --print-md SHA256 apache-cassandra-4.0.0-bin.tar.gz
+$ gpg --print-md SHA256 apache-cassandra-{cass-tag-3x}-bin.tar.gz

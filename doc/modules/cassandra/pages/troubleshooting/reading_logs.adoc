@@ -10,7 +10,7 @@ Cassandra has three main logs, the `system.log`, `debug.log` and
 `gc.log` which hold general logging messages, debugging logging
 messages, and java garbage collection logs respectively.
 
-These logs by default live in `${CASSANDRA_HOME}/logs`, but most Linux
+These logs by default live in `$CASSANDRA_HOME/logs`, but most Linux
 distributions relocate logs to `/var/log/cassandra`. Operators can tune
 this location as well as what levels are logged using the provided
 `logback.xml` file.
