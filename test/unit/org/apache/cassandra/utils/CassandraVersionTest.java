@@ -181,6 +181,34 @@ public class CassandraVersionTest
         v1 = new CassandraVersion("1.2.3-alpha+1");
         v2 = new CassandraVersion("1.2.3-alpha+2");
         assertTrue(v1.compareTo(v2) == -1);
+
+        v1 = new CassandraVersion("1.2.3-SNAPSHOT");
+        v2 = new CassandraVersion("1.2.3-alpha");
+        assertTrue(v1.compareTo(v2) == 1);
+
+        v1 = new CassandraVersion("1.2.3-SNAPSHOT");
+        v2 = new CassandraVersion("1.2.3-alpha-SNAPSHOT");
+        assertTrue(v1.compareTo(v2) == 1);
+
+        v1 = new CassandraVersion("1.2.3-SNAPSHOT");
+        v2 = new CassandraVersion("1.2.3");
+        assertTrue(v1.compareTo(v2) == -1);
+
+        v1 = new CassandraVersion("1.2-SNAPSHOT");
+        v2 = new CassandraVersion("1.2.3");
+        assertTrue(v1.compareTo(v2) == -1);
+
+        v1 = new CassandraVersion("1.2.3-SNAPSHOT");
+        v2 = new CassandraVersion("1.2");
+        assertTrue(v1.compareTo(v2) == 1);
+
+        v1 = new CassandraVersion("1.2-rc2");
+        v2 = new CassandraVersion("1.2.3-SNAPSHOT");
+        assertTrue(v1.compareTo(v2) == -1);
+
+        v1 = new CassandraVersion("1.2.3-rc2");
+        v2 = new CassandraVersion("1.2-SNAPSHOT");
+        assertTrue(v1.compareTo(v2) == 1);
     }
 
     @Test
