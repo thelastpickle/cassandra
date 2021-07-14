@@ -37,14 +37,14 @@ to do so by submitting your contribution like any other patch following
 
 | xref:cassandra:plugins/index.adoc[Plug-ins] | Third-party plug-ins
 
-| xref:master@Website:ROOT:native_protocol.adoc[Native Protocols] | Native Cassandra protocol specifications
+| xref:master@_:ROOT:native_protocol.adoc[Native Protocols] | Native Cassandra protocol specifications
 
 |===
 
 == Meta information
-* xref:master@Website:ROOT:bugs.adoc[Reporting bugs]
-* xref:master@Website:ROOT:contactus.adoc[Contact us]
-* xref:master@Website:ROOT:development/index.adoc[Contributing code]
-* xref:master@Website:ROOT:docdev/index.adoc[Contributing to the docs]
-* xref:master@Website:ROOT:community.adoc[Community]
-* xref:master@Website:ROOT:download.adoc[Download]
+* xref:master@_:ROOT:bugs.adoc[Reporting bugs]
+* xref:master@_:ROOT:contactus.adoc[Contact us]
+* xref:master@_:ROOT:development/index.adoc[Contributing code]
+* xref:master@_:ROOT:docdev/index.adoc[Contributing to the docs]
+* xref:master@_:ROOT:community.adoc[Community]
+* xref:master@_:ROOT:download.adoc[Download]
