@@ -100,7 +100,7 @@ include::partial$java_version.adoc[]
 
 [arabic, start=2]
 . Download the binary tarball from one of the mirrors on the
-http://cassandra.apache.org/download/[Apache Cassandra Download] site.
+{cass_url}download/[Apache Cassandra Download] site.
 For example, to download Cassandra {40_version}:
 
 [source,shell, subs="attributes+"]
@@ -187,7 +187,7 @@ include::example$TEXT/tarball_install_dirs.txt[]
 <5>location of cassandra-stress tool
 
 For information on how to configure your installation, see
-http://cassandra.apache.org/doc/latest/getting_started/configuring.html[Configuring
+{cass_url}doc/latest/getting_started/configuring.html[Configuring
 Cassandra].
 
 [arabic, start=6]
@@ -285,7 +285,7 @@ include::example$BASH/apt-get_cass.sh[]
 ----
 
 NOTE: For information on how to configure your installation, see
-http://cassandra.apache.org/doc/latest/getting_started/configuring.html[Configuring
+{cass_url}doc/latest/getting_started/configuring.html[Configuring
 Cassandra].
 
 include::partial$tail_syslog.adoc[]
@@ -340,5 +340,5 @@ include::partial$nodetool_and_cqlsh_nobin.adoc[]
 == Further installation info
 
 For help with installation issues, see the
-http://cassandra.apache.org/doc/latest/troubleshooting/index.html[Troubleshooting]
+{cass_url}doc/latest/troubleshooting/index.html[Troubleshooting]
 section.

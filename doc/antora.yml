@@ -6,6 +6,7 @@ asciidoc:
   attributes:
     sectanchors: ''
     sectlinks: ''
+    cass_url: 'http://cassandra.apache.org/'
     cass-docker-tag-3x: latest
     cass-tag-3x: '3.11'
     311_version: '3.11.10'
