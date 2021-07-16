@@ -1,5 +1,5 @@
 NAME
-        nodetool decommission - Decommission the *node I am connecting to*
+        nodetool decommission - Decommission the node I am connecting to
 
 SYNOPSIS
         nodetool [(-h <host> | --host <host>)] [(-p <port> | --port <port>)]
