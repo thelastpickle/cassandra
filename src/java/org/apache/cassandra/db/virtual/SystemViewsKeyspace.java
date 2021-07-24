@@ -28,6 +28,7 @@ public final class SystemViewsKeyspace extends VirtualKeyspace
     private SystemViewsKeyspace()
     {
         super(VIRTUAL_VIEWS, new ImmutableList.Builder<VirtualTable>()
+                    .add(new DiagnosticEventsTable(VIRTUAL_VIEWS))
                     .add(new CachesTable(VIRTUAL_VIEWS))
                     .add(new ClientsTable(VIRTUAL_VIEWS))
                     .add(new SettingsTable(VIRTUAL_VIEWS))
