@@ -397,6 +397,8 @@
           <dependency groupId="org.openjdk.jmh" artifactId="jmh-core" version="1.21" scope="test"/>
           <dependency groupId="org.openjdk.jmh" artifactId="jmh-generator-annprocess" version="1.21" scope="test"/>
 
+          <dependency groupId="org.apache.ant" artifactId="ant-junit" version="1.9.4" scope="test"/>
+
           <dependency groupId="org.apache.cassandra" artifactId="cassandra-all" version="${version}" />
           <!--dependency groupId="org.apache.cassandra" artifactId="cassandra-thrift" version="${version}" scope="provided"/-->
           <dependency groupId="io.dropwizard.metrics" artifactId="metrics-core" version="3.1.5" />
