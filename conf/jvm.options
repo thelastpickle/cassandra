@@ -105,7 +105,7 @@
 -XX:+HeapDumpOnOutOfMemoryError
 
 # Per-thread stack size.
--Xss256k
+-Xss428k
 
 # Larger interned string table, for gossip's benefit (CASSANDRA-6410)
 -XX:StringTableSize=1000003
