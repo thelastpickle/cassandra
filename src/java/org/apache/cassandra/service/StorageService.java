@@ -518,7 +518,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         if (!joinRing)
             throw new ConfigurationException("Cannot set both join_ring=false and attempt to replace a node");
 
-        if (!DatabaseDescriptor.isAutoBootstrap() && !Boolean.getBoolean("cassandra.allow_unsafe_replace"))
+        if (!shouldBootstrap() && !Boolean.getBoolean("cassandra.allow_unsafe_replace"))
             throw new RuntimeException("Replacing a node without bootstrapping risks invalidating consistency " +
                                        "guarantees as the expected data may not be present until repair is run. " +
                                        "To perform this operation, please restart with " +
@@ -841,12 +841,15 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             SystemKeyspace.removeEndpoint(FBUtilities.getBroadcastAddressAndPort());
 
         Map<InetAddressAndPort, UUID> loadedHostIds = SystemKeyspace.loadHostIds();
+        Map<UUID, InetAddressAndPort> hostIdToEndpointMap = new HashMap<>();
         for (InetAddressAndPort ep : loadedTokens.keySet())
         {
-            tokenMetadata.updateNormalTokens(loadedTokens.get(ep), ep);
-            if (loadedHostIds.containsKey(ep))
-                tokenMetadata.updateHostId(loadedHostIds.get(ep), ep);
+            UUID hostId = loadedHostIds.get(ep);
+            if (hostId != null)
+                hostIdToEndpointMap.put(hostId, ep);
         }
+        tokenMetadata.updateNormalTokens(loadedTokens);
+        tokenMetadata.updateHostIds(hostIdToEndpointMap);
     }
 
     private boolean isReplacing()
@@ -911,7 +914,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                 localHostId = prepareForReplacement();
                 appStates.put(ApplicationState.TOKENS, valueFactory.tokens(bootstrapTokens));
 
-                if (!DatabaseDescriptor.isAutoBootstrap())
+                if (!shouldBootstrap())
                 {
                     // Will not do replace procedure, persist the tokens we're taking over locally
                     // so that they don't get clobbered with auto generated ones in joinTokenRing
@@ -2378,6 +2381,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
                         break;
                 }
             }
+            else
+            {
+                logger.debug("Ignoring application state {} from {} because it is not a member in token metadata",
+                             state, endpoint);
+            }
         }
     }
 
@@ -3253,10 +3261,28 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         return changedRanges.build();
     }
 
+
     public void onJoin(InetAddressAndPort endpoint, EndpointState epState)
     {
+        // Explicitly process STATUS or STATUS_WITH_PORT before the other
+        // application states to maintain pre-4.0 semantics with the order
+        // they are processed.  Otherwise the endpoint will not be added
+        // to TokenMetadata so non-STATUS* appstates will be ignored.
+        ApplicationState statusState = ApplicationState.STATUS_WITH_PORT;
+        VersionedValue statusValue;
+        statusValue = epState.getApplicationState(statusState);
+        if (statusValue == null)
+        {
+            statusState = ApplicationState.STATUS;
+            statusValue = epState.getApplicationState(statusState);
+        }
+        if (statusValue != null)
+            onChange(endpoint, statusState, statusValue);
+
         for (Map.Entry<ApplicationState, VersionedValue> entry : epState.states())
         {
+            if (entry.getKey() == ApplicationState.STATUS_WITH_PORT || entry.getKey() == ApplicationState.STATUS)
+                continue;
             onChange(endpoint, entry.getKey(), entry.getValue());
         }
     }
@@ -5953,5 +5979,18 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             throw new IllegalStateException("Keyspace count warn threshold should be positive, not "+value);
         logger.info("Changing keyspace count warn threshold from {} to {}", getKeyspaceCountWarnThreshold(), value);
         DatabaseDescriptor.setKeyspaceCountWarnThreshold(value);
+    }
+
+    public void setCompactionTombstoneWarningThreshold(int count)
+    {
+        if (count < 0)
+            throw new IllegalStateException("compaction tombstone warning threshold needs to be >= 0, not "+count);
+        logger.info("Setting compaction_tombstone_warning_threshold to {}", count);
+        DatabaseDescriptor.setCompactionTombstoneWarningThreshold(count);
+    }
+
+    public int getCompactionTombstoneWarningThreshold()
+    {
+        return DatabaseDescriptor.getCompactionTombstoneWarningThreshold();
     }
 }
