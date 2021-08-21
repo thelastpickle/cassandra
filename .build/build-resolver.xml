@@ -54,6 +54,8 @@
         <resolver:remoterepos id="all">
             <remoterepo id="resolver-central" url="${artifact.remoteRepository.central}"/>
             <remoterepo id="resolver-apache" url="${artifact.remoteRepository.apache}"/>
+            <!-- only to be used in development branches -->
+            <remoterepo id="resolver-apache-snapshot" url="https://repository.apache.org/content/repositories/snapshots" snapshots="true" />
         </resolver:remoterepos>
 
         <resolver:resolve>
