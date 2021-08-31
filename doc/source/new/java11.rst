@@ -24,9 +24,7 @@ next LTS version is Java 11. Java 9, 10, 12 and 13 are all non-LTS versions.
 
 One of the objectives of the Apache Cassandra 4.0 version is to support the recent LTS Java versions 8 and 11 (`CASSANDRA-9608
 <https://issues.apache.org/jira/browse/CASSANDRA-9608>`_). Java 8 and 
-Java 11 may be used to build and run Apache Cassandra 4.0. 
-
-**Note**: Support for JDK 11 in Apache Cassandra 4.0 is an experimental feature, and not recommended for production use.
+Java 11 may be used to build and run Apache Cassandra 4.0.
 
 Support Matrix
 ^^^^^^^^^^^^^^

@@ -37,12 +37,12 @@ in a production environment.
 Prerequisites
 ^^^^^^^^^^^^^
 
-- Install the latest version of Java 8, either the `Oracle Java Standard Edition 8
-  <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__ or `OpenJDK 8 <http://openjdk.java.net/>`__. To
-  verify that you have the correct version of java installed, type ``java -version``.
-- **NOTE**: *Experimental* support for Java 11 was added in Cassandra 4.0 (`CASSANDRA-9608 <https://issues.apache.org/jira/browse/CASSANDRA-9608>`__).
-  Running Cassandra on Java 11 is *experimental*. Do so at your own risk. For more information, see
-  `NEWS.txt <https://github.com/apache/cassandra/blob/trunk/NEWS.txt>`__.
+- Install the latest version of Java 8 or Java 11, either the `Oracle Java Standard Edition 8
+  <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__/`Oracle Java Standard Edition 11 (Long Term Support)
+  <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__ or `OpenJDK 8 <http://openjdk.java.net/>`__/`OpenJDK 11 <http://openjdk.java.net/>`__.
+  To verify that you have the correct version of java installed, type ``java -version``.
+- Java 11 was added in Cassandra 4.0 (`CASSANDRA-9608 <https://issues.apache.org/jira/browse/CASSANDRA-9608>`__).
+  For more information, see `NEWS.txt <https://github.com/apache/cassandra/blob/trunk/NEWS.txt>`__.
 - For using cqlsh, the latest version of `Python 3.6+ <https://www.python.org/downloads/>`__ or Python 2.7 (support deprecated). To verify that you have
   the correct version of Python installed, type ``python --version``.
 

@@ -110,5 +110,4 @@ where data can be backed up as it is written.
 
 Apache Cassandra 4.0 has added several new features including virtual tables.
 transient replication, audit logging, full query logging, and support for Java
-11. Two of these features are experimental: transient replication and Java 11
-support.
+11. Transient replication is experimental feature.
