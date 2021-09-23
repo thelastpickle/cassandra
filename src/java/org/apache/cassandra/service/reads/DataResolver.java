@@ -53,6 +53,7 @@ import org.apache.cassandra.net.Message;
 import org.apache.cassandra.schema.IndexMetadata;
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.service.reads.repair.NoopReadRepair;
+import org.apache.cassandra.service.QueryInfoTracker;
 import org.apache.cassandra.service.reads.repair.ReadRepair;
 import org.apache.cassandra.service.reads.repair.RepairedDataTracker;
 import org.apache.cassandra.service.reads.repair.RepairedDataVerifier;
@@ -64,18 +65,24 @@ public class DataResolver<E extends Endpoints<E>, P extends ReplicaPlan.ForRead<
     private final boolean enforceStrictLiveness;
     private final ReadRepair<E, P> readRepair;
     private final boolean trackRepairedStatus;
+    protected final QueryInfoTracker.ReadTracker readTracker;
 
-    public DataResolver(ReadCommand command, Supplier<? extends P> replicaPlan, ReadRepair<E, P> readRepair, long queryStartNanoTime)
+    public DataResolver(ReadCommand command,
+                        Supplier<? extends P> replicaPlan,
+                        ReadRepair<E, P> readRepair,
+                        long queryStartNanoTime,
+                        QueryInfoTracker.ReadTracker readTracker)
     {
-        this(command, replicaPlan, readRepair, queryStartNanoTime, false);
+        this(command, replicaPlan, readRepair, queryStartNanoTime, false, readTracker);
     }
 
-    public DataResolver(ReadCommand command, Supplier<? extends P> replicaPlan, ReadRepair<E, P> readRepair, long queryStartNanoTime, boolean trackRepairedStatus)
+    public DataResolver(ReadCommand command, Supplier<? extends P> replicaPlan, ReadRepair<E, P> readRepair, long queryStartNanoTime, boolean trackRepairedStatus, QueryInfoTracker.ReadTracker readTracker)
     {
         super(command, replicaPlan, queryStartNanoTime);
         this.enforceStrictLiveness = command.metadata().enforceStrictLiveness();
         this.readRepair = readRepair;
         this.trackRepairedStatus = trackRepairedStatus;
+        this.readTracker = readTracker;
     }
 
     public PartitionIterator getData()
@@ -223,7 +230,7 @@ public class DataResolver<E extends Endpoints<E>, P extends ReplicaPlan.ForRead<
             listener = wrapMergeListener(readRepair.getMergeListener(sources), sources, repairedDataTracker);
         }
 
-        return resolveInternal(context, listener, responseProvider, preCountFilter);
+        return resolveInternal(context, listener, responseProvider, preCountFilter, readTracker);
     }
 
     private PartitionIterator resolveWithReplicaFilteringProtection(E replicas, RepairedDataTracker repairedDataTracker)
@@ -258,7 +265,8 @@ public class DataResolver<E extends Endpoints<E>, P extends ReplicaPlan.ForRead<
         PartitionIterator firstPhasePartitions = resolveInternal(firstPhaseContext,
                                                                  rfp.mergeController(),
                                                                  i -> shortReadProtectedResponse(i, firstPhaseContext, null),
-                                                                 null);
+                                                                 UnaryOperator.identity(),
+                                                                 QueryInfoTracker.ReadTracker.NOOP);
 
         ResolveContext secondPhaseContext = new ResolveContext(replicas, true);
         PartitionIterator completedPartitions = resolveWithReadRepair(secondPhaseContext,
@@ -281,10 +289,15 @@ public class DataResolver<E extends Endpoints<E>, P extends ReplicaPlan.ForRead<
         };
     }
 
+    /**
+     * Uses the provided {@link org.apache.cassandra.service.QueryInfoTracker.ReadTracker} as internal calls
+     * may be not tracked, e.g. the first phase of RFP.
+     */
     private PartitionIterator resolveInternal(ResolveContext context,
                                               UnfilteredPartitionIterators.MergeListener mergeListener,
                                               ResponseProvider responseProvider,
-                                              @Nullable UnaryOperator<PartitionIterator> preCountFilter)
+                                              UnaryOperator<PartitionIterator> preCountFilter,
+                                              QueryInfoTracker.ReadTracker resolveReadTracker)
     {
         int count = context.replicas.size();
         List<UnfilteredPartitionIterator> results = new ArrayList<>(count);
@@ -306,6 +319,10 @@ public class DataResolver<E extends Endpoints<E>, P extends ReplicaPlan.ForRead<
          */
 
         UnfilteredPartitionIterator merged = UnfilteredPartitionIterators.merge(results, mergeListener);
+        if (!QueryInfoTracker.ReadTracker.NOOP.equals(resolveReadTracker) && !QueryInfoTracker.LWTWriteTracker.NOOP.equals(resolveReadTracker))
+        {
+            merged = Transformation.apply(merged, new ReadTrackingTransformation(resolveReadTracker));
+        }
         Filter filter = new Filter(command.nowInSec(), command.metadata().enforceStrictLiveness());
         FilteredPartitions filtered = FilteredPartitions.filter(merged, filter);
 

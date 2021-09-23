@@ -34,6 +34,7 @@ import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.index.Index;
 import org.apache.cassandra.locator.ReplicaPlans;
 import org.apache.cassandra.schema.TableMetadata;
+import org.apache.cassandra.service.QueryInfoTracker;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.utils.FBUtilities;
 
@@ -54,10 +55,11 @@ public class RangeCommands
 
     public static PartitionIterator partitions(PartitionRangeReadCommand command,
                                                ConsistencyLevel consistencyLevel,
-                                               long queryStartNanoTime)
+                                               long queryStartNanoTime,
+                                               QueryInfoTracker.ReadTracker readTracker)
     {
         // Note that in general, a RangeCommandIterator will honor the command limit for each range, but will not enforce it globally.
-        RangeCommandIterator rangeCommands = rangeCommandIterator(command, consistencyLevel, queryStartNanoTime);
+        RangeCommandIterator rangeCommands = rangeCommandIterator(command, consistencyLevel, queryStartNanoTime, readTracker);
         return command.limits().filter(command.postReconciliationProcessing(rangeCommands),
                                        command.nowInSec(),
                                        command.selectsFullPartition(),
@@ -67,7 +69,8 @@ public class RangeCommands
     @VisibleForTesting
     static RangeCommandIterator rangeCommandIterator(PartitionRangeReadCommand command,
                                                      ConsistencyLevel consistencyLevel,
-                                                     long queryStartNanoTime)
+                                                     long queryStartNanoTime,
+                                                     QueryInfoTracker.ReadTracker readTracker)
     {
         Tracing.trace("Computing ranges to query");
 
@@ -109,7 +112,8 @@ public class RangeCommands
                                            concurrencyFactor,
                                            maxConcurrencyFactor,
                                            replicaPlans.size(),
-                                           queryStartNanoTime);
+                                           queryStartNanoTime,
+                                           readTracker);
     }
 
     /**
