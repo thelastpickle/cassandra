@@ -1354,10 +1354,10 @@ public final class SystemKeyspace
      */
     public static void clearAllEstimates()
     {
-        for (String table : Arrays.asList(LEGACY_SIZE_ESTIMATES, TABLE_ESTIMATES))
+        for (TableMetadata table : Arrays.asList(LegacySizeEstimates, TableEstimates))
         {
-            ColumnFamilyStore cfs = Keyspace.open(SchemaConstants.SYSTEM_KEYSPACE_NAME).getColumnFamilyStore(table);
-            cfs.truncateBlockingWithoutSnapshot();
+            String cql = String.format("TRUNCATE TABLE " + table.toString());
+            executeInternal(cql);
         }
     }
 
@@ -1409,7 +1409,7 @@ public final class SystemKeyspace
     public static void resetAvailableRanges()
     {
         ColumnFamilyStore availableRanges = Keyspace.open(SchemaConstants.SYSTEM_KEYSPACE_NAME).getColumnFamilyStore(AVAILABLE_RANGES_V2);
-        availableRanges.truncateBlockingWithoutSnapshot();
+        availableRanges.truncateBlocking();
     }
 
     public static synchronized void updateTransferredRanges(StreamOperation streamOperation,
@@ -1570,8 +1570,8 @@ public final class SystemKeyspace
 
     public static void resetPreparedStatements()
     {
-        ColumnFamilyStore preparedStatements = Keyspace.open(SchemaConstants.SYSTEM_KEYSPACE_NAME).getColumnFamilyStore(PREPARED_STATEMENTS);
-        preparedStatements.truncateBlockingWithoutSnapshot();
+        ColumnFamilyStore availableRanges = Keyspace.open(SchemaConstants.SYSTEM_KEYSPACE_NAME).getColumnFamilyStore(PREPARED_STATEMENTS);
+        availableRanges.truncateBlocking();
     }
 
     public static List<Pair<String, String>> loadPreparedStatements()
