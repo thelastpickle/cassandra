@@ -267,7 +267,7 @@
     <resources id="_jvm17_test_arg_items">
         <string>-Dio.netty.tryReflectionSetAccessible=true</string>
     </resources>
-    <pathconvert property="_jvm17_test_arg_items_concat" refid="_jvm11_test_arg_items" pathsep=" "/>
+    <pathconvert property="_jvm17_test_arg_items_concat" refid="_jvm17_test_arg_items" pathsep=" "/>
     <condition property="_std-test-jvmargs" value="${_jvm17_test_arg_items_concat}" else="${_jvm11_test_arg_items_concat}">
         <not>
             <equals arg1="${ant.java.version}" arg2="11"/>
