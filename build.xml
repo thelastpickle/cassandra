@@ -241,7 +241,7 @@
         <string>--add-opens java.base/java.lang=ALL-UNNAMED</string>
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>
-    <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="{_jvm11_args_concat}">
+    <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="${_jvm11_args_concat}">
         <not>
             <equals arg1="${ant.java.version}" arg2="11"/>
         </not>
