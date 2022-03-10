@@ -63,14 +63,16 @@ public final class PathUtils
     private static final Set<StandardOpenOption> READ_WRITE_OPTIONS = unmodifiableSet(EnumSet.of(READ, WRITE, CREATE));
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
+    private static final boolean USE_NIX_RECURSIVE_DELETE = CassandraRelevantProperties.USE_NIX_RECURSIVE_DELETE.getBoolean();
+
     private static final Logger logger = LoggerFactory.getLogger(PathUtils.class);
     private static final NoSpamLogger nospam1m = NoSpamLogger.getLogger(logger, 1, TimeUnit.MINUTES);
 
     private static Consumer<Path> onDeletion = path -> {
         if (StorageService.instance.isDaemonSetupCompleted())
             setDeletionListener(ignore -> {});
-        else
-            logger.info("Deleting file during startup: {}", path);
+        else if (logger.isTraceEnabled())
+            logger.trace("Deleting file during startup: {}", path);
     };
 
     public static FileChannel newReadChannel(Path path) throws NoSuchFileException
@@ -293,6 +295,26 @@ public final class PathUtils
         return accumulate;
     }
 
+    private static void deleteRecursiveUsingNixCommand(Path path, boolean quietly)
+    {
+        try
+        {
+            int result = Runtime.getRuntime().exec(new String[]{ "rm", quietly ? "-rf" : "-r", path.toAbsolutePath().toString() }).waitFor();
+            if (result != 0)
+                throw new IOException(String.format("rm %s %s returned non-zero exit code: %d", quietly ? "-rf" : "-r", path.toAbsolutePath(), result));
+            onDeletion.accept(path);
+        }
+        catch (IOException e)
+        {
+            throw propagateUnchecked(e, path, true);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new FSWriteError(e, path);
+        }
+    }
+
     /**
      * Deletes all files and subdirectories under "path".
      * @param path file to be deleted
@@ -300,6 +322,12 @@ public final class PathUtils
      */
     public static void deleteRecursive(Path path)
     {
+        if (USE_NIX_RECURSIVE_DELETE && path.getFileSystem() == FileSystems.getDefault())
+        {
+            deleteRecursiveUsingNixCommand(path, false);
+            return;
+        }
+
         if (isDirectory(path))
             forEach(path, PathUtils::deleteRecursive);
 
@@ -314,6 +342,12 @@ public final class PathUtils
      */
     public static void deleteRecursive(Path path, RateLimiter rateLimiter)
     {
+        if (USE_NIX_RECURSIVE_DELETE && path.getFileSystem() == FileSystems.getDefault())
+        {
+            deleteRecursiveUsingNixCommand(path, false);
+            return;
+        }
+
         deleteRecursive(path, rateLimiter, p -> deleteRecursive(p, rateLimiter));
     }
 
