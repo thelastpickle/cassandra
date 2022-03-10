@@ -34,6 +34,7 @@ import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.net.NoPayload;
+import org.apache.cassandra.schema.SchemaKeyspace;
 import org.apache.cassandra.tools.ToolRunner;
 import org.apache.cassandra.utils.FBUtilities;
 import org.yaml.snakeyaml.Yaml;
@@ -111,6 +112,8 @@ public class TpStatsTest extends CQLTester
 
         createTable("CREATE TABLE %s (pk int, c int, PRIMARY KEY(pk))");
         execute("INSERT INTO %s (pk, c) VALUES (?, ?)", 1, 1);
+        flush();
+
         tool = ToolRunner.invokeNodetool("tpstats");
         tool.assertOnCleanExit();
         stdout = tool.getStdout();

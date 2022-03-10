@@ -69,6 +69,8 @@ public class Cluster extends AbstractCluster<IInvokableInstance>
         {
             super(Cluster::new);
             withVersion(CURRENT_VERSION);
+            System.getProperties().remove("cassandra.test.flush_local_schema_changes");
+            System.getProperties().remove("cassandra.test.messagingService.nonGracefulShutdown");
         }
     }
 }

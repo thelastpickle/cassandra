@@ -293,6 +293,8 @@ public enum CassandraRelevantProperties
     ORG_APACHE_CASSANDRA_CONF_CASSANDRA_RELEVANT_PROPERTIES_TEST("org.apache.cassandra.conf.CassandraRelevantPropertiesTest"),
     ORG_APACHE_CASSANDRA_DB_VIRTUAL_SYSTEM_PROPERTIES_TABLE_TEST("org.apache.cassandra.db.virtual.SystemPropertiesTableTest"),
 
+    USE_NIX_RECURSIVE_DELETE("cassandra.use_nix_recursive_delete"),
+
     ;
 
 

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 
 import org.apache.cassandra.utils.concurrent.AsyncPromise;
 import org.apache.cassandra.utils.concurrent.FutureCombiner;
@@ -46,7 +47,9 @@ import org.apache.cassandra.utils.ExecutorUtils;
 import org.apache.cassandra.utils.FBUtilities;
 
 import static java.util.Collections.synchronizedList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.cassandra.concurrent.Stage.MUTATION;
 import static org.apache.cassandra.utils.Clock.Global.nanoTime;
 import static org.apache.cassandra.utils.Throwables.maybeFail;
@@ -212,6 +215,8 @@ public class MessagingService extends MessagingServiceMBeanImpl
     public static final int current_version = VERSION_40;
     static AcceptVersions accept_messaging = new AcceptVersions(minimum_version, current_version);
     static AcceptVersions accept_streaming = new AcceptVersions(current_version, current_version);
+
+    public final static boolean NON_GRACEFUL_SHUTDOWN = Boolean.getBoolean("cassandra.test.messagingService.nonGracefulShutdown");
 
     public enum Version
     {
@@ -507,11 +512,16 @@ public class MessagingService extends MessagingServiceMBeanImpl
      */
     public void shutdown()
     {
-        shutdown(1L, MINUTES, true, true);
+        if (NON_GRACEFUL_SHUTDOWN)
+            shutdown(1L, MINUTES, false, true, false);
+        else
+            shutdown(1L, MINUTES, true, true, true);
     }
 
-    public void shutdown(long timeout, TimeUnit units, boolean shutdownGracefully, boolean shutdownExecutors)
+    public void shutdown(long timeout, TimeUnit units, boolean shutdownGracefully, boolean shutdownExecutors, boolean blocking)
     {
+        Preconditions.checkArgument(!shutdownGracefully || blocking);
+
         if (isShuttingDown)
         {
             logger.info("Shutdown was already called");
@@ -535,7 +545,7 @@ public class MessagingService extends MessagingServiceMBeanImpl
                       () -> {
                           List<ExecutorService> inboundExecutors = new ArrayList<>();
                           inboundSockets.close(synchronizedList(inboundExecutors)::add).get();
-                          ExecutorUtils.awaitTermination(1L, TimeUnit.MINUTES, inboundExecutors);
+                          ExecutorUtils.awaitTermination(timeout, units, inboundExecutors);
                       },
                       () -> {
                           if (shutdownExecutors)
@@ -555,15 +565,25 @@ public class MessagingService extends MessagingServiceMBeanImpl
                 closing.add(pool.close(false));
 
             long deadline = nanoTime() + units.toNanos(timeout);
-            maybeFail(() -> FutureCombiner.nettySuccessListener(closing).get(timeout, units),
-                      () -> {
-                          if (shutdownExecutors)
-                              shutdownExecutors(deadline);
-                      },
-                      () -> ExecutorUtils.awaitTermination(timeout, units, inboundExecutors),
-                      () -> callbacks.awaitTerminationUntil(deadline),
-                      inboundSink::clear,
-                      outboundSink::clear);
+            if (blocking)
+            {
+                maybeFail(() -> FutureCombiner.nettySuccessListener(closing).get(timeout, units),
+                          () -> {
+                              if (shutdownExecutors)
+                                  shutdownExecutors(deadline);
+                          },
+                          () -> ExecutorUtils.awaitTermination(timeout, units, inboundExecutors),
+                          () -> callbacks.awaitTerminationUntil(deadline),
+                          inboundSink::clear,
+                          outboundSink::clear);
+            } else {
+                maybeFail(() -> {
+                              if (shutdownExecutors)
+                                  socketFactory.shutdownNow();
+                          },
+                          inboundSink::clear,
+                          outboundSink::clear);
+            }
         }
     }
 
