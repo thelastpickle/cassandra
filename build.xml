@@ -243,10 +243,14 @@
         <string>--add-opens java.base/java.lang.reflect=ALL-UNNAMED</string>
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>
-    <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="${_jvm11_args_concat}">
+    <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="">
         <not>
             <equals arg1="${ant.java.version}" arg2="11"/>
         </not>
+    </condition>
+
+    <condition property="java11-jvmargs" value="${_jvm11_args_concat}" else="">
+        <equals arg1="${ant.java.version}" arg2="11"/>
     </condition>
 
     <!--
@@ -342,6 +346,11 @@
       </fail>
     </sequential>
   </macrodef>
+
+    <target name="print-version">
+        <echo>Java/JVM version: ${ant.java.version}</echo>
+        <echo>Java/JVM detail version: ${java.version}</echo>
+    </target>
 
     <target name="validate-build-conf">
         <condition property="use-jdk17">
@@ -509,6 +518,7 @@
         <jvmarg value="-javaagent:${build.lib}/jamm-${jamm.version}.jar" />
         <jvmarg value="-ea"/>
         <jvmarg line="${java17-jvmargs}"/>
+        <jvmarg line="${java11-jvmargs}"/>
       </java>
     </target>
 
@@ -1150,6 +1160,7 @@
         <jvmarg value="-Dcassandra.strict.runtime.checks=true" />
         <jvmarg value="-Dcassandra.reads.thresholds.coordinator.defensive_checks_enabled=true" /> <!-- enable defensive checks -->
         <jvmarg line="${java17-jvmargs}"/>
+        <jvmarg line="${java11-jvmargs}"/>
         <!-- disable shrinks in quicktheories CASSANDRA-15554 -->
         <jvmarg value="-DQT_SHRINKS=0"/>
         <jvmarg line="${_std-test-jvmargs}" />
