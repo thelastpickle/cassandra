@@ -86,6 +86,7 @@
 --add-exports java.base/sun.security.util=ALL-UNNAMED
 --add-exports jdk.unsupported/sun.misc=ALL-UNNAMED
 --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
+--add-exports java.base/java.lang.invoke=ALL-UNNAMED
 
 --add-opens java.base/java.lang.module=ALL-UNNAMED
 --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
@@ -111,6 +112,8 @@
 --add-opens java.base/sun.security.util=ALL-UNNAMED
 --add-opens java.base/sun.security.util=ALL-UNNAMED
 --add-opens jdk.compiler/com.sun.tools.javac=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent.locks=ALL-UNNAMED
+--add-opens java.base/java.lang.invoke=ALL-UNNAMED
 
 ### GC logging options -- uncomment to enable
 
