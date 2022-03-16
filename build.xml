@@ -223,7 +223,6 @@
         <string>--add-exports java.base/java.nio=ALL-UNNAMED</string>
         <string>--add-exports java.base/java.lang=ALL-UNNAMED</string>
         <string>--add-exports java.base/java.lang.reflect=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.lang.reflect=ALL-UNNAMED</string>
         <string>--add-exports java.base/java.nio.channels.spi=ALL-UNNAMED</string>
 
         <string>--add-opens java.base/java.lang.module=ALL-UNNAMED</string>
