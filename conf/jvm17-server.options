@@ -80,6 +80,9 @@
 --add-exports java.base/java.lang.reflect=ALL-UNNAMED
 --add-exports java.base/java.nio.channels.spi=ALL-UNNAMED
 --add-exports java.base/java.math=ALL-UNNAMED
+--add-exports java.base/java.security=ALL-UNNAMED
+--add-exports java.base/java.lang.ref=ALL-UNNAMED
+--add-exports java.base/sun.nio.fs=ALL-UNNAMED
 
 --add-opens java.base/java.lang.module=ALL-UNNAMED
 --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
@@ -99,6 +102,9 @@
 --add-opens java.base/java.lang.reflect=ALL-UNNAMED
 --add-opens java.base/java.nio.channels.spi=ALL-UNNAMED
 --add-opens java.base/java.math=ALL-UNNAMED
+--add-opens java.base/java.security=ALL-UNNAMED
+--add-opens java.base/java.lang.ref=ALL-UNNAMED
+--add-opens java.base/sun.nio.fs=ALL-UNNAMED
 
 ### GC logging options -- uncomment to enable
 

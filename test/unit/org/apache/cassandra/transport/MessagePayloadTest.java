@@ -82,21 +82,23 @@ public class MessagePayloadTest extends CQLTester
 
     private static Field getModifiersField() throws NoSuchFieldException
     {
-        try {
+        try
+        {
             return Field.class.getDeclaredField("modifiers");
         }
-        catch (NoSuchFieldException e) {
-            try {
+        catch (NoSuchFieldException e)
+        {
+            try
+            {
                 Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
                 getDeclaredFields0.setAccessible(true);
                 Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
-                for (Field field : fields) {
-                    if ("modifiers".equals(field.getName())) {
+                for (Field field : fields)
+                    if ("modifiers".equals(field.getName()))
                         return field;
-                    }
-                }
             }
-            catch (ReflectiveOperationException ex) {
+            catch (ReflectiveOperationException ex)
+            {
                 e.addSuppressed(ex);
             }
             throw e;
@@ -110,7 +112,8 @@ public class MessagePayloadTest extends CQLTester
             return;
         try
         {
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            //Field modifiersField = Field.class.getDeclaredField("modifiers");
+            Field modifiersField = getModifiersField();
             modifiersField.setAccessible(true);
             modifiersField.setInt(cqlQueryHandlerField, cqlQueryHandlerField.getModifiers() | Modifier.FINAL);
 

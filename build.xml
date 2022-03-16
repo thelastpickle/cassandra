@@ -225,6 +225,9 @@
         <string>--add-exports java.base/java.lang.reflect=ALL-UNNAMED</string>
         <string>--add-exports java.base/java.nio.channels.spi=ALL-UNNAMED</string>
         <string>--add-exports java.base/java.math=ALL-UNNAMED</string>
+        <string>--add-exports java.base/java.security=ALL-UNNAMED</string>
+        <string>--add-exports java.base/java.lang.ref=ALL-UNNAMED</string>
+        <string>--add-exports java.base/sun.nio.fs=ALL-UNNAMED</string>
 
         <string>--add-opens java.base/java.lang.module=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.net=ALL-UNNAMED</string>
@@ -245,6 +248,9 @@
         <string>--add-opens java.base/java.lang.reflect=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.nio.channels.spi=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.math=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.security=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.lang.ref=ALL-UNNAMED</string>
+        <string>--add-opens java.base/sun.nio.fs=ALL-UNNAMED</string>
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>
     <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="">
