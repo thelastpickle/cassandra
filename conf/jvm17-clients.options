@@ -83,5 +83,15 @@
 --add-opens java.base/java.lang.invoke=ALL-UNNAMED
 --add-opens java.base/sun.security.x509=ALL-UNNAMED
 --add-opens java.base/java.util.jar=ALL-UNNAMED
+--add-opens java.base/java.util.zip=ALL-UNNAMED
+--add-opens java.base/java.lang.invoke=ALL-UNNAMED
+--add-opens java.base/sun.reflect.generics.repository=ALL-UNNAMED
+--add-opens java.base/sun.reflect.generics.tree=ALL-UNNAMED
+--add-opens java.base/sun.net.www.protocol.jar=ALL-UNNAMED
+--add-opens java.base/java.nio.file.attribute=ALL-UNNAMED
+--add-opens java.xml/org.xml.sax.helpers=ALL-UNNAMED
+--add-opens java.base/sun.nio.cs=ALL-UNNAMED
+--add-opens java.base/java.nio.charset=ALL-UNNAMED
+--add-opens java.base/sun.util.locale=ALL-UNNAMED
 
 # The newline in the end of file is intentional

@@ -263,6 +263,16 @@
         <string>--add-opens java.base/java.util.concurrent.locks=ALL-UNNAMED</string>
         <string>--add-opens java.base/sun.security.x509=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util.jar=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.util.zip=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.lang.invoke=ALL-UNNAMED</string>
+        <string>--add-opens java.base/sun.reflect.generics.repository=ALL-UNNAMED</string>
+        <string>--add-opens java.base/sun.reflect.generics.tree=ALL-UNNAMED</string>
+        <string>--add-opens java.base/sun.net.www.protocol.jar=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.nio.file.attribute=ALL-UNNAMED</string>
+        <string>--add-opens java.xml/org.xml.sax.helpers=ALL-UNNAMED</string>
+        <string>--add-opens java.base/sun.nio.cs=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.nio.charset=ALL-UNNAMED</string>
+        <string>--add-opens java.base/sun.util.locale=ALL-UNNAMED</string>
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>
     <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="">
