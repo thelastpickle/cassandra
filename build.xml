@@ -235,6 +235,7 @@
         <string>--add-exports java.base/sun.security.x509=ALL-UNNAMED</string>
         <string>--add-exports java.base/java.util.jar=ALL-UNNAMED</string>
         <string>--add-exports java.base/jdk.internal.reflect=ALL-UNNAMED</string>
+        <string>--add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED</string>
 
         <string>--add-opens java.base/java.lang.module=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.net=ALL-UNNAMED</string>
