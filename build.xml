@@ -619,7 +619,7 @@
           <dependency groupId="junit" artifactId="junit" version="4.12" scope="test">
             <exclusion groupId="org.hamcrest" artifactId="hamcrest-core"/>
           </dependency>
-          <dependency groupId="org.mockito" artifactId="mockito-core" version="3.2.4" scope="test"/>
+          <dependency groupId="org.mockito" artifactId="mockito-core" version="4.4.0" scope="test"/>
           <dependency groupId="org.quicktheories" artifactId="quicktheories" version="0.26" scope="test"/>
           <dependency groupId="com.google.code.java-allocation-instrumenter" artifactId="java-allocation-instrumenter" version="${allocation-instrumenter.version}" scope="test">
             <exclusion groupId="com.google.guava" artifactId="guava"/>
@@ -730,8 +730,8 @@
           <dependency groupId="org.ow2.asm" artifactId="asm-tree" version="${asm.version}" scope="test"/>
           <dependency groupId="org.ow2.asm" artifactId="asm-commons" version="${asm.version}" scope="test"/>
           <dependency groupId="org.ow2.asm" artifactId="asm-util" version="${asm.version}" scope="test"/>
-          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-cli" version="0.14"/>
-          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-core" version="0.14">
+          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-cli" version="0.20"/>
+          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-core" version="0.20">
             <exclusion groupId="org.gridkit.jvmtool" artifactId="sjk-hflame"/>
             <exclusion groupId="org.perfkit.sjk.parsers" artifactId="sjk-hflame"/>
             <exclusion groupId="org.perfkit.sjk.parsers" artifactId="sjk-jfr-standalone"/>
@@ -739,10 +739,10 @@
             <exclusion groupId="org.perfkit.sjk.parsers" artifactId="sjk-jfr5"/>
             <exclusion groupId="org.perfkit.sjk.parsers" artifactId="sjk-jfr6"/>
           </dependency>
-          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-stacktrace" version="0.14"/>
+          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-stacktrace" version="0.20"/>
           <dependency groupId="org.gridkit.jvmtool" artifactId="mxdump" version="0.14"/>
           <dependency groupId="org.gridkit.lab" artifactId="jvm-attach-api" version="1.5"/>
-          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-json" version="0.14"/>
+          <dependency groupId="org.gridkit.jvmtool" artifactId="sjk-json" version="0.20"/>
           <dependency groupId="com.beust" artifactId="jcommander" version="1.30"/>
           <dependency groupId="org.psjava" artifactId="psjava" version="0.1.19"/>
           <dependency groupId="javax.inject" artifactId="javax.inject" version="1"/>
