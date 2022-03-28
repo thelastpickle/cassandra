@@ -1,0 +1,67 @@
+--- a/test/unit/org/apache/cassandra/db/SchemaCQLHelperTest.java
++++ b/test/unit/org/apache/cassandra/db/SchemaCQLHelperTest.java
+@@ -27,12 +27,7 @@
+ import org.junit.Test;
+ 
+ import com.fasterxml.jackson.databind.JsonNode;
+-<<<<<<<
+-=======
+-import org.apache.cassandra.*;
+ import org.apache.cassandra.config.DatabaseDescriptor;
+-import org.apache.cassandra.cql3.*;
+->>>>>>>
+ import org.apache.cassandra.cql3.statements.schema.IndexTarget;
+ import org.apache.cassandra.exceptions.ConfigurationException;
+ import org.apache.cassandra.index.internal.CassandraIndex;
+--- a/test/unit/org/apache/cassandra/service/reads/repair/AbstractReadRepairTest.java
++++ b/test/unit/org/apache/cassandra/service/reads/repair/AbstractReadRepairTest.java
+@@ -29,8 +29,6 @@
+ import com.google.common.collect.Iterables;
+ import com.google.common.collect.Sets;
+ import com.google.common.primitives.Ints;
+-<<<<<<<
+-=======
+ 
+ import org.apache.cassandra.dht.ByteOrderedPartitioner;
+ import org.apache.cassandra.dht.Token;
+@@ -38,7 +36,6 @@
+ import org.apache.cassandra.locator.AbstractNetworkTopologySnitch;
+ import org.apache.cassandra.locator.EndpointsForToken;
+ import org.apache.cassandra.locator.ReplicaPlan;
+->>>>>>>
+ import org.junit.Assert;
+ import org.junit.Before;
+ import org.junit.Ignore;
+@@ -67,14 +64,9 @@
+ import org.apache.cassandra.db.rows.Cell;
+ import org.apache.cassandra.db.rows.Row;
+ import org.apache.cassandra.db.rows.RowIterator;
+-import org.apache.cassandra.dht.ByteOrderedPartitioner;
+-import org.apache.cassandra.dht.Token;
+-import org.apache.cassandra.gms.Gossiper;
+ import org.apache.cassandra.locator.EndpointsForRange;
+-import org.apache.cassandra.locator.EndpointsForToken;
+ import org.apache.cassandra.locator.InetAddressAndPort;
+ import org.apache.cassandra.locator.Replica;
+-import org.apache.cassandra.locator.ReplicaPlan;
+ import org.apache.cassandra.locator.ReplicaPlans;
+ import org.apache.cassandra.locator.ReplicaUtils;
+ import org.apache.cassandra.net.Message;
+diff --git a/src/java/org/apache/cassandra/cql3/statements/DescribeStatement.java b/src/java/org/apache/cassandra/cql3/statements/DescribeStatement.java
+index 9549d1e2d8..e1f9ea2d02 100644
+--- a/src/java/org/apache/cassandra/cql3/statements/DescribeStatement.java
++++ b/src/java/org/apache/cassandra/cql3/statements/DescribeStatement.java
+@@ -52,12 +52,7 @@ import org.apache.cassandra.exceptions.RequestExecutionException;
+ import org.apache.cassandra.exceptions.RequestValidationException;
+ import org.apache.cassandra.io.util.DataInputBuffer;
+ import org.apache.cassandra.io.util.DataOutputBuffer;
+-import org.apache.cassandra.schema.IndexMetadata;
+-import org.apache.cassandra.schema.KeyspaceMetadata;
+-import org.apache.cassandra.schema.Keyspaces;
+-import org.apache.cassandra.schema.Schema;
+-import org.apache.cassandra.schema.SchemaConstants;
+-import org.apache.cassandra.schema.TableMetadata;
++import org.apache.cassandra.schema.*;
+ import org.apache.cassandra.service.ClientState;
+ import org.apache.cassandra.service.QueryState;
+ import org.apache.cassandra.service.StorageService;
