@@ -296,27 +296,6 @@
         </fileset>
     </path>
 
-  <macrodef name="create-javadoc">
-    <attribute name="destdir"/>
-    <element name="filesets"/>
-    <sequential>
-      <javadoc destdir="@{destdir}" author="true" version="true" use="true"
-        windowtitle="${ant.project.name} API" classpathref="cassandra.classpath"
-        bottom="Copyright &amp;copy; 2009-2022 The Apache Software Foundation"
-        useexternalfile="yes" encoding="UTF-8" failonerror="false"
-        maxmemory="256m" additionalparam="${jdk11-javadoc-exports}">
-        <filesets/>
-      </javadoc>
-      <fail message="javadoc failed">
-        <condition>
-            <not>
-                <available file="@{destdir}/index-all.html" />
-            </not>
-        </condition>
-      </fail>
-    </sequential>
-  </macrodef>
-
     <target name="validate-build-conf">
         <condition property="use-jdk11">
             <or>
@@ -425,27 +404,6 @@
          <arg value="-Xmaxinlinedfastates"/>
          <arg value="10"/> <!-- default is 60 -->
       </java>
-    </target>
-
-    <target name="generate-cql-html" depends="resolver-init" description="Generate HTML from textile source">
-        <taskdef classpathref="wikitext.classpath" resource="wikitexttasks.properties" />
-        <wikitext-to-html markupLanguage="Textile">
-            <fileset dir="${basedir}">
-                <include name="doc/cql3/*.textile"/>
-            </fileset>
-        </wikitext-to-html>
-    </target>
-
-    <target name="gen-asciidoc" description="Generate dynamic asciidoc pages" depends="jar" unless="ant.gen-doc.skip">
-        <exec executable="make" osfamily="unix" dir="${doc.dir}">
-            <arg value="gen-asciidoc"/>
-        </exec>
-    </target>
-
-    <target name="gen-doc" description="Generate documentation" depends="gen-asciidoc,generate-cql-html" unless="ant.gen-doc.skip">
-        <exec executable="make" osfamily="unix" dir="${doc.dir}">
-            <arg value="html"/>
-        </exec>
     </target>
 
     <!--
@@ -1203,16 +1161,6 @@
     </target>
 
     <!--
-        The javadoc-jar target makes cassandra-javadoc.jar output required for publishing to Maven central repository.
-    -->
-    <target name="javadoc-jar" depends="javadoc" unless="no-javadoc" description="Assemble Cassandra JavaDoc JAR file">
-      <jar jarfile="${build.dir}/${final.name}-javadoc.jar" basedir="${javadoc.dir}"/>
-      <!-- javadoc task always rebuilds so might as well remove the generated docs to prevent
-           being pulled into the distribution by accident -->
-      <delete quiet="true" dir="${javadoc.dir}"/>
-    </target>
-
-    <!--
         The sources-jar target makes cassandra-sources.jar output required for publishing to Maven central repository.
     -->
     <target name="sources-jar" depends="init" description="Assemble Cassandra Sources JAR file">
@@ -1897,16 +1845,6 @@
     <delete dir="${jacoco.export.dir}"/>
   </target>
 
-  <target name="javadoc" depends="build" description="Create javadoc" unless="no-javadoc">
-    <create-javadoc destdir="${javadoc.dir}">
-      <filesets>
-        <fileset dir="${build.src.java}" defaultexcludes="yes">
-          <include name="org/apache/**/*.java"/>
-        </fileset>
-      </filesets>
-    </create-javadoc>
-   </target>
-
   <!-- Run tests and reports errors and generates a junit report after -->
   <macrodef name="testmacro">
     <attribute name="inputdir" />
@@ -2241,80 +2179,6 @@
   	<delete dir="build/eclipse-classes" />
   </target>
 
-  <!-- ECJ 4.6.1 in standalone mode does not work with JPMS, so we skip this target for Java 11 -->
-  <target name="eclipse-warnings" depends="build, _assert_rat_output" description="Run eclipse compiler code analysis" if="java.version.8">
-        <property name="ecj.log.dir" value="${build.dir}/ecj" />
-        <property name="ecj.warnings.file" value="${ecj.log.dir}/eclipse_compiler_checks.txt"/>
-        <mkdir  dir="${ecj.log.dir}" />
-
-        <property name="ecj.properties" value="${basedir}/eclipse_compiler.properties" />
-
-        <echo message="Running Eclipse Code Analysis.  Output logged to ${ecj.warnings.file}" />
-
-	<java
-	    jar="${build.dir.lib}/jars/ecj-${ecj.version}.jar"
-            fork="true"
-	    failonerror="true"
-            maxmemory="512m">
-            <arg value="-source"/>
-	    <arg value="${source.version}" />
-	    <arg value="-target"/>
-	    <arg value="${target.version}" />
-	    <arg value="-d" />
-            <arg value="none" />
-	    <arg value="-proc:none" />
-            <arg value="-log" />
-            <arg value="${ecj.warnings.file}" />
-            <arg value="-properties" />
-            <arg value="${ecj.properties}" />
-            <arg value="-cp" />
-            <arg value="${toString:cassandra.classpath}" />
-            <arg value="${build.src.java}" />
-        </java>
-  </target>
-
-  <target name="init-checkstyle" depends="maven-ant-tasks-retrieve-build,build-project" unless="no-checkstyle">
-      <path id="checkstyle.lib.path">
-          <fileset dir="${test.lib}/jars" includes="*.jar"/>
-      </path>
-      <!-- Sevntu custom checks are retrieved by Ivy into lib folder
-         and will be accessible to checkstyle-->
-      <taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
-               classpathref="checkstyle.lib.path"/>
-  </target>
-
-  <target name="checkstyle" depends="init-checkstyle,maven-ant-tasks-retrieve-build,build-project" description="Run custom checkstyle code analysis" if="java.version.8" unless="no-checkstyle">
-      <property name="checkstyle.log.dir" value="${build.dir}/checkstyle" />
-      <property name="checkstyle.report.file" value="${checkstyle.log.dir}/checkstyle_report.xml"/>
-      <mkdir  dir="${checkstyle.log.dir}" />
-
-      <property name="checkstyle.properties" value="${basedir}/checkstyle.xml" />
-      <property name="checkstyle.suppressions" value="${basedir}/checkstyle_suppressions.xml" />
-      <checkstyle config="${checkstyle.properties}"
-                  failureProperty="checkstyle.failure"
-                  failOnViolation="true">
-          <formatter type="plain"/>
-          <formatter type="xml" tofile="${checkstyle.report.file}"/>
-          <fileset dir="${build.src.java}" includes="**/*.java"/>
-      </checkstyle>
-  </target>
-
-  <target name="checkstyle-test" depends="init-checkstyle,maven-ant-tasks-retrieve-build,build-project" description="Run custom checkstyle code analysis on tests" if="java.version.8" unless="no-checkstyle">
-      <property name="checkstyle.log.dir" value="${build.dir}/checkstyle" />
-      <property name="checkstyle_test.report.file" value="${checkstyle.log.dir}/checkstyle_report_test.xml"/>
-      <mkdir  dir="${checkstyle.log.dir}" />
-
-      <property name="checkstyle_test.properties" value="${basedir}/checkstyle_test.xml" />
-      <property name="checkstyle.suppressions" value="${basedir}/checkstyle_suppressions.xml" />
-      <checkstyle config="${checkstyle_test.properties}"
-                  failureProperty="checkstyle.failure"
-                  failOnViolation="true">
-          <formatter type="plain"/>
-          <formatter type="xml" tofile="${checkstyle_test.report.file}"/>
-          <fileset dir="${test.dir}" includes="**/*.java"/>
-      </checkstyle>
-  </target>
-
   <!-- Installs artifacts to local Maven repository -->
   <target name="mvn-install"
           depends="maven-declare-dependencies,jar,sources-jar,javadoc-jar"
@@ -2365,4 +2229,6 @@
   <import file="${basedir}/.build/build-resolver.xml"/>
   <import file="${basedir}/.build/build-rat.xml"/>
   <import file="${basedir}/.build/build-owasp.xml"/>
+  <import file="${basedir}/.build/build-linter.xml"/>
+  <import file="${basedir}/.build/build-docs.xml"/>
 </project>

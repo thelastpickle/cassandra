@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project basedir="." name="apache-cassandra--docs-tasks">
+
+    <condition property="no-gen-doc">
+        <or>
+            <isset property="no-gen-doc"/>
+            <isset property="ant.gen-doc.skip"/>
+            <isset property="no-doc"/>
+        </or>
+    </condition>
+    <condition property="no-javadoc">
+        <or>
+            <isset property="no-javadoc"/>
+            <isset property="javadoc.skip"/>
+            <isset property="no-doc"/>
+        </or>
+    </condition>
+
+    <macrodef name="create-javadoc">
+      <attribute name="destdir"/>
+      <element name="filesets"/>
+      <sequential>
+        <javadoc destdir="@{destdir}" author="true" version="true" use="true"
+          windowtitle="${ant.project.name} API" classpathref="cassandra.classpath"
+          bottom="Copyright &amp;copy; 2009-2022 The Apache Software Foundation"
+          useexternalfile="yes" encoding="UTF-8" failonerror="false"
+          maxmemory="256m" additionalparam="${jdk11-javadoc-exports}">
+          <filesets/>
+        </javadoc>
+        <fail message="javadoc failed">
+          <condition>
+              <not>
+                  <available file="@{destdir}/index-all.html" />
+              </not>
+          </condition>
+        </fail>
+      </sequential>
+    </macrodef>
+
+    <target name="generate-cql-html" depends="resolver-init" description="Generate HTML from textile source">
+        <taskdef classpathref="wikitext.classpath" resource="wikitexttasks.properties" />
+        <wikitext-to-html markupLanguage="Textile">
+            <fileset dir="${basedir}">
+                <include name="doc/cql3/*.textile"/>
+            </fileset>
+        </wikitext-to-html>
+    </target>
+
+
+    <target name="gen-asciidoc" description="Generate dynamic asciidoc pages" depends="jar" unless="no-gen-doc">
+        <exec executable="make" osfamily="unix" dir="${doc.dir}">
+            <arg value="gen-asciidoc"/>
+        </exec>
+    </target>
+
+    <target name="gen-doc" description="Generate documentation" depends="gen-asciidoc,generate-cql-html" unless="no-gen-doc">
+        <exec executable="make" osfamily="unix" dir="${doc.dir}">
+            <arg value="html"/>
+        </exec>
+    </target>
+
+
+  <target name="javadoc" depends="build" description="Create javadoc" unless="no-javadoc">
+    <create-javadoc destdir="${javadoc.dir}">
+      <filesets>
+        <fileset dir="${build.src.java}" defaultexcludes="yes">
+          <include name="org/apache/**/*.java"/>
+        </fileset>
+      </filesets>
+    </create-javadoc>
+   </target>
+
+    <!--
+        The javadoc-jar target makes cassandra-javadoc.jar output required for publishing to Maven central repository.
+    -->
+    <target name="javadoc-jar" depends="javadoc" unless="no-javadoc" description="Assemble Cassandra JavaDoc JAR file">
+      <jar jarfile="${build.dir}/${final.name}-javadoc.jar" basedir="${javadoc.dir}"/>
+      <!-- javadoc task always rebuilds so might as well remove the generated docs to prevent
+           being pulled into the distribution by accident -->
+      <delete quiet="true" dir="${javadoc.dir}"/>
+    </target>
+
+</project>

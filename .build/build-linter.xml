@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project basedir="." name="apache-cassandra--linter-tasks">
+
+  <condition property="no-checkstyle">
+        <or>
+            <isset property="no-checkstyle"/>
+            <isset property="checkstyle.skip"/>
+            <isset property="no-linter"/>
+        </or>
+  </condition>
+  <condition property="no-eclipse-warnings">
+        <or>
+            <isset property="no-eclipse-warnings"/>
+            <isset property="eclipse-warnings.skip"/>
+            <isset property="no-linter"/>
+        </or>
+  </condition>
+
+  <!-- ECJ 4.6.1 in standalone mode does not work with JPMS, so we skip this target for Java 11 -->
+  <target name="eclipse-warnings" depends="build, _assert_rat_output" description="Run eclipse compiler code analysis" if="java.version.8" unless="no-eclipse-warnings">
+        <property name="ecj.log.dir" value="${build.dir}/ecj" />
+        <property name="ecj.warnings.file" value="${ecj.log.dir}/eclipse_compiler_checks.txt"/>
+        <mkdir  dir="${ecj.log.dir}" />
+
+        <property name="ecj.properties" value="${basedir}/eclipse_compiler.properties" />
+
+        <echo message="Running Eclipse Code Analysis.  Output logged to ${ecj.warnings.file}" />
+
+	<java
+	    jar="${build.dir.lib}/jars/ecj-${ecj.version}.jar"
+            fork="true"
+	    failonerror="true"
+            maxmemory="512m">
+            <arg value="-source"/>
+	    <arg value="${source.version}" />
+	    <arg value="-target"/>
+	    <arg value="${target.version}" />
+	    <arg value="-d" />
+            <arg value="none" />
+	    <arg value="-proc:none" />
+            <arg value="-log" />
+            <arg value="${ecj.warnings.file}" />
+            <arg value="-properties" />
+            <arg value="${ecj.properties}" />
+            <arg value="-cp" />
+            <arg value="${toString:cassandra.classpath}" />
+            <arg value="${build.src.java}" />
+        </java>
+  </target>
+
+  <target name="init-checkstyle" depends="maven-ant-tasks-retrieve-build,build-project" unless="no-checkstyle">
+      <path id="checkstyle.lib.path">
+          <fileset dir="${test.lib}/jars" includes="*.jar"/>
+      </path>
+      <!-- Sevntu custom checks are retrieved by Ivy into lib folder
+         and will be accessible to checkstyle-->
+      <taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+               classpathref="checkstyle.lib.path"/>
+  </target>
+
+  <target name="checkstyle" depends="init-checkstyle,maven-ant-tasks-retrieve-build,build-project" description="Run custom checkstyle code analysis" if="java.version.8" unless="no-checkstyle">
+      <property name="checkstyle.log.dir" value="${build.dir}/checkstyle" />
+      <property name="checkstyle.report.file" value="${checkstyle.log.dir}/checkstyle_report.xml"/>
+      <mkdir  dir="${checkstyle.log.dir}" />
+
+      <property name="checkstyle.properties" value="${basedir}/checkstyle.xml" />
+      <property name="checkstyle.suppressions" value="${basedir}/checkstyle_suppressions.xml" />
+      <checkstyle config="${checkstyle.properties}"
+                  failureProperty="checkstyle.failure"
+                  failOnViolation="true">
+          <formatter type="plain"/>
+          <formatter type="xml" tofile="${checkstyle.report.file}"/>
+          <fileset dir="${build.src.java}" includes="**/*.java"/>
+      </checkstyle>
+  </target>
+
+  <target name="checkstyle-test" depends="init-checkstyle,maven-ant-tasks-retrieve-build,build-project" description="Run custom checkstyle code analysis on tests" if="java.version.8" unless="no-checkstyle">
+      <property name="checkstyle.log.dir" value="${build.dir}/checkstyle" />
+      <property name="checkstyle_test.report.file" value="${checkstyle.log.dir}/checkstyle_report_test.xml"/>
+      <mkdir  dir="${checkstyle.log.dir}" />
+
+      <property name="checkstyle_test.properties" value="${basedir}/checkstyle_test.xml" />
+      <property name="checkstyle.suppressions" value="${basedir}/checkstyle_suppressions.xml" />
+      <checkstyle config="${checkstyle_test.properties}"
+                  failureProperty="checkstyle.failure"
+                  failOnViolation="true">
+          <formatter type="plain"/>
+          <formatter type="xml" tofile="${checkstyle_test.report.file}"/>
+          <fileset dir="${test.dir}" includes="**/*.java"/>
+      </checkstyle>
+  </target>
+
+</project>

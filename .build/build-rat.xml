@@ -22,6 +22,13 @@
       License audit tool
     -->
 
+    <condition property="no-rat">
+        <or>
+            <isset property="no-rat"/>
+            <isset property="rat.skip"/>
+        </or>
+    </condition>
+
     <target name="_rat_init" depends="resolver-init">
         <typedef uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
     </target>
@@ -37,7 +44,7 @@
         </condition>
     </target>
 
-    <target name="_rat_copy_versioned_files" depends="_build_ratinclude" unless="${rat.skip}">
+    <target name="_rat_copy_versioned_files" depends="_build_ratinclude" unless="no-rat">
         <copy file="build/.versioned_files" tofile="build/.ratinclude">
             <filterchain>
                 <linecontainsregexp>
@@ -47,7 +54,7 @@
         </copy>
     </target>
 
-    <target name="rat-check" depends="_rat_copy_versioned_files" unless="${rat.skip}" description="License checks on source" >
+    <target name="rat-check" depends="_rat_copy_versioned_files" unless="no-rat" description="License checks on source" >
         <rat:report reportFile="${build.dir}/rat.txt">
             <fileset dir="." includesfile="build/.ratinclude">
                  <!-- Config files with not much creativity -->
