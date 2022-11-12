@@ -29,6 +29,7 @@ import org.apache.cassandra.utils.Int64Serializer;
 import org.apache.cassandra.utils.TimeUUID;
 
 import static java.lang.Math.max;
+
 import static org.apache.cassandra.locator.InetAddressAndPort.FwdFrmSerializer.fwdFrmSerializer;
 
 /**
@@ -63,6 +64,8 @@ public enum ParamType
     LOCAL_READ_SIZE_WARN(11, "LRSW", Int64Serializer.serializer),
     ROW_INDEX_READ_SIZE_FAIL(12, "RIRSF", Int64Serializer.serializer),
     ROW_INDEX_READ_SIZE_WARN(13, "RIRSW", Int64Serializer.serializer);
+
+    CUSTOM_MAP          (8, "CUSTOM",       CustomParamsSerializer.serializer);
 
     final int id;
     @Deprecated final String legacyAlias; // pre-4.0 we used to serialize entire param name string
