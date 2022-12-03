@@ -1858,7 +1858,23 @@
     <option name="ADDITIONAL_OPTIONS_STRING" value="--add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED" />
   </component>
 </project>]]></echo>
+      <echo>"IDE configuration updated for use with JDK17"</echo>
   </target>
+  <target name="_maybe_update_idea_for_java11" if="java.version.11">
+        <replaceregexp file=".idea/workspace.xml"
+                       match="name=&quot;VM_PARAMETERS&quot; value=&quot;(.*)&quot;"
+                       replace="name=&quot;VM_PARAMETERS&quot; value=&quot;\1 ${java11-jvmargs}&quot;"
+                       byline="true"/>
+
+        <echo file=".idea/compiler.xml"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_STRING" value="--add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED" />
+  </component>
+</project>]]></echo>
+      <echo>"IDE configuration updated for use with JDK11"</echo>
+    </target>
+
 
   <!-- Generate IDEA project description files -->
   <target name="generate-idea-files" depends="init,resolver-dist-lib,gen-cql3-grammar,generate-jflex-java,createVersionPropFile" description="Generate IDEA files">
@@ -1878,6 +1894,7 @@
     </modules>
   </component>
 </project>]]></echo>
+      <antcall target="_maybe_update_idea_for_java11"/>
       <antcall target="_maybe_update_idea_to_java17"/>
   </target>
 
