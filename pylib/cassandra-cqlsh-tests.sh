@@ -91,7 +91,6 @@ fi
 # Main
 #
 ################################
-ant -buildfile ../build.xml print-version
 ccm remove test || true # in case an old ccm cluster is left behind
 ccm create test -n 1 --install-dir=${CASSANDRA_DIR}
 ccm updateconf "user_defined_functions_enabled: true"
