@@ -682,14 +682,14 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.73.Final</version>
+        <version>4.1.58.Final</version>
         <type>pom</type>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.73.Final</version>
+        <version>4.1.58.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
