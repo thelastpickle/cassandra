@@ -214,28 +214,7 @@
         <string>--add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED</string>
         <string>--add-exports java.rmi/sun.rmi.server=ALL-UNNAMED</string>
         <string>--add-exports java.sql/java.sql=ALL-UNNAMED</string>
-        <string>--add-exports java.base/sun.nio.ch=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.io=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.util.concurrent=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.util=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.util.concurrent.atomic=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.nio=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.lang=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.lang.reflect=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.nio.channels.spi=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.math=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.security=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.lang.ref=ALL-UNNAMED</string>
-        <string>--add-exports java.base/sun.nio.fs=ALL-UNNAMED</string>
-        <string>--add-exports java.base/sun.security.util=ALL-UNNAMED</string>
-        <string>--add-exports jdk.unsupported/sun.misc=ALL-UNNAMED</string>
-        <string>--add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.util.concurrent.locks=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.lang.invoke=ALL-UNNAMED</string>
-        <string>--add-exports java.base/sun.security.x509=ALL-UNNAMED</string>
-        <string>--add-exports java.base/java.util.jar=ALL-UNNAMED</string>
-        <string>--add-exports java.base/jdk.internal.reflect=ALL-UNNAMED</string>
-        <string>--add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED</string>
+
 
         <string>--add-opens java.base/java.lang.module=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.net=ALL-UNNAMED</string>
@@ -246,34 +225,15 @@
         <string>--add-opens java.base/jdk.internal.module=ALL-UNNAMED</string>
         <string>--add-opens java.base/jdk.internal.util.jar=ALL-UNNAMED</string>
         <string>--add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED</string>
+        <!-- to be addressed in CASSANDRA-17850 -->
         <string>--add-opens java.base/sun.nio.ch=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.io=ALL-UNNAMED</string>
+        <string>--add-opens java.base/java.nio=ALL-UNNAMED</string>
+        <!--to be addressed during jamm maintenance -->
         <string>--add-opens java.base/java.util.concurrent=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.nio=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.lang=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.lang.reflect=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.nio.channels.spi=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.math=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.security=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.lang.ref=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.nio.fs=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.security.util=ALL-UNNAMED</string>
-        <string>--add-opens jdk.compiler/com.sun.tools.javac=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.util.concurrent.locks=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.security.x509=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.util.jar=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.util.zip=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.lang.invoke=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.reflect.generics.repository=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.reflect.generics.tree=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.net.www.protocol.jar=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.nio.file.attribute=ALL-UNNAMED</string>
-        <string>--add-opens java.xml/org.xml.sax.helpers=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.nio.cs=ALL-UNNAMED</string>
-        <string>--add-opens java.base/java.nio.charset=ALL-UNNAMED</string>
-        <string>--add-opens java.base/sun.util.locale=ALL-UNNAMED</string>
+
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>
     <condition property="java17-jvmargs" value="${_jvm17_args_concat}" else="">
