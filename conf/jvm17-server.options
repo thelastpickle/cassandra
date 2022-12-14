@@ -116,7 +116,10 @@
 #many cqlsh tests fail if we do not open the below one - jamm and at org.apache.cassandra.net.Verb.getModifiersField(Verb.java:388)
 # those getModifiersFiles is used only for testing; in-jvm tests
 --add-opens java.base/java.lang=ALL-UNNAMED
-#--add-opens java.base/java.lang.reflect=ALL-UNNAMED
+#jamm
+--add-opens java.base/java.math=ALL-UNNAMED
+#in-jvm tests?
+--add-opens java.base/java.lang.reflect=ALL-UNNAMED
 
 #from tests
 #--add-opens java.base/java.nio.channels.spi=ALL-UNNAMED

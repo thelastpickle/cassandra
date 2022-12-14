@@ -233,8 +233,10 @@
         <string>--add-opens java.base/java.util.concurrent=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED</string>
-        <!--many cqlsh tests fail if we do not open the below one-->
+        <!--many cqlsh tests fail if we do not open the below one --> jamm and the in-jvm tests-->
         <string>--add-opens java.base/java.lang=ALL-UNNAMED</string>
+        <!--jamm-->
+        <string>--add-opens java.base/java.math=ALL-UNNAMED</string>>
 
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>
