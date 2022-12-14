@@ -113,7 +113,9 @@
 --add-opens java.base/java.util.concurrent=ALL-UNNAMED
 --add-opens java.base/java.util=ALL-UNNAMED
 --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
-#--add-opens java.base/java.lang=ALL-UNNAMED
+#many cqlsh tests fail if we do not open the below one - jamm and at org.apache.cassandra.net.Verb.getModifiersField(Verb.java:388)
+# those getModifiersFiles is used only for testing; in-jvm tests
+--add-opens java.base/java.lang=ALL-UNNAMED
 #--add-opens java.base/java.lang.reflect=ALL-UNNAMED
 
 #from tests

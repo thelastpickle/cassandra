@@ -53,5 +53,7 @@
 --add-opens java.base/java.util.concurrent=ALL-UNNAMED
 --add-opens java.base/java.util=ALL-UNNAMED
 --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+#jamm and the in-jvm tests...
+--add-opens java.base/java.lang=ALL-UNNAMED
 
 # The newline in the end of file is intentional
