@@ -214,6 +214,11 @@
         <string>--add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED</string>
         <string>--add-exports java.rmi/sun.rmi.server=ALL-UNNAMED</string>
         <string>--add-exports java.sql/java.sql=ALL-UNNAMED</string>
+        <!-- chronicle, AuditLog https://chronicle.software/chronicle-support-java-17/ -->
+        <string>--add-exports java.base/java.lang.ref=ALL-UNNAMED</string>
+        <!-- https://chronicle.software/chronicle-support-java-17/ - below 2 -->
+        <string>--add-exports jdk.unsupported/sun.misc=ALL-UNNAMED</string>
+        <string>--add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</string>
 
 
         <string>--add-opens java.base/java.lang.module=ALL-UNNAMED</string>
@@ -227,16 +232,20 @@
         <string>--add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED</string>
         <!-- to be addressed in CASSANDRA-17850 -->
         <string>--add-opens java.base/sun.nio.ch=ALL-UNNAMED</string>
+        <!-- https://chronicle.software/chronicle-support-java-17/ -->
         <string>--add-opens java.base/java.io=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.nio=ALL-UNNAMED</string>
         <!--to be addressed during jamm maintenance -->
         <string>--add-opens java.base/java.util.concurrent=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util=ALL-UNNAMED</string>
         <string>--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED</string>
-        <!--many cqlsh tests fail if we do not open the below one --> jamm and the in-jvm tests-->
+        <!-- # https://chronicle.software/chronicle-support-java-17/ explains also add-opens java.base/java.util=ALL-UNNAMED, firther to jamm-->
+        <!--many cqlsh tests fail if we do not open the below one jamm and the in-jvm tests-->
         <string>--add-opens java.base/java.lang=ALL-UNNAMED</string>
         <!--jamm-->
-        <string>--add-opens java.base/java.math=ALL-UNNAMED</string>>
+        <string>--add-opens java.base/java.math=ALL-UNNAMED</string>
+        <!--in-jvm tests? plus # https://chronicle.software/chronicle-support-java-17/-->
+        <string> --add-opens java.base/java.lang.reflect=ALL-UNNAMED</string>
 
     </resources>
     <pathconvert property="_jvm17_args_concat" refid="_jvm17_arg_items" pathsep=" "/>

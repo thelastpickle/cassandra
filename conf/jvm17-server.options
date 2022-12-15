@@ -65,6 +65,7 @@
 -Djdk.attach.allowAttachSelf=true
 --add-exports java.base/jdk.internal.misc=ALL-UNNAMED
 --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+# https://chronicle.software/chronicle-support-java-17/
 --add-exports java.base/sun.nio.ch=ALL-UNNAMED
 --add-exports java.management.rmi/com.sun.jmx.remote.internal.rmi=ALL-UNNAMED
 --add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED
@@ -85,11 +86,13 @@
 #--add-exports java.base/java.nio.channels.spi=ALL-UNNAMED
 #--add-exports java.base/java.math=ALL-UNNAMED
 #--add-exports java.base/java.security=ALL-UNNAMED
-#--add-exports java.base/java.lang.ref=ALL-UNNAMED
+#chronicle, AuditLog https://chronicle.software/chronicle-support-java-17/
+--add-exports java.base/java.lang.ref=ALL-UNNAMED
 #--add-exports java.base/sun.nio.fs=ALL-UNNAMED
 #--add-exports java.base/sun.security.util=ALL-UNNAMED
-#--add-exports jdk.unsupported/sun.misc=ALL-UNNAMED
-#--add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
+# https://chronicle.software/chronicle-support-java-17/ - below 2
+--add-exports jdk.unsupported/sun.misc=ALL-UNNAMED
+--add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
 #--add-exports java.base/java.lang.invoke=ALL-UNNAMED
 #--add-exports java.base/sun.security.x509=ALL-UNNAMED
 #--add-exports java.base/java.util.jar=ALL-UNNAMED
@@ -107,18 +110,21 @@
 #from shooky
 #to be addressed in CASSANDRA-17850
 --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+# https://chronicle.software/chronicle-support-java-17/
 --add-opens java.base/java.io=ALL-UNNAMED
 --add-opens java.base/java.nio=ALL-UNNAMED
 #to be addressed during jamm maintenance
 --add-opens java.base/java.util.concurrent=ALL-UNNAMED
 --add-opens java.base/java.util=ALL-UNNAMED
 --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+# https://chronicle.software/chronicle-support-java-17/ explains also --add-opens java.base/java.util=ALL-UNNAMED, firther to jamm
 #many cqlsh tests fail if we do not open the below one - jamm and at org.apache.cassandra.net.Verb.getModifiersField(Verb.java:388)
 # those getModifiersFiles is used only for testing; in-jvm tests
+# plus for # https://chronicle.software/chronicle-support-java-17/
 --add-opens java.base/java.lang=ALL-UNNAMED
 #jamm
 --add-opens java.base/java.math=ALL-UNNAMED
-#in-jvm tests?
+#in-jvm tests? plus # https://chronicle.software/chronicle-support-java-17/
 --add-opens java.base/java.lang.reflect=ALL-UNNAMED
 
 #from tests
