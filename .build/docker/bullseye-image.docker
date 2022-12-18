@@ -1,0 +1,60 @@
+FROM debian:bullseye
+
+ENV DEB_DIST_DIR=/dist
+ENV BUILD_HOME=/home/build
+ENV CASSANDRA_DIR=$BUILD_HOME/cassandra
+ARG UID_ARG=1000
+ARG GID_ARG=1000
+
+LABEL org.cassandra.buildenv=bullseye
+
+VOLUME ${DEB_DIST_DIR}
+VOLUME ${CASSANDRA_DIR}
+
+RUN echo "Building with arguments:" \
+    && echo " - DEB_DIST_DIR=${DEB_DIST_DIR}" \
+    && echo " - BUILD_HOME=${BUILD_HOME}" \
+    && echo " - CASSANDRA_DIR=${CASSANDRA_DIR}" \
+    && echo " - UID_ARG=${UID_ARG}" \
+    && echo " - GID_ARG=${GID_ARG}"
+
+# configure apt to retry downloads
+RUN echo 'APT::Acquire::Retries "99";' > /etc/apt/apt.conf.d/80-retries
+RUN echo 'Acquire::http::Timeout "60";' > /etc/apt/apt.conf.d/80proxy.conf
+RUN echo 'Acquire::ftp::Timeout "60";' >> /etc/apt/apt.conf.d/80proxy.conf
+
+# install deps
+RUN until apt-get update && apt-get -y install ant build-essential curl devscripts git sudo python3-pip rsync procps; \
+    do echo "apt failed… trying again in 10s… " ; sleep 10 ; done
+
+RUN echo 'deb http://deb.debian.org/debian bullseye main' >> /etc/apt/sources.list \
+    && echo 'deb http://deb.debian.org/debian stretch main' >> /etc/apt/sources.list
+
+RUN until apt-get update \
+    && apt-get install -y --no-install-recommends openjdk-11-jdk openjdk-17-jdk ; \
+    do echo "apt failed… trying again in 10s… " ; sleep 10 ; done
+
+RUN sed -i '$d' /etc/apt/sources.list \
+    && apt-get update \
+    && update-java-alternatives --set java-1.11.0-openjdk-$(dpkg --print-architecture)
+
+# python3 is needed for the gen-doc target
+RUN pip install --upgrade pip
+
+# create and change to build user
+RUN groupadd --gid ${GID_ARG} --non-unique build \
+    && adduser --uid ${UID_ARG} --gid ${GID_ARG} --disabled-login --gecos build build \
+    && gpasswd -a build sudo
+
+RUN echo "build ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/build && \
+   chmod 0440 /etc/sudoers.d/build
+
+RUN chown build:build ${BUILD_HOME}
+RUN mkdir -p ${DEB_DIST_DIR}
+
+USER build
+
+WORKDIR ${CASSANDRA_DIR}
+
+COPY build-artifacts.sh $BUILD_HOME/
+COPY build-debs.sh $BUILD_HOME/
