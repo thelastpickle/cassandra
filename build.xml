@@ -37,6 +37,10 @@
     <property name="scm.developerConnection" value="scm:https://gitbox.apache.org/repos/asf/cassandra.git"/>
     <property name="scm.url" value="https://gitbox.apache.org/repos/asf?p=cassandra.git;a=tree"/>
 
+    <!-- JDKs supported -->
+    <property name="java.default" value="11" />
+    <property name="java.supported" value="11,17" />
+
     <!-- directory details -->
     <property name="basedir" value="."/>
     <property name="build.src" value="${basedir}/src"/>
@@ -137,28 +141,26 @@
       <available file="${build.src.java}" type="dir" />
     </condition>
 
-    <!-- Check if all tests are being run or just one. If it's all tests don't spam the console with test output.
-         If it's an individual test print the output from the test under the assumption someone is debugging the test
-         and wants to know what is going on without having to context switch to the log file that is generated.
-         Debug level output still needs to be retrieved from the log file.  -->
     <macrodef name="keepbrief">
         <sequential>
+                <!-- Check if all tests are being run or just one. If it's all tests don't spam the console with test output.
+                     If it's an individual test print the output from the test under the assumption someone is debugging the test
+                     and wants to know what is going on without having to context switch to the log file that is generated.
+                     Debug level output still needs to be retrieved from the log file.  -->
                 <javac srcdir="test/anttasks" destdir="${test.classes}" includeantruntime="true"/>
                 <taskdef name="KeepBriefBrief" classname="org.apache.cassandra.anttasks.KeepBriefBrief" classpath="${test.classes}"/>
                 <KeepBriefBrief property="cassandra.keepBriefBrief"/>
+                <!-- Sets the java.version.X and use-jdkX properties. Removes the need for CASSANDRA_USE_JDK11 or use-jdk11 to be explicitly defined.  -->
+                <taskdef name="JdkProperties" classname="org.apache.cassandra.anttasks.JdkProperties" classpath="${test.classes}"/>
+                <JdkProperties/>
         </sequential>
     </macrodef>
 
-    <condition property="java.version.11">
-        <equals arg1="${ant.java.version}" arg2="11"/>
-    </condition>
-    <condition property="java.version.17">
-        <not><isset property="java.version.11"/></not>
-    </condition>
-    <fail><condition><not><or>
-        <isset property="java.version.11"/>
-        <isset property="java.version.17"/>
-    </or></not></condition></fail>
+    <fail message="Unsupported JDK version used: ${ant.java.version}">
+        <condition><not><contains string="${java.supported}" substring="${ant.java.version}"/></not></condition>
+    </fail>
+    <condition property="is.java.default"><equals arg1="${ant.java.version}" arg2="${java.default}"/></condition>
+    <echo unless:true="${is.java.default}" message="Non default JDK version used: ${ant.java.version}"/>
 
     <condition property="arch_x86">
       <equals arg1="${os.arch}" arg2="x86" />
@@ -301,15 +303,11 @@
         <equals arg1="${ant.java.version}" arg2="17"/>
     </condition>
 
-    <condition property="build.java.17">
-        <istrue value="${use.jdk17}"/>
+    <condition property="source.version" value="8" else="11">
+        <equals arg1="${java.default}" arg2="true"/>
     </condition>
-
-    <condition property="source.version" value="11" else="17">
-        <equals arg1="${java.version.11}" arg2="true"/>
-    </condition>
-    <condition property="target.version" value="11" else="17">
-        <equals arg1="${java.version.11}" arg2="true"/>
+    <condition property="target.version" value="8" else="11">
+        <equals arg1="${java.default}" arg2="true"/>
     </condition>
 
     <!--
@@ -353,62 +351,10 @@
     </sequential>
   </macrodef>
 
-    <target name="print-version">
-        <echo>Java/JVM version: ${ant.java.version}</echo>
-        <echo>Java/JVM detail version: ${java.version}</echo>
-    </target>
-
-    <target name="validate-build-conf">
-        <condition property="use-jdk17">
-            <or>
-                <isset property="build.java.17"/>
-                <istrue value="${env.CASSANDRA_USE_JDK17}"/>
-            </or>
-        </condition>
-        <fail message="Inconsistent JDK17 options set">
-            <condition>
-                    <and>
-                        <istrue value="${env.CASSANDRA_USE_JDK17}"/>
-                        <isset property="use.jdk11"/>
-                        <not>
-                            <istrue value="${use.jdk17}"/>
-                        </not>
-                    </and>
-            </condition>
-                </fail>
-        <fail message="Inconsistent JDK17 options set">
-            <condition>
-                    <and>
-                        <isset property="env.CASSANDRA_USE_JDK17"/>
-                        <not>
-                            <istrue value="${env.CASSANDRA_USE_JDK17}"/>
-                        </not>
-                        <istrue value="${use.jdk17}"/>
-                    </and>
-            </condition>
-        </fail>
-        <fail message="-Duse.jdk17=true or $CASSANDRA_USE_JDK17=true cannot be set when building from java 17">
-            <condition>
-                <not><or>
-                    <not><isset property="java.version.11"/></not>
-                    <not><isset property="use-jdk17"/></not>
-                </or></not>
-            </condition>
-        </fail>
-        <fail message="-Duse.jdk17=true or $CASSANDRA_USE_JDK17=true must be set when building from java 17">
-            <condition>
-                <not><or>
-                    <isset property="java.version.11"/>
-                    <isset property="use-jdk17"/>
-                </or></not>
-            </condition>
-        </fail>
-    </target>
-
     <!--
         Setup the output directories.
     -->
-    <target name="init" depends="validate-build-conf">
+    <target name="init" >
         <fail unless="is.source.artifact"
             message="Not a source artifact, stopping here." />
         <mkdir dir="${build.classes.main}"/>
