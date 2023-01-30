@@ -43,6 +43,7 @@ pipeline {
             sleep(60 * attempt)
           }
           attempt = attempt + 1
+          printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
           build job: "${env.JOB_NAME}-artifacts"
         }
        }
@@ -59,6 +60,7 @@ pipeline {
                   sleep(60 * attempt)
                 }
                 attempt = attempt + 1
+                printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                 stress = build job: "${env.JOB_NAME}-stress-test", propagate: false
                 if (stress.result != 'FAILURE') break
               }
@@ -85,6 +87,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   fqltool = build job: "${env.JOB_NAME}-fqltool-test", propagate: false
                   if (fqltool.result != 'FAILURE') break
                 }
@@ -111,6 +114,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   test = build job: "${env.JOB_NAME}-test", propagate: false
                   if (test.result != 'FAILURE') break
               }
@@ -137,6 +141,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   long_test = build job: "${env.JOB_NAME}-long-test", propagate: false
                   if (long_test.result != 'FAILURE') break
               }
@@ -163,6 +168,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   burn = build job: "${env.JOB_NAME}-test-burn", propagate: false
                   if (burn.result != 'FAILURE') break
               }
@@ -189,6 +195,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   cdc = build job: "${env.JOB_NAME}-test-cdc", propagate: false
                   if (cdc.result != 'FAILURE') break
               }
@@ -215,6 +222,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   compression = build job: "${env.JOB_NAME}-test-compression", propagate: false
                   if (compression.result != 'FAILURE') break
               }
@@ -241,6 +249,7 @@ pipeline {
                     sleep(60 * attempt)
                   }
                   attempt = attempt + 1
+                  printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                   cqlsh = build job: "${env.JOB_NAME}-cqlsh-tests", propagate: false
                   if (cqlsh.result != 'FAILURE') break
                 }
@@ -271,6 +280,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     jvm_dtest = build job: "${env.JOB_NAME}-jvm-dtest", propagate: false
                     if (jvm_dtest.result != 'FAILURE') break
                   }
@@ -297,6 +307,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     jvm_dtest_upgrade = build job: "${env.JOB_NAME}-jvm-dtest-upgrade", propagate: false
                     if (jvm_dtest_upgrade.result != 'FAILURE') break
                 }
@@ -323,6 +334,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     dtest = build job: "${env.JOB_NAME}-dtest", propagate: false
                     if (dtest.result != 'FAILURE') break
                 }
@@ -349,6 +361,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     dtest_large = build job: "${env.JOB_NAME}-dtest-large", propagate: false
                     if (dtest_large.result != 'FAILURE') break
                 }
@@ -375,6 +388,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     dtest_novnode = build job: "${env.JOB_NAME}-dtest-novnode", propagate: false
                     if (dtest_novnode.result != 'FAILURE') break
                 }
@@ -401,6 +415,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     dtest_offheap = build job: "${env.JOB_NAME}-dtest-offheap", propagate: false
                     if (dtest_offheap.result != 'FAILURE') break
                 }
@@ -427,6 +442,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     dtest_large_novnode = build job: "${env.JOB_NAME}-dtest-large-novnode", propagate: false
                     if (dtest_large_novnode.result != 'FAILURE') break
                 }
@@ -453,6 +469,7 @@ pipeline {
                       sleep(60 * attempt)
                     }
                     attempt = attempt + 1
+                    printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
                     dtest_upgrade = build job: "${env.JOB_NAME}-dtest-upgrade", propagate: false
                     if (dtest_upgrade.result != 'FAILURE') break
                 }
@@ -536,4 +553,46 @@ def formatChanges(changeLogSets) {
         }
     }
     return result
+}
+
+/**
+ * This is intended to be manually inspected during situations where tests
+ * are flaky or otherwise failing due to what we expect to be environment
+ * issues. As such we're optimizing format for human consumption.
+ */
+def printTestEnv(build_label) {
+  echo "-----------------------------------------------------"
+  echo "Printing test environment details for: ${build_label}"
+  echo "-----------------------------------------------------"
+  echo "Host name: ${runShell("hostname")}"
+  echo "IP: ${runShell("hostname -I")}"
+
+  echo "--------------Agent / Node paramenters --------------"
+  echo "CPU environment detail: ${runShell("lscpu")}"
+  echo "Total memory on machine: ${runShell("grep MemTotal /proc/meminfo")}"
+  echo "Storage details: ${runShell("lshw -class storage")}"
+  echo "Zombie process check: ${runShell("ps axo pid=,stat= | awk '\$2~/^Z/ { print }")}"
+  echo "Docker cache: ${runShell("docker image ls -a")}"
+  echo "Disk usage / free: ${runShell("df -h")}"
+  echo "Inode usage: ${runShell("df -i")}"
+  echo "All running and stopped containers: ${runShell("docker container ls -a")}"
+  echo "---------- Container parameters ---------------------"
+  echo "Kernel version: ${runShell("uname -a")}"
+  echo "Release version: ${runShell("lsb_release -icr")}"
+  echo "Memory usage in container: ${runShell("cat /sys/fs/cgroup/memory/memory.limit_in_bytes")}"
+  echo "CPU usage in container: ${runShell("cat /sys/fs/cgroup/cpu/cpuacct.usage")}"
+  echo "CPU count available to container: ${runShell("nproc")}"
+
+}
+
+/**
+ * Simple convenience wrapper to make running and capturing return from a shell script cleaner and "inlineable"
+ * @param command shell script to run
+ * @return stringified return from the run command's stdout
+ */
+def runShell(command) {
+  return sh (
+          script: "${command}",
+          returnStdout: true).trim()
+
 }
