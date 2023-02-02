@@ -47,13 +47,14 @@ fi
 JAVA_VERSION=$1
 
 [ "x${JAVA_VERSION}" != "x" ] || JAVA_VERSION="${java_version_default}"
-regx_java_version="(${java_version_supported/,/|})"
+regx_java_version="(${java_version_supported//,/|})"
 if [[ ! "$JAVA_VERSION" =~ $regx_java_version ]]; then
    echo "Error: Java version is not in ${java_version_supported}, it is set to $JAVA_VERSION"
    exit 1
 fi
 
 sudo update-java-alternatives --set java-1.${JAVA_VERSION}.0-openjdk-$(dpkg --print-architecture)
+export JAVA_HOME=$(readlink -f /usr/bin/javac | sed "s:/bin/javac::")
 echo "Cassandra will be built with Java ${JAVA_VERSION}"
 
 # print debug information on versions

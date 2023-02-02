@@ -48,7 +48,6 @@ pipeline {
     timestamps()
   }
   environment {
-    
     JOB_NAME = 'Cassandra-devbranch' // FIXME – remove this
 
     javaVersionDefault = javaVersionDefault()
@@ -89,42 +88,42 @@ pipeline {
       parallel {
         stage('stress') {
           steps {
-            testJob("stress-test")
+            testJob("stress-test", 8)
           }
         }
         stage('fqltool') {
           steps {
-            testJob("fqltool-test")
+            testJob("fqltool-test", 1)
           }
         }
         stage('units') {
           steps {
-            testJob("test")
+            testJob("test", 8)
           }
         }
         stage('long units') {
           steps {
-            testJob("long-test")
+            testJob("long-test", 8)
           }
         }
         stage('burn') {
           steps {
-            testJob("test-burn")
+            testJob("test-burn", 8)
           }
         }
         stage('cdc') {
           steps {
-            testJob("test-cdc")
+            testJob("test-cdc", 8)
           }
         }
         stage('compression') {
           steps {
-            testJob("test-compression")
+            testJob("test-compression", 8)
           }
         }
         stage('cqlsh') {
           steps {
-            testJob("cqlsh-tests")
+            testJob("cqlsh-tests", 1)
           }
         }
       }
@@ -133,42 +132,42 @@ pipeline {
       parallel {
         stage('jvm-dtest') {
           steps {
-            testJob("jvm-dtest")
+            testJob("jvm-dtest", 8)
           }
         }
         stage('jvm-dtest-upgrade') {
           steps {
-            testJob("jvm-dtest-upgrade")
+            testJob("jvm-dtest-upgrade", 8)
           }
         }       
         stage('dtest') {
           steps {
-            testJob("dtest")
+            testJob("dtest", 64)
           }
         }
         stage('dtest-large') {
           steps {
-            testJob("dtest-large")
+            testJob("dtest-large", 8)
           }
         }
         stage('dtest-novnode') {
           steps {
-            testJob("dtest-novnode")
+            testJob("dtest-novnode", 64)
           }
         }
         stage('dtest-offheap') {
           steps {
-            testJob("dtest-offheap")
+            testJob("dtest-offheap", 64)
           }
         }
         stage('dtest-large-novnode') {
           steps {
-            testJob("dtest-large-novnode")
+            testJob("dtest-large-novnode", 64)
           }
         }
         stage('dtest-upgrade') {
           steps {
-            testJob("dtest-upgrade")
+            testJob("dtest-upgrade", 64)
           }
         }
       }
@@ -189,18 +188,36 @@ pipeline {
 //// scripting support ////
 ////
 
+
+/**
+ * Return the default JDK defined by build.xml
+ **/
 def javaVersionDefault() {
   runShell('grep \'property\\s*name=\"java.default\"\' build.xml | sed -ne \'s/.*value=\"\\([^\"]*\\)\".*/\\1/p\'')
 }
 
+/**
+ * Return the supported JDKs defined by build.xml
+ **/
 def javaVersionsSupported() {
   runShell('grep \'property\\s*name=\"java.supported\"\' build.xml | sed -ne \'s/.*value=\"\\([^\"]*\\)\".*/\\1/p\'')
 }
 
+/**
+ * Is this a post-commit build (or a pre-commit build)
+ **/
 def isPostCommit() {
   return "${GIT_URL}".contains("apache/cassandra")
 }
 
+/**
+ * Executes `${build_script} ${jdk}` for each arch, and jdk.
+ *
+ * Stashes the jarfiles for `package-artifacts.sh`
+ * Copies build artifacts and logfiles to nightlies
+ * Cleans the agent (docker prune) afterwards
+ * Stops the pipeline on any failure
+ **/
 def buildJob(build_script, toCopy) {
   def archs = ['cassandra', 'cassandra-arm64']
   def jdks = ['11']// FIXME – use next line instead, when builds work with jdk17
@@ -212,7 +229,7 @@ def buildJob(build_script, toCopy) {
       def builds_per_jdk = [:]
       for (j in jdks) {
         def jdk = j
-        builds_per_jdk[jdk] = { buildAxis(build_script, toCopy, arch, jdk) }
+        builds_per_jdk[jdk] = { _buildAxis(build_script, toCopy, arch, jdk) }
       }
       parallel(builds_per_jdk)
     }
@@ -220,7 +237,10 @@ def buildJob(build_script, toCopy) {
   parallel(builds_per_arch)
 }
 
-def buildAxis(build_script, toCopy, arch, jdk) {
+/**
+ * Executes `${build_script} ${jdk}` for stated arch, and jdk.
+ **/
+def _buildAxis(build_script, toCopy, arch, jdk) {
   node(arch) {
     cleanWs()
     checkout scm
@@ -241,7 +261,7 @@ def buildAxis(build_script, toCopy, arch, jdk) {
         attempt = attempt + 1
         sh "xz -f *_attempt_*.log"
         if (0 != statusCode) { toCopy = "" }
-        copyToNightlies("*_attempt_*.log.xz,${toCopy}", "${build_script_safe_name}/jdk${jdk}/${arch}")
+        copyToNightlies("*_attempt_*.log.xz,${toCopy}", "${build_script_safe_name}/${arch}/jdk${jdk}")
         cleanAgent(build_script)
         if (0 != statusCode) { 
           currentBuild.result = 'FAILURE'
@@ -252,23 +272,101 @@ def buildAxis(build_script, toCopy, arch, jdk) {
   }
 }
 
-def testJob(build_name) {
-  def attempt = 1
-  retry(2) {
-    if (attempt > 1) { sleep(60 * attempt) }
-    try {
-      printTestEnv("${JOB_NAME}-${build_name}-${BUILD_NUMBER}")
-      // TODO – rewrite to dynamic matrix build (like buildJob(..))
-      build_result = build job: "${JOB_NAME}-${build_name}", propagate: false
-    } finally {
-      attempt = attempt + 1
-      copyTestResults("${JOB_NAME}-${build_name}", build_result.getNumber())
+/**
+ * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for each arch, jdk, python, cython, and split.
+ * 
+ * Saves JUnit results, fails if no reports are found
+ * Copies (single-file unified) junit results and logfiles to nightlies
+ * Cleans the agent (docker prune) afterwards
+ * Stops the pipeline on any failure
+ **/
+def testJob(test_type, splits=1, toCopy='') {
+  def archs = ['cassandra', 'cassandra-arm64']
+  def jdks = ['11']// FIXME – use next line instead, when builds work with jdk17
+  // FIXME //def jdks = "${javaVersionsSupported}".split(/,/, -1)
+  def pythons = ['python3.7']
+  def cythons = ['no']
+  def tests_per_arch = [:]
+
+  // XXX – the following matrix over arrays can be better done with multi-arrays and recursion
+
+  for (a in archs) {
+    def arch = a
+    tests_per_arch[arch] = {
+      def tests_per_jdk = [:]
+      for (j in jdks) {
+        def jdk = j
+        tests_per_jdk[jdk] = {
+          def tests_per_python = [:]
+          for (p in pythons) {  
+            def python = p
+            tests_per_python[python] = {
+              def tests_per_cython = [:]
+              for (c in cythons) {  
+                def cython = c
+                tests_per_cython[cython] = {
+                  def tests_per_split = [:]
+                  for (s in 1..splits) {
+                    def split = s
+                    tests_per_split[split] = {
+                      _testAxis(test_type, toCopy, arch, jdk, python, cython, "${split}/${splits}")
+                    }
+                  }
+                }
+              }
+              parallel(tests_per_cython)
+            }
+          }
+          parallel(tests_per_python)
+        }
+      }
+      parallel(tests_per_jdk)
     }
   }
-  if (build_result.result != 'SUCCESS') unstable("${build_name} failures")
-  if (build_result.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
-  if (build_result.result == 'FAILURE') currentBuild.result='FAILURE'
-  return build_result
+  parallel(tests_per_arch)
+}
+
+/**
+ * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
+ **/
+def _testAxis(test_type, toCopy, arch, jdk, python, cython, split) {
+  def testDockerImage = 'apache/cassandra-testing-ubuntu2004-java11-w-dependencies'
+  node(arch) {
+    cleanWs()
+    checkout scm
+    tool type: 'jdk', name: "jdk_${jdk}_latest"
+    // FIXME python
+    // FIXME cython
+    def statusCode = 0, attempt = 1
+    retry(2) {
+      if (attempt > 1) { sleep(60 * attempt) }
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
+      try {
+        printTestEnv("${JOB_NAME}-${test_type}-${BUILD_NUMBER}")
+        unstash name: "${arch}_${jdk}", includes: "build/**/*.jar", excludes: "build/dist/**"
+        echo "Executing `.build/test-docker.sh ${testDockerImage} ${test_type} ${split} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk ${jdk} python ${python} cython ${cython}"
+        statusCode = sh returnStatus:true, script:".build/test-docker.sh ${testDockerImage} ${test_type} ${split} 2>&1 | tee ${logfile}"
+      } finally {
+        attempt = attempt + 1
+        if (0 == statusCode) { 
+            junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+            generateUnifiedTestReport()
+        } else {
+          toCopy = ""
+        }
+        sh "xz -f *_attempt_*.log"
+        copyToNightlies("*_attempt_*.log.xz,console.log.xz,TESTS-TestSuites.xml.xz,build/test/logs/**,${toCopy}", "${test_type}/${arch}/jdk${jdk}/${python}/${cython}")
+        cleanAgent(build_script)
+        if (0 != statusCode) { 
+          currentBuild.result = 'FAILURE'
+          error("'${build_script} ${jdk} ${python} ${cython}' on ${NODE_NAME} failed!") 
+        }
+      }
+    }
+    //if (build_result.result != 'SUCCESS') unstable("${build_name} failures")
+    //if (build_result.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
+    //if (build_result.result == 'FAILURE') currentBuild.result='FAILURE'
+  }
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
@@ -346,17 +444,6 @@ def runShell(command) {
 def generateUnifiedTestReport() {
   sh "ant -f .jenkins/cassandra-test-report.xml"
   sh "xz -f TESTS-TestSuites.xml"
-
-  // also print SHAs // TODO – remove when all tests are dynamic/in-tree
-  sh """
-    if [ \$(find . -type f -name "*.head" -exec cat {} \\; | grep ") cassandra" | awk -F') cassandra' '{print \$2}' | sort -u | sed -n '\$=') = "3" ]; then
-      echo "The folllowing SHAs were consistently used in all jobs in the pipeline…"
-      find . -type f -name "*.head" -exec cat {} \\; | grep ") cassandra" | awk -F') cassandra' '{print "cassandra"\$2}' | sort -u
-    else
-      echo "\$(find . -type f -name "*.head" -exec cat {} \\; | grep ") cassandra" | awk -F') cassandra' '{print \$2}' | sort -u | sed -n '\$=') different SHAs were used in different jobs in the pipeline. Printing everything…"
-      find . -type f -name "*.head" -exec cat {} \\;
-    fi
-    """
 }
 
 def collectConsoleLog() {

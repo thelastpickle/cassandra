@@ -46,7 +46,7 @@ command -v docker >/dev/null 2>&1 || { echo >&2 "docker needs to be installed"; 
 [ -f "${cassandra_dir}/.build/docker/build-debs.sh" ] || { echo >&2 "${cassandra_dir}/.build/docker/build-debs.sh must exist"; exit 1; }
 
 [ "x${java_version}" != "x" ] || java_version="${java_version_default}"
-regx_java_version="(${java_version_supported/,/|})"
+regx_java_version="(${java_version_supported//,/|})"
 if [[ ! "${java_version}" =~ $regx_java_version ]]; then
    echo "Error: Java version is not in ${java_version_supported}, it is set to ${java_version}"
    exit 1
