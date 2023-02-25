@@ -1,4 +1,4 @@
-4.2
+5.0
  * More accurate skipping of sstables in read path (CASSANDRA-18134)
  * Prepare for JDK17 experimental support (CASSANDRA-18179)
  * Remove Scripted UDFs internals; hooks to be added later in CASSANDRA-17281 (CASSANDRA-18252)
