@@ -66,7 +66,6 @@ public class MetadataSerializer implements IMetadataSerializer
 
     public void serialize(Map<MetadataType, MetadataComponent> components, DataOutputPlus out, Version version) throws IOException
     {
-        boolean checksum = version.hasMetadataChecksum();
         CRC32 crc = new CRC32();
         // sort components by type
         List<MetadataComponent> sortedComponents = Lists.newArrayList(components.values());
@@ -78,7 +77,7 @@ public class MetadataSerializer implements IMetadataSerializer
         maybeWriteChecksum(crc, out, version);
 
         // build and write toc
-        int lastPosition = 4 + (8 * sortedComponents.size()) + (checksum ? 2 * CHECKSUM_LENGTH : 0);
+        int lastPosition = 4 + (8 * sortedComponents.size()) + (2 * CHECKSUM_LENGTH);
         Map<MetadataType, Integer> sizes = new EnumMap<>(MetadataType.class);
         for (MetadataComponent component : sortedComponents)
         {
@@ -90,7 +89,7 @@ public class MetadataSerializer implements IMetadataSerializer
             out.writeInt(lastPosition);
             updateChecksumInt(crc, lastPosition);
             int size = type.serializer.serializedSize(version, component);
-            lastPosition += size + (checksum ? CHECKSUM_LENGTH : 0);
+            lastPosition += size + CHECKSUM_LENGTH;
             sizes.put(type, size);
         }
         maybeWriteChecksum(crc, out, version);
@@ -113,8 +112,7 @@ public class MetadataSerializer implements IMetadataSerializer
 
     private static void maybeWriteChecksum(CRC32 crc, DataOutputPlus out, Version version) throws IOException
     {
-        if (version.hasMetadataChecksum())
-            out.writeInt((int) crc.getValue());
+        out.writeInt((int) crc.getValue());
     }
 
     public Map<MetadataType, MetadataComponent> deserialize(Descriptor descriptor, EnumSet<MetadataType> types) throws IOException
@@ -148,7 +146,6 @@ public class MetadataSerializer implements IMetadataSerializer
                                                             EnumSet<MetadataType> selectedTypes)
     throws IOException
     {
-        boolean isChecksummed = descriptor.version.hasMetadataChecksum();
         CRC32 crc = new CRC32();
 
         /*
@@ -197,7 +194,7 @@ public class MetadataSerializer implements IMetadataSerializer
                 continue;
             }
 
-            byte[] buffer = new byte[isChecksummed ? lengths[i] - CHECKSUM_LENGTH : lengths[i]];
+            byte[] buffer = new byte[lengths[i] - CHECKSUM_LENGTH];
             in.readFully(buffer);
 
             crc.reset(); crc.update(buffer);
@@ -213,9 +210,6 @@ public class MetadataSerializer implements IMetadataSerializer
 
     private static void maybeValidateChecksum(CRC32 crc, FileDataInput in, Descriptor descriptor) throws IOException
     {
-        if (!descriptor.version.hasMetadataChecksum())
-            return;
-
         int actualChecksum = (int) crc.getValue();
         int expectedChecksum = in.readInt();
 

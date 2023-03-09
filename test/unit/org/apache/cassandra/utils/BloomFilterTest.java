@@ -52,21 +52,14 @@ public class BloomFilterTest
 
 
 
-    public static IFilter testSerialize(IFilter f, boolean oldBfFormat) throws IOException
+    public static IFilter testSerialize(IFilter f) throws IOException
     {
         f.add(FilterTestHelper.bytes("a"));
         DataOutputBuffer out = new DataOutputBuffer();
-        if (oldBfFormat)
-        {
-            SerializationsTest.serializeOldBfFormat((BloomFilter) f, out);
-        }
-        else
-        {
-            BloomFilterSerializer.forVersion(false).serialize((BloomFilter) f, out);
-        }
+        BloomFilterSerializer.instance.serialize((BloomFilter) f, out);
 
         ByteArrayInputStream in = new ByteArrayInputStream(out.getData(), 0, out.getLength());
-        IFilter f2 = BloomFilterSerializer.forVersion(oldBfFormat).deserialize(Util.DataInputStreamPlusImpl.wrap(in));
+        IFilter f2 = BloomFilterSerializer.instance.deserialize(Util.DataInputStreamPlusImpl.wrap(in));
 
         assert f2.isPresent(FilterTestHelper.bytes("a"));
         assert !f2.isPresent(FilterTestHelper.bytes("b"));
@@ -143,8 +136,7 @@ public class BloomFilterTest
     @Test
     public void testSerialize() throws IOException
     {
-        BloomFilterTest.testSerialize(bfInvHashes, true).close();
-        BloomFilterTest.testSerialize(bfInvHashes, false).close();
+        BloomFilterTest.testSerialize(bfInvHashes).close();
     }
 
     @Test
@@ -218,13 +210,12 @@ public class BloomFilterTest
         BloomFilter filter = (BloomFilter) FilterFactory.getFilter(((long) Integer.MAX_VALUE / 8) + 1, 0.01d);
         filter.add(FilterTestHelper.wrap(test));
         FileOutputStreamPlus out = file.newOutputStream(File.WriteMode.OVERWRITE);
-        BloomFilterSerializer serializer = BloomFilterSerializer.forVersion(false);
-        serializer.serialize(filter, out);
+        BloomFilterSerializer.instance.serialize(filter, out);
         out.close();
         filter.close();
 
         FileInputStreamPlus in = file.newInputStream();
-        BloomFilter filter2 = BloomFilterSerializer.forVersion(false).deserialize(in);
+        BloomFilter filter2 = BloomFilterSerializer.instance.deserialize(in);
         Assert.assertTrue(filter2.isPresent(FilterTestHelper.wrap(test)));
         FileUtils.closeQuietly(in);
         filter2.close();

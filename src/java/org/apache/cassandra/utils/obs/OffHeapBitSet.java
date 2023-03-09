@@ -142,29 +142,11 @@ public class OffHeapBitSet implements IBitSet
     }
 
     @SuppressWarnings("resource")
-    public static <I extends InputStream & DataInput> OffHeapBitSet deserialize(I in, boolean oldBfFormat) throws IOException
+    public static <I extends InputStream & DataInput> OffHeapBitSet deserialize(I in) throws IOException
     {
         long byteCount = in.readInt() * 8L;
         Memory memory = Memory.allocate(byteCount);
-        if (oldBfFormat)
-        {
-            for (long i = 0; i < byteCount; )
-            {
-                long v = in.readLong();
-                memory.setByte(i++, (byte) (v >>> 0));
-                memory.setByte(i++, (byte) (v >>> 8));
-                memory.setByte(i++, (byte) (v >>> 16));
-                memory.setByte(i++, (byte) (v >>> 24));
-                memory.setByte(i++, (byte) (v >>> 32));
-                memory.setByte(i++, (byte) (v >>> 40));
-                memory.setByte(i++, (byte) (v >>> 48));
-                memory.setByte(i++, (byte) (v >>> 56));
-            }
-        }
-        else
-        {
-            FBUtilities.copy(in, new MemoryOutputStream(memory), byteCount);
-        }
+        FBUtilities.copy(in, new MemoryOutputStream(memory), byteCount);
         return new OffHeapBitSet(memory);
     }
 

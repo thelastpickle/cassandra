@@ -124,14 +124,6 @@ public class PendingAntiCompaction
             if (metadata.repairedAt != UNREPAIRED_SSTABLE)
                 return false;
 
-            if (!sstable.descriptor.version.hasPendingRepair())
-            {
-                String message = String.format("Prepare phase failed because it encountered legacy sstables that don't " +
-                                               "support pending repair, run upgradesstables before starting incremental " +
-                                               "repairs, repair session (%s)", prsid);
-                throw new SSTableAcquisitionException(message);
-            }
-
             // exclude sstables pending repair, but record session ids for
             // non-finalized sessions for a later error message
             if (metadata.pendingRepair != NO_PENDING_REPAIR)

@@ -125,7 +125,7 @@ public class CompressedRandomAccessReaderTest
             writer.finish();
         }
 
-        try (CompressionMetadata compressionMetadata = CompressionMetadata.open(new File(filename + ".metadata"), f.length(), true);
+        try (CompressionMetadata compressionMetadata = CompressionMetadata.open(new File(filename + ".metadata"), f.length());
              FileHandle fh = new FileHandle.Builder(f).withCompressionMetadata(compressionMetadata).complete();
              RandomAccessReader reader = fh.createReader())
         {
@@ -156,7 +156,7 @@ public class CompressedRandomAccessReaderTest
         try
         {
             writeSSTable(file, CompressionParams.snappy(chunkLength), 10);
-            CompressionMetadata metadata = CompressionMetadata.open(new File(filename + ".metadata"), file.length(), true);
+            CompressionMetadata metadata = CompressionMetadata.open(new File(filename + ".metadata"), file.length());
 
             long chunks = 2761628520L;
             long midPosition = (chunks / 2L) * chunkLength;
@@ -182,7 +182,7 @@ public class CompressedRandomAccessReaderTest
         final String filename = f.absolutePath();
         writeSSTable(f, compressed ? CompressionParams.snappy() : null, junkSize);
 
-        try (CompressionMetadata compressionMetadata = compressed ? CompressionMetadata.open(new File(filename + ".metadata"), f.length(), true) : null;
+        try (CompressionMetadata compressionMetadata = compressed ? CompressionMetadata.open(new File(filename + ".metadata"), f.length()) : null;
              FileHandle fh = new FileHandle.Builder(f).mmapped(usemmap).withCompressionMetadata(compressionMetadata).complete();
              RandomAccessReader reader = fh.createReader())
         {
@@ -256,7 +256,7 @@ public class CompressedRandomAccessReaderTest
         }
 
         // open compression metadata and get chunk information
-        try (CompressionMetadata meta = CompressionMetadata.open(metadata, file.length(), true);
+        try (CompressionMetadata meta = CompressionMetadata.open(metadata, file.length());
              FileHandle fh = new FileHandle.Builder(file).withCompressionMetadata(meta).complete();
              RandomAccessReader reader = fh.createReader())
         {// read and verify compressed data

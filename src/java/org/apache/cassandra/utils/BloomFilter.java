@@ -56,15 +56,15 @@ public class BloomFilter extends WrappedSharedCloseable implements IFilter
         this.bitset = copy.bitset;
     }
 
-    public long serializedSize(boolean old)
+    public long serializedSize()
     {
-        return BloomFilterSerializer.forVersion(old).serializedSize(this);
+        return BloomFilterSerializer.instance.serializedSize(this);
     }
 
     @Override
-    public void serialize(DataOutputStreamPlus out, boolean old) throws IOException
+    public void serialize(DataOutputStreamPlus out) throws IOException
     {
-        BloomFilterSerializer.forVersion(old).serialize(this, out);
+        BloomFilterSerializer.instance.serialize(this, out);
     }
 
     // Murmur is faster than an SHA-based approach and provides as-good collision

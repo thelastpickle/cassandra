@@ -115,7 +115,7 @@ public abstract class SSTableReaderWithFilter extends SSTableReader
 
     public long getFilterSerializedSize()
     {
-        return filter.serializedSize(descriptor.version.hasOldBfFormat());
+        return filter.serializedSize();
     }
 
     public long getFilterOffHeapSize()

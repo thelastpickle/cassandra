@@ -44,7 +44,7 @@ public class OffHeapBitSetTest
             Assert.assertEquals(bs.get(i), newbs.get(i));
     }
 
-    private void testOffHeapSerialization(boolean oldBfFormat) throws IOException
+    private void testOffHeapSerialization() throws IOException
     {
         try (OffHeapBitSet bs = new OffHeapBitSet(100000))
         {
@@ -53,13 +53,10 @@ public class OffHeapBitSetTest
                     bs.set(i);
 
             DataOutputBuffer out = new DataOutputBuffer();
-            if (oldBfFormat)
-                bs.serializeOldBfFormat(out);
-            else
-                bs.serialize(out);
+            bs.serialize(out);
 
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(out.getData()));
-            try (OffHeapBitSet newbs = OffHeapBitSet.deserialize(in, oldBfFormat))
+            try (OffHeapBitSet newbs = OffHeapBitSet.deserialize(in))
             {
                 compare(bs, newbs);
             }
@@ -69,8 +66,7 @@ public class OffHeapBitSetTest
     @Test
     public void testSerialization() throws IOException
     {
-        testOffHeapSerialization(true);
-        testOffHeapSerialization(false);
+        testOffHeapSerialization();
     }
 
     @Test

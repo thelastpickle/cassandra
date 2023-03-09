@@ -28,28 +28,15 @@ import org.apache.cassandra.utils.obs.OffHeapBitSet;
 
 public final class BloomFilterSerializer implements IGenericSerializer<BloomFilter, DataInputStreamPlus, DataOutputStreamPlus>
 {
-    public final static BloomFilterSerializer newFormatInstance = new BloomFilterSerializer(false);
-    public final static BloomFilterSerializer oldFormatInstance = new BloomFilterSerializer(true);
+    public final static BloomFilterSerializer instance = new BloomFilterSerializer();
 
-    private final boolean oldFormat;
-
-    private <T> BloomFilterSerializer(boolean oldFormat)
+    private <T> BloomFilterSerializer()
     {
-        this.oldFormat = oldFormat;
-    }
-
-    public static BloomFilterSerializer forVersion(boolean oldSerializationFormat)
-    {
-        if (oldSerializationFormat)
-            return oldFormatInstance;
-
-        return newFormatInstance;
     }
 
     @Override
     public void serialize(BloomFilter bf, DataOutputStreamPlus out) throws IOException
     {
-        assert !oldFormat : "Filter should not be serialized in old format";
         out.writeInt(bf.hashCount);
         bf.bitset.serialize(out);
     }
@@ -74,7 +61,7 @@ public final class BloomFilterSerializer implements IGenericSerializer<BloomFilt
     public BloomFilter deserialize(DataInputStreamPlus in) throws IOException
     {
         int hashes = in.readInt();
-        IBitSet bs = OffHeapBitSet.deserialize(in, oldFormat);
+        IBitSet bs = OffHeapBitSet.deserialize(in);
 
         return new BloomFilter(hashes, bs);
     }

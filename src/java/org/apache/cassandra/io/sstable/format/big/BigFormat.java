@@ -364,14 +364,7 @@ public class BigFormat extends AbstractSSTableFormat<BigTableReader, BigTableWri
     static class BigVersion extends Version
     {
         public static final String current_version = "nc";
-        public static final String earliest_supported_version = "ma";
-
-        // ma (3.0.0): swap bf hash order
-        //             store rows natively
-        // mb (3.0.7, 3.7): commit log lower bound included
-        // mc (3.0.8, 3.9): commit log intervals included
-        // md (3.0.18, 3.11.4): corrected sstable min/max clustering
-        // me (3.0.25, 3.11.11): added hostId of the node from which the sstable originated
+        public static final String earliest_supported_version = "na";
 
         // na (4.0-rc1): uncompressed chunks, pending repair session, isTransient, checksummed sstable metadata file, new Bloomfilter format
         // nb (4.0.0): originating host id
@@ -381,45 +374,29 @@ public class BigFormat extends AbstractSSTableFormat<BigTableReader, BigTableWri
 
         private final boolean isLatestVersion;
         private final int correspondingMessagingVersion;
-        private final boolean hasCommitLogLowerBound;
-        private final boolean hasCommitLogIntervals;
         private final boolean hasAccurateMinMax;
         private final boolean hasLegacyMinMax;
         private final boolean hasOriginatingHostId;
-        private final boolean hasMaxCompressedLength;
-        private final boolean hasPendingRepair;
-        private final boolean hasMetadataChecksum;
-        private final boolean hasIsTransient;
         private final boolean hasImprovedMinMax;
         private final boolean hasPartitionLevelDeletionPresenceMarker;
         private final boolean hasKeyRange;
-
-        /**
-         * CASSANDRA-9067: 4.0 bloom filter representation changed (two longs just swapped)
-         * have no 'static' bits caused by using the same upper bits for both bloom filter and token distribution.
-         */
-        private final boolean hasOldBfFormat;
 
         BigVersion(BigFormat format, String version)
         {
             super(format, version);
 
             isLatestVersion = version.compareTo(current_version) == 0;
-            correspondingMessagingVersion = MessagingService.VERSION_30;
-
-            hasCommitLogLowerBound = version.compareTo("mb") >= 0;
-            hasCommitLogIntervals = version.compareTo("mc") >= 0;
-            hasAccurateMinMax = version.matches("(m[d-z])|(n[a-z])"); // deprecated in 'nc' and to be removed in 'oa'
-            hasLegacyMinMax = version.matches("(m[a-z])|(n[a-z])"); // deprecated in 'nc' and to be removed in 'oa'
-            hasOriginatingHostId = version.matches("(m[e-z])") || version.compareTo("nb") >= 0;
-            hasMaxCompressedLength = version.compareTo("na") >= 0;
-            hasPendingRepair = version.compareTo("na") >= 0;
-            hasIsTransient = version.compareTo("na") >= 0;
-            hasMetadataChecksum = version.compareTo("na") >= 0;
-            hasOldBfFormat = version.compareTo("na") < 0;
+            hasAccurateMinMax = version.matches("(n[a-z])"); // deprecated in 'nc' and to be removed in 'oa'
+            hasLegacyMinMax = version.matches("(n[a-z])"); // deprecated in 'nc' and to be removed in 'oa'
+            hasOriginatingHostId = version.compareTo("nb") >= 0;
             hasImprovedMinMax = version.compareTo("nc") >= 0;
             hasPartitionLevelDeletionPresenceMarker = version.compareTo("nc") >= 0;
             hasKeyRange = version.compareTo("nc") >= 0;
+
+            if (version.matches("(n[a-z])"))
+                correspondingMessagingVersion = MessagingService.VERSION_40;
+            else
+                throw new UnsupportedOperationException(String.format("unknown mapping between %s and MessagingService version", version));
         }
 
         @Override
@@ -432,48 +409,6 @@ public class BigFormat extends AbstractSSTableFormat<BigTableReader, BigTableWri
         public int correspondingMessagingVersion()
         {
             return correspondingMessagingVersion;
-        }
-
-        @Override
-        public boolean hasCommitLogLowerBound()
-        {
-            return hasCommitLogLowerBound;
-        }
-
-        @Override
-        public boolean hasCommitLogIntervals()
-        {
-            return hasCommitLogIntervals;
-        }
-
-        @Override
-        public boolean hasMaxCompressedLength()
-        {
-            return hasMaxCompressedLength;
-        }
-
-        @Override
-        public boolean hasPendingRepair()
-        {
-            return hasPendingRepair;
-        }
-
-        @Override
-        public boolean hasIsTransient()
-        {
-            return hasIsTransient;
-        }
-
-        @Override
-        public boolean hasMetadataChecksum()
-        {
-            return hasMetadataChecksum;
-        }
-
-        @Override
-        public boolean hasOldBfFormat()
-        {
-            return hasOldBfFormat;
         }
 
         @Override

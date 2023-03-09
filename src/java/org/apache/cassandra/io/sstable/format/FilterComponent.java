@@ -62,7 +62,7 @@ public class FilterComponent
 
         try (FileInputStreamPlus stream = descriptor.fileFor(Components.FILTER).newInputStream())
         {
-            return BloomFilterSerializer.forVersion(descriptor.version.hasOldBfFormat()).deserialize(stream);
+            return BloomFilterSerializer.instance.deserialize(stream);
         }
         catch (IOException ex)
         {
@@ -75,7 +75,7 @@ public class FilterComponent
         File filterFile = descriptor.fileFor(Components.FILTER);
         try (FileOutputStreamPlus stream = filterFile.newOutputStream(File.WriteMode.OVERWRITE))
         {
-            filter.serialize(stream, descriptor.version.hasOldBfFormat());
+            filter.serialize(stream);
             stream.flush();
             stream.sync();
         }

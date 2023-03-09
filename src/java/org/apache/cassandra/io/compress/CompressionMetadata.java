@@ -68,7 +68,7 @@ public class CompressionMetadata extends WrappedSharedCloseable
 
     @VisibleForTesting
     @SuppressWarnings("resource")
-    public static CompressionMetadata open(File chunksIndexFile, long compressedLength, boolean hasMaxCompressedSize)
+    public static CompressionMetadata open(File chunksIndexFile, long compressedLength)
     {
         CompressionParams parameters;
         long dataLength;
@@ -87,8 +87,7 @@ public class CompressionMetadata extends WrappedSharedCloseable
             }
             int chunkLength = stream.readInt();
             int maxCompressedSize = Integer.MAX_VALUE;
-            if (hasMaxCompressedSize)
-                maxCompressedSize = stream.readInt();
+            maxCompressedSize = stream.readInt();
             try
             {
                 parameters = new CompressionParams(compressorName, chunkLength, maxCompressedSize, options);

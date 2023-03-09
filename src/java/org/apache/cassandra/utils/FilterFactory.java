@@ -106,10 +106,10 @@ public class FilterFactory
         {
         }
 
-        public long serializedSize(boolean oldSerializationFormat) { return 0; }
+        public long serializedSize() { return 0; }
 
         @Override
-        public void serialize(DataOutputStreamPlus out, boolean oldSerializationFormat) throws IOException
+        public void serialize(DataOutputStreamPlus out) throws IOException
         {
             // no-op
         }

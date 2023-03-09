@@ -325,22 +325,14 @@ public class StatsMetadata extends MetadataComponent
 
             size += TypeSizes.sizeof(component.hasLegacyCounterShards);
             size += 8 + 8; // totalColumnsSet, totalRows
-            if (version.hasCommitLogLowerBound())
-                size += CommitLogPosition.serializer.serializedSize(component.commitLogIntervals.lowerBound().orElse(CommitLogPosition.NONE));
-            if (version.hasCommitLogIntervals())
-                size += commitLogPositionSetSerializer.serializedSize(component.commitLogIntervals);
+            size += CommitLogPosition.serializer.serializedSize(component.commitLogIntervals.lowerBound().orElse(CommitLogPosition.NONE));
+            size += commitLogPositionSetSerializer.serializedSize(component.commitLogIntervals);
 
-            if (version.hasPendingRepair())
-            {
-                size += 1;
-                if (component.pendingRepair != null)
-                    size += TimeUUID.sizeInBytes();
-            }
+            size += 1;
+            if (component.pendingRepair != null)
+                size += TimeUUID.sizeInBytes();
 
-            if (version.hasIsTransient())
-            {
-                size += TypeSizes.sizeof(component.isTransient);
-            }
+            size += TypeSizes.sizeof(component.isTransient);
 
             if (version.hasOriginatingHostId())
             {
@@ -412,28 +404,20 @@ public class StatsMetadata extends MetadataComponent
             out.writeLong(component.totalColumnsSet);
             out.writeLong(component.totalRows);
 
-            if (version.hasCommitLogLowerBound())
-                CommitLogPosition.serializer.serialize(component.commitLogIntervals.lowerBound().orElse(CommitLogPosition.NONE), out);
-            if (version.hasCommitLogIntervals())
-                commitLogPositionSetSerializer.serialize(component.commitLogIntervals, out);
+            CommitLogPosition.serializer.serialize(component.commitLogIntervals.lowerBound().orElse(CommitLogPosition.NONE), out);
+            commitLogPositionSetSerializer.serialize(component.commitLogIntervals, out);
 
-            if (version.hasPendingRepair())
+            if (component.pendingRepair != null)
             {
-                if (component.pendingRepair != null)
-                {
-                    out.writeByte(1);
-                    component.pendingRepair.serialize(out);
-                }
-                else
-                {
-                    out.writeByte(0);
-                }
+                out.writeByte(1);
+                component.pendingRepair.serialize(out);
+            }
+            else
+            {
+                out.writeByte(0);
             }
 
-            if (version.hasIsTransient())
-            {
-                out.writeBoolean(component.isTransient);
-            }
+            out.writeBoolean(component.isTransient);
 
             if (version.hasOriginatingHostId())
             {
@@ -533,21 +517,17 @@ public class StatsMetadata extends MetadataComponent
             long totalColumnsSet = in.readLong();
             long totalRows = in.readLong();
 
-            if (version.hasCommitLogLowerBound())
-                commitLogLowerBound = CommitLogPosition.serializer.deserialize(in);
+            commitLogLowerBound = CommitLogPosition.serializer.deserialize(in);
             IntervalSet<CommitLogPosition> commitLogIntervals;
-            if (version.hasCommitLogIntervals())
-                commitLogIntervals = commitLogPositionSetSerializer.deserialize(in);
-            else
-                commitLogIntervals = new IntervalSet<>(commitLogLowerBound, commitLogUpperBound);
+            commitLogIntervals = commitLogPositionSetSerializer.deserialize(in);
 
             TimeUUID pendingRepair = null;
-            if (version.hasPendingRepair() && in.readByte() != 0)
+            if (in.readByte() != 0)
             {
                 pendingRepair = TimeUUID.deserialize(in);
             }
 
-            boolean isTransient = version.hasIsTransient() && in.readBoolean();
+            boolean isTransient = in.readBoolean();
 
             UUID originatingHostId = null;
             if (version.hasOriginatingHostId() && in.readByte() != 0)

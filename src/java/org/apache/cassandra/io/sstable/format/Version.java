@@ -46,27 +46,7 @@ public abstract class Version
 
     public abstract boolean isLatestVersion();
 
-    public abstract int correspondingMessagingVersion(); // Only use by storage that 'storeRows' so far
-
-    public abstract boolean hasCommitLogLowerBound();
-
-    public abstract boolean hasCommitLogIntervals();
-
-    public abstract boolean hasMaxCompressedLength();
-
-    public abstract boolean hasPendingRepair();
-
-    public abstract boolean hasIsTransient();
-
-    public abstract boolean hasMetadataChecksum();
-
-    /**
-     * The old bloomfilter format serializes the data as BIG_ENDIAN long's, the new one uses the
-     * same format as in memory (serializes as bytes).
-     *
-     * @return True if the bloomfilter file is old serialization format
-     */
-    public abstract boolean hasOldBfFormat();
+    public abstract int correspondingMessagingVersion();
 
     /**
      * @deprecated it is replaced by {@link #hasImprovedMinMax()} since 'nc' and to be completetly removed since 'oa'

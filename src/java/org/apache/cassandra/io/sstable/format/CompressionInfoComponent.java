@@ -51,8 +51,7 @@ public class CompressionInfoComponent
     public static CompressionMetadata load(Descriptor descriptor)
     {
         return CompressionMetadata.open(descriptor.fileFor(Components.COMPRESSION_INFO),
-                                        descriptor.fileFor(Components.DATA).length(),
-                                        descriptor.version.hasMaxCompressedLength());
+                                        descriptor.fileFor(Components.DATA).length());
     }
 
     /**

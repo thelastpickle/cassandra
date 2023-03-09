@@ -38,9 +38,9 @@ public interface IFilter extends SharedCloseable
 
     void clear();
 
-    long serializedSize(boolean oldSerializationFormat);
+    long serializedSize();
 
-    void serialize(DataOutputStreamPlus out, boolean oldSerializationFormat) throws IOException;
+    void serialize(DataOutputStreamPlus out) throws IOException;
 
     void close();
 
