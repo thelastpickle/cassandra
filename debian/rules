@@ -8,6 +8,10 @@ include /usr/share/quilt/quilt.make
 ANT = /usr/bin/ant
 VERSION = $(shell dpkg-parsechangelog | sed -ne 's/^Version: \([^-|~|+]*\).*/\1/p')
 
+override_dh_auto_build:
+	dpkg-source --before-build . --tar-ignore 'cassandra/.git'
+	dh_auto_build
+
 test:
 	dh_testdir
 	$(ANT) test
