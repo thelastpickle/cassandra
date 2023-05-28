@@ -242,9 +242,9 @@ public class UpgradeTestBase extends DistributedTestBase
             return target.isGreaterThanOrEqualTo(lowerBound) && target.isLowerThanOrEqualTo(upperBound);
         }
 
+        /** returns true if the target version has the same major and minor as either the from or the to version **/
         private static boolean edgeTouchesTarget(Semver from, Semver to, Semver target)
         {
-            // comparing only major.minor numbers: target == from || target == to
             switch (from.diff(target))
             {
                 default:
