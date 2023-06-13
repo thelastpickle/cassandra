@@ -118,7 +118,7 @@ docker_command="export ANT_OPTS=\"-Dbuild.dir=\${DIST_DIR} ${CASSANDRA_DOCKER_AN
 # run without the default seccomp profile
 # re-use the host's maven repository
 container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unconfined --rm \
-    -v "${cassandra_dir}":/home/build/cassandra -v ~/.m2/repository/:/home/build/.m2/repository/ -v "${build_dir}":/dist \
+    -v "${cassandra_dir}":/home/build/cassandra -v ${HOME}/.m2/repository/:/home/build/.m2/repository/ -v "${build_dir}":/dist \
     ${docker_volume_opt} \
     ${image_name} sleep 1h)
 

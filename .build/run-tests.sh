@@ -257,7 +257,7 @@ _main() {
   esac
 
   # merge all unit xml files into one, and print summary test numbers
-  ant -quiet -silent generate-unified-test-report
+  ant -quiet -silent generate-test-report
 
   popd  >/dev/null
 }

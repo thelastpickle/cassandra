@@ -164,9 +164,20 @@ mkdir -p ${build_dir}/test/logs || true
 mkdir -p ${build_dir}/test/output || true
 chmod -R ag+rwx ${build_dir}
 
+# define testtag.extra so tests can be aggregated together. (jdk is already appended in build.xml)
+case ${target} in
+    "cqlsh-test" | "dtest" | "dtest-novnode" | "dtest-offheap" | "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-large" )
+        ANT_OPTS="-Dtesttag.extra=_$(arch)_python${python_version/./-}"
+    ;;
+    *)
+        ANT_OPTS="-Dtesttag.extra=_$(arch)"
+    ;;
+esac
+
 # cython can be used for cqlsh-test
 if [ "$cython" == "yes" ]; then
     [ "${target}" == "cqlsh-test" ] || { echo "cython is only supported for cqlsh-test"; exit 1; }
+    ANT_OPTS="${ANT_OPTS}_cython"
 else
     cython="no"
 fi
@@ -178,7 +189,7 @@ TEST_SCRIPT=${test_script}
 JAVA_VERSION=${java_version}
 PYTHON_VERSION=${python_version}
 cython=${cython}
-ANT_OPTS="-Dtesttag.extra=.arch=$(arch).python${python_version}"
+ANT_OPTS="${ANT_OPTS}"
 EOF
 
 split_str="0_0"
