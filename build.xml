@@ -1811,10 +1811,10 @@
               <include name="**/nosetests.xml"/>
           </fileset>
           <!-- FIXME this can easily OOM, need a workaround-->
-          <report todir="${build.test.dir}/html" />
+          <report todir="${build.test.dir}/html" unless:true="${print-summary.skip}" />
       </junitreport>
       <!-- concat the report through a filter chain to extract what you want -->
-      <concat>
+      <concat unless:true="${print-summary.skip}">
           <fileset file="${build.test.dir}/html/overview-summary.html" />
           <filterchain>
               <linecontainsregexp>
