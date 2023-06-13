@@ -97,6 +97,7 @@ if [ "$cython" = "yes" ]; then
     python setup.py build_ext --inplace
     popd >/dev/null
 fi
+TESTSUITE_NAME="${TESTSUITE_NAME}.$(uname -m)"
 
 TESTSUITE_NAME="${TESTSUITE_NAME}.${cython_suffix}.$(uname -m)"
 
@@ -121,7 +122,7 @@ pytest --junitxml=${BUILD_DIR}/test/output/cqlshlib.xml
 RETURN="$?"
 
 # don't do inline sed for linux+mac compat
-sed "s/testsuite errors=\(\".*\"\) failures=\(\".*\"\) hostname=\(\".*\"\) name=\"pytest\"/testsuite errors=\1 failures=\2 hostname=\3 name=\"${TESTSUITE_NAME}\"/g" ${BUILD_DIR}/test/output/cqlshlib.xml > /${TMPDIR}/cqlshlib.xml
+sed "s/testsuite name=\"pytest\"/testsuite name=\"${TESTSUITE_NAME}\"/g" ${BUILD_DIR}/test/output/cqlshlib.xml > /${TMPDIR}/cqlshlib.xml
 cat /${TMPDIR}/cqlshlib.xml > ${BUILD_DIR}/test/output/cqlshlib.xml
 sed "s/testcase classname=\"cqlshlib./testcase classname=\"${TESTSUITE_NAME}./g" ${BUILD_DIR}/test/output/cqlshlib.xml > /${TMPDIR}/cqlshlib.xml
 cat /${TMPDIR}/cqlshlib.xml > ${BUILD_DIR}/test/output/cqlshlib.xml

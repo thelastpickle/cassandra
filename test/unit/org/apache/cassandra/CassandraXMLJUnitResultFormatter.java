@@ -124,6 +124,9 @@ public class CassandraXMLJUnitResultFormatter implements JUnitResultFormatter, X
      */
     private final ConcurrentMap<String, Element> testElements = new ConcurrentHashMap<>();
 
+    private Element propsElement;
+    private Element systemOutputElement;
+
     /**
      * Tests that failed - see {@link #testElements} for keys interpretation
      */
@@ -199,7 +202,7 @@ public class CassandraXMLJUnitResultFormatter implements JUnitResultFormatter, X
     public void setSystemOutput(final String out)
     {
         maybeAddClassCaseElement();
-        addOutputNode(SYSTEM_OUT, out);
+        systemOutputElement = addOutputNode(SYSTEM_OUT, out);
     }
 
     /**
@@ -239,8 +242,7 @@ public class CassandraXMLJUnitResultFormatter implements JUnitResultFormatter, X
         rootElement.setAttribute(HOSTNAME, getHostname());
 
         // Output properties
-        final Element propsElement = doc.createElement(PROPERTIES);
-        rootElement.appendChild(propsElement);
+        propsElement = doc.createElement(PROPERTIES);
         final Properties props = suite.getProperties();
         if (props != null)
         {
@@ -351,6 +353,12 @@ public class CassandraXMLJUnitResultFormatter implements JUnitResultFormatter, X
         rootElement.setAttribute(ATTR_FAILURES, String.valueOf(failedTests.size()));
         rootElement.setAttribute(ATTR_ERRORS, String.valueOf(suite.errorCount()));
         rootElement.setAttribute(ATTR_SKIPPED, String.valueOf(suite.skipCount()));
+        if (suite.failureCount() > 0 || suite.errorCount() > 0)
+        {
+            // only include properties and system-out if there's failure/error
+            rootElement.appendChild(propsElement);
+            rootElement.appendChild(systemOutputElement);
+        }
         updateTime(rootElement, suite.getRunTime());
         if (out != null)
         {
@@ -449,11 +457,11 @@ public class CassandraXMLJUnitResultFormatter implements JUnitResultFormatter, X
         }
     }
 
-    private void addOutputNode(final String type, final String output)
+    private Element addOutputNode(final String type, final String output)
     {
         final Element nested = doc.createElement(type);
-        rootElement.appendChild(nested);
         nested.appendChild(doc.createCDATASection(output));
+        return nested;
     }
 
     private String formatName(String name)
