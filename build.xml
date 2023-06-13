@@ -1664,15 +1664,6 @@
     <testhelper testdelegate="testlist"/>
   </target>
 
-  <target name="generate-test-report" description="Generates JUnit's HTML report from results already in build/output">
-      <junitreport todir="${build.test.dir}">
-        <fileset dir="${build.test.dir}/output">
-          <include name="**/TEST-*.xml"/>
-        </fileset>
-        <report format="frames" todir="${build.test.dir}/junitreport"/>
-      </junitreport>
-  </target>
-
   <!-- run a list of tests as provided in -Dtest.classlistfile (or default of 'testnames.txt')
   The class list file should be one test class per line, with the path starting after test/unit
   e.g. org/apache/cassandra/hints/HintMessageTest.java -->
@@ -1825,7 +1816,7 @@
     </testmacro>
   </target>
 
-  <target name="generate-unified-test-report" description="Merge all unit xml files into one, generate html pages, and print summary test numbers">
+  <target name="generate-test-report" description="Merge all unit xml files into one, generate html pages, and print summary test numbers">
       <junitreport todir="${build.dir}">
           <fileset dir="${build.test.dir}/output">
               <include name="**/TEST*.xml"/>
@@ -1833,10 +1824,10 @@
               <include name="**/nosetests.xml"/>
           </fileset>
           <!-- FIXME this can easily OOM, need a workaround-->
-          <report todir="${build.test.dir}/html" />
+          <report todir="${build.test.dir}/html" unless:true="${print-summary.skip}" />
       </junitreport>
       <!-- concat the report through a filter chain to extract what you want -->
-      <concat>
+      <concat unless:true="${print-summary.skip}">
           <fileset file="${build.test.dir}/html/overview-summary.html" />
           <filterchain>
               <linecontainsregexp>

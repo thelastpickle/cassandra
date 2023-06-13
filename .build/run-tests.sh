@@ -186,7 +186,8 @@ _main() {
   [[ "/" == "${DIST_DIR}" ]] || rm -rf "${DIST_DIR}/test/{html,output,logs}"
 
   # cheap trick to ensure dependency libraries are in place. allows us to stash only project specific build artifacts.
-  ant -quiet -silent resolver-dist-lib
+  #  also recreate some of the non-build files we need
+  ant -quiet -silent resolver-dist-lib _createVersionPropFile
 
   case ${target} in
     "stress-test")
@@ -262,7 +263,7 @@ _main() {
   esac
 
   # merge all unit xml files into one, and print summary test numbers
-  ant -quiet -silent generate-unified-test-report
+  ant -quiet -silent generate-test-report
 
   popd  >/dev/null
 }

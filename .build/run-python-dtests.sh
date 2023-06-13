@@ -167,7 +167,7 @@ pushd ${CASSANDRA_DIR}/ >/dev/null
 # remove <testsuites> wrapping elements. `ant generate-unified-test-report` doesn't like it`
 sed -r "s/<[\/]?testsuites>//g" ${DIST_DIR}/test/output/nosetests.xml > ${TMPDIR}/nosetests.xml
 cat ${TMPDIR}/nosetests.xml > ${DIST_DIR}/test/output/nosetests.xml
-ant -quiet -silent generate-unified-test-report
+ant -quiet -silent generate-test-report
 popd  >/dev/null
 
 ################################
