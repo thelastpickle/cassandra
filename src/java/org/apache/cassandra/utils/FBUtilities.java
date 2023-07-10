@@ -88,6 +88,7 @@ import org.apache.cassandra.io.util.File;
 import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.security.ISslContextFactory;
+import org.apache.cassandra.service.ICryptoProvider;
 import org.apache.cassandra.utils.concurrent.FutureCombiner;
 import org.apache.cassandra.utils.concurrent.UncheckedInterruptedException;
 import org.objectweb.asm.Opcodes;
@@ -634,6 +635,13 @@ public class FBUtilities
             return new LocalPartitioner(comparator.get());
         }
         return FBUtilities.instanceOrConstruct(partitionerClassName, "partitioner");
+    }
+
+    public static ICryptoProvider newCryptoProvider(String className) throws ConfigurationException
+    {
+        if (!className.contains("."))
+            className = "org.apache.cassandra.service." + className;
+        return FBUtilities.construct(className, "crypto provider");
     }
 
     public static IAuthorizer newAuthorizer(String className) throws ConfigurationException
