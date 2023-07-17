@@ -22,6 +22,7 @@ import java.util.NavigableMap;
 import java.util.function.Supplier;
 
 import com.google.common.collect.AbstractIterator;
+import io.netty.util.internal.UnstableApi;
 
 import org.apache.cassandra.db.DataRange;
 import org.apache.cassandra.db.DecoratedKey;
@@ -76,7 +77,8 @@ public abstract class AbstractVirtualTable implements VirtualTable
 
     @Override
     @SuppressWarnings("resource")
-    public final UnfilteredPartitionIterator select(DecoratedKey partitionKey, ClusteringIndexFilter clusteringIndexFilter, ColumnFilter columnFilter)
+    @UnstableApi // not intended for public use
+    public UnfilteredPartitionIterator select(DecoratedKey partitionKey, ClusteringIndexFilter clusteringIndexFilter, ColumnFilter columnFilter)
     {
         Partition partition = data(partitionKey).getPartition(partitionKey);
 
@@ -89,7 +91,8 @@ public abstract class AbstractVirtualTable implements VirtualTable
     }
 
     @Override
-    public final UnfilteredPartitionIterator select(DataRange dataRange, ColumnFilter columnFilter)
+    @UnstableApi // not intended for public use
+    public UnfilteredPartitionIterator select(DataRange dataRange, ColumnFilter columnFilter)
     {
         DataSet data = data();
 
