@@ -1387,10 +1387,10 @@ dynamic_snitch_badness_threshold: 1.0
 #
 # If you want to fail the startup of a node if the provider was not installed properly,
 # you have to set property "fail_on_missing_provider" to "true" which is by default "false".
-#
 # This property is not specific for DefaultCryptoProvider, it will be present to every provider with same logic.
-# You need to extend org.apache.cassandra.security.AbstractCryptoProvider, put it to class path and reference here
-# to use it.
+
+# To install custom provider, you need to extend org.apache.cassandra.security.AbstractCryptoProvider,
+# put it to class path and reference here to use it.
 #
 # If you want to completely bypass the installation of a crypto provider, please use NoOpCryptoProvider.
 #
