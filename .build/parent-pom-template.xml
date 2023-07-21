@@ -233,6 +233,10 @@
       <id>zznate</id>
       <name>Nate McCall</name>
     </developer>
+    <developer>
+      <id>smiklosovic</id>
+      <name>Stefan Miklosovic</name>
+    </developer>
   </developers>
   <scm>
     <connection>scm:https://gitbox.apache.org/repos/asf/cassandra.git</connection>
