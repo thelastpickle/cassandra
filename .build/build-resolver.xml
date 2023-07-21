@@ -42,6 +42,34 @@
        Fetch Resolver Ant Tasks and Cassandra's dependencies.
     -->
 
+    <typedef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml" classpathref="resolver-ant-tasks.classpath" />
+    <resolver:remoterepos id="all">
+        <remoterepo id="resolver-central" url="${artifact.remoteRepository.central}"/>
+        <remoterepo id="resolver-apache" url="${artifact.remoteRepository.apache}"/>
+        <!-- Snapshots are not allowed, but for feature branches they may be needed, so uncomment the below to allow snapshots to work -->
+        <!-- <remoterepo id="resolver-apache-snapshot" url="https://repository.apache.org/content/repositories/snapshots" releases="false" snapshots="true" updates="always" checksums="fail" /> -->
+    </resolver:remoterepos>
+
+    <macrodef name="resolve">
+        <!--
+          maven-resolver-ant-tasks's resolve logic doesn't have retry logic and does not respect settings.xml,
+          this causes issues when overriding maven central is required (such as when behind a corporate firewall);
+          it is critical to always provide the 'all' remoterepos to override resolve's default hard coded logic.
+
+          This macro simplifies this logic by centralizing retries and forcing the remoterepo 'all' to be used.
+        -->
+        <attribute name="failonmissingattachments" default="true"/>
+        <element name="elements" implicit="yes"/>
+        <sequential>
+            <retry retrycount="3">
+                <resolver:resolve failonmissingattachments="@{failonmissingattachments}">
+                    <resolver:remoterepos refid="all"/>
+                    <elements/>
+                </resolver:resolve>
+            </retry>
+        </sequential>
+    </macrodef>
+
     <target name="_resolver_download" unless="resolver-ant-tasks.jar.exists" description="Fetch Resolver ANT Tasks from Maven Central Repository">
         <echo>Downloading Resolver ANT Tasks...</echo>
         <mkdir dir="${local.repository}/org/apache/maven/resolver/maven-resolver-ant-tasks/${resolver-ant-tasks.version}" />
@@ -53,34 +81,6 @@
     </target>
 
     <target name="resolver-init" depends="init,_resolver_download" unless="resolver-ant-tasks.initialized" description="Initialize Resolver ANT Tasks">
-
-        <typedef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml" classpathref="resolver-ant-tasks.classpath" />
-        <resolver:remoterepos id="all">
-            <remoterepo id="resolver-central" url="${artifact.remoteRepository.central}"/>
-            <remoterepo id="resolver-apache" url="${artifact.remoteRepository.apache}"/>
-            <!-- Snapshots are not allowed, but for feature branches they may be needed, so uncomment the below to allow snapshots to work -->
-            <!-- <remoterepo id="resolver-apache-snapshot" url="https://repository.apache.org/content/repositories/snapshots" releases="false" snapshots="true" updates="always" checksums="fail" /> -->
-        </resolver:remoterepos>
-
-        <macrodef name="resolve">
-            <!--
-              maven-resolver-ant-tasks's resolve logic doesn't have retry logic and does not respect settings.xml, 
-              this causes issues when overriding maven central is required (such as when behind a corporate firewall);
-              it is critical to always provide the 'all' remoterepos to override resolve's default hard coded logic.
-
-              This macro simplifies this logic by centralizing retries and forcing the remoterepo 'all' to be used.
-            -->
-            <attribute name="failonmissingattachments" default="true"/>
-            <element name="elements" implicit="yes"/>
-            <sequential>
-                <retry retrycount="3">
-                  <resolver:resolve failonmissingattachments="@{failonmissingattachments}">
-                        <resolver:remoterepos refid="all"/>
-                        <elements/>
-                    </resolver:resolve>
-                </retry>
-            </sequential>
-        </macrodef>
         <macrodef name="resolvepom">
             <attribute name="file"/>
             <attribute name="id"/>
@@ -291,12 +291,12 @@
         </get>
 
         <!-- Amazon Corretto Crypto Providers for various architectures -->
-        <get src="${artifact.github.release}/corretto/amazon-corretto-crypto-provider/releases/download/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"
-             dest="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"
-             usetimestamp="true" quiet="true" skipexisting="true"/>
-        <get src="${artifact.github.release}/corretto/amazon-corretto-crypto-provider/releases/download/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"
-             dest="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"
-             usetimestamp="true" quiet="true" skipexisting="true"/>
+        <resolve>
+            <dependencies>
+                <dependency groupId="software.amazon.cryptools" artifactId="AmazonCorrettoCryptoProvider" version="2.2.0" classifier="linux-x86_64" />
+                <dependency groupId="software.amazon.cryptools" artifactId="AmazonCorrettoCryptoProvider" version="2.2.0" classifier="linux-aarch_64" />
+            </dependencies>
+        </resolve>
     </target>
 
 </project>
