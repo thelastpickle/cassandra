@@ -86,9 +86,9 @@ JAVA_OPTS="$JAVA_OPTS:-Djava.library.path=$CASSANDRA_HOME/lib/sigar-bin"
 
 operating_system=$(uname -s | tr '[:upper:]' '[:lower:]')
 corretto_lib_pattern="AmazonCorrettoCryptoProvider-*-$operating_system-$(uname -m).jar"
-corretto_lib="$(find "${CASSANDRA_HOME}"/lib/corretto -type f -name "$corretto_lib_pattern" -exec basename {} \; | head -n 1)"
-if [ -f "${CASSANDRA_HOME}/lib/corretto/${corretto_lib}" ]; then
-  CLASSPATH="$CLASSPATH${CASSANDRA_HOME}/lib/corretto/$corretto_lib";
+corretto_lib="$(find "${CASSANDRA_HOME}"/lib/platform -type f -name "$corretto_lib_pattern" -exec basename {} \; | head -n 1)"
+if [ -f "${CASSANDRA_HOME}/lib/platform/${corretto_lib}" ]; then
+  CLASSPATH="$CLASSPATH${CASSANDRA_HOME}/lib/platform/$corretto_lib";
 fi
 
 #

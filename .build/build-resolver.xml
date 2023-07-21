@@ -212,7 +212,7 @@
         </retry>
         <mkdir dir="${local.repository}/org/apache/cassandra/deps/sigar-bin"/>
         <mkdir dir="${build.lib}/sigar-bin"/>
-        <mkdir dir="${build.lib}/corretto"/>
+        <mkdir dir="${build.lib}/platform"/>
 
         <retry retrycount="3" retrydelay="10" >
             <antcall target="_resolver-dist-lib_get_files"/>
@@ -248,7 +248,7 @@
             <file file="${local.repository}/org/apache/cassandra/deps/sigar-bin/libsigar-x86-solaris.so"/>
         </copy>
 
-        <copy todir="${build.lib}/corretto" quiet="true">
+        <copy todir="${build.lib}/platform" quiet="true">
             <file file="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"/>
             <file file="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"/>
         </copy>
