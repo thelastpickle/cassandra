@@ -1392,6 +1392,8 @@ dynamic_snitch_badness_threshold: 1.0
 # You need to extend org.apache.cassandra.security.AbstractCryptoProvider, put it to class path and reference here
 # to use it.
 #
+# If you want to completely bypass the installation of a crypto provider, please use NoOpCryptoProvider.
+#
 #crypto_provider:
 #  - class_name: org.apache.cassandra.security.DefaultCryptoProvider
 #    parameters:

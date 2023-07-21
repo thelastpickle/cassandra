@@ -81,6 +81,12 @@ public abstract class AbstractCryptoProvider
 
     public void install() throws Exception
     {
+        if (NoOpCryptoProvider.class.getSimpleName().equals(getProviderName()))
+        {
+            logger.debug("Installation of a crypto provider was skipped.");
+            return;
+        }
+
         String failureMessage = null;
         try
         {
