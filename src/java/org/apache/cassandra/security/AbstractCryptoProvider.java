@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.exceptions.ConfigurationException;
 
+import static java.lang.String.format;
+
 public abstract class AbstractCryptoProvider
 {
     private static final String FAIL_ON_MISSING_PROVIDER_KEY = "fail_on_missing_provider";
@@ -78,6 +80,7 @@ public abstract class AbstractCryptoProvider
 
     public void installProvider()
     {
+        String failureMessage = null;
         try
         {
             Class.forName(getProviderClassAsString());
@@ -86,16 +89,15 @@ public abstract class AbstractCryptoProvider
         }
         catch (ClassNotFoundException ex)
         {
-            String message = getProviderClassAsString() + " is not on the class path!";
-            if (failOnMissingProvider())
-                throw new ConfigurationException(message);
-            else
-                logger.error(message);
+            failureMessage = getProviderClassAsString() + " is not on the class path!";
         }
         catch (Exception e)
         {
-            logger.warn("The installation of {} was not successful.", getProviderClassAsString());
+            failureMessage = format("The installation of %s was not successful, reason: %s",
+                                    getProviderClassAsString(), e.getMessage());
         }
+
+        throwOrWarn(failureMessage);
     }
 
     public void checkProvider() throws Exception
@@ -114,13 +116,13 @@ public abstract class AbstractCryptoProvider
             }
             else
             {
-                failureMessage = String.format("%s is not the highest priority provider - %s is used. " +
-                                               "The most probable cause is that Cassandra node is not running on the same architecture " +
-                                               "the provider library is for." +
-                                               "Please place the architecture-specific library for %s to the classpath and try again. ",
-                                               getProviderName(),
-                                               currentCryptoProvider,
-                                               getProviderClassAsString());
+                failureMessage = format("%s is not the highest priority provider - %s is used. " +
+                                        "The most probable cause is that Cassandra node is not running on the same architecture " +
+                                        "the provider library is for. Please place the architecture-specific library " +
+                                        "for %s to the classpath and try again. ",
+                                        getProviderName(),
+                                        currentCryptoProvider,
+                                        getProviderClassAsString());
             }
         }
         catch (ClassNotFoundException ex)
@@ -129,13 +131,19 @@ public abstract class AbstractCryptoProvider
         }
         catch (Exception e)
         {
-            failureMessage = "Exception encountered while asserting the healthiness of " + getProviderClassAsString();
+            failureMessage = format("Exception encountered while asserting the healthiness of %s, reason: %s",
+                                    getProviderClassAsString(), e.getMessage());
         }
 
-        if (failureMessage != null)
+        throwOrWarn(failureMessage);
+    }
+
+    protected void throwOrWarn(String message)
+    {
+        if (message != null)
             if (failOnMissingProvider())
-                throw new ConfigurationException(failureMessage);
+                throw new ConfigurationException(message);
             else
-                logger.warn(failureMessage);
+                logger.warn(message);
     }
 }

@@ -1392,10 +1392,10 @@ dynamic_snitch_badness_threshold: 1.0
 # You need to extend org.apache.cassandra.security.AbstractCryptoProvider, put it to class path and reference here
 # to use it.
 #
-crypto_provider:
-  - class_name: org.apache.cassandra.security.DefaultCryptoProvider
-    parameters:
-      - fail_on_missing_provider: "false"
+#crypto_provider:
+#  - class_name: org.apache.cassandra.security.DefaultCryptoProvider
+#    parameters:
+#      - fail_on_missing_provider: "false"
 
 # Configure server-to-server internode encryption
 #
