@@ -27,15 +27,16 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.exceptions.ConfigurationException;
 
-public abstract class AbstractCryptoProvider implements ICryptoProvider
+public abstract class AbstractCryptoProvider
 {
+    private static final String FAIL_ON_MISSING_PROVIDER_KEY = "fail_on_missing_provider";
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final boolean failOnMissingProvider;
+    private final boolean failOnMissingProvider;
 
     public AbstractCryptoProvider(Map<String, String> properties)
     {
-        failOnMissingProvider = properties != null && Boolean.parseBoolean(properties.getOrDefault("fail_on_missing_provider", "false"));
+        failOnMissingProvider = properties != null && Boolean.parseBoolean(properties.getOrDefault(FAIL_ON_MISSING_PROVIDER_KEY, "false"));
     }
 
     /**
@@ -70,7 +71,11 @@ public abstract class AbstractCryptoProvider implements ICryptoProvider
      */
     public abstract Runnable healthChecker() throws Exception;
 
-    @Override
+    public boolean failOnMissingProvider()
+    {
+        return failOnMissingProvider;
+    }
+
     public void installProvider()
     {
         try
@@ -82,7 +87,7 @@ public abstract class AbstractCryptoProvider implements ICryptoProvider
         catch (ClassNotFoundException ex)
         {
             String message = getProviderClassAsString() + " is not on the class path!";
-            if (failOnMissingProvider)
+            if (failOnMissingProvider())
                 throw new ConfigurationException(message);
             else
                 logger.error(message);
@@ -93,7 +98,6 @@ public abstract class AbstractCryptoProvider implements ICryptoProvider
         }
     }
 
-    @Override
     public void checkProvider() throws Exception
     {
         String failureMessage = null;
@@ -129,7 +133,7 @@ public abstract class AbstractCryptoProvider implements ICryptoProvider
         }
 
         if (failureMessage != null)
-            if (failOnMissingProvider)
+            if (failOnMissingProvider())
                 throw new ConfigurationException(failureMessage);
             else
                 logger.warn(failureMessage);

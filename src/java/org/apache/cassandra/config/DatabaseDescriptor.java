@@ -98,11 +98,11 @@ import org.apache.cassandra.locator.IEndpointSnitch;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.locator.Replica;
 import org.apache.cassandra.locator.SeedProvider;
+import org.apache.cassandra.security.AbstractCryptoProvider;
 import org.apache.cassandra.security.DefaultCryptoProvider;
 import org.apache.cassandra.security.EncryptionContext;
 import org.apache.cassandra.security.SSLFactory;
 import org.apache.cassandra.service.CacheService.CacheType;
-import org.apache.cassandra.security.ICryptoProvider;
 import org.apache.cassandra.service.paxos.Paxos;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.StorageCompatibilityMode;
@@ -176,7 +176,7 @@ public class DatabaseDescriptor
 
     private static Config.DiskAccessMode indexAccessMode;
 
-    private static ICryptoProvider cryptoProvider;
+    private static AbstractCryptoProvider cryptoProvider;
     private static IAuthenticator authenticator;
     private static IAuthorizer authorizer;
     private static INetworkAuthorizer networkAuthorizer;
@@ -1238,7 +1238,7 @@ public class DatabaseDescriptor
         try
         {
             Class<?> cryptoProviderClass = Class.forName(conf.crypto_provider.class_name);
-            cryptoProvider = (ICryptoProvider)cryptoProviderClass.getConstructor(Map.class).newInstance(conf.crypto_provider.parameters);
+            cryptoProvider = (AbstractCryptoProvider)cryptoProviderClass.getConstructor(Map.class).newInstance(conf.crypto_provider.parameters);
             cryptoProvider.installProvider();
         }
         catch (ClassNotFoundException e)
@@ -1534,11 +1534,14 @@ public class DatabaseDescriptor
         return detector;
     }
 
-    public static ICryptoProvider getCryptoProvider() { return cryptoProvider; }
-
-    public void setCryptoProvider(ICryptoProvider cryptoProvider)
+    public static AbstractCryptoProvider getCryptoProvider()
     {
-        cryptoProvider = cryptoProvider;
+        return cryptoProvider;
+    }
+
+    public static void setCryptoProvider(AbstractCryptoProvider cryptoProvider)
+    {
+        DatabaseDescriptor.cryptoProvider = cryptoProvider;
     }
     public static IAuthenticator getAuthenticator()
     {

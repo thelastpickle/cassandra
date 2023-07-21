@@ -1377,12 +1377,25 @@ dynamic_snitch_badness_threshold: 1.0
 
 # Configures Java crypto provider. By default, it will use DefaultCryptoProvider
 # which will install Amazon Correto Crypto Provider for x86 architecture.
-# If you are on a different architecture (e.g. aarch), the healthcheck will not pass,
-# and it will fall back to the crypto provider of your JRE of choice.
-# If you want to use Amazon Corretto on aarch architecture, you have to replace
-# the corresponding library for aarch one.
-#crypto_provider:
-#  - class_name: org.apache.cassandra.security.DefaultCryptoProvider
+#
+# If you are on a different architecture (e.g. aarch), startup scripts will automatically
+# detect this and aarch version of the library is used.
+#
+# If the resolution of the architecture is not successful, or it somehow fails,
+# the crypto provider is not installed and default, in-built, crypto provider in your JRE
+# will be used.
+#
+# If you want to fail the startup of a node if the provider was not installed properly,
+# you have to set property "fail_on_missing_provider" to "true" which is by default "false".
+#
+# This property is not specific for DefaultCryptoProvider, it will be present to every provider with same logic.
+# You need to extend org.apache.cassandra.security.AbstractCryptoProvider, put it to class path and reference here
+# to use it.
+#
+crypto_provider:
+  - class_name: org.apache.cassandra.security.DefaultCryptoProvider
+    parameters:
+      - fail_on_missing_provider: "false"
 
 # Configure server-to-server internode encryption
 #
