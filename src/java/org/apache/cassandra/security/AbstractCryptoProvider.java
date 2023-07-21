@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.exceptions.ConfigurationException;
 
 import static java.lang.String.format;
+import static java.security.Security.getProviders;
 
 public abstract class AbstractCryptoProvider
 {
@@ -62,7 +63,7 @@ public abstract class AbstractCryptoProvider
      *
      * @return runnable which installs this provider
      */
-    public abstract Runnable installator() throws Exception;
+    protected abstract Runnable installator() throws Exception;
 
     /**
      * Returns a runnable which executes a health check of this provider to see if it was installed properly.
@@ -71,21 +72,38 @@ public abstract class AbstractCryptoProvider
      *
      * @return runnable which installs this provider
      */
-    public abstract Runnable healthChecker() throws Exception;
+    protected abstract Runnable healthChecker() throws Exception;
 
     public boolean failOnMissingProvider()
     {
         return failOnMissingProvider;
     }
 
-    public void installProvider()
+    public void install() throws Exception
     {
         String failureMessage = null;
         try
         {
             Class.forName(getProviderClassAsString());
 
-            installator().run();
+            Provider[] providers = getProviders();
+            if (providers.length > 0)
+            {
+                Provider firstProvider = providers[0];
+                if (firstProvider.getName().equals(getProviderName()))
+                {
+                    logger.debug("{} was already installed", getProviderName());
+                    return;
+                }
+                else
+                {
+                    installator().run();
+                }
+            }
+            else
+            {
+                installator().run();
+            }
         }
         catch (ClassNotFoundException ex)
         {
@@ -98,9 +116,11 @@ public abstract class AbstractCryptoProvider
         }
 
         throwOrWarn(failureMessage);
+
+        checkInstallation();
     }
 
-    public void checkProvider() throws Exception
+    private void checkInstallation()
     {
         String failureMessage = null;
         try

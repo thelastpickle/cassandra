@@ -1239,7 +1239,7 @@ public class DatabaseDescriptor
         {
             Class<?> cryptoProviderClass = Class.forName(conf.crypto_provider.class_name);
             cryptoProvider = (AbstractCryptoProvider)cryptoProviderClass.getConstructor(Map.class).newInstance(conf.crypto_provider.parameters);
-            cryptoProvider.installProvider();
+            cryptoProvider.install();
         }
         catch (ClassNotFoundException e)
         {

@@ -38,7 +38,7 @@ public class DefaultCryptoProvider extends AbstractCryptoProvider
     @Override
     public String getProviderName()
     {
-        return "AmazonCorrettoCryptoProvider";
+        return AmazonCorrettoCryptoProvider.PROVIDER_NAME;
     }
 
     @Override
