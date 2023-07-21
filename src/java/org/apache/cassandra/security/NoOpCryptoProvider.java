@@ -46,14 +46,12 @@ public class NoOpCryptoProvider extends AbstractCryptoProvider
     @Override
     protected Runnable installator() throws Exception
     {
-        return () -> {
-        };
+        return () -> {};
     }
 
     @Override
-    protected Runnable healthChecker() throws Exception
+    protected boolean isHealthyInstallation() throws Exception
     {
-        return () -> {
-        };
+        return true;
     }
 }

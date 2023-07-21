@@ -21,7 +21,6 @@ package org.apache.cassandra.security;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Map;
-import javax.crypto.Cipher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,7 @@ public abstract class AbstractCryptoProvider
     public static final String FAIL_ON_MISSING_PROVIDER_KEY = "fail_on_missing_provider";
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final boolean failOnMissingProvider;
+    protected final boolean failOnMissingProvider;
 
     public AbstractCryptoProvider(Map<String, String> properties)
     {
@@ -64,20 +63,15 @@ public abstract class AbstractCryptoProvider
     protected abstract Runnable installator() throws Exception;
 
     /**
-     * Returns a runnable which executes a health check of this provider to see if it was installed properly.
+     * Returns boolean telling if this provider was installed properly.
      *
-     * @return runnable which installs this provider
+     * @return {@code true} if provider was installed properly, {@code false} otherwise.
      */
-    protected abstract Runnable healthChecker() throws Exception;
-
-    public boolean failOnMissingProvider()
-    {
-        return failOnMissingProvider;
-    }
+    protected abstract boolean isHealthyInstallation() throws Exception;
 
     /**
      * The default installation runs {@link AbstractCryptoProvider#installator()} and after that
-     * {@link AbstractCryptoProvider#healthChecker()}.
+     * {@link AbstractCryptoProvider#isHealthyInstallation()}.
      * <p>
      * If any step fails, it will not throw an exception unless the parameter
      * {@link AbstractCryptoProvider#FAIL_ON_MISSING_PROVIDER_KEY} is {@code true}.
@@ -107,21 +101,17 @@ public abstract class AbstractCryptoProvider
                 installator().run();
             }
 
-            String currentCryptoProvider = Cipher.getInstance("AES/GCM/NoPadding").getProvider().getName();
-
-            if (getProviderName().equals(currentCryptoProvider))
+            if (isHealthyInstallation())
             {
-                healthChecker().run();
                 logger.info("{} successfully passed the healthiness check", getProviderName());
             }
             else
             {
-                failureMessage = format("%s is not the highest priority provider - %s is used. " +
+                failureMessage = format("%s is not the highest priority provider. " +
                                         "The most probable cause is that Cassandra node is not running on the same architecture " +
                                         "the provider library is for. Please place the architecture-specific library " +
                                         "for %s to the classpath and try again. ",
                                         getProviderName(),
-                                        currentCryptoProvider,
                                         getProviderClassAsString());
             }
         }
@@ -136,7 +126,7 @@ public abstract class AbstractCryptoProvider
         }
 
         if (failureMessage != null)
-            if (failOnMissingProvider())
+            if (failOnMissingProvider)
                 throw new ConfigurationException(failureMessage);
             else
                 logger.warn(failureMessage);

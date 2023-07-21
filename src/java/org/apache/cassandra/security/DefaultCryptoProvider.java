@@ -19,6 +19,7 @@
 package org.apache.cassandra.security;
 
 import java.util.Map;
+import javax.crypto.Cipher;
 
 import com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider;
 
@@ -54,8 +55,13 @@ public class DefaultCryptoProvider extends AbstractCryptoProvider
     }
 
     @Override
-    public Runnable healthChecker()
+    public boolean isHealthyInstallation() throws Exception
     {
-        return AmazonCorrettoCryptoProvider.INSTANCE::assertHealthy;
+        if (!getProviderName().equals(Cipher.getInstance("AES/GCM/NoPadding").getProvider().getName()))
+            return false;
+
+        AmazonCorrettoCryptoProvider.INSTANCE.assertHealthy();
+
+        return true;
     }
 }
