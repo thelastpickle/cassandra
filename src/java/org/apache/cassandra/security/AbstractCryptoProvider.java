@@ -32,7 +32,7 @@ import static java.lang.String.format;
 
 public abstract class AbstractCryptoProvider
 {
-    private static final String FAIL_ON_MISSING_PROVIDER_KEY = "fail_on_missing_provider";
+    public static final String FAIL_ON_MISSING_PROVIDER_KEY = "fail_on_missing_provider";
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final boolean failOnMissingProvider;
@@ -58,8 +58,6 @@ public abstract class AbstractCryptoProvider
 
     /**
      * Returns a runnable which installs this crypto provider.
-     * The installator may throw an exception. The default implementation
-     * will not fail the installation unless the parameter {@code fail_on_missing_provider} is {@code true}.
      *
      * @return runnable which installs this provider
      */
@@ -67,8 +65,6 @@ public abstract class AbstractCryptoProvider
 
     /**
      * Returns a runnable which executes a health check of this provider to see if it was installed properly.
-     * The healthchecker may throw an exception. The default implementation
-     * will not fail the installation unless the parameter {@code fail_on_missing_provider} is {@code true}.
      *
      * @return runnable which installs this provider
      */
@@ -79,6 +75,13 @@ public abstract class AbstractCryptoProvider
         return failOnMissingProvider;
     }
 
+    /**
+     * The default installation runs {@link AbstractCryptoProvider#installator()} and after that
+     * {@link AbstractCryptoProvider#healthChecker()}.
+     * <p>
+     * If any step fails, it will not throw an exception unless the parameter
+     * {@link AbstractCryptoProvider#FAIL_ON_MISSING_PROVIDER_KEY} is {@code true}.
+     */
     public void install() throws Exception
     {
         if (NoOpCryptoProvider.class.getSimpleName().equals(getProviderName()))
@@ -93,18 +96,11 @@ public abstract class AbstractCryptoProvider
             Class.forName(getProviderClassAsString());
 
             Provider[] providers = Security.getProviders();
-            if (providers.length > 0)
+
+            if (providers.length > 0 && providers[0] != null && providers[0].getName().equals(getProviderName()))
             {
-                Provider firstProvider = providers[0];
-                if (firstProvider.getName().equals(getProviderName()))
-                {
-                    logger.debug("{} was already installed", getProviderName());
-                    return;
-                }
-                else
-                {
-                    installator().run();
-                }
+                logger.debug("{} was already installed", getProviderName());
+                return;
             }
             else
             {
