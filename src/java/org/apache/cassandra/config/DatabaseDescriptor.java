@@ -1227,8 +1227,13 @@ public class DatabaseDescriptor
         if (conf.crypto_provider == null)
             conf.crypto_provider = new ParameterizedClass(DefaultCryptoProvider.class.getName(), null);
 
+        if (conf.crypto_provider.parameters == null)
+            conf.crypto_provider.parameters = new HashMap<>();
+
         if (conf.crypto_provider.class_name == null)
             throw new ConfigurationException("Failed to initialize crypto provider, class_name cannot be null");
+
+        conf.crypto_provider.parameters.putIfAbsent("fail_on_missing_provider", "false");
 
         try
         {
