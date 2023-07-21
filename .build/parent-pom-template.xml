@@ -244,7 +244,9 @@
     <profile>
       <id>x86_64</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <os>
+          <arch>!aarch64</arch>
+        </os>
       </activation>
       <dependencies>
         <dependency>

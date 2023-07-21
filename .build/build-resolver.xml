@@ -253,6 +253,7 @@
             <file file="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"/>
         </copy>
 
+        <!-- as resolver will copy all dependencies into libs, and we are copying jars to libs/corretto as well, we would have duplicities -->
         <delete file="${build.lib}/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar" failonerror="false"/>
         <delete file="${build.lib}/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar" failonerror="false"/>
     </target>
@@ -288,7 +289,6 @@
             <url url="${lib.download.base.url}/lib/sigar-bin/libsigar-x86-linux.so"/>
             <url url="${lib.download.base.url}/lib/sigar-bin/libsigar-x86-solaris.so"/>
         </get>
-
 
         <!-- Amazon Corretto Crypto Providers for various architectures -->
         <get src="${artifact.github.release}/corretto/amazon-corretto-crypto-provider/releases/download/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"
