@@ -1247,7 +1247,7 @@ public class DatabaseDescriptor
         }
         catch (Exception e)
         {
-            throw new ConfigurationException(String.format("Failed to initialize crypto Provider %s", conf.crypto_provider.class_name), e);
+            throw new ConfigurationException(String.format("Failed to initialize crypto provider %s", conf.crypto_provider.class_name), e);
         }
     }
 

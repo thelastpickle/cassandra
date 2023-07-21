@@ -19,6 +19,7 @@
 package org.apache.cassandra.security;
 
 import java.security.Provider;
+import java.security.Security;
 import java.util.Map;
 import javax.crypto.Cipher;
 
@@ -28,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.exceptions.ConfigurationException;
 
 import static java.lang.String.format;
-import static java.security.Security.getProviders;
 
 public abstract class AbstractCryptoProvider
 {
@@ -86,7 +86,7 @@ public abstract class AbstractCryptoProvider
         {
             Class.forName(getProviderClassAsString());
 
-            Provider[] providers = getProviders();
+            Provider[] providers = Security.getProviders();
             if (providers.length > 0)
             {
                 Provider firstProvider = providers[0];
@@ -104,28 +104,6 @@ public abstract class AbstractCryptoProvider
             {
                 installator().run();
             }
-        }
-        catch (ClassNotFoundException ex)
-        {
-            failureMessage = getProviderClassAsString() + " is not on the class path!";
-        }
-        catch (Exception e)
-        {
-            failureMessage = format("The installation of %s was not successful, reason: %s",
-                                    getProviderClassAsString(), e.getMessage());
-        }
-
-        throwOrWarn(failureMessage);
-
-        checkInstallation();
-    }
-
-    private void checkInstallation()
-    {
-        String failureMessage = null;
-        try
-        {
-            Class.forName(getProviderClassAsString());
 
             String currentCryptoProvider = Cipher.getInstance("AES/GCM/NoPadding").getProvider().getName();
 
@@ -151,19 +129,14 @@ public abstract class AbstractCryptoProvider
         }
         catch (Exception e)
         {
-            failureMessage = format("Exception encountered while asserting the healthiness of %s, reason: %s",
+            failureMessage = format("The installation of %s was not successful, reason: %s",
                                     getProviderClassAsString(), e.getMessage());
         }
 
-        throwOrWarn(failureMessage);
-    }
-
-    protected void throwOrWarn(String message)
-    {
-        if (message != null)
+        if (failureMessage != null)
             if (failOnMissingProvider())
-                throw new ConfigurationException(message);
+                throw new ConfigurationException(failureMessage);
             else
-                logger.warn(message);
+                logger.warn(failureMessage);
     }
 }
