@@ -19,87 +19,43 @@
 package org.apache.cassandra.security;
 
 import java.util.Map;
-import javax.crypto.Cipher;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider;
-import org.apache.cassandra.exceptions.ConfigurationException;
 
-public class DefaultCryptoProvider implements ICryptoProvider
+/**
+ * Default crypto provider tries to install AmazonCorrettoCryptoProvider.
+ * <p>
+ * The implementation falls back to in-built crypto provider in JRE if the installation
+ * is not successful.
+ */
+public class DefaultCryptoProvider extends AbstractCryptoProvider
 {
-    private static final Logger logger = LoggerFactory.getLogger(DefaultCryptoProvider.class);
-
-    private final boolean failOnMissingProvider;
-
     public DefaultCryptoProvider(Map<String, String> args)
     {
-        failOnMissingProvider = args != null && Boolean.parseBoolean(args.getOrDefault("fail_on_missing_provider", "false"));
+        super(args);
     }
 
     @Override
-    public void installProvider()
+    public String getProviderName()
     {
-        try
-        {
-            Class.forName("com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider");
-
-            AmazonCorrettoCryptoProvider.install();
-        }
-        catch (ClassNotFoundException ex)
-        {
-            String message = "AmazonCorretoCryptoProvider is not on the class path!";
-            if (failOnMissingProvider)
-                throw new ConfigurationException(message);
-            else
-                logger.error(message);
-        }
-        catch (Exception e)
-        {
-            logger.warn("The installation of {} was not successful.", AmazonCorrettoCryptoProvider.class.getName());
-        }
+        return "AmazonCorrettoCryptoProvider";
     }
 
     @Override
-    public void checkProvider() throws Exception
+    public String getProviderClassAsString()
     {
-        String failureMessage = null;
-        try
-        {
-            Class.forName("com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider");
+        return "com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider";
+    }
 
-            String currentCryptoProvider = Cipher.getInstance("AES/GCM/NoPadding").getProvider().getName();
+    @Override
+    public Runnable installator()
+    {
+        return AmazonCorrettoCryptoProvider::install;
+    }
 
-            if (AmazonCorrettoCryptoProvider.PROVIDER_NAME.equals(currentCryptoProvider))
-            {
-                AmazonCorrettoCryptoProvider.INSTANCE.assertHealthy();
-                logger.info("{} successfully passed the healthiness check", AmazonCorrettoCryptoProvider.PROVIDER_NAME);
-            }
-            else
-            {
-                failureMessage = String.format("%s is not the highest priority provider - %s is used. " +
-                                               "The most probable cause is that Cassandra node is not running on the same architecture " +
-                                               "the Amazon Corretto Crypto Provider library is for." +
-                                               "Please place the architecture-specific library for %s to the classpath and try again. ",
-                                               AmazonCorrettoCryptoProvider.PROVIDER_NAME,
-                                               currentCryptoProvider,
-                                               AmazonCorrettoCryptoProvider.class.getName());
-            }
-        }
-        catch (ClassNotFoundException ex)
-        {
-            failureMessage = "com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider is not on the class path!";
-        }
-        catch (Exception e)
-        {
-            failureMessage = "Exception encountered while asserting the healthiness of " + AmazonCorrettoCryptoProvider.class.getName();
-        }
-
-        if (failureMessage != null)
-            if (failOnMissingProvider)
-                throw new ConfigurationException(failureMessage);
-            else
-                logger.warn(failureMessage);
+    @Override
+    public Runnable healthChecker()
+    {
+        return AmazonCorrettoCryptoProvider.INSTANCE::assertHealthy;
     }
 }
