@@ -212,6 +212,7 @@
         </retry>
         <mkdir dir="${local.repository}/org/apache/cassandra/deps/sigar-bin"/>
         <mkdir dir="${build.lib}/sigar-bin"/>
+        <mkdir dir="${build.lib}/corretto"/>
 
         <retry retrycount="3" retrydelay="10" >
             <antcall target="_resolver-dist-lib_get_files"/>
@@ -246,6 +247,14 @@
             <file file="${local.repository}/org/apache/cassandra/deps/sigar-bin/libsigar-x86-linux.so"/>
             <file file="${local.repository}/org/apache/cassandra/deps/sigar-bin/libsigar-x86-solaris.so"/>
         </copy>
+
+        <copy todir="${build.lib}/corretto" quiet="true">
+            <file file="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"/>
+            <file file="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"/>
+        </copy>
+
+        <delete file="${build.lib}/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar" failonerror="false"/>
+        <delete file="${build.lib}/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar" failonerror="false"/>
     </target>
 
     <target name="_resolver-dist-lib_get_files">
@@ -279,6 +288,15 @@
             <url url="${lib.download.base.url}/lib/sigar-bin/libsigar-x86-linux.so"/>
             <url url="${lib.download.base.url}/lib/sigar-bin/libsigar-x86-solaris.so"/>
         </get>
+
+
+        <!-- Amazon Corretto Crypto Providers for various architectures -->
+        <get src="${artifact.github.release}/corretto/amazon-corretto-crypto-provider/releases/download/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"
+             dest="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-x86_64.jar"
+             usetimestamp="true" quiet="true" skipexisting="true"/>
+        <get src="${artifact.github.release}/corretto/amazon-corretto-crypto-provider/releases/download/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"
+             dest="${local.repository}/software/amazon/cryptools/AmazonCorrettoCryptoProvider/2.2.0/AmazonCorrettoCryptoProvider-2.2.0-linux-aarch_64.jar"
+             usetimestamp="true" quiet="true" skipexisting="true"/>
     </target>
 
 </project>

@@ -39,11 +39,20 @@ public class DefaultCryptoProvider implements ICryptoProvider
     {
         try
         {
-            AmazonCorrettoCryptoProvider.install();
+            Class.forName("com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider");
+
+            try
+            {
+                AmazonCorrettoCryptoProvider.install();
+            }
+            catch (Exception e)
+            {
+                logger.warn("The installation of {} was not successful.", AmazonCorrettoCryptoProvider.class.getName(), e);
+            }
         }
-        catch (Exception e)
+        catch (ClassNotFoundException ex)
         {
-            logger.warn("The installation of {} was not successful.", AmazonCorrettoCryptoProvider.class.getName(), e);
+            logger.error("AmazonCorretoCryptoProvider is not on the class path!");
         }
     }
 
@@ -52,27 +61,36 @@ public class DefaultCryptoProvider implements ICryptoProvider
     {
         try
         {
-            String currentCryptoProvider = Cipher.getInstance("AES/GCM/NoPadding").getProvider().getName();
+            Class.forName("com.amazon.corretto.crypto.provider.AmazonCorrettoCryptoProvider");
 
-            if (AmazonCorrettoCryptoProvider.PROVIDER_NAME.equals(currentCryptoProvider))
+            try
             {
-                AmazonCorrettoCryptoProvider.INSTANCE.assertHealthy();
-                logger.info("{} successfully passed the healthiness check", AmazonCorrettoCryptoProvider.PROVIDER_NAME);
+                String currentCryptoProvider = Cipher.getInstance("AES/GCM/NoPadding").getProvider().getName();
+
+                if (AmazonCorrettoCryptoProvider.PROVIDER_NAME.equals(currentCryptoProvider))
+                {
+                    AmazonCorrettoCryptoProvider.INSTANCE.assertHealthy();
+                    logger.info("{} successfully passed the healthiness check", AmazonCorrettoCryptoProvider.PROVIDER_NAME);
+                }
+                else
+                {
+                    logger.warn("{} is not the highest priority provider - {} is used. " +
+                                "The most probable cause is that Cassandra node is not running on the same architecture " +
+                                "the Amazon Corretto Crypto Provider library is for." +
+                                "Please place the architecture-specific library for {} to the classpath and try again. ",
+                                AmazonCorrettoCryptoProvider.PROVIDER_NAME,
+                                currentCryptoProvider,
+                                AmazonCorrettoCryptoProvider.class.getName());
+                }
             }
-            else
+            catch (Exception e)
             {
-                logger.warn("{} is not the highest priority provider - {} is used. " +
-                            "The most probable cause is that Cassandra node is not running on the same architecture " +
-                            "the Amazon Corretto Crypto Provider library is for." +
-                            "Please place the architecture-specific library for {} to the classpath and try again. ",
-                            AmazonCorrettoCryptoProvider.PROVIDER_NAME,
-                            currentCryptoProvider,
-                            AmazonCorrettoCryptoProvider.class.getName());
+                logger.warn("Exception encountered while asserting the healthiness of " + AmazonCorrettoCryptoProvider.class.getName(), e);
             }
         }
-        catch (Exception e)
+        catch (ClassNotFoundException ex)
         {
-            logger.warn("Exception encountered while asserting the healthiness of " + AmazonCorrettoCryptoProvider.class.getName(), e);
+            logger.error("AmazonCorretoCryptoProvider is not on the class path!");
         }
     }
 }
