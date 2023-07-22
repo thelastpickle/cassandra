@@ -212,7 +212,26 @@
         </retry>
         <mkdir dir="${local.repository}/org/apache/cassandra/deps/sigar-bin"/>
         <mkdir dir="${build.lib}/sigar-bin"/>
-        <mkdir dir="${build.lib}/platform"/>
+        <mkdir dir="${build.lib}/x86_64"/>
+        <mkdir dir="${build.lib}/aarch_64"/>
+
+        <!-- artifacts needs AmazonCorrettoCryptoProvider for multiple archs -->
+        <retry retrycount="3" retrydelay="10" >
+            <resolve>
+                <dependencies>
+                    <dependency groupId="software.amazon.cryptools" artifactId="AmazonCorrettoCryptoProvider" version="2.2.0" classifier="linux-x86_64" />
+                </dependencies>
+                <files dir="${build.lib}/x86_64" layout="{artifactId}-{version}-{classifier}.{extension}" />
+            </resolve>
+        </retry>
+        <retry retrycount="3" retrydelay="10" >
+            <resolve>
+                <dependencies>
+                    <dependency groupId="software.amazon.cryptools" artifactId="AmazonCorrettoCryptoProvider" version="2.2.0" classifier="linux-aarch_64" />
+                </dependencies>
+                <files dir="${build.lib}/aarch_64" layout="{artifactId}-{version}-{classifier}.{extension}" />
+            </resolve>
+        </retry>
 
         <retry retrycount="3" retrydelay="10" >
             <antcall target="_resolver-dist-lib_get_files"/>
