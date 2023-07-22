@@ -429,6 +429,8 @@ public class DatabaseDescriptor
         //InetAddressAndPort cares that applySimpleConfig runs first
         applySSTableFormats();
 
+        applyCryptoProvider();
+
         applySimpleConfig();
 
         applyPartitioner();
@@ -438,8 +440,6 @@ public class DatabaseDescriptor
         applySnitch();
 
         applyTokensConfig();
-
-        applyCryptoProvider();
 
         applySeedProvider();
 

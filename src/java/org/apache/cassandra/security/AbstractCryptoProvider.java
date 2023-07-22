@@ -131,4 +131,9 @@ public abstract class AbstractCryptoProvider
             else
                 logger.warn(failureMessage);
     }
+
+    public void uninstall()
+    {
+        Security.removeProvider(getProviderName());
+    }
 }
