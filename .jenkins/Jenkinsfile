@@ -217,6 +217,13 @@ def isPostCommit() {
 }
 
 /**
+ * Are we running on ci-cassandra.apache.org ?
+ **/
+def isCanonical() {
+  return "${JENKINS_URL}".contains("ci-cassandra.apache.org")
+}
+
+/**
  * Executes `${build_script} ${jdk}` for each arch, and jdk.
  *
  * Stashes the jarfiles for `package-artifacts.sh`
@@ -397,44 +404,50 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
-  def remotePath = remoteDirectory.startsWith("cassandra/") ? "${remoteDirectory}" : "cassandra/${JOB_NAME}/${BUILD_NUMBER}/${remoteDirectory}"
-  def attempt = 1
-  retry(9) {
-    if (attempt > 1) { sleep(60 * attempt) }
-    sshPublisher(
-      continueOnError: true, failOnError: false,
-      publishers: [
-        sshPublisherDesc(
-         configName: "Nightlies",
-         transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
-         )
-      ])
+  if (isCanonical()) {
+    def remotePath = remoteDirectory.startsWith("cassandra/") ? "${remoteDirectory}" : "cassandra/${JOB_NAME}/${BUILD_NUMBER}/${remoteDirectory}"
+    def attempt = 1
+    retry(9) {
+      if (attempt > 1) { sleep(60 * attempt) }
+      sshPublisher(
+        continueOnError: true, failOnError: false,
+        publishers: [
+          sshPublisherDesc(
+          configName: "Nightlies",
+          transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
+          )
+        ])
+    }
+    echo "archived to https://nightlies.apache.org/${remotePath}"
   }
-  echo "archived to https://nightlies.apache.org/${remotePath}"
 }
 
 def cleanAgent(job_name) {
-  def maxJobHours = 12
-  echo "Cleaning project, processes, docker for '${job_name}' on ${NODE_NAME}…" ;
-  sh """
-      git clean -qxdff -e build/test/jmh-result.json || true;
-      if pgrep -xa docker || pgrep -af "build/docker" || pgrep -af "cassandra-builds/build-scripts" ; then docker system prune --all --force --filter "until=${maxJobHours}h" || true ; else  docker system prune --force --volumes || true ;  fi;
-     """
+  if (isCanonical()) {
+    def maxJobHours = 12
+    echo "Cleaning project, processes, docker for '${job_name}' on ${NODE_NAME}…" ;
+    sh """
+        git clean -qxdff -e build/test/jmh-result.json || true;
+        if pgrep -xa docker || pgrep -af "build/docker" || pgrep -af "cassandra-builds/build-scripts" ; then docker system prune --all --force --filter "until=${maxJobHours}h" || true ; else  docker system prune --force --volumes || true ;  fi;
+      """
+  }
 }
 
 //  CASSANDRA-18130
 def saveAgentReport(build_name) {
-  // 
-  // echo "Updating disk usage report…";
-  // sh """
-  //     ( echo "----" ;
-  //     echo \$(date) ;
-  //     echo "${JOB_NAME} ${BUILD_NUMBER} ${build_name}" ;
-  //     du -xm / 2>/dev/null | sort -rn | head -n 30 ;
-  //     df -h ) | tee -a \$(date +"%Y%m%d%H%M")-disk-usage-stats.txt
-  //   """
-  //   copyToNightlies("*-disk-usage-stats.txt", "cassandra/agents/${NODE_NAME}/disk-usage/")
-  //   sh 'rm *-disk-usage-stats.txt'
+  if (isCanonical()) {
+    //
+    // echo "Updating disk usage report…";
+    // sh """
+    //     ( echo "----" ;
+    //     echo \$(date) ;
+    //     echo "${JOB_NAME} ${BUILD_NUMBER} ${build_name}" ;
+    //     du -xm / 2>/dev/null | sort -rn | head -n 30 ;
+    //     df -h ) | tee -a \$(date +"%Y%m%d%H%M")-disk-usage-stats.txt
+    //   """
+    //   copyToNightlies("*-disk-usage-stats.txt", "cassandra/agents/${NODE_NAME}/disk-usage/")
+    //   sh 'rm *-disk-usage-stats.txt'
+  }
 }
 
 /////////////////////////////////////////
@@ -466,7 +479,7 @@ def copyTestResults(build_name, build_number) {
 }
 
 def sendNotifications() {
-  if (isPostCommit()) {
+  if (isPostCommit() && isCanonical()) {
     // the following is expected only to work on ci-cassandra.apache.org
     try {
       script {
