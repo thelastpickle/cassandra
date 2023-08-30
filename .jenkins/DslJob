@@ -1,0 +1,18 @@
+pipelineJob('k8s-e2e') {
+    displayName('Kubernetes Plugin E2E Test')
+
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        url('https://github.com/infracloudio/cassandra.git')
+                    }
+                    branches('*/infracloud/cassandra-5.0')
+                }
+            }
+            scriptPath('.jenkins/')
+        }
+    }
+}
+
