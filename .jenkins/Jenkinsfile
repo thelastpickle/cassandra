@@ -232,8 +232,8 @@ def isCanonical() {
  * Stops the pipeline on any failure
  **/
 def buildJob(build_script, toCopy) {
-  //def archs = ['cassandra', 'cassandra-arm64'] // uncomment when ready for arm64 testing
-  def archs = ['cassandra']
+  //def archs = ['cassandra-x86', 'cassandra-arm64'] // uncomment when ready for arm64 testing
+  def archs = ['cassandra-x86']
   def jdks = "${javaVersionsSupported}".split(/,/, -1)
   def builds_per_arch = [:]
   for (a in archs) {
@@ -309,8 +309,8 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
  * Stops the pipeline on any failure
  **/
 def testJob(test_script, test_type, splits=1, toCopy='') {
-  //def archs = ['cassandra', 'cassandra-arm64'] // uncomment when ready for arm64 testing
-  def archs = ['cassandra']
+  //def archs = ['cassandra-x86', 'cassandra-arm64'] // uncomment when ready for arm64 testing
+  def archs = ['cassandra-x86']
   //def jdks = "${javaVersionsSupported}".split(/,/, -1) // TODO uncomment – this is the real mcoy
   def jdks = ['11']
   def pythons = ['3.7']
