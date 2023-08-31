@@ -43,21 +43,22 @@
 pipeline {
   agent {
     kubernetes {
+      label 'cassandra'
+      defaultContainer 'alpine'
       yaml '''
         apiVersion: v1
         kind: Pod
         metadata:
           labels:
-            label: cassandra
+            jenkins: label
         spec:
           containers:
-          - name: busybox
-            image: busybox
+          - name: alpine
+            image: alpine:3.11
             command:
             - cat
             tty: true
         '''
-      retries 2
     }
   }
   options {
@@ -72,9 +73,10 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        container('busybox') {
-          cleanWs()
-          script { currentBuild.result='SUCCESS' }
+        container('alpine') {
+          //cleanWs()
+          //script { currentBuild.result='SUCCESS' }
+          echo "in container"
           }
       }
     }
