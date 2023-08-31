@@ -58,7 +58,7 @@ pipeline {
         script { currentBuild.result='SUCCESS' }
       }
     }
-    stage('Builds') {
+ /**    stage('Builds') {
       parallel {
         stage('artifacts') {
           steps {
@@ -74,7 +74,7 @@ pipeline {
             buildJob(".build/docker/check-code.sh", "")
           }
         }
-/**        stage('debian') {
+        stage('debian') {
           steps {
             buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
           }
