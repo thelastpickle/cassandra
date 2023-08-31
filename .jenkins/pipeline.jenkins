@@ -41,7 +41,7 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-  agent { label 'cassandra' }
+  agent any
   options {
     githubProjectProperty('https://github.com/apache/cassandra')
     parallelsAlwaysFailFast()
