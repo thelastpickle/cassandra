@@ -41,7 +41,25 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            label: cassandra
+        spec:
+          containers:
+          - name: busybox
+            image: busybox
+            command:
+            - cat
+            tty: true
+        '''
+      retries 2
+    }
+  }
   options {
     githubProjectProperty('https://github.com/apache/cassandra')
     parallelsAlwaysFailFast()
@@ -54,8 +72,10 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        cleanWs()
-        script { currentBuild.result='SUCCESS' }
+        container('busybox') {
+          cleanWs()
+          script { currentBuild.result='SUCCESS' }
+          }
       }
     }
  /**    stage('Builds') {
