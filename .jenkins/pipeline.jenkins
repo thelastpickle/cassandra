@@ -74,9 +74,9 @@ pipeline {
     stage('Init') {
       steps {
         container('alpine') {
-          //cleanWs()
-          //script { currentBuild.result='SUCCESS' }
-          sh 'echo "stage init"'
+          cleanWs()
+          script { currentBuild.result='SUCCESS' }
+          //sh 'echo "stage init"'
           }
       }
     }
@@ -84,7 +84,7 @@ pipeline {
       parallel {
         stage('artifacts') {
           steps {
-            //buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "stage artifacts"'
           }
         }
