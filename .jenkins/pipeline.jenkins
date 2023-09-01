@@ -85,7 +85,7 @@ pipeline {
         stage('artifacts') {
           steps {
             sh 'echo "starting artifacts stage"'
-            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh jdk_11_latest", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh openjdk-11-jdk", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "stage artifacts"'
           }
         }
