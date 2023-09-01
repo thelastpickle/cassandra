@@ -76,15 +76,16 @@ pipeline {
         container('alpine') {
           //cleanWs()
           //script { currentBuild.result='SUCCESS' }
-          echo "in container"
+          sh 'echo "stage init"'
           }
       }
     }
- /**    stage('Builds') {
+    stage('Builds') {
       parallel {
         stage('artifacts') {
           steps {
-            buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            //buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            sh 'echo "stage artifacts"'
           }
         }
       }
@@ -93,32 +94,38 @@ pipeline {
      parallel {
         stage('lint') {
           steps {
-            buildJob(".build/docker/check-code.sh", "")
+            //buildJob(".build/docker/check-code.sh", "")
+            sh 'echo "stage lint"'
           }
         }
         stage('debian') {
           steps {
-            buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+            //buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+            sh 'echo "stage debian"'
           }
         }
         stage('redhat') {
           steps {
-            buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+            //buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+            sh 'echo "stage redhat"'
           }
         }
         stage('centos7') {
           steps {
-            buildJob(".build/docker/build-redhat.sh noboolean", "*.rpm")
+            //buildJob(".build/docker/build-redhat.sh noboolean", "*.rpm")
+            sh 'echo "stage centos7"'
           }
         }
        stage('stress') {
          steps {
-           testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           //testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           sh 'echo "stage stress"'
          }
        }
        stage('fqltool') {
          steps {
-           testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+           //testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+           sh 'echo "stage fqltool"'
          }
        }
       // XXX – commented out for infracloud/cassandra-5.0 branch
@@ -193,7 +200,7 @@ pipeline {
       //    }
       //  }
      }
-    }**/
+    }
     stage('Summary') {
       steps {
        // FIXME is this needed if each job is submitting its own results to the overall pipeline ??
@@ -204,8 +211,9 @@ pipeline {
        // FIXME how to collect and build one test report file ?? 
        //generateUnifiedTestReport()
        
-        collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
-        copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
+        //collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
+        //copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
+        sh 'echo "stage summary"'
       }
     }
   }
