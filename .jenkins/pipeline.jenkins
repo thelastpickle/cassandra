@@ -76,7 +76,7 @@ pipeline {
         container('alpine') {
           cleanWs()
           script { currentBuild.result='SUCCESS' }
-          //sh 'echo "stage init"'
+          sh 'echo "stage init"'
           }
       }
     }
