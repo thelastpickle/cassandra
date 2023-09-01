@@ -85,7 +85,7 @@ pipeline {
         stage('artifacts') {
           steps {
             sh 'echo "starting artifacts stage"'
-            buildJob(".build/docker/_docker_run.sh", "bullseye-build.docker", "build-jars.sh")
+            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh")
             sh 'echo "stage artifacts"'
           }
         }
