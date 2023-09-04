@@ -290,7 +290,9 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
     cleanWs()
     checkout scm
+    sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
+    sh "echo tool success"
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
