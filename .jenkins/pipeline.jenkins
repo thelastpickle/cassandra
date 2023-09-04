@@ -41,12 +41,6 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-
-  environment {
-        // Enable debug mode for the entire pipeline
-        PIPELINE_SCRIPT_DEBUG = 'true'
-    }
-
   agent {
     kubernetes {
       label 'cassandra'
@@ -75,6 +69,7 @@ pipeline {
   environment {
     javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = javaVersionsSupported()
+    PIPELINE_SCRIPT_DEBUG = 'true'
   }
   stages {
     stage('Init') {
