@@ -1,8 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-operator-user-configuration
+data:
+  1-system-message.yaml: |
+    jenkins:
+      tool:
+        jdk:
+          installations:
+            - name: jdk11
+              home: "/jdk"
+              properties:
+                - installSource:
+                    installers:
+                      - adoptOpenJdkInstaller:
+                          id: "jdk-11.0.14+9"
+---   
 apiVersion: jenkins.io/v1alpha2
 kind: Jenkins
 metadata:
   name: example
 spec:
+  configurationAsCode:
+    configurations:
+    - name: jenkins-operator-user-configuration
   service:
     type: ClusterIP
     port: 8080
@@ -34,6 +55,8 @@ spec:
       version: "1.37.3"
     - name: timestamper
       version: "1.26"
+    - name: openJDK-native-plugin
+      version: "1.7"
     basePlugins:
     - name: kubernetes
       version: "4029.v5712230ccb_f8"
@@ -46,7 +69,7 @@ spec:
     - name: job-dsl
       version: "1.84"
     - name: configuration-as-code
-      version: "1670.v564dc8b_982d0"
+      version: "1700.v6f448841296e"
     - name: kubernetes-credentials-provider
       version: "1.225.v14f9e6b_28f53"
     disableCSRFProtection: false
