@@ -8,9 +8,9 @@ data:
       tool:
         installations:
           - name: "OpenJDK 11" # jdk_11_latest
-            home: "/usr/lib/jvm/java-11-openjdk-amd64"
+            home: "/opt/java/"
           - name: "OpenJDK 17"
-            home: "/usr/lib/jvm/java-17-openjdk-amd64"
+            home: "/opt/java/"
 ---   
 apiVersion: jenkins.io/v1alpha2
 kind: Jenkins

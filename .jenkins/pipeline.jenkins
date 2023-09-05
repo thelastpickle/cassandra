@@ -42,7 +42,7 @@
 
 pipeline {
     agent any
-    
+
   options {
     githubProjectProperty('https://github.com/apache/cassandra')
     parallelsAlwaysFailFast()
@@ -56,11 +56,11 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        container('alpine') {
+        //container('alpine') {
           cleanWs()
           script { currentBuild.result='SUCCESS' }
           sh 'echo "stage init"'
-          }
+        //  }
       }
     }
     stage('Builds') {
