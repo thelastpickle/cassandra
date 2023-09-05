@@ -8,13 +8,10 @@ data:
       tool:
         jdk:
           installations:
-            - name: jdk11
-              home: "/jdk"
-              properties:
-                - installSource:
-                    installers:
-                      - adoptOpenJdkInstaller:
-                          id: "jdk-11.0.14+9"
+            - name: jdk_11_latest
+              home: "/opt/java/openjdk/bin/java"
+            - name: jdk_17_latest
+              home: "/opt/java/openjdk/bin/java"
 ---   
 apiVersion: jenkins.io/v1alpha2
 kind: Jenkins
