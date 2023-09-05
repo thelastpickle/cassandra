@@ -41,7 +41,26 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-    agent any
+  agent {
+    kubernetes {
+      label 'cassandra'
+      defaultContainer 'alpine'
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            jenkins: label
+        spec:
+          containers:
+          - name: alpine
+            image: alpine:3.11
+            command:
+            - cat
+            tty: true
+        '''
+    }
+  }
 
   options {
     githubProjectProperty('https://github.com/apache/cassandra')
@@ -56,11 +75,11 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        //container('alpine') {
+        container('alpine') {
           cleanWs()
           script { currentBuild.result='SUCCESS' }
           sh 'echo "stage init"'
-        //  }
+          }
       }
     }
     stage('Builds') {
