@@ -55,6 +55,8 @@ spec:
       version: "1.37.3"
     - name: timestamper
       version: "1.26"
+    - name: openJDK-native-plugin
+      version: "1.7"
     basePlugins:
     - name: kubernetes
       version: "4029.v5712230ccb_f8"
