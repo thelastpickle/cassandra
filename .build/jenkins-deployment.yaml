@@ -12,6 +12,27 @@ data:
               home: "/opt/java/openjdk/bin/java"
             - name: jdk_17_latest
               home: "/opt/java/openjdk/bin/java"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-operator-user-configuration2
+data:
+  jdk.groovy: |
+    import hudson.model.JDK
+
+    def jdkName = 'MyCustomJDK'
+    def jdkPath = '/path/to/your/jdk'
+
+    def jdk = Jenkins.instance.getDescriptorByType(JDK.DescriptorImpl.class).getInstallations().find { it.getName() == jdkName }
+
+    if (!jdk) {
+        jdk = new JDK(jdkName, jdkPath)
+        Jenkins.instance.getDescriptorByType(JDK.DescriptorImpl.class).setInstallations(jdk)
+        Jenkins.instance.save()
+    }
+
+    return jdk.getName()
 ---   
 apiVersion: jenkins.io/v1alpha2
 kind: Jenkins
@@ -21,17 +42,16 @@ spec:
   configurationAsCode:
     configurations:
     - name: jenkins-operator-user-configuration
-  service:
-    type: ClusterIP
-    port: 8080
-  configurationAsCode:
-    configurations: []
     secret:
       name: ""
   groovyScripts:
-    configurations: []
+    configurations:
+    - name: jenkins-operator-user-configuration2
     secret:
       name: ""
+  service:
+    type: ClusterIP
+    port: 8080
   jenkinsAPISettings:
     authorizationStrategy: createUser
   master:
