@@ -6,11 +6,15 @@ data:
   1-system-message.yaml: |
     jenkins:
       tool:
-        installations:
-          - name: "OpenJDK 11" # jdk_11_latest
-            home: "/opt/java/"
-          - name: "OpenJDK 17"
-            home: "/opt/java/"
+        jdk:
+          installations:
+            - name: jdk11
+              home: "/jdk"
+              properties:
+                - installSource:
+                    installers:
+                      - adoptOpenJdkInstaller:
+                          id: "jdk-11.0.14+9"
 ---   
 apiVersion: jenkins.io/v1alpha2
 kind: Jenkins
