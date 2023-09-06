@@ -1,8 +1,11 @@
 # Use Alpine Linux as the base image
-FROM alpine:latest
+FROM jenkins/inbound-agent:latest
 
+USER root
 # Install required packages
-RUN apk --no-cache add python3 xz
+RUN apt-get update
+RUN apt-get install python3 -y
+RUN apt-get install xz-utils -y
 
 ENV JAVA_HOME_11=/usr/bin/jdk_11
 ENV PATH="$JAVA_HOME_11/bin:$PATH"
@@ -16,12 +19,12 @@ RUN mkdir -p $JAVA_HOME_11 && \
     mkdir -p $JAVA_HOME_17
 
 # Download and install OpenJDK 11
-RUN apk --no-cache add openjdk11-jdk && \
-    mv /usr/lib/jvm/java-11-openjdk/* $JAVA_HOME_11
+RUN apt-get install openjdk-11-jdk -y && \
+    mv /usr/lib/jvm/java-11-openjdk-amd64/* $JAVA_HOME_11
 
 # Download and install OpenJDK 17
-RUN apk --no-cache add openjdk17-jdk && \
-    mv /usr/lib/jvm/java-17-openjdk/* $JAVA_HOME_17
+RUN apt-get install openjdk-17-jdk -y && \
+    mv /usr/lib/jvm/java-17-openjdk-amd64/* $JAVA_HOME_17
 
 # Verify installations
 RUN python3 --version
