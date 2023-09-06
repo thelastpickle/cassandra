@@ -44,7 +44,7 @@ pipeline {
   agent {
     kubernetes {
       label 'cassandra'
-      defaultContainer 'alpine'
+      defaultContainer 'jnlp'
       yaml '''
         apiVersion: v1
         kind: Pod
@@ -75,7 +75,7 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        container('alpine') {
+        container('jnlp') {
           cleanWs()
           script { currentBuild.result='SUCCESS' }
           sh 'echo "stage init"'
