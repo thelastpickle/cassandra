@@ -54,7 +54,7 @@ pipeline {
         spec:
           containers:
           - name: alpine
-            image: richamishra006/apache-k8s-agent:v6
+            image: jenkins/inbound-agent:4.10-3
             command:
             - cat
             tty: true
