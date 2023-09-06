@@ -54,7 +54,7 @@ pipeline {
         spec:
           containers:
           - name: alpine
-            image: richamishra006/apache-k8s-agent:v5
+            image: richamishra006/apache-k8s-agent:v6
             command:
             - cat
             tty: true
