@@ -44,7 +44,7 @@ pipeline {
   agent {
     kubernetes {
       label 'cassandra'
-      defaultContainer 'jnlp'
+      defaultContainer 'alpine'
       yaml '''
         apiVersion: v1
         kind: Pod
@@ -54,7 +54,7 @@ pipeline {
         spec:
           containers:
           - name: alpine
-            image: alpine:3.11
+            image: richamishra006/apache-k8s-agent:v1
             command:
             - cat
             tty: true
@@ -84,7 +84,7 @@ pipeline {
     }
     stage('Builds') {
       parallel {
-        stage('artifacts') {
+        stage('alpine') {
           steps {
             sh 'echo "starting artifacts stage"'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
