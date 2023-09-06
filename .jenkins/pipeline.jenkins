@@ -53,8 +53,8 @@ pipeline {
             jenkins: label
         spec:
           containers:
-          - name: alpine
-            image: richamishra006/apache-k8s-agent:v10
+          - name: jnlp
+            image: richamishra006/apache-k8s-agent:v5
             command:
             - "cat"
             tty: true
@@ -75,7 +75,7 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        container('alpine') {
+        container('jnlp') {
           cleanWs()
           script { currentBuild.result='SUCCESS' }
           sh 'echo "stage init"'
