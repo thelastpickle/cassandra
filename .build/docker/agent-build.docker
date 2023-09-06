@@ -1,34 +1,4 @@
 # Use Alpine Linux as the base image
-FROM jenkins/inbound-agent:latest
+FROM alpine:latest
+RUN apk add xz
 
-USER root
-# Install required packages
-RUN apt-get update
-RUN apt-get install python3 -y
-#RUN apt-get install xz-utils -y
-
-ENV JAVA_HOME_11=/usr/bin/jdk_11
-ENV PATH="$JAVA_HOME_11/bin:$PATH"
-
-# Set environment variables for JDK 17
-ENV JAVA_HOME_17=/usr/bin/jdk_17
-ENV PATH="$JAVA_HOME_17/bin:$PATH"
-
-# Create directories for JDK installations
-RUN mkdir -p $JAVA_HOME_11 && \
-    mkdir -p $JAVA_HOME_17
-
-# Download and install OpenJDK 11
-RUN apt-get install openjdk-11-jdk -y && \
-    mv /usr/lib/jvm/java-11-openjdk-amd64/* $JAVA_HOME_11
-
-# Download and install OpenJDK 17
-RUN apt-get install openjdk-17-jdk -y && \
-    mv /usr/lib/jvm/java-17-openjdk-amd64/* $JAVA_HOME_17
-
-# Verify installations
-RUN python3 --version
-#RUN xz --version
-
-# Set the working directory (optional)
-WORKDIR /app
