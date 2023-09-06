@@ -84,11 +84,12 @@ pipeline {
     }
     stage('Builds') {
       parallel {
-        stage('alpine') {
+        stage('artifacts') {
           steps {
             sh 'echo "starting artifacts stage"'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "stage artifacts"'
+            sh 'sleep 8000'
           }
         }
       }
