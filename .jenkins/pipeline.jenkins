@@ -57,6 +57,7 @@ pipeline {
             image: jenkins/inbound-agent:4.10-3
             command:
             - "cat"
+            tty: true
         '''
     }
   }
