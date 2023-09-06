@@ -88,10 +88,8 @@ pipeline {
           steps {
             sh 'echo "starting artifacts stage"'
             sh '$JAVA_HOME_11/bin/java -version'
-            sh 'which xz'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "stage artifacts"'
-            sh 'sleep 8000'
           }
         }
       }
