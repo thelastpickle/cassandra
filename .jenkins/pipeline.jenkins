@@ -55,6 +55,8 @@ pipeline {
           containers:
           - name: alpine
             image: jenkins/inbound-agent:4.10-3
+            command:
+            - "cat"
         '''
     }
   }
