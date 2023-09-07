@@ -56,7 +56,7 @@ pipeline {
           - name: jnlp
             image: richamishra006/apache-k8s-agent:v15
             command:
-            - "cat"
+            - ['/bin/sh', '-c', '/usr/local/bin/jenkins-agent']
             tty: true
         '''
     }
@@ -82,15 +82,6 @@ pipeline {
           }
       }
     }
-    stage('Checkout') {
-      steps {
-        // Checkout your Git repository
-        container(name: 'alpine', shell: '/bin/sh') {
-          sh 'git clone https://github.com/infracloudio/cassandra.git'
-        }
-      }
-    }
-
 
     stage('Builds') {
       parallel {
