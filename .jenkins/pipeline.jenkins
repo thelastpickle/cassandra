@@ -322,6 +322,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         }
       } finally {
         attempt = attempt + 1
+        sh "ls"
         sh "xz -f *_attempt_*.log"
         copyToNightlies("*_attempt_*.log.xz", "${build_script_safe_name}/jdk${jdk}/${arch}/")
         if (0 == statusCode) {
