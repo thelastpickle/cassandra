@@ -82,16 +82,15 @@ pipeline {
           }
       }
     }
-  stages {
-      stage('Checkout') {
-        steps {
-          // Checkout your Git repository
-          container(name: 'alpine', shell: '/bin/sh') {
-            sh 'git clone https://github.com/infracloudio/cassandra.git'
-          }
+    stage('Checkout') {
+      steps {
+        // Checkout your Git repository
+        container(name: 'alpine', shell: '/bin/sh') {
+          sh 'git clone https://github.com/infracloudio/cassandra.git'
         }
       }
     }
+
 
     stage('Builds') {
       parallel {
