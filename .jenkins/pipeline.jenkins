@@ -53,8 +53,8 @@ pipeline {
             jenkins: label
         spec:
           containers:
-          - name: jnlp
-            image: jenkins/inbound-agent
+          - name: alpine
+            image: richamishra006/apache-k8s-agent:v5
             command:
             - "cat"
             tty: true
@@ -82,11 +82,21 @@ pipeline {
           }
       }
     }
+  stages {
+      stage('Checkout') {
+        steps {
+          // Checkout your Git repository
+          container(name: 'alpine', shell: '/bin/sh') {
+            sh 'git clone https://github.com/infracloudio/cassandra.git'
+          }
+        }
+      }
+    }
+
     stage('Builds') {
       parallel {
         stage('artifacts') {
-          steps {
-            
+          steps {            
             sh 'echo "starting artifacts stage"'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "stage artifacts"'
