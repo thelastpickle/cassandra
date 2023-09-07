@@ -56,7 +56,9 @@ pipeline {
           - name: jnlp
             image: richamishra006/apache-k8s-agent:v15
             command:
-            - ['/bin/sh', '-c', '/usr/local/bin/jenkins-agent']
+              - /bin/sh 
+              - -c
+              - /usr/local/bin/jenkins-agent
             tty: true
         '''
     }
