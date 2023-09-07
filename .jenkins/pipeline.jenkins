@@ -314,7 +314,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         }
         echo "Executing `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
-        if (".build/docker/build-artifacts.sh" == build_script) {
+        if (".build/docker/build-artifacts.sh" == build_script || ".build/docker/_docker_run.sh" == build_script) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
