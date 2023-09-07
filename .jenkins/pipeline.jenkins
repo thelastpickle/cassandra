@@ -75,7 +75,7 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        container('jnlp') {
+        container('alpine') {
           cleanWs()
           script { currentBuild.result='SUCCESS' }
           sh 'echo "stage init"'
