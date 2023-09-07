@@ -1,4 +1,11 @@
 # Use Alpine Linux as the base image
-FROM alpine:latest
-RUN apk add xz
+FROM jenkins/inbound-agent:latest-jdk17
 
+USER root
+
+RUN apt-get update
+RUN apt-get install xz-utils -y 
+
+USER jenkins
+
+ENTRYPOINT ['/bin/sh' '-c', '/usr/local/bin/jenkins-agent']

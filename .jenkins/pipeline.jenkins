@@ -54,7 +54,7 @@ pipeline {
         spec:
           containers:
           - name: jnlp
-            image: jenkins/inbound-agent:latest-jdk17
+            image: richamishra006/apache-k8s-agent:v15
             command:
             - "cat"
             tty: true
