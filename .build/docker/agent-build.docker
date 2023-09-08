@@ -23,6 +23,10 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y docker-ce docker-ce-cli containerd.io
 
+VOLUME /run/containerd/containerd.sock
+RUN usermod -aG docker jenkins
+
+
 USER jenkins
 
-#ENTRYPOINT ['/bin/sh' '-c', '/usr/local/bin/jenkins-agent']
+

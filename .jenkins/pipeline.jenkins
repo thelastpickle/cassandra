@@ -54,12 +54,20 @@ pipeline {
         spec:
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v16
+            image: richamishra006/apache-k8s-agent:v17
             command:
               - /bin/sh 
               - -c
               - /usr/local/bin/jenkins-agent
+              - service docker start
+            volumeMounts:
+            - name: containerd-socket
+              mountPath: /run/containerd/containerd.sock          
             tty: true
+          volumes:
+          - name: containerd-socket
+            hostPath:
+              path: /run/containerd/containerd.sock
         '''
     }
   }
@@ -90,8 +98,9 @@ pipeline {
         stage('artifacts') {
           steps {            
             sh 'echo "starting artifacts stage"'
+            sh 'service docker status'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-            sh 'echo "stage artifacts"'
+            sh 'echo "finishing stage artifacts"'
           
           }
         }
