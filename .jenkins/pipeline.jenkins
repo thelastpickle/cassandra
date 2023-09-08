@@ -97,6 +97,7 @@ pipeline {
         stage('artifacts') {
           steps {            
             sh 'echo "starting artifacts stage"'
+            sh 'service docker start'
             sh 'service docker status'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
