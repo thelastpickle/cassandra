@@ -63,6 +63,8 @@ pipeline {
             - name: containerd-socket
               mountPath: /run/containerd/containerd.sock          
             tty: true
+            securityContext:
+              privileged: true
           volumes:
           - name: containerd-socket
             hostPath:
