@@ -58,8 +58,7 @@ pipeline {
             command:
               - /bin/sh 
               - -c
-              - /usr/local/bin/jenkins-agent
-              - service docker start
+              - /usr/local/bin/jenkins-agent && service docker start
             volumeMounts:
             - name: containerd-socket
               mountPath: /run/containerd/containerd.sock          
