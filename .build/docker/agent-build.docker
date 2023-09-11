@@ -24,9 +24,10 @@ RUN apt-get update && \
     apt-get install -y docker-ce docker-ce-cli containerd.io
 
 VOLUME /run/containerd/containerd.sock
-RUN usermod -aG docker jenkins
+CMD ["service docker start"]
+#RUN usermod -aG docker jenkins
 
 
-USER jenkins
+#USER jenkins
 
 
