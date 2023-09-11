@@ -23,11 +23,11 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y docker-ce docker-ce-cli containerd.io
 
-VOLUME /run/containerd/containerd.sock
-CMD ["service docker start"]
-#RUN usermod -aG docker jenkins
+#VOLUME /var/run/docker.sock
+RUN echo 'jenkins ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN usermod -aG docker jenkins
 
 
-#USER jenkins
+USER jenkins
 
 

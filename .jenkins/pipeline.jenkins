@@ -54,21 +54,21 @@ pipeline {
         spec:
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v21
+            image: richamishra006/apache-k8s-agent:v23
             command:
               - /bin/sh 
               - -c
               - /usr/local/bin/jenkins-agent && service docker start
             volumeMounts:
-            - name: containerd-socket
-              mountPath: /run/containerd/containerd.sock          
+            - name: docker-socket
+              mountPath: /var/run/docker.sock        
             tty: true
             securityContext:
               privileged: true
           volumes:
-          - name: containerd-socket
+          - name: docker-socket
             hostPath:
-              path: /run/containerd/containerd.sock
+              path: /var/run/docker.sock
         '''
     }
   }
