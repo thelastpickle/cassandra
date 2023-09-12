@@ -54,7 +54,7 @@ pipeline {
         spec:
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v25
+            image: richamishra006/apache-k8s-agent:v26
             command:
               - /bin/sh 
               - -c

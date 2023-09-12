@@ -48,7 +48,7 @@ RUN rm -f /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz
 ENV PATH $MAVEN_HOME/bin:$PATH
 
 # Create the .m2/repository directory and set permissions
-RUN mkdir -p $MAVEN_REPO && chmod 777 -R $MAVEN_REPO
+RUN mkdir -p $MAVEN_REPO && chmod 777 -R /root/.m2
 
 #VOLUME /var/run/docker.sock
 
