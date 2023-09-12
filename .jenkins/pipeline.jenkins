@@ -54,17 +54,17 @@ pipeline {
         spec:
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v23
+            image: richamishra006/apache-k8s-agent:v24
             command:
               - /bin/sh 
               - -c
-              - /usr/local/bin/jenkins-agent && service docker start
+              - /usr/local/bin/jenkins-agent
             volumeMounts:
             - name: docker-socket
               mountPath: /var/run/docker.sock        
             tty: true
             securityContext:
-              privileged: true
+              runAsUser: 0
           volumes:
           - name: docker-socket
             hostPath:
