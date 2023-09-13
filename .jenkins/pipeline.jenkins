@@ -44,7 +44,7 @@ pipeline {
   agent {
     kubernetes {
       label 'cassandra'
-      defaultContainer 'jnlp'
+      //defaultContainer 'jnlp'
       yaml '''
         apiVersion: v1
         kind: Pod
@@ -53,7 +53,7 @@ pipeline {
             jenkins: label
         spec:
           initContainers:
-          - name: init-docker-docket
+          - name: init-docker-socket
             image: alpine:latest
             command: ["sh", "-c", "chown jenkins:jenkins /var/run/docker.sock"]
             volumeMounts:
