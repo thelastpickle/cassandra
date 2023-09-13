@@ -55,7 +55,8 @@ pipeline {
           initContainers:
           - name: init-docker-socket
             image: alpine:latest
-            command: ["sh", "-c", "chown jenkins:jenkins /var/run/docker.sock"]
+            imagePullPolicy: Always
+            command: ["sh", "-c", "sleep 600"]
             volumeMounts:
             - name: docker-socket
               mountPath: /var/run/docker.sock
