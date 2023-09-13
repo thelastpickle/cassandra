@@ -22,10 +22,10 @@ RUN apt-get update && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
     apt-get install -y docker-ce docker-ce-cli containerd.io
-RUN apt-get install wget
-VOLUME /var/run/docker.sock
-#RUN chown -R jenkins:jenkins /var/run/docker.sock
 
+#VOLUME /var/run/docker.sock
+RUN usermod -aG docker jenkins
+#RUN chown -R 1000:1000 /var/run/docker.sock
 
 USER jenkins
 
