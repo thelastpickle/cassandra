@@ -44,7 +44,7 @@ pipeline {
   agent {
     kubernetes {
       label 'cassandra'
-      //defaultContainer 'jnlp'
+      defaultContainer 'jnlp'
       yaml '''
         apiVersion: v1
         kind: Pod
@@ -97,8 +97,7 @@ pipeline {
     stage('Builds') {
       parallel {
         stage('artifacts') {
-          steps {  
-            container('jnlp') {          
+          steps {          
             sh 'echo "starting artifacts stage"'
             //sh 'ls /run/containerd/'
             //sh 'ls /var/run/'
@@ -111,7 +110,6 @@ pipeline {
           }
         }
       }
-    }
     stage('Test') {
      parallel {
         stage('lint') {
