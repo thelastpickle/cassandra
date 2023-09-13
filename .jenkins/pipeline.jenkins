@@ -52,6 +52,19 @@ pipeline {
           labels:
             jenkins: label
         spec:
+          initContainers:
+            - name: init-docker-socket
+              image: alpine:latest
+              imagePullPolicy: Always
+              command:
+                - sh
+                - -c
+                - chown 1000:1000 /var/run/docker.sock
+              volumeMounts:
+                - name: docker-socket
+                  mountPath: /var/run/docker.sock
+              securityContext:
+                runAsUser: 0
           containers:
           - name: jnlp
             image: richamishra006/apache-k8s-agent:v31
