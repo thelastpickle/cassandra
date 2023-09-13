@@ -64,7 +64,7 @@ pipeline {
               mountPath: /var/run/docker.sock        
             tty: true
             securityContext:
-              privileged: true
+              runAsUser: 0
           volumes:
           - name: docker-socket
             hostPath:
