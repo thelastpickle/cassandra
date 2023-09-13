@@ -27,7 +27,8 @@
 ################################
 
 # variables, with defaults
-[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
+#[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
+[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0"))"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
 [ -d "${build_dir}" ] || { mkdir -p "${build_dir}" ; }
 
@@ -123,7 +124,7 @@ container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unc
     ${image_name} sleep 1h)
 
 echo "Running container ${container_name} ${container_id}"
-sleep 1800
+#sleep 1800
 #docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
