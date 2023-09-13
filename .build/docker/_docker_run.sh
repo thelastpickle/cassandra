@@ -27,11 +27,11 @@
 ################################
 
 # variables, with defaults
-#[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
-[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0"))"
+[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
+#[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0"))"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
 [ -d "${build_dir}" ] || { mkdir -p "${build_dir}" ; }
-
+echo "$CASSANDRA_DIR from _docker_run"
 java_version_default=`grep 'property\s*name="java.default"' ${cassandra_dir}/build.xml |sed -ne 's/.*value="\([^"]*\)".*/\1/p'`
 java_version_supported=`grep 'property\s*name="java.supported"' ${cassandra_dir}/build.xml |sed -ne 's/.*value="\([^"]*\)".*/\1/p'`
 
