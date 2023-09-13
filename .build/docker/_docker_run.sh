@@ -123,7 +123,7 @@ container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unc
     ${image_name} sleep 1h)
 
 echo "Running container ${container_name} ${container_id}"
-
+sleep 600
 #docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
