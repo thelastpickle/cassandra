@@ -23,34 +23,12 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y docker-ce docker-ce-cli containerd.io
 RUN apt-get install wget
+VOLUME /var/run/docker.sock
+#RUN chown -R jenkins:jenkins /var/run/docker.sock
 
-ENV MAVEN_VERSION 3.0.4
 
-# Set the base URL for downloading Maven
-ENV MAVEN_BASE_URL https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries
+USER jenkins
 
-# Define the installation directory for Maven
-ENV MAVEN_HOME /usr/share/maven
-
-# Define the directory where Maven will store its repository
-ENV MAVEN_REPO /root/.m2/repository
-
-# Create the Maven installation directory
-RUN mkdir -p $MAVEN_HOME
-
-# Download and install Maven
-RUN wget -q -O /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz $MAVEN_BASE_URL/apache-maven-${MAVEN_VERSION}-bin.tar.gz 
-
-RUN  tar -xzvf /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz -C $MAVEN_HOME --strip-components=1 
-RUN rm -f /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz
-
-# Set Maven environment variables
-ENV PATH $MAVEN_HOME/bin:$PATH
-
-# Create the .m2/repository directory and set permissions
-RUN mkdir -p $MAVEN_REPO && chmod 777 -R /root/.m2
-
-#VOLUME /var/run/docker.sock
 
 
 

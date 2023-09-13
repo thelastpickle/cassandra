@@ -52,9 +52,16 @@ pipeline {
           labels:
             jenkins: label
         spec:
+          initContainers:
+          - name: init-docker-docket
+            image: alpine:latest
+            command: ["sh", "-c", "chown jenkins:jenkins /var/run/docker.sock"]
+            volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v26
+            image: richamishra006/apache-k8s-agent:v30
             command:
               - /bin/sh 
               - -c
@@ -64,7 +71,7 @@ pipeline {
               mountPath: /var/run/docker.sock        
             tty: true
             securityContext:
-              runAsUser: 0
+              privileged: true
           volumes:
           - name: docker-socket
             hostPath:
