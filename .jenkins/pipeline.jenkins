@@ -107,7 +107,8 @@ pipeline {
     stage('Builds') {
       parallel {
         stage('artifacts') {
-          steps {            
+          steps {  
+            container('jnlp') {          
             sh 'echo "starting artifacts stage"'
             //sh 'ls /run/containerd/'
             //sh 'ls /var/run/'
@@ -116,6 +117,7 @@ pipeline {
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           
+          }
           }
         }
       }
