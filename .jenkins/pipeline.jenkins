@@ -60,6 +60,8 @@ pipeline {
             volumeMounts:
             - name: docker-socket
               mountPath: /var/run/docker.sock
+            securityContext:
+              runAsUser: 0
           containers:
           - name: jnlp
             image: richamishra006/apache-k8s-agent:v30
