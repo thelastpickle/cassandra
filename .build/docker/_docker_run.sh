@@ -119,7 +119,7 @@ container_name="cassandra_${dockerfile/.docker/}_${un_script_name}_jdk${java_ver
 docker_command="export ANT_OPTS=\"-Dbuild.dir=\${DIST_DIR} ${CASSANDRA_DOCKER_ANT_OPTS}\" ; \
                 source /home/build/cassandra/.build/docker/_set_java.sh ${java_version} ; \
                 /home/build/cassandra/.build/${run_script} ${@:4} ; exit \$? "
-sleep 1800
+
 # run without the default seccomp profile
 # re-use the host's maven repository
 container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unconfined --rm \
@@ -128,7 +128,7 @@ container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unc
     ${image_name} sleep 1h)
 
 echo "Running container ${container_name} ${container_id}"
-#sleep 1800
+sleep 3600
 #docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
