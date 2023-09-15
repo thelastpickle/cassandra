@@ -105,7 +105,7 @@ pipeline {
     stage('Init') {
       steps {
         container('jnlp') {
-          cleanWs()
+          //cleanWs()
           script { currentBuild.result='SUCCESS' }
           sh 'echo "stage init"'
           }
@@ -324,7 +324,7 @@ def buildJob(build_script, toCopy) {
 def _buildAxis(build_script, toCopy, arch, jdk) {
   node(arch) {
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
-    cleanWs()
+    //cleanWs()
     checkout scm
     sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
