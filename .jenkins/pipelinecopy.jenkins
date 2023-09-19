@@ -116,7 +116,7 @@ pipeline {
               kubernetes {
                   label "artifacts"
                   yaml '''
-                      spec:
+                    spec:
                       containers:
                       - name: jnlp
                         image: richamishra006/apache-k8s-agent:v31
@@ -130,8 +130,6 @@ pipeline {
                         tty: true
                         securityContext:
                           privileged: true
-                      //nodeSelector:
-                        //gke-node: first
                       - name: bullseye
                         image: apache/cassandra-bullseye-build:5687c7b6dcee1866f97a493aef77794f
                         command: ["bash", "-c"]
