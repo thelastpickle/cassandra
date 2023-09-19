@@ -142,10 +142,12 @@ pipeline {
                          path: ~/.m2/repository/
                       - name: dist-dir
                         hostPath:
-                         path: ~/jenkins/apache/cassandra/build
-                          
+                         path: ~/jenkins/apache/cassandra/build                          
                       '''
               }
+          steps {
+            sh 'echo "artifacts stage"'
+          }
           }
         }
       }   
