@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 MAINTAINER Apache Cassandra <dev@cassandra.apache.org>
 
 # CONTEXT is expected to be cassandra/.build
@@ -45,13 +45,12 @@ RUN echo 'Acquire::ftp::Timeout "60";' >> /etc/apt/apt.conf.d/80proxy.conf
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
-    apt-get install -y --no-install-recommends software-properties-common apt-utils
+    apt-get install -y --no-install-recommends software-properties-common apt-utils gpg-agent
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y curl git-core python3-pip \
-        python3.6 python3.6-venv python3.6-dev \
         python3.7 python3.7-venv python3.7-dev \
         python3.8 python3.8-venv python3.8-dev \
         python3.11 python3.11-venv python3.11-dev \
@@ -60,11 +59,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         openjdk-8-jdk openjdk-11-jdk openjdk-17-jdk ant ant-optional
 
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.6 2
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 3
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 4
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 5
-RUN python3.6 -m pip install --upgrade pip
 RUN python3.7 -m pip install --upgrade pip
 RUN python3.8 -m pip install --upgrade pip
 
@@ -101,22 +98,13 @@ WORKDIR ${BUILD_HOME}
 ENV ANT_HOME=/usr/share/ant
 
 # run pip commands and setup virtualenv (note we do this after we switch to cassandra user so we
-# setup the virtualenv for the cassandra user and not the root user by accident) for Python 3.6/3.7/3.8
+# setup the virtualenv for the cassandra user and not the root user by accident) for Python 3.7/3.8
 # Don't build cython extensions when installing cassandra-driver. During test execution the driver
 # dependency is refreshed via pip install --upgrade, so that driver changes can be pulled in without
 # requiring the image to be rebuilt. Rebuilding compiled extensions is costly and is disabled by
 # default in test jobs using the CASS_DRIVER_X env vars below. However, if the extensions are
 # included in the base image, the compiled objects are not updated by pip at run time, which can
 # cause errors if the tests rely on new driver functionality or bug fixes.
-
-RUN virtualenv --python=python3.6 ${BUILD_HOME}/env3.6
-RUN chmod +x ${BUILD_HOME}/env3.6/bin/activate
-
-RUN /bin/bash -c "export CASS_DRIVER_NO_CYTHON=1 CASS_DRIVER_NO_EXTENSIONS=1 \
-    && source ${BUILD_HOME}/env3.6/bin/activate \
-    && pip3 install --upgrade pip \
-    && pip3 install -r /opt/requirements.txt \
-    && pip3 freeze --user"
 
 RUN virtualenv --python=python3.7 ${BUILD_HOME}/env3.7
 RUN chmod +x ${BUILD_HOME}/env3.7/bin/activate
@@ -145,11 +133,32 @@ RUN /bin/bash -c "export CASS_DRIVER_NO_CYTHON=1 CASS_DRIVER_NO_EXTENSIONS=1 \
     && pip3 install -r /opt/requirements.txt \
     && pip3 freeze --user"
 
+# 5+ requires java11
+RUN sudo update-java-alternatives --set java-1.11.0-openjdk-$(dpkg --print-architecture)
+
 # Initialize the CCM git repo as well as this also can fail to clone
-RUN /bin/bash -c "source ${BUILD_HOME}/env3.6/bin/activate && \
+RUN /bin/bash -c 'source ${BUILD_HOME}/env3.7/bin/activate && \
     ccm create -n 1 -v git:trunk test && ccm remove test && \
+    ccm create -n 1 -v git:cassandra-5.0 test && ccm remove test'
+
+# <5 uses java8
+RUN sudo update-java-alternatives --set java-1.8.0-openjdk-$(dpkg --print-architecture)
+
+# Initialize the CCM git repo as well as this also can fail to clone
+RUN /bin/bash -c "source ${BUILD_HOME}/env3.7/bin/activate && \
     ccm create -n 1 -v git:cassandra-4.1 test && ccm remove test && \
     ccm create -n 1 -v git:cassandra-4.0 test && ccm remove test"
+
+# Initialize ccm versions.  right side of each sequence needs to be updated with new releases.
+#  this can be checked with:
+#  `curl -s https://downloads.apache.org/cassandra/ | grep -oP '(?<=href=\")[0-9]+\.[0-9]+\.[0-9]+(?=)' | sort -V | uniq -w 3`
+RUN bash -c 'source ${BUILD_HOME}/env3.7/bin/activate && \
+    for i in {1..22} ; do echo $i ; ccm create --quiet -n 1 -v binary:2.1.$i test && ccm remove test ; done && \
+    for i in {1..19} ; do echo $i ; ccm create --quiet -n 1 -v binary:2.2.$i test && ccm remove test ; done && \
+    for i in {1..29} ; do echo $i ; ccm create --quiet -n 1 -v binary:3.0.$i test && ccm remove test ; done && \
+    for i in {1..15} ; do echo $i ; ccm create --quiet -n 1 -v binary:3.11.$i test && ccm remove test ; done && \
+    for i in {1..11} ; do echo $i ; ccm create --quiet -n 1 -v binary:4.0.$i test && ccm remove test ; done && \
+    for i in {1..3}  ; do echo $i ; ccm create --quiet -n 1 -v binary:4.1.$i test && ccm remove test ; done'
 
 # the .git subdirectories to pip installed cassandra-driver breaks virtualenv-clone, so just remove them
 RUN rm -rf ${BUILD_HOME}/env*/src/cassandra-driver/.git
