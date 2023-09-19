@@ -44,7 +44,7 @@ pipeline {
   agent {
     kubernetes {
       label 'cassandra'
-      defaultContainer 'jnlp'
+      //defaultContainer 'jnlp'
       yaml '''
         apiVersion: v1
         kind: Pod
@@ -114,6 +114,7 @@ pipeline {
         stage('artifacts') {
           agent {
               kubernetes {
+                  label "artifacts"
                   yaml '''
                       spec:
                       containers:
