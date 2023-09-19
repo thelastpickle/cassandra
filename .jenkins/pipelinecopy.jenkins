@@ -140,6 +140,8 @@ pipeline {
                           mountPath: /home/build/.m2/repository
                         - name: dist-dir
                           mountPath: /dist
+                        securityContext:
+                          runAsUser: 1000
                       volumes:
                         - name: cass-dir
                           hostPath:
