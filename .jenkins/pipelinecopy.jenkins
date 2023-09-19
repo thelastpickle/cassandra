@@ -150,7 +150,6 @@ pipeline {
             sh 'echo "artifacts stage"'
           }
           }
-      }
       }   
       //parallel {
         //stage('artifacts') {
