@@ -118,6 +118,24 @@ pipeline {
                   yaml '''
                       spec:
                       containers:
+                      - name: jnlp
+                        image: richamishra006/apache-k8s-agent:v31
+                        command:
+                          - /bin/sh 
+                          - -c
+                          - /usr/local/bin/jenkins-agent
+                        volumeMounts:
+                        - name: docker-socket
+                          mountPath: /var/run/docker.sock   
+                        tty: true
+                        securityContext:
+                          privileged: true
+                      //nodeSelector:
+                        //gke-node: first
+                      volumes:
+                      - name: docker-socket
+                        hostPath:
+                          path: /var/run/docker.sock
                       - name: bullseye
                         image: apache/cassandra-bullseye-build:5687c7b6dcee1866f97a493aef77794f
                         command: ["bash", "-c"]
