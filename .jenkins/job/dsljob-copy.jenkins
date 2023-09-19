@@ -1,0 +1,34 @@
+#!/usr/bin/env groovy
+
+job('jenkins-operator-job-dsl-seed') {
+    description('Seed Job that generates and triggers the GeneratedPipelineJob')
+    configure { project ->
+        project / 'publishers' << 'hudson.tasks.BuildTrigger' {
+            childProjects('k8s-e2e')
+            threshold {
+                name('SUCCESS')
+            }
+        }
+    }
+}
+
+
+
+pipelineJob('k8s-e2e') {
+    displayName('Kubernetes Plugin E2E Test')
+
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        url('https://github.com/infracloudio/cassandra.git')
+                    }
+                    branches('*/infracloud/cassandra-5.0')
+                }
+            }
+            scriptPath('.jenkins/pipeline-copy.jenkins')
+        }
+    }
+}
+
