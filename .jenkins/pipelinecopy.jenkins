@@ -145,11 +145,12 @@ pipeline {
                          path: ~/jenkins/apache/cassandra/build                          
                       '''
               }
+          }
           steps {
             sh 'echo "artifacts stage"'
           }
           }
-        }
+      }
       }   
       //parallel {
         //stage('artifacts') {
