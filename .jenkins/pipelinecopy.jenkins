@@ -78,8 +78,8 @@ pipeline {
             tty: true
             securityContext:
               privileged: true
-          nodeSelector:
-            gke-node: first
+          //nodeSelector:
+            //gke-node: first
           volumes:
           - name: docker-socket
             hostPath:
