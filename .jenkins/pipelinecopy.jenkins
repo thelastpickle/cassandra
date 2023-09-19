@@ -149,13 +149,13 @@ pipeline {
                       volumes:
                       - name: cass-dir
                         hostPath:
-                         path: ~/jenkins/apache/cassandra
+                         path: /home/nishant/jenkins/apache/cassandra
                       - name: m2-dir
                         hostPath:
-                         path: ~/.m2/repository/
+                         path: /home/nishant/.m2/repository/
                       - name: dist-dir
                         hostPath:
-                         path: ~/jenkins/apache/cassandra/build
+                         path: /home/nishant/jenkins/apache/cassandra/build
                       - name: docker-socket
                         hostPath:
                           path: /var/run/docker.sock                        
