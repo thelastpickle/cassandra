@@ -148,7 +148,12 @@ pipeline {
               }
           }
           steps {
-            sh 'echo "artifacts stage"'
+            container('bulleseye') {
+              script {
+              sh 'echo "artifacts stage"'
+              }
+            }
+
           }
           }
       }   
