@@ -145,16 +145,16 @@ pipeline {
                       '''
               }
           }  
-      parallel {
-        stage('artifacts') {
-          steps {          
+      //parallel {
+        //stage('artifacts') {
+          //steps {          
             sh 'echo "starting artifacts stage"'
             //buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-            sh 'echo "finishing stage artifacts"'
+            //sh 'echo "finishing stage artifacts"'
           
-          }
-          }
-        }
+          //}
+          //}
+        //}
       }
     stage('Test') {
      parallel {
