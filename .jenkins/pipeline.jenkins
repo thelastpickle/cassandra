@@ -114,10 +114,6 @@ pipeline {
         stage('artifacts') {
           steps {          
             sh 'echo "starting artifacts stage"'
-            //sh 'ls /run/containerd/'
-            //sh 'ls /var/run/'
-            //sh 'service docker start'
-            //sh 'service docker status'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           
@@ -153,7 +149,7 @@ pipeline {
         }
        stage('stress') {
          steps {
-           //testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
        }
@@ -350,7 +346,6 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         //}
       } finally {
         attempt = attempt + 1
-        sh "ls"
         sh "xz -f *_attempt_*.log"
         copyToNightlies("*_attempt_*.log.xz", "${build_script_safe_name}/jdk${jdk}/${arch}/")
         if (0 == statusCode) {
