@@ -132,7 +132,13 @@ pipeline {
                           privileged: true
                       - name: bullseye
                         image: apache/cassandra-bullseye-build:5687c7b6dcee1866f97a493aef77794f
-                        command: ["bash", "-c", "sleep 3000"]
+                        command: ["bash", "-c"]
+                        args:
+                          - >
+                            export ANT_OPTS="-Dbuild.dir=/dist ${CASSANDRA_DOCKER_ANT_OPTS}" ;
+                            source /home/build/cassandra/.build/docker/_set_java.sh 11 ;
+                            /home/build/cassandra/.build/build-jar.sh "${@:4}" ;
+                            exit $?
                         volumeMounts:
                         - name: cass-dir
                           mountPath: /home/build/cassandra
