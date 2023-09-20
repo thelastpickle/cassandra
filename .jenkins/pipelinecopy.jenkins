@@ -132,10 +132,7 @@ pipeline {
                           privileged: true
                       - name: bullseye
                         image: apache/cassandra-bullseye-build:5687c7b6dcee1866f97a493aef77794f
-                        command:
-                        - bash
-                        - "-c"
-                        - "sleep 18000"
+                        command: ["bash", "-c", "sleep 30000"]
                         volumeMounts:
                         - name: cass-dir
                           mountPath: /home/build/cassandra
@@ -145,6 +142,10 @@ pipeline {
                           mountPath: /dist
                         securityContext:
                           runAsUser: 0
+                        resources:
+                          requests:
+                            cpu:     100m
+                            memory:  1Gi
                       volumes:
                         - name: cass-dir
                           hostPath:
@@ -162,9 +163,10 @@ pipeline {
               }
           }
           steps {
-            container('bulleseye') {
+            container('bullseye') {
               script {
               sh 'echo "artifacts stage"'
+              sh 'sleep 30000'
               }
             }
 
