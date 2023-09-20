@@ -145,6 +145,10 @@ pipeline {
                           mountPath: /dist
                         securityContext:
                           runAsUser: 0
+                        resources:
+                          requests:
+                            cpu:     100m
+                            memory:  1Gi
                       volumes:
                         - name: cass-dir
                           hostPath:
