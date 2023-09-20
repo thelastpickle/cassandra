@@ -138,6 +138,7 @@ pipeline {
                         args:
                         - |
                           /home/build/cassandra/.build/docker/_create_user.sh build 1000 1000 ;
+                          su build ;
                           export ANT_OPTS="-Dbuild.dir=/dist ${CASSANDRA_DOCKER_ANT_OPTS}" ;
                           source /home/build/cassandra/.build/docker/_set_java.sh 11 ;
                           /home/build/cassandra/.build/build-jars.sh "${@:4}" ;
@@ -150,7 +151,7 @@ pipeline {
                         - name: dist-dir
                           mountPath: /dist
                         securityContext:
-                          runAsUser: 1000
+                          runAsUser: 0
                       volumes:
                         - name: cass-dir
                           hostPath:
