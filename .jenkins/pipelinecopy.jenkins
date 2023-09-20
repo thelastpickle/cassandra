@@ -171,7 +171,7 @@ pipeline {
               sh 'su build'
               sh 'export ANT_OPTS=-Dbuild.dir=/dist'
               sh 'sleep 3000'
-              sh 'source /home/build/cassandra/.build/docker/_set_java.sh 11'
+              sh '. /home/build/cassandra/.build/docker/_set_java.sh 11'
               sh 'bash /home/build/cassandra/.build/build-jars.sh "${@:4}"'
               sh 'exit $?'
               }
