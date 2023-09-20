@@ -149,13 +149,13 @@ pipeline {
         }
        stage('stress') {
          steps {
-           testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           //testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
        }
        stage('fqltool') {
          steps {
-           //testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+           testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
            sh 'echo "stage fqltool"'
          }
        }
