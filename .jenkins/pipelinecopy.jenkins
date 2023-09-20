@@ -141,8 +141,7 @@ pipeline {
                         - name: dist-dir
                           mountPath: /dist
                         securityContext:
-                          runAsUser: 1000
-                          runAsGroup: 1000
+                          runAsUser: 0
                       volumes:
                         - name: cass-dir
                           hostPath:
