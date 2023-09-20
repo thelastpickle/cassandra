@@ -166,13 +166,13 @@ pipeline {
           steps {
             container('bullseye') {
               script {
-              bash 'echo "artifacts stage"'
-              bash '/home/build/cassandra/.build/docker/_create_user.sh build 1000 1000'
-              bash 'su build'
-              bash 'export ANT_OPTS=-Dbuild.dir=/dist'
-              bash 'source /home/build/cassandra/.build/docker/_set_java.sh 11'
-              bash '/home/build/cassandra/.build/build-jars.sh "${@:4}"'
-              bash 'exit $?'
+              sh 'echo "artifacts stage"'
+              sh 'bash /home/build/cassandra/.build/docker/_create_user.sh build 1000 1000'
+              sh 'su build'
+              sh 'export ANT_OPTS=-Dbuild.dir=/dist'
+              sh 'source /home/build/cassandra/.build/docker/_set_java.sh 11'
+              sh 'bash /home/build/cassandra/.build/build-jars.sh "${@:4}"'
+              sh 'exit $?'
               }
             }
 
