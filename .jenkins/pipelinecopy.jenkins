@@ -135,7 +135,7 @@ pipeline {
                         command:
                         - bash
                         - "-c"
-                        - "sleep 3000"
+                        - "sleep 18000"
                         volumeMounts:
                         - name: cass-dir
                           mountPath: /home/build/cassandra
