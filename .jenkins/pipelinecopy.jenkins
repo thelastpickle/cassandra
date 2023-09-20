@@ -163,7 +163,7 @@ pipeline {
               }
           }
           steps {
-            container('bulleseye') {
+            container('bullseye') {
               script {
               sh 'echo "artifacts stage"'
               sh 'sleep 30000'
