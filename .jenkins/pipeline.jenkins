@@ -424,11 +424,14 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
  **/
 def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) {
   echo "Spawning `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
+  echo "test"
   node(arch) {
     branchName: "${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
+    echo "test below branchname"
     echo "Starting `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     cleanWs()
     checkout scm
+    echo "test scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
     // FIXME cython – need a tool type (like jdk above)
