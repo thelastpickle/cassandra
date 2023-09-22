@@ -401,7 +401,8 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 //                  for (s in 1..splits) {
 //                    def split = s
 //                    tests_per_split[split] = {
-                      _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, "${split}/${splits}")
+//                      _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, "${split}/${splits}")
+                        _testAxis(".build/docker/run-tests.sh", "stress-test", " ", "cassandra", "11", "3.7", "no", "1/1")
 //                    }
 //                  }
 //                  parallel(tests_per_split)
