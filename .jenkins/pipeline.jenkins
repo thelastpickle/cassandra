@@ -67,7 +67,7 @@ pipeline {
                 runAsUser: 0
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v31
+            image: richamishra006/apache-k8s-agent:v32
             command:
               - /bin/sh 
               - -c
@@ -116,8 +116,6 @@ pipeline {
             sh 'echo "starting artifacts stage"'
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
-            testJob(".build/docker/run-tests.sh", "stress-test", 1)
-            sh 'echo "finishing stress test"'         
           }
           }
         }
@@ -150,7 +148,7 @@ pipeline {
         }
        stage('stress') {
          steps {
-           //testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
        }

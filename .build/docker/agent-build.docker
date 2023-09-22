@@ -1,10 +1,12 @@
 # Use Alpine Linux as the base image
-FROM jenkins/inbound-agent:latest-jdk17
+FROM jenkins/inbound-agent:3148.v532a_7e715ee3-4
 
 USER root
-
 RUN apt-get update
 RUN apt-get install xz-utils -y 
+RUN apt-get install bc -y
+RUN apt-get update
+RUN apt-get install coreutils -y
 
 RUN apt-get update && \
     apt-get install -y openjdk-11-jdk openjdk-17-jdk && \
