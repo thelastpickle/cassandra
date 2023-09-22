@@ -67,7 +67,7 @@ pipeline {
                 runAsUser: 0
           containers:
           - name: jnlp
-            image: richamishra006/apache-k8s-agent:v32
+            image: richamishra006/apache-k8s-agent:32
             command:
               - /bin/sh 
               - -c
