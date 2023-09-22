@@ -417,7 +417,7 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 //    }
 //  }
 //  parallel(tests_per_arch)
-//}
+}
 
 /**
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
