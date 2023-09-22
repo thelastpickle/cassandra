@@ -117,7 +117,7 @@ pipeline {
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
             testJob(".build/docker/run-tests.sh", "stress-test", 1)
-            sh 'echo "finishing stress test"          
+            sh 'echo "finishing stress test"'         
           }
           }
         }
