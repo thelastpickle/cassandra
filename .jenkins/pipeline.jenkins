@@ -382,42 +382,42 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 
   // XXX – the following matrix over arrays should be better done with multi-arrays and recursion
 
-  for (a in archs) {
-    def arch = a
-    tests_per_arch[arch] = {
-      def tests_per_jdk = [:]
-      for (j in jdks) {
-        def jdk = j
-        tests_per_jdk[jdk] = {
-          def tests_per_python = [:]
-          for (p in pythons) {  
-            def python = p
-            tests_per_python[python] = {
-              def tests_per_cython = [:]
-              for (c in cythons) {  
-                def cython = c
-                tests_per_cython[cython] = {
-                  def tests_per_split = [:]
-                  for (s in 1..splits) {
-                    def split = s
-                    tests_per_split[split] = {
+//  for (a in archs) {
+//    def arch = a
+//    tests_per_arch[arch] = {
+//      def tests_per_jdk = [:]
+//     for (j in jdks) {
+//        def jdk = j
+//        tests_per_jdk[jdk] = {
+ //         def tests_per_python = [:]
+ //         for (p in pythons) {  
+//            def python = p
+//            tests_per_python[python] = {
+//              def tests_per_cython = [:]
+//              for (c in cythons) {  
+//                def cython = c
+//                tests_per_cython[cython] = {
+//                  def tests_per_split = [:]
+//                  for (s in 1..splits) {
+//                    def split = s
+//                    tests_per_split[split] = {
                       _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, "${split}/${splits}")
-                    }
-                  }
-                  parallel(tests_per_split)
-                }
-              }
-              parallel(tests_per_cython)
-            }
-          }
-          parallel(tests_per_python)
-        }
-      }
-      parallel(tests_per_jdk)
-    }
-  }
-  parallel(tests_per_arch)
-}
+//                    }
+//                  }
+//                  parallel(tests_per_split)
+//                }
+//              }
+//              parallel(tests_per_cython)
+//            }
+//          }
+//          parallel(tests_per_python)
+//        }
+//      }
+//      parallel(tests_per_jdk)
+//    }
+//  }
+//  parallel(tests_per_arch)
+//}
 
 /**
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
