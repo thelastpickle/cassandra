@@ -332,7 +332,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" )
       try {
         sh 'echo ${build_script}'
-        if (".build/docker/build-artifacts.sh" != build_script || build_script.contains(".build/docker/_docker_run.sh")) {
+        if (".build/docker/build-artifacts.sh" != build_script || !build_script.contains(".build/docker/_docker_run.sh")) {
           // build-artifacts.sh must be run in an earlier completed stage for the stash to exist
           dir("${build_dir}") {
             sh 'echo "Current directory: $(pwd)"'
