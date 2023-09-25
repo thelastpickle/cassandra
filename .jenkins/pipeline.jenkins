@@ -332,23 +332,23 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" )
       try {
         sh 'echo ${build_script}'
-        if (".build/docker/build-artifacts.sh" != build_script || build_script.contains(".build/docker/_docker_run.sh")) {
-          // build-artifacts.sh must be run in an earlier completed stage for the stash to exist
-          dir("${build_dir}") {
-            sh 'echo "Current directory: $(pwd)"'
-            sh 'ls -l'
-            unstash name: "${arch}_${jdk}"
-          }
-        }
+        //if (".build/docker/build-artifacts.sh" != build_script || build_script.contains(".build/docker/_docker_run.sh")) {
+        //  // build-artifacts.sh must be run in an earlier completed stage for the stash to exist
+        //  dir("${build_dir}") {
+        //    sh 'echo "Current directory: $(pwd)"'
+        //    sh 'ls -l'
+        //    unstash name: "${arch}_${jdk}"
+        //  }
+        //}
         echo "Executing `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
         sh "echo ${build_script}"
-        if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
-          dir("${build_dir}") {
-            // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
-          }
-        }
+        //if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
+        //  dir("${build_dir}") {
+        //    // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+        //    stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
+        //  }
+        //}
       } finally {
         attempt = attempt + 1
         sh "xz -f *_attempt_*.log"
@@ -407,7 +407,7 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 //                    def split = s
 //                    tests_per_split[split] = {
 //                      _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, "${split}/${splits}")
-                        _testAxis(".build/docker/run-tests.sh", "stress-test", " ", "cassandra", "11", "3.7", "no", "1/1")
+                        _testAxis(test_script, test_type, toCopy, "cassandra", "11", "3.7", "no", "1/1")
 //                    }
 //                  }
 //                  parallel(tests_per_split)
@@ -453,14 +453,14 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
         statusCode = sh returnStatus:true, script:"${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
       } finally {
         attempt = attempt + 1
-        if (0 == statusCode) { 
-            junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-        } else {
-          toCopy = ""
-        }
-        sh "xz -f *_attempt_*.log"
-        copyToNightlies("*_attempt_*.log.xz,console.log.xz,TESTS-TestSuites.xml.xz,build/test/logs/**,${toCopy}", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
-        cleanAgent(test_script)
+        //if (0 == statusCode) { 
+        //    junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+        //} else {
+        //  toCopy = ""
+        //}
+        //sh "xz -f *_attempt_*.log"
+        //copyToNightlies("*_attempt_*.log.xz,console.log.xz,TESTS-TestSuites.xml.xz,build/test/logs/**,${toCopy}", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
+        //cleanAgent(test_script)
         if (0 != statusCode) { 
           currentBuild.result = 'FAILURE'
           error("FAILED `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME}")
