@@ -329,7 +329,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
       sh "mkdir -p build"
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" )
       try {
-        if (".build/docker/build-artifacts.sh" != ${build_script}) {
+        if (".build/docker/build-artifacts.sh" != build_script) {
           // build-artifacts.sh must be run in an earlier completed stage for the stash to exist
           dir("${build_dir}") {
             unstash name: "${arch}_${jdk}"
@@ -338,7 +338,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         echo "Executing `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
         sh "echo ${build_script}"
-        if (".build/docker/build-artifacts.sh" == ${build_script} || ${build_script}.contains(".build/docker/_docker_run.sh")) {
+        if (".build/docker/build-artifacts.sh" == build_script || ${build_script}.contains(".build/docker/_docker_run.sh")) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
