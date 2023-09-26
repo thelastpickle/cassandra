@@ -315,6 +315,8 @@ def buildJob(build_script, toCopy) {
  **/
 def _buildAxis(build_script, toCopy, arch, jdk) {
   node(arch) {
+    def podName = currentBuild.rawBuild.buildVariables.get('KUBE_POD_NAME')
+    echo "Pod Name: $podName"
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
     //cleanWs()
     echo "build_script: ${build_script}"
