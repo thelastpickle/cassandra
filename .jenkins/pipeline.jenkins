@@ -315,8 +315,6 @@ def buildJob(build_script, toCopy) {
  **/
 def _buildAxis(build_script, toCopy, arch, jdk) {
   node(arch) {
-    def podName = currentBuild.rawBuild.buildVariables.get('KUBE_POD_NAME')
-    echo "Pod Name: $podName"
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
     //cleanWs()
     echo "build_script: ${build_script}"
@@ -350,7 +348,10 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             sh 'echo "Current directory: $(pwd)"'
             sh 'ls -l'
-            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
+            //stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
+            sh 'docker run --name stash -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null'
+            sh 'docker exec -it stash bash -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'
+            sh 'docker stop stash'
           }
         }
       } finally {
