@@ -349,8 +349,8 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
             sh 'echo "Current directory: $(pwd)"'
             sh 'ls -l'
             //stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
-            sh 'docker run --name stash -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null'
-            sh 'docker exec -it stash bash -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'
+            sh 'docker run --name stash_${jdk} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null'
+            sh 'docker exec stash_${jdk} bash -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'
             sh 'docker stop stash'
           }
         }
