@@ -109,4 +109,4 @@ spec:
     targets: ".jenkins/job/DslJob.jenkins" #"cicd/jobs/k8s.jenkins" 
     description: "Casandra Repo"
     repositoryBranch: infracloud/cassandra-5.0 #master #infracloud/cassandra-5.0 #
-    repositoryUrl: https://github.com/infracloudio/casandra.git
+    repositoryUrl: https://github.com/infracloudio/cassandra.git
