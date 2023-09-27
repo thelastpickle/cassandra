@@ -76,7 +76,7 @@ pipeline {
             - name: docker-socket
               mountPath: /var/run/docker.sock 
             - name: cassandra-dir
-              mountPath: /cassandra_dir
+              mountPath: /home/jenkins/agent/workspace/k8s-e2e
             tty: true
             securityContext:
               privileged: true
@@ -87,8 +87,8 @@ pipeline {
             hostPath:
               path: /var/run/docker.sock
           - name: cassandra-dir
-            persistentVolumeClaim:
-              claimName: cassandra-dir-claim
+            hostPath:
+              path: /home/jenkins/agent/workspace/k8s-e2e
         '''
     }
   }
@@ -340,8 +340,6 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         if (".build/docker/build-artifacts.sh" != build_script && !build_script.contains(".build/docker/_docker_run.sh")) {
           // build-artifacts.sh must be run in an earlier completed stage for the stash to exist
           dir("${build_dir}") {
-            sh 'echo "Current directory: $(pwd)"'
-            sh 'ls -l'
             unstash name: "${arch}_${jdk}"
           }
         }
@@ -351,12 +349,10 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            sh 'echo "Current directory: $(pwd)"'
-            sh 'ls -l'
-            //stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
-            sh 'docker run --name "stash_${jdk}" -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null'
-            sh 'docker exec "stash_${jdk}" sh -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'
-            sh 'docker stop "stash_${jdk}"'
+            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
+            //sh 'docker run --name "stash_${jdk}" -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null'
+            //sh 'docker exec "stash_${jdk}" sh -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'
+            //sh 'docker stop "stash_${jdk}"'
           }
         }
       } finally {
