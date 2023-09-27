@@ -74,7 +74,9 @@ pipeline {
               - /usr/local/bin/jenkins-agent
             volumeMounts:
             - name: docker-socket
-              mountPath: /var/run/docker.sock   
+              mountPath: /var/run/docker.sock 
+            - name: cassandra-dir
+              mountPath: /home/jenkins/agent/workspace/k8s-e2e 
             tty: true
             securityContext:
               privileged: true
@@ -84,6 +86,9 @@ pipeline {
           - name: docker-socket
             hostPath:
               path: /var/run/docker.sock
+          - name: cassandra-dir
+            persistentVolumeClaim:
+              claimName: local-file-pvc
         '''
     }
   }
