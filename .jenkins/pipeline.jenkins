@@ -87,8 +87,8 @@ pipeline {
             hostPath:
               path: /var/run/docker.sock
           - name: cassandra-dir
-              persistentVolumeClaim:
-                claimName: local-file-pvc
+            persistentVolumeClaim:
+              claimName: local-file-pvc
         '''
     }
   }
