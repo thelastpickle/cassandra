@@ -75,6 +75,8 @@ pipeline {
             volumeMounts:
             - name: docker-socket
               mountPath: /var/run/docker.sock
+            - name: cassandra-dir
+              mountPath: /home/jenkins/agent/workspace/k8s-e2e
             tty: true
             securityContext:
               privileged: true
@@ -84,6 +86,9 @@ pipeline {
           - name: docker-socket
             hostPath:
               path: /var/run/docker.sock
+          - name: cassandra-dir
+              persistentVolumeClaim:
+                claimName: local-file-pvc
         '''
     }
   }
@@ -346,10 +351,10 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             //stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
             def container_name = "stash_${jdk}"
-            sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
-            sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build && apk add git'"
-            sh "docker exec -u build ${container_name} sh -c \"cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_${jdk}\""
-            sh "docker stop ${container_name}"
+            //sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
+            //sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build && apk add git'"
+            //sh "docker exec -u build ${container_name} sh -c \"cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_${jdk}\""
+            //sh "docker stop ${container_name}"
           }
         }
       } finally {
