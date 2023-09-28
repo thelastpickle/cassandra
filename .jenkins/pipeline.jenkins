@@ -344,10 +344,12 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
-            //sh 'docker run --name "stash_${jdk}" -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null'
-            //sh 'docker exec "stash_${jdk}" sh -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'
-            //sh 'docker stop "stash_${jdk}"'
+            //stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
+            container_name = stash_${jdk}
+            docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null
+            docker exec ${container_name} sh -c adduser -D --no-create-home --uid 1000 --gecos build build
+            docker exec -u build ${container_name} sh -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11
+            docker stop ${container_name}
           }
         }
       } finally {
