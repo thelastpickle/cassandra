@@ -348,7 +348,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
             def container_name = "stash_${jdk}"
             sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
             sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build'"
-            sh "docker exec -u build ${container_name} sh -c cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11"
+            sh "docker exec -u build ${container_name} sh -c 'cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_11'"
             sh "docker stop ${container_name}"
           }
         }
