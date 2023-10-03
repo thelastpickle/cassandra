@@ -98,7 +98,7 @@ pipeline {
     githubProjectProperty('https://github.com/apache/cassandra')
     parallelsAlwaysFailFast()
     timestamps()
-    skipDefaultCheckout()
+    //skipDefaultCheckout()
   }
   environment {
     javaVersionDefault = javaVersionDefault()
