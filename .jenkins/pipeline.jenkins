@@ -396,6 +396,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     }
   }
 }
+}
 
 /**
  * Saves JUnit results, fails if no reports are found
