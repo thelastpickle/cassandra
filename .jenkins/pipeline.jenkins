@@ -71,12 +71,13 @@ pipeline {
             command:
               - /bin/sh 
               - -c
-              - /usr/local/bin/jenkins-agent
+              - |
+                /usr/local/bin/jenkins-agent
             volumeMounts:
             - name: docker-socket
               mountPath: /var/run/docker.sock
             - name: cassandra-dir
-              mountPath: /home/jenkins/agent/workspace/k8s-e2e
+              mountPath: /tmp
             tty: true
             securityContext:
               privileged: true
@@ -120,6 +121,10 @@ pipeline {
         stage('artifacts') {
           steps {          
             sh 'echo "starting artifacts stage"'
+            //sh 'sleep 3000'
+            //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
+            //script { env.javaVersionDefault = javaVersionDefault() }
+            //script { env.javaVersionsSupported = javaVersionsSupported() }
             buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           }
@@ -154,6 +159,7 @@ pipeline {
         }
        stage('stress') {
          steps {
+           sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
            testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
@@ -264,6 +270,7 @@ pipeline {
  * Return the default JDK defined by build.xml
  **/
 def javaVersionDefault() {
+  //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
   sh (returnStdout: true, script: 'grep \'property\\s*name=\"java.default\"\' build.xml | sed -ne \'s/.*value=\"\\([^\"]*\\)\".*/\\1/p\'').trim()
 }
 
@@ -271,6 +278,7 @@ def javaVersionDefault() {
  * Return the supported JDKs defined by build.xml
  **/
 def javaVersionsSupported() {
+  //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
   sh (returnStdout: true, script: 'grep \'property\\s*name=\"java.supported\"\' build.xml | sed -ne \'s/.*value=\"\\([^\"]*\\)\".*/\\1/p\'').trim()
 }
 
@@ -324,7 +332,10 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
     //cleanWs()
     echo "build_script: ${build_script}"
-    checkout scm
+    //checkout scm
+    //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
+    //sh 'cp -r /tmp/.* /home/jenkins/agent/workspace/k8s-e2e'
+    //sh 'cp -r /tmp/. /tmp/.asf.yaml /tmp/.build /tmp/.jenkins /home/jenkins/agent/workspace/k8s-e2e'
     sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     sh "echo tool success"
@@ -347,11 +358,18 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         echo "Executing `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
         sh "echo ${build_script}"
+        echo "${build_dir}"
+        //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
+        def tmp_dir = generatePath(build_dir)
+        echo "tmp_dir ${tmp_dir}"
+        sh "cp -r ${build_dir} ${tmp_dir}"
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
-          dir("${build_dir}") {
+          //dir("${build_dir}") {
+          dir("${tmp_dir}") {            
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             //stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar,"
-            def container_name = "stash_${jdk}"
+            stash name: "${arch}_${jdk}", includes: "*.jar"
+            //def container_name = "stash_${jdk}"
             //sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
             //sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build && apk add git'"
             //sh "docker exec -u build ${container_name} sh -c \"cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_${jdk}\""
@@ -445,7 +463,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     echo "test below branchName"
     echo "Starting `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     cleanWs()
-    checkout scm
+    //checkout scm
     echo "test scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
@@ -482,6 +500,12 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     if (build_result.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
     if (build_result.result == 'FAILURE') currentBuild.result='FAILURE'
   }
+}
+def generatePath(build_dir) {
+    def tmp_dir = '/tmp'
+    def parts = build_dir.split('/')
+    def hash = parts.last()
+    return "${tmp_dir}/${parts[4]}/${hash}"
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
