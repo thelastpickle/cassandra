@@ -159,7 +159,7 @@ pipeline {
         }
        stage('stress') {
          steps {
-           sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
+           //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
            testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
@@ -474,9 +474,9 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
       if (attempt > 1) { sleep(60 * attempt) }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
       try {
-        //dir("build") {
-        //  unstash name: "${arch}_${jdk}"
-        //}
+        dir("build") {
+          unstash name: "${arch}_${jdk}"
+        }
         echo "Executing `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
         statusCode = sh returnStatus:true, script:"${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
       } finally {
