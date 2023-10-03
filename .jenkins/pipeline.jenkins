@@ -332,7 +332,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
     //cleanWs()
     echo "build_script: ${build_script}"
-    //checkout scm
+    checkout scm
     //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/.* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/. /tmp/.asf.yaml /tmp/.build /tmp/.jenkins /home/jenkins/agent/workspace/k8s-e2e'
@@ -464,7 +464,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     echo "test below branchName"
     echo "Starting `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     cleanWs()
-    //checkout scm
+    checkout scm
     echo "test scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
