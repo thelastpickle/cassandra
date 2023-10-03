@@ -466,6 +466,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     cleanWs()
     checkout scm
     echo "test scm success"
+    def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
     // FIXME cython – need a tool type (like jdk above)
@@ -474,7 +475,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
       if (attempt > 1) { sleep(60 * attempt) }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
       try {
-        dir("build") {
+        dir("${build_dir}") {
           unstash name: "${arch}_${jdk}"
         }
         echo "Executing `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
