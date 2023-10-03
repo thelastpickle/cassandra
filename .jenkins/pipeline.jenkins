@@ -506,6 +506,8 @@ def generatePath(build_dir) {
     def tmp_dir = '/tmp'
     def parts = build_dir.split('/')
     def hash = parts.last()
+    echo "parts[6]: ${parts[6]}"
+    echo "hash: ${hash}"
     return "${tmp_dir}/${parts[6]}/${hash}"
 }
 
