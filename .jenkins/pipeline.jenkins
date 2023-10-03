@@ -362,7 +362,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         sh "echo ${build_script}"
         echo "${build_dir}"
         //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
-        sh "cp -r ${build_dir} ${tmp_dir}"
+        cp -r "${build_dir}" "${tmp_dir}"
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
           //dir("${build_dir}") {
           dir("${tmp_dir}") {            
@@ -505,7 +505,7 @@ def generatePath(build_dir) {
     def tmp_dir = '/tmp'
     def parts = build_dir.split('/')
     def hash = parts.last()
-    return "${tmp_dir}/${parts[4]}/${hash}"
+    return "${tmp_dir}/${parts[6]}/${hash}"
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
