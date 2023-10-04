@@ -500,9 +500,9 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
         }
       }
     }
-    if (build_result.result != 'SUCCESS') unstable("${build_name} failures")
-    if (build_result.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
-    if (build_result.result == 'FAILURE') currentBuild.result='FAILURE'
+    if (currentBuild.result != 'SUCCESS') unstable("${build_name} failures")
+    if (currentBuild.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
+    if (currentBuild.result == 'FAILURE') currentBuild.result='FAILURE'
   }
 }
 def generatePath(build_dir) {
