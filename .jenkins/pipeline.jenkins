@@ -368,7 +368,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
           //dir("${build_dir}") {
           dir("${tmp_dir}") {            
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**", excludes: "dist/**,**/lib/**/*.jar"
+            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**"
             //stash name: "${arch}_${jdk}", includes: "*.jar"
             //def container_name = "stash_${jdk}"
             //sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
