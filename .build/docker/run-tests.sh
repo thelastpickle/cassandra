@@ -213,6 +213,7 @@ docker cp /home/jenkins/agent/workspace/k8s-e2e/build ${container_name}:/home/ca
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
 
+docker cp ${container_name}:/home/cassandra/cassandra/build/TESTS-TestSuites.xml /home/jenkins/agent/workspace/k8s-e2e/build
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
     docker inspect ${docker_id}
