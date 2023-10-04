@@ -476,6 +476,8 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
       try {
         dir("${build_dir}") {
+          sh 'ls'
+          sh 'git status'
           unstash name: "${arch}_${jdk}"
         }
         echo "Executing `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
