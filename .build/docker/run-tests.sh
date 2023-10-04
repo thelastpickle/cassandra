@@ -226,7 +226,7 @@ if [ "$status" -ne 0 ] ; then
     echo "Failure."
 fi
 # docker stop in background, ignore errors
-( nohup docker stop ${docker_id} >/dev/null 2>/dev/null & )
+#( nohup docker stop ${docker_id} >/dev/null 2>/dev/null & )
 
 xz -f ${logfile} 2>/dev/null
 
