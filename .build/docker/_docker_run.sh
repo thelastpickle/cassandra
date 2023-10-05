@@ -138,6 +138,7 @@ echo "Running container ${container_name} ${container_id}"
 docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
 RETURN=$?
+docker cp ${container_name}:${build_dir} /home/jenkins/agent/workspace/k8s-e2e/build
 
 docker stop ${container_name} >/dev/null
 popd >/dev/null
