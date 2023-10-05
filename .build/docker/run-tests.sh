@@ -82,7 +82,6 @@ dockerfile="ubuntu2004_test.docker"
 image_tag="$(md5sum docker/${dockerfile} | cut -d' ' -f1)"
 image_name="apache/cassandra-${dockerfile/.docker/}:${image_tag}"
 docker_mounts="-v ${cassandra_dir}:/home/cassandra/cassandra -v "${build_dir}":/home/cassandra/cassandra/build -v ${HOME}/.m2/repository:/home/cassandra/.m2/repository"
-
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
   # try docker login to increase dockerhub rate limits
@@ -212,8 +211,8 @@ docker cp /home/jenkins/agent/workspace/k8s-e2e/build ${container_name}:/home/ca
 # capture logs and pid for container
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
-
 docker cp ${container_name}:/home/cassandra/cassandra/build/test/output /home/jenkins/agent/workspace/k8s-e2e/build/test
+docker exec --user cassandra ${container_name} bash -c "mkdir -p /home/cassandra/cassandra/result/1/${target} && cp -r /home/cassandra/cassandra/build/test/output /home/cassandra/cassandra/result/1/${target}"
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
     docker inspect ${docker_id}
