@@ -245,19 +245,19 @@ pipeline {
     }
     stage('Summary') {
       steps {
-       container('jnlp') {
+       //container('jnlp') {
        // FIXME is this needed if each job is submitting its own results to the overall pipeline ??
-       junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+       //junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
        
        //sendNotifications()
        
        // FIXME how to collect and build one test report file ?? 
        generateUnifiedTestReport()
        
-        collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
+        //collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
         //copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
         sh 'echo "stage summary"'
-      }
+      //}
       }
     }
   }
