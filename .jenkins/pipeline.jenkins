@@ -252,7 +252,7 @@ pipeline {
        //sendNotifications()
        
        // FIXME how to collect and build one test report file ?? 
-       generateUnifiedTestReport()
+       //generateUnifiedTestReport()
        
         //collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
         //copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
