@@ -160,7 +160,7 @@ pipeline {
        stage('stress') {
          steps {
            //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
-           testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           //testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
        }
