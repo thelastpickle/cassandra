@@ -503,6 +503,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     checkout scm
     echo "test scm success"
     //def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
+    sh "mkdir -p build"
     def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
