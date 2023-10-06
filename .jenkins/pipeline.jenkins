@@ -257,6 +257,15 @@ pipeline {
         //collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
         //copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
         sh 'echo "stage summary"'
+        dir("build") {
+          unstash name: "cassandra_11_stress-test"
+        }
+        
+        post {
+          always {
+            archiveArtifacts artifacts: 'build/test/output'
+          }
+        }
       //}
       }
     }
@@ -501,6 +510,17 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
           echo "Complete `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME}"
         }
       }
+    }
+
+     dir("${build_dir}") {            
+            // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+            stash name: "${arch}_${jdk}_${test_type}", includes: "test/output/**"
+            //stash name: "${arch}_${jdk}", includes: "*.jar"
+            //def container_name = "stash_${jdk}"
+            //sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
+            //sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build && apk add git'"
+            //sh "docker exec -u build ${container_name} sh -c \"cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_${jdk}\""
+            //sh "docker stop ${container_name}"
     }
     if (currentBuild.result != 'SUCCESS') unstable("${build_name} failures")
     if (currentBuild.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
