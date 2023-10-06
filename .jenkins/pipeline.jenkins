@@ -480,7 +480,7 @@ for (a in archs) {
     def tests_per_jdk = [:]
     for (j in jdks) {
       def jdk = j
-      tests_per_jdk[jdk] = { _testAxis(test_script, test_type, toCopy, arch, jdk, '3.7', 'no', "${split}/${splits}") }
+      tests_per_jdk[jdk] = { _testAxis(test_script, test_type, toCopy, arch, jdk, '3.7', 'no', "1/1") }
     }
     parallel(tests_per_jdk)
   }
