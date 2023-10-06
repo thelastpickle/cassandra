@@ -467,7 +467,7 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 //  parallel(tests_per_arch)
 
 
-# test code
+// test code
 def archs = ['cassandra']
 //def jdks = "${javaVersionsSupported}".split(/,/, -1) // TODO uncomment – this is the real mcoy
 def jdks = ['11']
