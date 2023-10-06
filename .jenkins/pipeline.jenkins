@@ -160,7 +160,7 @@ pipeline {
        stage('stress') {
          steps {
            //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
-           //testJob(".build/docker/run-tests.sh", "stress-test", 1)
+           testJob(".build/docker/run-tests.sh", "stress-test", 1)
            sh 'echo "stage stress"'
          }
        }
@@ -245,6 +245,11 @@ pipeline {
     }
     stage('Summary') {
       steps {
+        sh 'echo "stage summary"'
+        dir("build") {
+          unstash name: "cassandra_11_stress-test"
+          //unstash name: "cassandra_11_fqltools"
+        }
        //container('jnlp') {
        // FIXME is this needed if each job is submitting its own results to the overall pipeline ??
        //junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
@@ -256,21 +261,18 @@ pipeline {
        
         //collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
         //copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
-        sh 'echo "stage summary"'
-        dir("build") {
-          unstash name: "cassandra_11_stress-test"
-        }
+        
         
         
       //}
       }
     }
   }
-  post {
-          always {
-            archiveArtifacts artifacts: 'build/test/output'
-          }
-        }
+  //post {
+  //        always {
+  //          archiveArtifacts artifacts: 'build/test/output'
+  //        }
+  //      }
 }
 
 ///////////////////////////
@@ -418,12 +420,12 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
  **/
 def testJob(test_script, test_type, splits=1, toCopy='') {
   //def archs = ['cassandra', 'cassandra-arm64'] // uncomment when ready for arm64 testing
-  def archs = ['cassandra']
+  //def archs = ['cassandra']
   //def jdks = "${javaVersionsSupported}".split(/,/, -1) // TODO uncomment – this is the real mcoy
-  def jdks = ['11']
-  def pythons = ['3.7']
-  def cythons = ['no']
-  def tests_per_arch = [:]
+  //def jdks = ['11']
+  //def pythons = ['3.7']
+  //def cythons = ['no']
+  //def tests_per_arch = [:]
 
   // XXX – the following matrix over arrays should be better done with multi-arrays and recursion
 
@@ -447,7 +449,7 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 //                    def split = s
 //                    tests_per_split[split] = {
 //                      _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, "${split}/${splits}")
-                        _testAxis(".build/docker/run-tests.sh", "stress-test", " ", "cassandra", "11", "3.7", "no", "1/1")
+//                        _testAxis(".build/docker/run-tests.sh", "stress-test", " ", "cassandra", "11", "3.7", "no", "1/1")
 //                    }
 //                  }
 //                  parallel(tests_per_split)
@@ -463,6 +465,28 @@ def testJob(test_script, test_type, splits=1, toCopy='') {
 //    }
 //  }
 //  parallel(tests_per_arch)
+
+
+# test code
+def archs = ['cassandra']
+//def jdks = "${javaVersionsSupported}".split(/,/, -1) // TODO uncomment – this is the real mcoy
+def jdks = ['11']
+
+def tests_per_arch = [:]
+
+for (a in archs) {
+  def arch = a
+  tests_per_arch[arch] = {
+    def tests_per_jdk = [:]
+    for (j in jdks) {
+      def jdk = j
+      tests_per_jdk[jdk] = { _testAxis(test_script, test_type, toCopy, arch, jdk, '3.7', 'no', "${split}/${splits}") }
+    }
+    parallel(tests_per_jdk)
+  }
+}
+parallel(tests_per_arch)
+
 }
 
 /**
@@ -478,7 +502,8 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     cleanWs()
     checkout scm
     echo "test scm success"
-    def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
+    //def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
+    def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
     // FIXME cython – need a tool type (like jdk above)
@@ -488,12 +513,10 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
       try {
         dir("${build_dir}") {
-          sh 'ls'
-          sh 'git status'
           unstash name: "${arch}_${jdk}"
         }
         echo "Executing `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
-        statusCode = sh returnStatus:true, script:"${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
+        statusCode = sh returnStatus:true, script:""build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
       } finally {
         attempt = attempt + 1
         if (0 == statusCode) { 
