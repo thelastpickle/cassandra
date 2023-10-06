@@ -516,7 +516,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
           unstash name: "${arch}_${jdk}"
         }
         echo "Executing `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
-        statusCode = sh returnStatus:true, script:""build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
+        statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
       } finally {
         attempt = attempt + 1
         if (0 == statusCode) { 
