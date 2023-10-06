@@ -194,7 +194,7 @@ logfile="${build_dir}/test/logs/docker_attach_${container_name}.log"
 # Docker commands:
 #  set java to java_version
 #  execute the run_script
-docker_command="DIST_DIR=\${CASSANDRA_DIR}/\${current_build_dir}; \
+docker_command="DIST_DIR=\${CASSANDRA_DIR}/build/${current_build_dir}; \
             source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_version} ; \
             \${CASSANDRA_DIR}/.build/docker/_docker_init_tests.sh ${target} ${split_chunk}; exit \$?"
 
