@@ -206,13 +206,13 @@ echo "Running container ${container_name} ${docker_id}"
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh cassandra $(id -u) $(id -g)" | tee -a ${logfile}
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
-docker cp /home/jenkins/agent/workspace/k8s-e2e/build ${container_name}:/home/cassandra/cassandra
+docker cp ${build_dir} ${container_name}:/home/cassandra/cassandra
 
 # capture logs and pid for container
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
-docker cp ${container_name}:/home/cassandra/cassandra/build/test/output /home/jenkins/agent/workspace/k8s-e2e/build/test
-docker exec --user cassandra ${container_name} bash -c "mkdir -p /home/cassandra/cassandra/result/1/${target} && cp -r /home/cassandra/cassandra/build/test/output /home/cassandra/cassandra/result/1/${target}"
+docker cp ${container_name}:/home/cassandra/cassandra/build/build_docker_run*/test/output ${build_dir}
+#docker exec --user cassandra ${container_name} bash -c "mkdir -p /home/cassandra/cassandra/result/1/${target} && cp -r /home/cassandra/cassandra/build/test/output /home/cassandra/cassandra/result/1/${target}"
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
     docker inspect ${docker_id}

@@ -117,7 +117,7 @@ container_name="cassandra_${dockerfile/.docker/}_${un_script_name}_jdk${java_ver
 #                 \${CASSANDRA_DIR}/.build/${run_script} ${@:4} ; exit \$? "
 
 docker_command="export ANT_OPTS=\"-Dbuild.dir=\${DIST_DIR} ${CASSANDRA_DOCKER_ANT_OPTS}\" ; \
-                source /home/build/cassandra/cassandra/.build/docker/_set_java.sh ${java_version} ; \
+                source /home/build/cassandra/.build/docker/_set_java.sh ${java_version} ; \
                 /home/build/cassandra/.build/${run_script} ${@:4} ; exit \$? "
 
 # run without the default seccomp profile
