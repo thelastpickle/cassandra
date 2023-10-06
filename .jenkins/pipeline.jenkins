@@ -261,15 +261,16 @@ pipeline {
           unstash name: "cassandra_11_stress-test"
         }
         
-        post {
-          always {
-            archiveArtifacts artifacts: 'build/test/output'
-          }
-        }
+        
       //}
       }
     }
   }
+  post {
+          always {
+            archiveArtifacts artifacts: 'build/test/output'
+          }
+        }
 }
 
 ///////////////////////////
