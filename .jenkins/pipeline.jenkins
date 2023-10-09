@@ -106,15 +106,15 @@ pipeline {
     PIPELINE_SCRIPT_DEBUG = 'true'
   }
   stages {
-    stage('Init') {
-      steps {
-        container('jnlp') {
-          //cleanWs()
-          script { currentBuild.result='SUCCESS' }
-          sh 'echo "stage init"'
-          }
-      }
-    }
+    //stage('Init') {
+    //  steps {
+    //    container('jnlp') {
+    //      //cleanWs()
+    //      script { currentBuild.result='SUCCESS' }
+    //      sh 'echo "stage init"'
+    //      }
+    //  }
+   // }
 
     stage('Builds') {
       parallel {
