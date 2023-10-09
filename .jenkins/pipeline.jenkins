@@ -522,7 +522,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
       } finally {
         attempt = attempt + 1
         if (0 == statusCode) { 
-            junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+            junit testResults: "**${build_dir}/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
         } else {
           toCopy = ""
         }
