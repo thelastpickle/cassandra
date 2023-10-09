@@ -505,6 +505,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     //def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
     sh "mkdir -p build"
     def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
+    def current_build_dir = sh(returnStdout: true, script: "basename \"${build_dir}\"").trim()
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     // FIXME python – need a tool type (like jdk above)
     // FIXME cython – need a tool type (like jdk above)
@@ -517,7 +518,6 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
           unstash name: "${arch}_${jdk}"
         }
         echo "Executing `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
-        def current_build_dir = sh(returnStdout: true, script: "basename \"${build_dir}\"").trim()
         statusCode = sh returnStatus:true, script:"current_build_dir=\"${current_build_dir}\" build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${logfile}"
       } finally {
         attempt = attempt + 1
