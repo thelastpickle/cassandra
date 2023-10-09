@@ -194,9 +194,7 @@ logfile="${build_dir}/test/logs/docker_attach_${container_name}.log"
 # Docker commands:
 #  set java to java_version
 #  execute the run_script
-docker_command="DIST_DIR=\${CASSANDRA_DIR}/build/${current_build_dir}; \
-            export ANT_OPTS=\"-Dbuild.dir=\${DIST_DIR}\"; \
-            source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_version} ; \
+docker_command="source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_version} ; \
             \${CASSANDRA_DIR}/.build/docker/_docker_init_tests.sh ${target} ${split_chunk}; exit \$?"
 
 # start the container, timeout after 4 hours
@@ -208,12 +206,12 @@ echo "Running container ${container_name} ${docker_id}"
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh cassandra $(id -u) $(id -g)" | tee -a ${logfile}
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
-docker cp ${build_dir} ${container_name}:/home/cassandra/cassandra/build
+docker cp ${build_dir}/* ${container_name}:/home/cassandra/cassandra/build
 
 # capture logs and pid for container
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
-docker cp ${container_name}:/home/cassandra/cassandra/build/build_docker_run*/test/output ${build_dir}
+docker cp ${container_name}:/home/cassandra/cassandra/build/test/output ${build_dir}/test
 #docker exec --user cassandra ${container_name} bash -c "mkdir -p /home/cassandra/cassandra/result/1/${target} && cp -r /home/cassandra/cassandra/build/test/output /home/cassandra/cassandra/result/1/${target}"
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
