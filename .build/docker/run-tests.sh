@@ -206,7 +206,7 @@ echo "Running container ${container_name} ${docker_id}"
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh cassandra $(id -u) $(id -g)" | tee -a ${logfile}
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
-docker cp ${build_dir}/* ${container_name}:/home/cassandra/cassandra/build
+docker cp "${build_dir}/*" ${container_name}:/home/cassandra/cassandra/build
 
 # capture logs and pid for container
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
