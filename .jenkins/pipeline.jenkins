@@ -106,15 +106,15 @@ pipeline {
     PIPELINE_SCRIPT_DEBUG = 'true'
   }
   stages {
-    //stage('Init') {
-    //  steps {
-    //    container('jnlp') {
-    //      //cleanWs()
-    //      script { currentBuild.result='SUCCESS' }
-    //      sh 'echo "stage init"'
-    //      }
-    //  }
-   // }
+    stage('Init') {
+      steps {
+        container('jnlp') {
+          //cleanWs()
+          script { currentBuild.result='SUCCESS' }
+          sh 'echo "stage init"'
+          }
+      }
+    }
 
     stage('Builds') {
       parallel {
@@ -125,7 +125,7 @@ pipeline {
             //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
             //script { env.javaVersionDefault = javaVersionDefault() }
             //script { env.javaVersionsSupported = javaVersionsSupported() }
-            //buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           }
           }
