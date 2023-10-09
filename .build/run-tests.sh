@@ -185,7 +185,7 @@ _main() {
 
   # cheap trick to ensure dependency libraries are in place. allows us to stash only project specific build artifacts.
   ant -quiet -silent resolver-dist-lib
-
+  sleep 3600
   case ${target} in
     "stress-test")
       # hard fail on test compilation, but dont fail the test run as unstable test reports are processed
