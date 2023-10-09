@@ -209,7 +209,7 @@ docker exec --user root ${container_name} update-alternatives --set python /usr/
 #docker cp "${build_dir}/." ${container_name}:/home/cassandra/cassandra/build
 #docker cp /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.G62tsKBLrH/. ${container_name}:/home/cassandra/cassandra/build
 # capture logs and pid for container
-docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
+#docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
 #docker cp ${container_name}:/home/cassandra/cassandra/build/test/output ${build_dir}/test
 docker cp ${container_name}:/home/cassandra/cassandra/build/build_docker_run.G62tsKBLrH /home/jenkins/agent/workspace/k8s-e2e/build
