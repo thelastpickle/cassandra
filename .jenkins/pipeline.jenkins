@@ -374,7 +374,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
           }
         }
         echo "Executing `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-        statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
+        statusCode = sh returnStatus:true, script:"cassandra_dir=/home/jenkins/agent/workspace/k8s-e2e build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
         sh "echo ${build_script}"
         echo "${build_dir}"
         //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
