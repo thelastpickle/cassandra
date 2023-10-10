@@ -347,11 +347,9 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //cleanWs()
     echo "build_script: ${build_script}"
     //checkout scm
-    sh 'ln -s  /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
-    //sh 'ls -l /home/jenkins/agent/workspace/k8s-e2e'
-    //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
-    //sh 'cp -r /tmp/.* /home/jenkins/agent/workspace/k8s-e2e'
-    //sh 'cp -r /tmp/. /tmp/.asf.yaml /tmp/.build /tmp/.jenkins /home/jenkins/agent/workspace/k8s-e2e'
+    sh 'find /tmp/k8s-e2e -mindepth 1 -maxdepth 1 -type d \( ! -name "." -a ! -name ".." \) -exec ln -s {}  /home/jenkins/agent/workspace/k8s-e2e \;'
+    //sh 'ln -s  /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
+
     sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     sh "echo tool success"
@@ -362,7 +360,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
       echo "build_script_safe_name: ${build_script_safe_name}"
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${build_script_safe_name}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
-      sh 'ln -s /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
+      sh 'find /tmp/k8s-e2e -mindepth 1 -maxdepth 1 -type d \( ! -name "." -a ! -name ".." \) -exec ln -s {}  /home/jenkins/agent/workspace/k8s-e2e \;'
       //sh 'sleep 300'
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
       def tmp_dir = generatePath(build_dir.trim())
