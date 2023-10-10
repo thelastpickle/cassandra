@@ -141,7 +141,7 @@ RETURN=$?
 current_build_dir=$(basename "${build_dir}")
 docker cp ${container_name}:"/home/build/cassandra/build/${current_build_dir}" /home/jenkins/agent/workspace/k8s-e2e/build
 
-docker stop ${container_name} >/dev/null
+#docker stop ${container_name} >/dev/null
 popd >/dev/null
 [ $RETURN -eq 0 ] && echo "Build directory found at ${build_dir}"
 exit $RETURN
