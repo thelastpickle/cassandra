@@ -77,7 +77,7 @@ pipeline {
             - name: docker-socket
               mountPath: /var/run/docker.sock
             - name: cassandra-dir
-              mountPath: /tmp
+              mountPath: /tmp/k8s-e2e
             tty: true
             securityContext:
               privileged: true
@@ -347,7 +347,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //cleanWs()
     echo "build_script: ${build_script}"
     //checkout scm
-    sh 'ln -s /tmp /home/jenkins/agent/workspace/k8s-e2e'
+    sh 'ln -s /tmp/k8s-e2e /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/.* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/. /tmp/.asf.yaml /tmp/.build /tmp/.jenkins /home/jenkins/agent/workspace/k8s-e2e'
