@@ -368,7 +368,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         sh 'echo ${build_script}'
         if (".build/docker/build-artifacts.sh" != build_script && !build_script.contains(".build/docker/_docker_run.sh")) {
           // build-artifacts.sh must be run in an earlier completed stage for the stash to exist
-          dir("${build_dir}") {
+          dir("${tmp_dir}") {
             unstash name: "${arch}_${jdk}"
           }
         }
