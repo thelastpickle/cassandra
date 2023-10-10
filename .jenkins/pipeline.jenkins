@@ -346,7 +346,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     branchName: "${build_script} ${jdk} ${NODE_NAME}"
     //cleanWs()
     echo "build_script: ${build_script}"
-    //checkout scm
+    checkout scm
     //sh 'ln -s  /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'ls -l /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
