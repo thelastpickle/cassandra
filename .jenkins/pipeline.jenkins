@@ -379,7 +379,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         echo "${build_dir}"
         //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
         //sh "cp -r ${build_dir} ${tmp_dir}"
-        sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
+        //sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
 
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
           //dir("${build_dir}") {
