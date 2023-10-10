@@ -347,7 +347,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //cleanWs()
     echo "build_script: ${build_script}"
     //checkout scm
-    sh 'ln -s /home/jenkins/agent/workspace/k8s-e2e /tmp'
+    sh 'ln -s /tmp /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/.* /home/jenkins/agent/workspace/k8s-e2e'
     //sh 'cp -r /tmp/. /tmp/.asf.yaml /tmp/.build /tmp/.jenkins /home/jenkins/agent/workspace/k8s-e2e'
