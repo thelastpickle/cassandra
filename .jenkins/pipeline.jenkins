@@ -362,7 +362,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
       echo "build_script_safe_name: ${build_script_safe_name}"
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${build_script_safe_name}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
-      sh 'sleep 600'
+      //sh 'sleep 600'
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
       def tmp_dir = generatePath(build_dir.trim())
       echo "tmp_dir ${tmp_dir}"
