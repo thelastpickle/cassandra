@@ -348,9 +348,10 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     echo "build_script: ${build_script}"
     //checkout scm
     //sh 'sleep 600'
-    sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
+    //sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
     //sh 'ln -s  /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
-
+    mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/
+    
     sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     sh "echo tool success"
