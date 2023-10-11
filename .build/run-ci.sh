@@ -80,7 +80,10 @@ echo "Jenkins Operator installed successfully!" # condition to check if above co
 kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
 
 BUILD_DIR=/var/lib/jenkins/jobs/k8s-e2e/builds/
-LATEST_BUILD=$(kubectl exec -it jenkins-example -- /bin/bash -c "ls -t $BUILD_DIR | head -n 1")
+NAMESPACE=default
+POD_NAME=jenkins-example
+
+LATEST_BUILD=$(kubectl exec -it $POD_NAME -- /bin/bash -c "ls -t $BUILD_DIR | head -n 1")
 
 CONSOLE_LOG_FILE="$BUILD_DIR/$LATEST_BUILD/consoleLog"
 
