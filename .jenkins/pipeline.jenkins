@@ -79,8 +79,8 @@ pipeline {
             - name: cassandra-dir
               mountPath: /tmp/k8s-e2e
             tty: true
-            //securityContext:
-              //privileged: true
+            securityContext:
+              privileged: true
           nodeSelector:
             gke-node: first
           volumes:
