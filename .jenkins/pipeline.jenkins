@@ -80,7 +80,9 @@ pipeline {
               mountPath: /tmp/k8s-e2e
             tty: true
             securityContext:
-              privileged: true
+              capabilities:
+                add:
+                - SYS_ADMIN
           nodeSelector:
             gke-node: first
           volumes:
