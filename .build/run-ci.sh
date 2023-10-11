@@ -79,6 +79,31 @@ echo "Jenkins Operator installed successfully!" # condition to check if above co
 # deploy jenkins Instance TODO jenkins file parameter
 kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
 
+BUILD_DIR=/var/lib/jenkins/jobs/k8s-e2e/builds/
+LATEST_BUILD=$(kubectl exec -it jenkins-example -- /bin/bash -c "ls -t $BUILD_DIR | head -n 1")
+
+CONSOLE_LOG_FILE="$BUILD_DIR/$LATEST_BUILD/consoleLog"
+
+# Define a function to check if "FINISHED" is in the consoleLog
+check_finished() {
+    kubectl exec -n "$NAMESPACE" "$POD_NAME" -- cat "$CONSOLE_LOG_FILE" | grep -q "FINISHED"
+}
+
+# Continuously check for "FINISHED"
+while true; do
+    if check_finished; then
+        echo "Build has finished."
+        break
+    else
+        echo "Build is still in progress."
+    fi
+    sleep 5  # Adjust the sleep interval as needed
+done
+
+
+
+
+
 # TODO wait for job pods
 #kubectl rollout --namespace ${KUBE_NS} wait pod/ [--for=<condition>] 
 
