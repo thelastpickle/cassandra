@@ -1,0 +1,723 @@
+Started by user [8mha:////4M+feViv8OnIq+kmfa0hvAdixJTg3t7DycFr0DxmNXGuAAAAoR+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAyBEgYx/dLi1CL9rNS87My8Yt18oNWJJflFABglii/LAAAA[0mjenkins-operator
+Checking out git https://github.com/infracloudio/cassandra.git into /var/lib/jenkins/workspace/k8s-e2e@script/8572f1b68672dd44aa5ba45da665ab98b4e70839ea5fb6f2e96696e9ab1ca47a to read .jenkins/pipeline.jenkins
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/lib/jenkins/workspace/k8s-e2e@script/8572f1b68672dd44aa5ba45da665ab98b4e70839ea5fb6f2e96696e9ab1ca47a/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/infracloudio/cassandra.git # timeout=10
+Fetching upstream changes from https://github.com/infracloudio/cassandra.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.39.2'
+ > git fetch --tags --force --progress -- https://github.com/infracloudio/cassandra.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/infracloud/cassandra-5.0^{commit} # timeout=10
+Checking out Revision 3d97537aa8470b6053d148e31513fd3e6fd5006a (refs/remotes/origin/infracloud/cassandra-5.0)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 3d97537aa8470b6053d148e31513fd3e6fd5006a # timeout=10
+Commit message: "updated script"
+ > git rev-list --no-walk 3f99f2f1e5d87b469cb7eb2c232a20a199dc639d # timeout=10
+[8mha:////4BMX68NJF092/H4PjBSIA15v/9s1kcYkdHsyTRqzeAEuAAAAoh+LCAAAAAAAAP9tjTEOwjAQBM8BClpKHuFItIiK1krDC0x8GCfWnbEdkooX8TX+gCESFVvtrLSa5wtWKcKBo5UdUu8otU4GP9jS5Mixv3geZcdn2TIl9igbHBs2eJyx4YwwR1SwULBGaj0nRzbDRnX6rmuvydanHMu2V1A5c4MHCFXMWcf8hSnC9jqYxPTz/BXAFEIGsfuclm8zQVqFvQAAAA==[0m[Pipeline] Start of Pipeline
+[8mha:////4LjcTbThOpuI+rfO/IQ82QQYVZBEWWW1dfrUAKgsresTAAAAoh+LCAAAAAAAAP9tjTEOAiEURD9rLGwtPQSbaGmsbAmNJ0AWEZb8zwLrbuWJvJp3kLiJlZNMMm+a93rDOic4UbLcG+wdZu14DKOti0+U+lugiXu6ck2YKRguzSSpM+cFJRUDS1gDKwEbgzpQdmgLbIVXD9UGhba9lFS/o4DGdQM8gYlqLiqVL8wJdvexy4Q/z18BzLEA29ce4gfya1RxvAAAAA==[0m[Pipeline] echo
+[WARNING] label option is deprecated. To use a static pod template, use the 'inheritFrom' option.
+[8mha:////4KuU9p3qKXCBQbucvjRgkwex7+7DF5IAXtJ7kS+xykB9AAAApR+LCAAAAAAAAP9tjUEKwjAURH8qXbh16SFSEHfiym3IxhPEJMa04f82SW1XnsireQejBVcODMwMDO/5gjpFOFJ0vLXYeUza8z6MriQ+UeyugSbe0oVrwkTBcmknScaeliopW1jEKlgJWFvUgZJHl2EjWnVXTVDomnOOZTsIqLwZ4AFMFHJWMX/LHGF7G00i/HH+AmDuM7Bd8f7zq9/WVBy+wAAAAA==[0m[Pipeline] podTemplate
+[8mha:////4F2zE0sn9HjRrH177OiYNqzz4Wost68SBTXok8ZUDV2uAAAApR+LCAAAAAAAAP9tjTEOwjAUQ3+KOrAycoh0gQkxsUZZOEFIQkgb/d8mKe3EibgadyBQiQlLlmxL1nu+oE4RjhQdby12HpP2vA+jK4lPFLtroIm3dOGaMFGwXNpJkrGnpUrKFhaxClYC1hZ1oOTRZdiIVt1VExS65pxj2Q4CKm8GeAAThZxVzN8yR9jeRpMIf5y/AJj7DGxXvP/86jc09154wAAAAA==[0m[Pipeline] {
+[8mha:////4HuR7a57jO5iIQbfsPqCJI//8axloLS0THsy1sJYny62AAAApR+LCAAAAAAAAP9tjTEOwjAUQ3+KOrAycoh0ggUxsUZZOEFIQkgb/d8mKe3EibgadyBQiQlLlmxL1nu+oE4RjhQdby12HpP2vA+jK4lPFLtroIm3dOGaMFGwXNpJkrGnpUrKFhaxClYC1hZ1oOTRZdiIVt1VExS65pxj2Q4CKm8GeAAThZxVzN8yR9jeRpMIf5y/AJj7DGxXvP/86jek7ggRwAAAAA==[0m[Pipeline] node
+Created Pod: kubernetes default/cassandra-mk8d2-ft4r0
+Agent [8mha:////4CgEb0VZ9b7e9hdsYehapOTgCz9ai3lJ67/512DD8SAnAAAAqx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzREgZ5/eT83ILSktQi/eTE4uLEvJSiRN3cbIsUI920EpMiAwCdWCi81AAAAA==[0mcassandra-mk8d2-ft4r0 is provisioned from template cassandra-mk8d2
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    buildUrl: "http://jenkins-operator-http-example.default.svc.cluster.local:8080/job/k8s-e2e/2/"
+    runUrl: "job/k8s-e2e/2/"
+  labels:
+    jenkins: "slave"
+    jenkins/label-digest: "5f67e63ee7db1fcdb5d113eb6a080a25296a8bfa"
+    jenkins/label: "cassandra"
+  name: "cassandra-mk8d2-ft4r0"
+  namespace: "default"
+spec:
+  containers:
+  - command:
+    - "/bin/sh"
+    - "-c"
+    - |
+      /usr/local/bin/jenkins-agent
+    env:
+    - name: "JENKINS_SECRET"
+      value: "********"
+    - name: "JENKINS_TUNNEL"
+      value: "jenkins-operator-slave-example.default.svc.cluster.local:50000"
+    - name: "JENKINS_AGENT_NAME"
+      value: "cassandra-mk8d2-ft4r0"
+    - name: "JENKINS_NAME"
+      value: "cassandra-mk8d2-ft4r0"
+    - name: "JENKINS_AGENT_WORKDIR"
+      value: "/home/jenkins/agent"
+    - name: "JENKINS_URL"
+      value: "http://jenkins-operator-http-example.default.svc.cluster.local:8080/"
+    image: "richamishra006/apache-k8s-agent:32"
+    name: "jnlp"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+    tty: true
+    volumeMounts:
+    - mountPath: "/var/run/docker.sock"
+      name: "docker-socket"
+    - mountPath: "/tmp/k8s-e2e"
+      name: "cassandra-dir"
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+    //securityContext:
+      //privileged: true
+  initContainers:
+  - command:
+    - "sh"
+    - "-c"
+    - "chown 1000:1000 /var/run/docker.sock"
+    image: "alpine:latest"
+    imagePullPolicy: "Always"
+    name: "init-docker-socket"
+    securityContext:
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: "/var/run/docker.sock"
+      name: "docker-socket"
+  nodeSelector:
+    gke-node: "first"
+  restartPolicy: "Never"
+  volumes:
+  - hostPath:
+      path: "/home/jenkins/agent/workspace/k8s-e2e"
+    name: "cassandra-dir"
+  - emptyDir:
+      medium: ""
+    name: "workspace-volume"
+  - hostPath:
+      path: "/var/run/docker.sock"
+    name: "docker-socket"
+
+Running on [8mha:////4O1RCVcYAeRQrBC+T2GuewSqgXkbsXE9GXk6o07a8aU7AAAArx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzREgYV/eT83ILSktQi/eTE4uLEvJSiRFUjl9xsixQjIJ1WYlJkoA8Apo+AUtkAAAA=[0mcassandra-mk8d2-ft4r0 in /home/jenkins/agent/workspace/k8s-e2e
+[8mha:////4LKzCbSpWYC2h/32cwuzMWxZrKQDlrB1E6Mdc0K6fY7CAAAApR+LCAAAAAAAAP9tjTEOwjAUQ3+KOrAycoh0gwExsUZZOEFIQkgb/d8mKe3EibgadyBQiQlLlmxL1nu+oE4RjhQdby12HpP2vA+jK4lPFLtroIm3dOGaMFGwXNpJkrGnpUrKFhaxClYC1hZ1oOTRZdiIVt1VExS65pxj2Q4CKm8GeAAThZxVzN8yR9jeRpMIf5y/AJj7DGxXvP/86jcChmMxwAAAAA==[0m[Pipeline] {
+[8mha:////4EZHAkXmOElD5f3RcBlqzQlAVzu+7OoXzj6No4vDe8QVAAAApR+LCAAAAAAAAP9tjTEOwjAUQ3+KOrAycoh0BAkxsUZZOEFIQkgb/d8mKe3EibgadyBQiQlLlmxL1nu+oE4RjhQdby12HpP2vA+jK4lPFLtroIm3dOGaMFGwXNpJkrGnpUrKFhaxClYC1hZ1oOTRZdiIVt1VExS65pxj2Q4CKm8GeAAThZxVzN8yR9jeRpMIf5y/AJj7DGxXvP/86jfpX/cvwAAAAA==[0m[Pipeline] stage
+[8mha:////4Kw4k6Ey59Wb8IszQHBluVzBke8J8iutFMKq2lgg/RU8AAAApR+LCAAAAAAAAP9tjTEOwjAUQ3+KOrAycoh0BSEm1igLJwhJCGmj/9skpZ04EVfjDgQqMWHJkm3Jes8X1CnCkaLjrcXOY9Ke92F0JfGJYncNNPGWLlwTJgqWSztJMva0VEnZwiJWwUrA2qIOlDy6DBvRqrtqgkLXnHMs20FA5c0AD2CikLOK+VvmCNvbaBLhj/MXAHOfge2K959f/QbB16AVwAAAAA==[0m[Pipeline] { (Declarative: Checkout SCM)
+[8mha:////4KG430af7FjdkX9NwEYQ/lDmhG/SzOF069wnYqagxpyEAAAAoh+LCAAAAAAAAP9tjTEOwjAQBDdBFLSUPMKBEiEqWisNLzCJMU6su2BfSCpexNf4AxGRqNhqZ5p5vbFMEUeOTjWWWk+p8qoLvZueGji218CDaviiKqbEwarSDiXX9jRjyWIxL8ux0FhZqgInT06w1o15mCIYcsVZ4uQOGrmv73gi01NZTJQvjBGbW18npl/nbwBjJ8j2gny37T6VOYoyvQAAAA==[0m[Pipeline] checkout
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository https://github.com/infracloudio/cassandra.git
+ > git init /home/jenkins/agent/workspace/k8s-e2e # timeout=10
+Fetching upstream changes from https://github.com/infracloudio/cassandra.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.30.2'
+ > git fetch --tags --force --progress -- https://github.com/infracloudio/cassandra.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+Checking out Revision 3d97537aa8470b6053d148e31513fd3e6fd5006a (refs/remotes/origin/infracloud/cassandra-5.0)
+Commit message: "updated script"
+[8mha:////4CsVqgXKVvxcqClcywmNfzfnGnlDnqadG0cQGwNqSgNZAAAAoh+LCAAAAAAAAP9tjbEOgjAURS8YB1dHP6KE0Rgn14bFL6hQa6F5D9uHMPlF/pr/IJHEyTvdc5bzemOdIo4cnWotdZ5S7VUfBjc/NXLsroFH1fJF1UyJg1WVHStu7GnBisViWZZjpbGxVAdOnpxgq1vzMEUw5IqzxNkdNHLf3PFEpueymChfmCJ2t6FJTL/O3wCmvhfkZSnI9h+IfpSRvQAAAA==[0m[Pipeline] }
+[8mha:////4E/+2se/Ew9D2hSPcZx4dLXiXItx+7gYTeSjKlAO3G7yAAAAox+LCAAAAAAAAP9tjTEOwjAQBDdBFLSUPMIRVEiIitZKwwtMYowT6y7YF5KKF/E1/kBEJCq22plmXm8sU8SRo1ONpdZTqrzqQu+mpwaO7TXwoBq+qIopcbCqtEPJtT3NWLJYzMtyLDRWlqrAyZMTrHVjHqYIhlxxlji5g0bu6zueyPRUFhPlC2PE5tbXienX+RvA2HWCfLsTZPsPzjQzob0AAAA=[0m[Pipeline] // stage
+[8mha:////4D8oyJuKBhje0Ff28063+J14fH2LI12K5F1YnQkW+JM0AAAApx+LCAAAAAAAAP9tjTEOwjAQBM9BKWgpeYQjREGBqGgtN7zAxMY4se6CfSGpeBFf4w8EIlGx1c5Kq3m+oMwJDpS8bBy2AXMdZBd7PzU5UGovkQbZ0FnWhJmik9oNmqw7zqiJHcwRBSwULB3WkXJAz7BSjbmbKhr01YnTtO0VFMHe4AFCTWY2ib8wJlhfe5sJf56/Ahg7BrFjKDbbz7F8AxnwXE7BAAAA[0m[Pipeline] withEnv
+[8mha:////4CEthWgxpy369I8Cz7vXppvIWpnNQzK7ZKCCA+wtolZEAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUCDbE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5Dv9rMd5mfxAbNWnxXCAAAA[0m[Pipeline] {
+[8mha:////4P6/0viON471BvtLlJIm34Jb0n6Blg7Ip4psD55erdw8AAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiJKgQVVrLDS8wsTFOrDtjOyQVL+Jr/IFAJCq2WO1sM88XLFOEI0eLraHOUWocBt/baeHAsbt4HrDlMzZMib1BaQbJ2tQzSs4G5hQlLASsDDWekyObYS1adVeVV2SrU47TdxBQOn2DBxRiMmcV8xfGCJtrrxPTz/NXAGPIUG53n9qHN8W7Eii+AAAA[0m[Pipeline] sh
+ > git config remote.origin.url https://github.com/infracloudio/cassandra.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/infracloud/cassandra-5.0^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 3d97537aa8470b6053d148e31513fd3e6fd5006a # timeout=10
++ grep property\s*name="java.default" build.xml
++ sed -ne s/.*value="\([^"]*\)".*/\1/p
+[8mha:////4CfWi4U2grKa2/cnc8m1JZQc6AhcT+O0TOEv5V0hprpJAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiJESDqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDhnK7+9Q+vAEG6D8DvgAAAA==[0m[Pipeline] sh
++ grep property\s*name="java.supported" build.xml
++ sed -ne s/.*value="\([^"]*\)".*/\1/p
+[8mha:////4HSsnAdVhrQhenUwVWivQV0Ad2SWkNoTloDdwCajN7/kAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUSEgMiKlrlIUThCaEtNH/5SelnTgRV+MOtFRiwoNlW7Le6w1FZDgRO9FYbD3G2osu9G5KYiBur4EG0dBF1ISRghXKDoqMrZaqKFlYlOWwkrC2WAeKHl2CjWz0Q5dBoyvPiaftKCH35g5PyORETprTt4wM21tvIuGP8xcAY5cg3+1nO8zP4gOeMTC6wgAAAA==[0m[Pipeline] withEnv
+[8mha:////4I3o/TSP5Y3Lo/EsGR7Pewx/VGmoxQAbRihU6VZFy26/AAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUTCAhpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD0rlhNLCAAAA[0m[Pipeline] {
+[8mha:////4EpS7s+I8RwjpdRSmW7jZaUjVPfmwAPYSl1hQ7uH0CMMAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUbCDE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5Dv9rMd5mfxASnCIIrCAAAA[0m[Pipeline] timestamps
+[8mha:////4H7kKCR36PRSQnJpHJ+ReM4S438/oaN2U1lOF4csu7FUAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycogU2BDqxBp14QShCSFp9H9JUtKJE3E17kCgEhMeLNuS9Z4vqIKHhrxmVmFvMHSGDW7UObFEvr84SszSmXWEgZxirUotSXWca0tRwayihAWHpcLOUTCoI6y4FXdRO4G6PkWftwOH0sgbPKDgmRyFj98yeVhfRxkIf5y/AJiGCOV2n223+TyrN7xWSV3CAAAA[0m[Pipeline] {
+[8mha:////4Al6BFFvrcg3PWlCNBaclN7kM0yLDOPLwM5cf68hbtp1AAAAph+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycogUWBFT1ygLJwhNCGmj/8tPSjtxIq7GHWipxIQHy7ZkvdcbishwInaisdh6jLUXXejdlMRA3F4DDaKhi6gJIwUrlB0UGVstVVGysCjLYSVhbbEOFD26BBvZ6Icug0ZXnhNP21FC7s0dnpDJiZw0p28ZGba33kTCH+cvAMYuQX7Yzbafn8UHbGnGmsIAAAA=[0m[Pipeline] stage
+[8mha:////4A/v/87J8YPxOjaJOMyi3Eohi5ws4dsIV0xYf/cIlrmxAAAAph+LCAAAAAAAAP9tjTEOwjAUQ3+DOrAycohUdEVMrFEXThCaEJJG/7dJSjpxIq7GHWipxIQHy7ZkvdcbyhjgRMFwp7GzGFvLez+aOfFMobt5ytzRlbeEkbzmjc4NKX1ea0NJw6qCwUbAVmPrKVo0CXbCyYesvERTXVKYt6MAZtUATyjETE4ypG+ZAuzvo4qEP85fAEx9AlYfFquXZ/kBAsTc3cIAAAA=[0m[Pipeline] { (Init)
+[8mha:////4MnlRy7b1yhEf6OXeO4KGf6p/eoA77te+zsXKhtUBv68AAAAph+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUKiNiYo2ycILQhJA0+r9NUtKJE3E17kBLJSY8WLYl673eUMUAJwqGOY2dxdha1vvRzIllCt3NU2aOrqwljOQ1EzoLUvq8VkFJw6qihA2HrcbWU7RoEuy4kw9Ze4mmvqQwb0cOpVUDPKHgMznJkL5lCrC/jyoS/jh/ATD1CcqmWeywPKsPpnFij8IAAAA=[0m[Pipeline] container
+[8mha:////4LKw4+ND9Lca76p/rC07UfobnbFqK9vD/ZBzphUkhdAqAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUAjbE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5Dv9rMd5mfxAd6e6VPCAAAA[0m[Pipeline] {
+[8mha:////4E/SLk8P+JGy0sM24QgtomQ52lDQlXxJwGQYPk33fpnDAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUQjAhpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD/hYjrHCAAAA[0m[Pipeline] script
+[8mha:////4Ap3pYzAE7qcIN30Y3umLO7v6fODU4W6xujZiQBVuDNlAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUQoIFMXWNsnCC0ISQNvq//KS0EyfiatyBlkpMeLBsS9Z7vaGIDCdiJxqLrcdYe9GF3k1JDMTtNdAgGrqImjBSsELZQZGx1VIVJQuLshxWEtYW60DRo0uwkY1+6DJodOU58bQdJeTe3OEJmZzISXP6lpFhe+tNJPxx/gJg7BLku/1sh/lZfACW9ZT2wgAAAA==[0m[Pipeline] {
+[8mha:////4JDXvtbyTwvJD/bcnoVF2g6cWRrFAX5dk7ITY/Bp2h7vAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiUUCBqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDyFBu95/avQFqe0n4vgAAAA==[0m[Pipeline] }
+[8mha:////4M+oKknDqqVamXwAqHq0nrWHZYobAYnKWIc2HJORN276AAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiISEhIaq0lhteYGJjnFh3xnZIKl7E1/gDgUhUbLHa2WaeL1imCEeOFltDnaPUOAy+t9PCgWN38Txgy2dsmBJ7g9IMkrWpZ5ScDcwpSlgIWBlqPCdHNsNatOquKq/IVqccp+8goHT6Bg8oxGTOKuYvjBE2114npp/nrwDGEDKU2/2ndm8FmBaQvgAAAA==[0m[Pipeline] // script
+[8mha:////4AObZttKbl/IskzMqErC0UMKHphDpTywlSb9zikMoRe1AAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIRqEqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDhnK7+9Q+vAFzTW4IvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:05:59.228Z] + echo stage init
+[2023-10-11T08:05:59.229Z] stage init
+[8mha:////4AxFb7NLK55N7DIZMli55wIFdWSwrIT1GLQQD/EQYI9VAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOKCgA6lorXc8AKTGOPEugu2g1PxIr7GH7CIRMUWq51t5vWGZfBQszfYaeothcbi4EaTFyb2/dVxwo4v2DAFdhqlTpJbfZpRctQwpyhhIWClqXEcLJkIa9Gph6qcIlOdo8/fUUBp2zs8oRDZHJWPX5g8bG5jG5h+nr8CmIYhQrnf5todPkohNa2+AAAA[0m[Pipeline] }
+[8mha:////4FkEqoX3bVg6QxnSy40C+HyKqyp95XJwgzYSRPWquJxOAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiSImo0lppeIGJjXFi3RnbIal4EV/jD1hEomKL1c4283rDOgY4cTDYaxosxc6id6PJCycOw9XxhD1fsGOK7DS2empZ6WbBlpOGJUUJKwEbTZ3jaMkk2IpePmTlJJnqnEL+jgJKq+7whEJkc5IhfWEOsLuNKjL9PH8FMHufoKz3uQ71B0xnDfi+AAAA[0m[Pipeline] // container
+[8mha:////4CPaY/X+prCrgKPHwxYe96pmn3YVwWvZto8quJK28z8rAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMKRQomoaC03vMAkxtix7ox9Ial4EV/jD1hEomKL1c4283rDOic4UrLCGxwc5s6JGEZblpgoDddAk/B0ER1hpmCEMpOi3pwWVMQGllQ1rCRsDHaBskPLsJVeP3QTNNrmzKl8Bwm16+/whEoWM+vEX5gT7G5jnwl/nr8CmGNkqPdtqbb9AHQlngm+AAAA[0m[Pipeline] }
+[8mha:////4PSPGy0fAV4C/CVS5dFBC+cdscyB9RAzIFNPsBiuIsfaAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiSImo0lppeIGJjXFi3RnbIal4EV/jD1hEomKL1c4283rDOgY4cTDYaxosxc6id6PJCycOw9XxhD1fsGOK7DS2empZ6WbBlpOGJUUJKwEbTZ3jaMkk2IpePmTlJJnqnEL+jgJKq+7whEJkc5IhfWEOsLuNKjL9PH8FMHufoKzrXIf9B2uny1u+AAAA[0m[Pipeline] // stage
+[8mha:////4H5CDftHIo1tYYgW2mFFBk9uY16pbxq8wRClFKHH/te/AAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycogUARvqxBp14QShCSFp9H9JUtKJE3E17kCgEhMeLNuS9Z4vqIKHhrxmVmFvMHSGDW7UObFEvr84SszSmXWEgZxirUotSXWca0tRwayihAWHpcLOUTCoI6y4FXdRO4G6PkWftwOH0sgbPKDgmRyFj98yeVhfRxkIf5y/AJiGCOV2k223/zyrN2vzfGzCAAAA[0m[Pipeline] stage
+[8mha:////4A3joXVcpEp7Cc+kTNyDyP3SrZza+WbK/1oTltOAuvrDAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0ACbE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5Dv9rMd5mfxASMfXIzCAAAA[0m[Pipeline] { (Builds)
+[8mha:////4KNGvN0UjLOHUXU7xVlwcrUitEYxVPE7s1G6IcLX86CSAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0QLAgpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD02yRsvCAAAA[0m[Pipeline] parallel
+[8mha:////4A0Rzd1kUstB8tgYZjvBtJxuI2op/9OGeHJ7b7oRh6N0AAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0QIIBMXWNsnCC0ISQNvq//KS0EyfiatyBlkpMeLBsS9Z7vaGIDCdiJxqLrcdYe9GF3k1JDMTtNdAgGrqImjBSsELZQZGx1VIVJQuLshxWEtYW60DRo0uwkY1+6DJodOU58bQdJeTe3OEJmZzISXP6lpFhe+tNJPxx/gJg7BLku/1sh/lZfADpB/iZwgAAAA==[0m[Pipeline] { (Branch: artifacts)
+[8mha:////4B4VV1NzAPPnOqkhuXotokl4LtN4SVnF4D+ORk4zlkCxAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0YAAJMXWNsnCC0ISQNvq//KS0EyfiatyBlkpMeLBsS9Z7vaGIDCdiJxqLrcdYe9GF3k1JDMTtNdAgGrqImjBSsELZQZGx1VIVJQuLshxWEtYW60DRo0uwkY1+6DJodOU58bQdJeTe3OEJmZzISXP6lpFhe+tNJPxx/gJg7BLku/1sh/lZfAD8aiCpwgAAAA==[0m[Pipeline] stage
+[8mha:////4GVovZPvohj54OO+9e+qPw6pGS2RlY9zFmAcTVCGWpf3AAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0YAEhpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD59NhPHCAAAA[0m[Pipeline] { (artifacts)
+[8mha:////4JILzIAgTvhqR8L6KmVNlrPbsS+TCLSIa2mI1RTUBz6rAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOKCBA1CqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrk75Npvhw/W61xwvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:05:59.806Z] + echo starting artifacts stage
+[2023-10-11T08:05:59.806Z] starting artifacts stage
+[8mha:////4Nhf8TiKHMdM5tJ9MQx8Kevort2aoAjUqLszQfSY+lxOAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUCBaEOrFGXThBaEJIGv1fkpR04kRcjTsQqMSEB8u2ZL3nC6rgoSGvmVXYGwydYYMbdU4ske8vjhKzdGYdYSCnWKtSS1Id59pSVDCrKGHBYamwcxQM6ggrbsVd1E6grk/R5+3AoTTyBg8oeCZH4eO3TB7W11EGwh/nLwCmIUK53WfbbT7P6g28Lv4ZwgAAAA==[0m[Pipeline] parallel
+[8mha:////4MagaRgqr0z9cF22B4n4LeFWLFLa8t5C7uYa7Ubb4ze6AAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUIDbE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5AfdrPt52fxAdhUMVHCAAAA[0m[Pipeline] { (Branch: cassandra)
+[8mha:////4JLt7NawpGeQ4un1Luq4I6/YUC4J+RNlIwonnLMPDrd7AAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUAjbE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5AfdrPt52fxAXzhjwPCAAAA[0m[Pipeline] parallel
+[8mha:////4FKZqvDTHSRbdYzmSjL9r6PTINCvLVj4lYqcz+o+SGPiAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0ACbE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5Dvd7Md5mfxAaHdWBTCAAAA[0m[Pipeline] { (Branch: 11)
+[8mha:////4J7M9T0ir71uXlNze3av7zHpQk+f5/GGWlldMEYIzFFgAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0ALEgpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8v5vtMD+LDw+vzJLCAAAA[0m[Pipeline] { (Branch: 17)
+[8mha:////4F283A7XZ37tem3+HQf3GM9Bl5CUzEczp+fwtgUJ8oVeAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0ATEgpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD+m2JbHCAAAA[0m[Pipeline] node
+[8mha:////4E6bGZGjHJptV6Zmy+FGoE34hf3lrSfLb+geCmWS/e0BAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0QQgJMXWNsnCC0ISQNvq//KS0EyfiatyBlkpMeLBsS9Z7vaGIDCdiJxqLrcdYe9GF3k1JDMTtNdAgGrqImjBSsELZQZGx1VIVJQuLshxWEtYW60DRo0uwkY1+6DJodOU58bQdJeTe3OEJmZzISXP6lpFhe+tNJPxx/gJg7BLku/1sh/lZfAA9YpHZwgAAAA==[0m[Pipeline] node
+Created Pod: kubernetes default/cassandra-mk8d2-btczb
+Created Pod: kubernetes default/cassandra-mk8d2-5vk0k
+[2023-10-11T08:06:08.384Z] Agent [8mha:////4Gy+24YQpjdxUu97hPRfIM18sjtZ0xmppOSyC5Oe2uZQAAAAqx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzREgZ5/eT83ILSktQi/eTE4uLEvJSiRN3cbIsUI92kkuSqJAC4fOdt1AAAAA==[0mcassandra-mk8d2-btczb is provisioned from template cassandra-mk8d2
+[2023-10-11T08:06:08.395Z] ---
+[2023-10-11T08:06:08.396Z] apiVersion: "v1"
+[2023-10-11T08:06:08.396Z] kind: "Pod"
+[2023-10-11T08:06:08.396Z] metadata:
+[2023-10-11T08:06:08.396Z]   annotations:
+[2023-10-11T08:06:08.396Z]     buildUrl: "http://jenkins-operator-http-example.default.svc.cluster.local:8080/job/k8s-e2e/2/"
+[2023-10-11T08:06:08.396Z]     runUrl: "job/k8s-e2e/2/"
+[2023-10-11T08:06:08.396Z]   labels:
+[2023-10-11T08:06:08.396Z]     jenkins: "slave"
+[2023-10-11T08:06:08.396Z]     jenkins/label-digest: "5f67e63ee7db1fcdb5d113eb6a080a25296a8bfa"
+[2023-10-11T08:06:08.396Z]     jenkins/label: "cassandra"
+[2023-10-11T08:06:08.396Z]   name: "cassandra-mk8d2-btczb"
+[2023-10-11T08:06:08.396Z]   namespace: "default"
+[2023-10-11T08:06:08.396Z] spec:
+[2023-10-11T08:06:08.396Z]   containers:
+[2023-10-11T08:06:08.396Z]   - command:
+[2023-10-11T08:06:08.396Z]     - "/bin/sh"
+[2023-10-11T08:06:08.396Z]     - "-c"
+[2023-10-11T08:06:08.396Z]     - |
+[2023-10-11T08:06:08.396Z]       /usr/local/bin/jenkins-agent
+[2023-10-11T08:06:08.396Z]     env:
+[2023-10-11T08:06:08.396Z]     - name: "JENKINS_SECRET"
+[2023-10-11T08:06:08.396Z]       value: "********"
+[2023-10-11T08:06:08.396Z]     - name: "JENKINS_TUNNEL"
+[2023-10-11T08:06:08.396Z]       value: "jenkins-operator-slave-example.default.svc.cluster.local:50000"
+[2023-10-11T08:06:08.396Z]     - name: "JENKINS_AGENT_NAME"
+[2023-10-11T08:06:08.396Z]       value: "cassandra-mk8d2-btczb"
+[2023-10-11T08:06:08.396Z]     - name: "JENKINS_NAME"
+[2023-10-11T08:06:08.396Z]       value: "cassandra-mk8d2-btczb"
+[2023-10-11T08:06:08.396Z]     - name: "JENKINS_AGENT_WORKDIR"
+[2023-10-11T08:06:08.396Z]       value: "/home/jenkins/agent"
+[2023-10-11T08:06:08.396Z]     - name: "JENKINS_URL"
+[2023-10-11T08:06:08.396Z]       value: "http://jenkins-operator-http-example.default.svc.cluster.local:8080/"
+[2023-10-11T08:06:08.396Z]     image: "richamishra006/apache-k8s-agent:32"
+[2023-10-11T08:06:08.396Z]     name: "jnlp"
+[2023-10-11T08:06:08.396Z]     resources:
+[2023-10-11T08:06:08.396Z]       requests:
+[2023-10-11T08:06:08.396Z]         memory: "256Mi"
+[2023-10-11T08:06:08.396Z]         cpu: "100m"
+[2023-10-11T08:06:08.396Z]     tty: true
+[2023-10-11T08:06:08.396Z]     volumeMounts:
+[2023-10-11T08:06:08.396Z]     - mountPath: "/var/run/docker.sock"
+[2023-10-11T08:06:08.396Z]       name: "docker-socket"
+[2023-10-11T08:06:08.396Z]     - mountPath: "/tmp/k8s-e2e"
+[2023-10-11T08:06:08.396Z]       name: "cassandra-dir"
+[2023-10-11T08:06:08.396Z]     - mountPath: "/home/jenkins/agent"
+[2023-10-11T08:06:08.396Z]       name: "workspace-volume"
+[2023-10-11T08:06:08.396Z]       readOnly: false
+[2023-10-11T08:06:08.396Z]     //securityContext:
+[2023-10-11T08:06:08.396Z]       //privileged: true
+[2023-10-11T08:06:08.396Z]   initContainers:
+[2023-10-11T08:06:08.396Z]   - command:
+[2023-10-11T08:06:08.396Z]     - "sh"
+[2023-10-11T08:06:08.396Z]     - "-c"
+[2023-10-11T08:06:08.396Z]     - "chown 1000:1000 /var/run/docker.sock"
+[2023-10-11T08:06:08.396Z]     image: "alpine:latest"
+[2023-10-11T08:06:08.396Z]     imagePullPolicy: "Always"
+[2023-10-11T08:06:08.396Z]     name: "init-docker-socket"
+[2023-10-11T08:06:08.397Z]     securityContext:
+[2023-10-11T08:06:08.397Z]       runAsUser: 0
+[2023-10-11T08:06:08.397Z]     volumeMounts:
+[2023-10-11T08:06:08.397Z]     - mountPath: "/var/run/docker.sock"
+[2023-10-11T08:06:08.397Z]       name: "docker-socket"
+[2023-10-11T08:06:08.397Z]   nodeSelector:
+[2023-10-11T08:06:08.397Z]     gke-node: "first"
+[2023-10-11T08:06:08.397Z]   restartPolicy: "Never"
+[2023-10-11T08:06:08.397Z]   volumes:
+[2023-10-11T08:06:08.397Z]   - hostPath:
+[2023-10-11T08:06:08.397Z]       path: "/home/jenkins/agent/workspace/k8s-e2e"
+[2023-10-11T08:06:08.397Z]     name: "cassandra-dir"
+[2023-10-11T08:06:08.397Z]   - emptyDir:
+[2023-10-11T08:06:08.397Z]       medium: ""
+[2023-10-11T08:06:08.397Z]     name: "workspace-volume"
+[2023-10-11T08:06:08.397Z]   - hostPath:
+[2023-10-11T08:06:08.397Z]       path: "/var/run/docker.sock"
+[2023-10-11T08:06:08.397Z]     name: "docker-socket"
+[2023-10-11T08:06:08.397Z] 
+[2023-10-11T08:06:08.405Z] Agent [8mha:////4FCVRQqXsUUj8njql9W8OedpyI03uFl/Qgu95E/WQ2/0AAAAqx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzREgZ5/eT83ILSktQi/eTE4uLEvJSiRN3cbIsUI13TsmyDbAB76YQw1AAAAA==[0mcassandra-mk8d2-5vk0k is provisioned from template cassandra-mk8d2
+[2023-10-11T08:06:08.410Z] ---
+[2023-10-11T08:06:08.410Z] apiVersion: "v1"
+[2023-10-11T08:06:08.410Z] kind: "Pod"
+[2023-10-11T08:06:08.410Z] metadata:
+[2023-10-11T08:06:08.410Z]   annotations:
+[2023-10-11T08:06:08.410Z]     buildUrl: "http://jenkins-operator-http-example.default.svc.cluster.local:8080/job/k8s-e2e/2/"
+[2023-10-11T08:06:08.410Z]     runUrl: "job/k8s-e2e/2/"
+[2023-10-11T08:06:08.410Z]   labels:
+[2023-10-11T08:06:08.410Z]     jenkins: "slave"
+[2023-10-11T08:06:08.410Z]     jenkins/label-digest: "5f67e63ee7db1fcdb5d113eb6a080a25296a8bfa"
+[2023-10-11T08:06:08.410Z]     jenkins/label: "cassandra"
+[2023-10-11T08:06:08.410Z]   name: "cassandra-mk8d2-5vk0k"
+[2023-10-11T08:06:08.410Z]   namespace: "default"
+[2023-10-11T08:06:08.410Z] spec:
+[2023-10-11T08:06:08.410Z]   containers:
+[2023-10-11T08:06:08.410Z]   - command:
+[2023-10-11T08:06:08.410Z]     - "/bin/sh"
+[2023-10-11T08:06:08.411Z]     - "-c"
+[2023-10-11T08:06:08.411Z]     - |
+[2023-10-11T08:06:08.411Z]       /usr/local/bin/jenkins-agent
+[2023-10-11T08:06:08.411Z]     env:
+[2023-10-11T08:06:08.411Z]     - name: "JENKINS_SECRET"
+[2023-10-11T08:06:08.411Z]       value: "********"
+[2023-10-11T08:06:08.411Z]     - name: "JENKINS_TUNNEL"
+[2023-10-11T08:06:08.411Z]       value: "jenkins-operator-slave-example.default.svc.cluster.local:50000"
+[2023-10-11T08:06:08.411Z]     - name: "JENKINS_AGENT_NAME"
+[2023-10-11T08:06:08.411Z]       value: "cassandra-mk8d2-5vk0k"
+[2023-10-11T08:06:08.411Z]     - name: "JENKINS_NAME"
+[2023-10-11T08:06:08.411Z]       value: "cassandra-mk8d2-5vk0k"
+[2023-10-11T08:06:08.411Z]     - name: "JENKINS_AGENT_WORKDIR"
+[2023-10-11T08:06:08.411Z]       value: "/home/jenkins/agent"
+[2023-10-11T08:06:08.411Z]     - name: "JENKINS_URL"
+[2023-10-11T08:06:08.411Z]       value: "http://jenkins-operator-http-example.default.svc.cluster.local:8080/"
+[2023-10-11T08:06:08.411Z]     image: "richamishra006/apache-k8s-agent:32"
+[2023-10-11T08:06:08.411Z]     name: "jnlp"
+[2023-10-11T08:06:08.411Z]     resources:
+[2023-10-11T08:06:08.411Z]       requests:
+[2023-10-11T08:06:08.411Z]         memory: "256Mi"
+[2023-10-11T08:06:08.411Z]         cpu: "100m"
+[2023-10-11T08:06:08.411Z]     tty: true
+[2023-10-11T08:06:08.411Z]     volumeMounts:
+[2023-10-11T08:06:08.411Z]     - mountPath: "/var/run/docker.sock"
+[2023-10-11T08:06:08.411Z]       name: "docker-socket"
+[2023-10-11T08:06:08.411Z]     - mountPath: "/tmp/k8s-e2e"
+[2023-10-11T08:06:08.411Z]       name: "cassandra-dir"
+[2023-10-11T08:06:08.411Z]     - mountPath: "/home/jenkins/agent"
+[2023-10-11T08:06:08.411Z]       name: "workspace-volume"
+[2023-10-11T08:06:08.411Z]       readOnly: false
+[2023-10-11T08:06:08.411Z]     //securityContext:
+[2023-10-11T08:06:08.411Z]       //privileged: true
+[2023-10-11T08:06:08.411Z]   initContainers:
+[2023-10-11T08:06:08.411Z]   - command:
+[2023-10-11T08:06:08.411Z]     - "sh"
+[2023-10-11T08:06:08.411Z]     - "-c"
+[2023-10-11T08:06:08.411Z]     - "chown 1000:1000 /var/run/docker.sock"
+[2023-10-11T08:06:08.411Z]     image: "alpine:latest"
+[2023-10-11T08:06:08.411Z]     imagePullPolicy: "Always"
+[2023-10-11T08:06:08.411Z]     name: "init-docker-socket"
+[2023-10-11T08:06:08.411Z]     securityContext:
+[2023-10-11T08:06:08.411Z]       runAsUser: 0
+[2023-10-11T08:06:08.411Z]     volumeMounts:
+[2023-10-11T08:06:08.411Z]     - mountPath: "/var/run/docker.sock"
+[2023-10-11T08:06:08.411Z]       name: "docker-socket"
+[2023-10-11T08:06:08.411Z]   nodeSelector:
+[2023-10-11T08:06:08.411Z]     gke-node: "first"
+[2023-10-11T08:06:08.411Z]   restartPolicy: "Never"
+[2023-10-11T08:06:08.411Z]   volumes:
+[2023-10-11T08:06:08.411Z]   - hostPath:
+[2023-10-11T08:06:08.411Z]       path: "/home/jenkins/agent/workspace/k8s-e2e"
+[2023-10-11T08:06:08.411Z]     name: "cassandra-dir"
+[2023-10-11T08:06:08.411Z]   - emptyDir:
+[2023-10-11T08:06:08.411Z]       medium: ""
+[2023-10-11T08:06:08.411Z]     name: "workspace-volume"
+[2023-10-11T08:06:08.411Z]   - hostPath:
+[2023-10-11T08:06:08.411Z]       path: "/var/run/docker.sock"
+[2023-10-11T08:06:08.411Z]     name: "docker-socket"
+[2023-10-11T08:06:08.411Z] 
+[2023-10-11T08:06:08.523Z] Running on [8mha:////4Ng4aFjPhuc3BIHM9PBPuQQzMb+65AXDZIRREGDaoF+PAAAArx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzREgYV/eT83ILSktQi/eTE4uLEvJSiRFUjl9xsixQjIG1alm2QrQ8AWmRlG9kAAAA=[0mcassandra-mk8d2-5vk0k in /home/jenkins/agent/workspace/k8s-e2e
+[8mha:////4I0oD8uhh5i6r8Xvibm707E2e6Qvd3KfGqYCv+aiVQeCAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0YQAhpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD56au0DCAAAA[0m[Pipeline] {
+[8mha:////4D3oNMQo9FHGzZYQGcHOVQ0dEFGgEbmUOOt9mhhTk0iHAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOJCAQVCqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrk75Npvhw/4iFt7vgAAAA==[0m[Pipeline] echo
+[2023-10-11T08:06:08.644Z] build_script: .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[8mha:////4LbacmxfWAli8ktjEOtIakJ/SZ9W1UotHedx4u+amIcXAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiJCgQSkVrueEFJjHGiXUXbAen4kV8jT9gEYmKLVY728zrDcvgoWZvsNPUWwqNxcGNJi9M7Pur44QdX7BhCuw0Sp0kt/o0o+SoYU5RwkLASlPjOFgyEdaiUw9VOUWmOkefv6OA0rZ3eEIhsjkqH78wedjcxjYw/Tx/BTANEcrdIdd+O3wAublAYr4AAAA=[0m[Pipeline] sh
+[2023-10-11T08:06:08.777Z] Running on [8mha:////4Da9vwt2kBEP/AmGpUEvfigVSN8jWYor6Edf0hCZGCQtAAAArx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzREgYV/eT83ILSktQi/eTE4uLEvJSiRFUjl9xsixQjIJ1UklyVpA8AxZRVGdkAAAA=[0mcassandra-mk8d2-btczb in /home/jenkins/agent/workspace/k8s-e2e
+[8mha:////4Bydxicmjzjxwak6LvupINLaRDG+t90/OqM4BmVRHiJbAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUQiAG1Ik16sIJQhNC0uj/kqSkEyfiatyBQCUmPFi2Jes9X1AFDw15zazC3mDoDBvcqHNiiXx/cZSYpTPrCAM5xVqVWpLqONeWooJZRQkLDkuFnaNgUEdYcSvuonYCdX2KPm8HDqWRN3hAwTM5Ch+/ZfKwvo4yEP44fwEwDRHK7T7bbvN5Vm8vlfMfwgAAAA==[0m[Pipeline] {
+[8mha:////4PAoMee38UpQAepTJ15nhHwbTvcWxCigJR68iBP/Avj0AAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIigagQVVrLDS8wsTFOrDtjOyQVL+Jr/IFAJCq2WO1sM88XLFOEI0eLraHOUWocBt/baeHAsbt4HrDlMzZMib1BaQbJ2tQzSs4G5hQlLASsDDWekyObYS1adVeVV2SrU47TdxBQOn2DBxRiMmcV8xfGCJtrrxPTz/NXAGPIUO63n9qFN1+P256+AAAA[0m[Pipeline] echo
+[2023-10-11T08:06:10.139Z] build_script: .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[8mha:////4PuEZdErjUeLdbp0rquca+Iv/L15PtETV0+PKVHHeiwDAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIagQVVrLDS8wsTFOrDtjOyQVL+Jr/IFAJCq2WO1sM88XLFOEI0eLraHOUWocBt/baeHAsbt4HrDlMzZMib1BaQbJ2tQzSs4G5hQlLASsDDWekyObYS1adVeVV2SrU47TdxBQOn2DBxRiMmcV8xfGCJtrrxPTz/NXAGPIUO63n9qFN5gZmtG+AAAA[0m[Pipeline] sh
+[2023-10-11T08:06:10.412Z] + find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name . ! -name .. -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e ;
+[8mha:////4B0Q2oBHM2wge24XmO7A7KdOSGsYs615B0qozsx+A4TQAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMJpSIEQVVorDS8w8WGcWHfGdkgqXsTX+AMWkajYYrWzzbzesI4BThyM6JEGS7GzwrvR5CUmDsPV8SR6voiOKbJD0eLUssZmwZYTwpKihJWEDVLnOFoyCbayVw9VOUWmOqeQv6OE0uo7PKGQ2ZxUSF+YA+xuo45MP89fAcw+Qbk/5Kpr/wG9fCwGvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:11.582Z] + find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name . ! -name .. -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e ;
+[8mha:////4NZSQqjiwSbZ9mVjJ+iGiR5iWy2ejEiCbK44DOcCE4BQAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIUGDqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDhnK3/dQ+vAEae6zjvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:11.611Z] + echo scm success
+[2023-10-11T08:06:11.611Z] scm success
+[8mha:////4ASfNG6NBXK4FoFPu9aTi97oNUYJsWaWvEYeeB/i2qqrAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSgBBCqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrk95Nrthw8/Hho0vgAAAA==[0m[Pipeline] tool
+[8mha:////4LfZrjjuE5lf/iLHYkxW0nqCQ2OeaqH0G/r1H2Zk0gl3AAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSgARCqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrk95Nrthw/wAoKzvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:11.967Z] + echo scm success
+[2023-10-11T08:06:11.968Z] scm success
+[8mha:////4OJafBD+UOMg68nWD83fYncyznXELMDeAoW84wyk4IcWAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIVEgRJXWcsMLTGyME+vO2A5JxYv4Gn8gEImKLVY728zzBcsU4cjRYmuoc5Qah8H3dlo4cOwungds+YwNU2JvUJpBsjb1jJKzgTlFCQsBK0ON5+TIZliLVt1V5RXZ6pTj9B0ElE7f4AGFmMxZxfyFMcLm2uvE9PP8FcAYMpS77af24Q3VZzRkvgAAAA==[0m[Pipeline] tool
+[8mha:////4BSlNn01A0ZdAUlB2R81y4t8E7Do4gKaMQVFAu6srZulAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOKCkKBBqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrnf5Tpshw/FYrC3vgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:12.081Z] + echo tool success
+[2023-10-11T08:06:12.082Z] tool success
+[8mha:////4PEJMk6TDE96VUYQdgSykRXN3kiSkgLaNCaVWlED7hElAAAAqB+LCAAAAAAAAP9tjUEKwjAURH8rXbh16SFSBBFEunIbuvEEsYkxafi/JqnpyhN5Ne9gtODKWQwzA8N7vqAKHhrymlmFvcHQGTa4UefEEvn+4igxS2fWEQZyirUqtSTVca4tRQWzihIWHJYKO0fBoI6w4lbcRe0E6voUfd4OHEojb/CAgmdyFD5+y+RhfR1lIPxx/gJgGiKU23223ebzrN4a1vn6wgAAAA==[0m[Pipeline] retry
+[8mha:////4KMZPbbNeGdn0rFAbNOwhNfc7kTY4pzXrOmAaGBP+Y6zAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUMLAgpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYL8sJttPz+LD27blSrCAAAA[0m[Pipeline] {
+[8mha:////4Lus8Hhv1SnItw7ysZniAE7ip7rxWz0LFfIKXe+GM/iaAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIigUSDqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDhnK//dQuvAHlNhISvgAAAA==[0m[Pipeline] echo
+[2023-10-11T08:06:12.160Z] build_script_safe_name: _docker_run__bullseye-build.docker_build-jars_
+[8mha:////4Psg3d5NZLdkEFFjplrTkNBfS+D3b7kRpOOmC04sPEcmAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIUSDqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDhnK//dQuvAEioFNdvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:12.343Z] + echo tool success
+[2023-10-11T08:06:12.343Z] tool success
+[8mha:////4Miw9sTJ3/JQTz+pxxV/8vZjGTMcR1smRM+27lKqWGUMAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUQioLYuoaZeEEIQkhbfR/SVLaiRNxNe5AoBITHizbkvWeL6higCMFyzqDvcOoHBv8aHNiE4X+4mliHZ2ZIozkDRNmEqRNu1RBycCiooQVh7VB5Sk6tAk2vJN3WXuJtj6lkLcDh9LpGzyg4JmcZEjfMgfYXkcdCX+cvwCYhwRls8u2bz7P6g0nX+zZwgAAAA==[0m[Pipeline] retry
+[8mha:////4DUg9pqUBg0kRlAKzNHQXaVDkv6iMriSxioMsnyfZO4bAAAAph+LCAAAAAAAAP9tjTEOwjAUQ3+DOrAycoh0ogtiYo26cILQhJA0+r9NUtKJE3E17kBLJSY8WLYl673eUMYAJwqGO42dxdha3vvRzIlnCt3NU+aOrrwljOQ1b3RuSOnzWhtKGlYVDDYCthpbT9GiSbATTj5k5SWa6pLCvB0FMKsGeEIhZnKSIX3LFGB/H1Uk/HH+AmDqE7D6sFi9PMsP+urdAcIAAAA=[0m[Pipeline] {
+[8mha:////4IQztXOj2eYFrcp4w6xrjZgRodD/8Hobhgj5+SzkPX2GAAAAox+LCAAAAAAAAP9tjTESwiAURH/iWNhaegjSxcKxsmVoPAEmiBDmfwJEUnkir+YdRDNj5RY7+7Z5zxesY4AjBc2swsFg7AzzbtJlsUxhuDrKzNKFdYSRnGJCZUG9Oi0oKClYUtWw4rBR2DmKBnWCLbfyLhsnUTfnFMp34FCbfoQHVLyYkwzpC3OA3W3qI+HP81cAs09Qt+2n9v4N8tcxgr4AAAA=[0m[Pipeline] echo
+[2023-10-11T08:06:12.413Z] build_script_safe_name: _docker_run__bullseye-build.docker_build-jars_
+[8mha:////4NCU/jGUnDiZ2lJ5Q55dmhQ2L2An3jc6YcOggg/LzGRmAAAApB+LCAAAAAAAAP9tjbEOwiAURV9rHFwd/Qi6NSbGyZWw+AXYIkLJexSodPKL/DX/QbSJk3e4uecu5/mCdQxwpKCZVTgYjJ1h3k26LJYpDFdHmVm6sI4wklNMqCyoV6cFBSUFS6oaVhw2CjtH0aBOsOVW3mXjJOrmnEL5Dhxq04/wgIoXc5IhfWEOsLtNfST8ef4KYPYJ6rb91N6/AT3LqQW+AAAA[0m[Pipeline] sh
+[2023-10-11T08:06:12.491Z] + mkdir -p build
+[8mha:////4D9nO8qV0O+c0IBmcRDG8xIUx/uFFrgorJpD16FgyWVrAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiUSAhRJXWcsMLTGyME+vO2A5JxYv4Gn8gEImKLVY728zzBcsU4cjRYmuoc5Qah8H3dlo4cOwungds+YwNU2JvUJpBsjb1jJKzgTlFCQsBK0ON5+TIZliLVt1V5RXZ6pTj9B0ElE7f4AGFmMxZxfyFMcLm2uvE9PP8FcAYMpS77af24Q1v3v3ovgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:12.751Z] + mkdir -p build
+[8mha:////4FqfRIh3lqEG/+azf9JNKANokFD0N0BwmxXMBX8buSzXAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMKhCgWiSmul4QUmPowT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYMRPdJgKXZWeDeavMTEYbg6nkTPF9ExRXYoWpxa1tgs2HJCWFKUsJKwQeocR0smwVb26qEqp8hU5xTyd5RQWn2HJxQym5MK6QtzgN1t1JHp5/krgNknKOs612HvPwIrssy+AAAA[0m[Pipeline] sh
+[2023-10-11T08:06:12.863Z] + mktemp -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.XXXXXXXXXX
+[8mha:////4Mk2i1XPsLx770ZsUQZ4/3FtiQILV8woMoo5dN4VJuYzAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiKKBAqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrnf5Tpshw9QPuYhvgAAAA==[0m[Pipeline] echo
+[2023-10-11T08:06:12.944Z] parts[6]: build
+[8mha:////4Crmwxx52RgcatwFZr/v6w4drk1aXTb9RUK3c3/BgdMWAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIipYACUaW10vACExvjxLoztkNS8SK+xh+wiETFFqudbeb1hnUMcOJgsNc0WIqdRe9GkxdOHIar4wl7vmDHFNlpbPXUstLNgi0nDUuKElYCNpo6x9GSSbAVvXzIykky1TmF/B0FlFbd4QmFyOYkQ/rCHGB3G1Vk+nn+CmD2Ccp9netQ+w+TbcsKvgAAAA==[0m[Pipeline] echo
+[2023-10-11T08:06:12.955Z] hash: build_docker_run.I67afn88uM
+[8mha:////4BZJYjw9zgSLDE6Jcw6bJWhdhUtv6fGx6mPmXJrcIrQvAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIigQQFSkVrueEFJjHGiXUXbAen4kV8jT9gEYmKLVY728zrDcvgoWZvsNPUWwqNxcGNJi9M7Pur44QdX7BhCuw0Sp0kt/o0o+SoYU5RwkLASlPjOFgyEdaiUw9VOUWmOkefv6OA0rZ3eEIhsjkqH78wedjcxjYw/Tx/BTANEcr9NtdhN3wA0lzQE74AAAA=[0m[Pipeline] echo
+[2023-10-11T08:06:12.966Z] tmp_dir /tmp/build/build_docker_run.I67afn88uM
+[8mha:////4BK3Vo1iLTNnpYgI+wnVq4TwSnSGsclVlg1V8Vtgvn92AAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIQQFSkVrueEFJjHGiXUXbAen4kV8jT9gEYmKLVY728zrDcvgoWZvsNPUWwqNxcGNJi9M7Pur44QdX7BhCuw0Sp0kt/o0o+SoYU5RwkLASlPjOFgyEdaiUw9VOUWmOkefv6OA0rZ3eEIhsjkqH78wedjcxjYw/Tx/BTANEcr9NtdhN3wAFcqRXL4AAAA=[0m[Pipeline] sh
+[2023-10-11T08:06:13.082Z] + mktemp -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.XXXXXXXXXX
+[2023-10-11T08:06:13.271Z] + echo
+[2023-10-11T08:06:13.271Z] 
+[8mha:////4MDDsvI7gMJlTVGrpzGFGFsBH7KALuYODXfFJip8Mk3PAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIQEFSkVrueEFJjHGiXUXbAen4kV8jT9gEYmKLVY728zrDcvgoWZvsNPUWwqNxcGNJi9M7Pur44QdX7BhCuw0Sp0kt/o0o+SoYU5RwkLASlPjOFgyEdaiUw9VOUWmOkefv6OA0rZ3eEIhsjkqH78wedjcxjYw/Tx/BTANEcr9NtdhN3wAVPuKRb4AAAA=[0m[Pipeline] echo
+[2023-10-11T08:06:13.313Z] Executing `build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 17 2>&1 | tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk17_cassandra_attempt_1.log` on cassandra-mk8d2-5vk0k
+[8mha:////4KWDC7KiBme7CQ4B5Y6mSmL2r/JLD/pz+UCW0eJx4E+mAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMKRKEKBqNJaaXiBiQ/jxLoztkNS8SK+xh+wiETFFqudbeb1hnUMcOJgRI80WIqdFd6NJi8xcRiujifR80V0TJEdihanljU2C7acEJYUJawkbJA6x9GSSbCVvXqoyiky1TmF/B0llFbf4QmFzOakQvrCHGB3G3Vk+nn+CmD2Ccp6n+tQ+w+XqKduvgAAAA==[0m[Pipeline] sh
+[8mha:////4FIvnzDlrIkNdey/h9VGeOZ6NZ/LElGhJDXD7CHyDGvEAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMLpkgJR0VppeIGJjXFi3Tn2haTiRXyNP2ARiYotVjvbzOsN2xThRNGK3uDgMHVOBD/ZvMRMcbh5mkVPV9ERJvJGtGZuSZvzii2xgTVFCRsJO4Odp+TQMuxlrx6q8gptdeGYv6OE0ukRnlDIbGYV+QtLhMN90onw5/krgCUwlHWdq2nCB8W984O+AAAA[0m[Pipeline] echo
+[2023-10-11T08:06:13.419Z] parts[6]: build
+[8mha:////4Oi5yx1OZsSOl9b+QnVQFYtlBIJ4zEtRQ3LfZoxiZXc1AAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSBSREldZKwwtMbIwT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYPBXtNgKXYWvRtNXjhxGK6OJ+z5gh1TZKex1VPLSjcLtpw0LClKWAnYaOocR0smwVb08iErJ8lU5xTydxRQWnWHJxQim5MM6QtzgN1tVJHp5/krgNknKOs61/7gPwqhawS+AAAA[0m[Pipeline] echo
+[2023-10-11T08:06:13.431Z] hash: build_docker_run.moWSfQYNlt
+[8mha:////4PAOx2Zs08tvYtlh2XcOqy8JLwf6CXGLxfxvI7bzHuQgAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSBSFEldZKwwtMbIwT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYPBXtNgKXYWvRtNXjhxGK6OJ+z5gh1TZKex1VPLSjcLtpw0LClKWAnYaOocR0smwVb08iErJ8lU5xTydxRQWnWHJxQim5MM6QtzgN1tVJHp5/krgNknKOs61/7gP0uQcB2+AAAA[0m[Pipeline] echo
+[2023-10-11T08:06:13.444Z] tmp_dir /tmp/build/build_docker_run.moWSfQYNlt
+[8mha:////4EVlh2YlBIANfT5sZMeFnxtRjxz24haR0K1p9vKMJYKnAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMKhipAQVVorDS8w8WGcWHfGdkgqXsTX+AMWkajYYrWzzbzesI4BThyM6JEGS7GzwrvR5CUmDsPV8SR6voiOKbJD0eLUssZmwZYTwpKihJWEDVLnOFoyCbayVw9VOUWmOqeQv6OE0uo7PKGQ2ZxUSF+YA+xuo45MP89fAcw+QVnXuQ57/wE/bO7HvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:13.634Z] + tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk17_cassandra_attempt_1.log
+[2023-10-11T08:06:13.634Z] + cassandra_dir=/home/jenkins/agent/workspace/k8s-e2e build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 17
+[2023-10-11T08:06:13.634Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e '!=' x ']'
+[2023-10-11T08:06:13.634Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM '!=' x ']'
+[2023-10-11T08:06:13.634Z] + '[' -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM ']'
+[2023-10-11T08:06:13.634Z] + echo ' from _docker_run'
+[2023-10-11T08:06:13.634Z]  from _docker_run
+[2023-10-11T08:06:13.634Z] ++ grep 'property\s*name="java.default"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:06:13.634Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:06:13.634Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:06:13.634Z] + java_version_default=
+[2023-10-11T08:06:13.634Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:06:13.634Z] ++ grep 'property\s*name="java.supported"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:06:13.634Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:06:13.634Z] + java_version_supported=
+[2023-10-11T08:06:13.634Z] + '[' bullseye-build.docker == -h ']'
+[2023-10-11T08:06:13.634Z] + dockerfile=bullseye-build.docker
+[2023-10-11T08:06:13.634Z] + run_script=build-jars.sh
+[2023-10-11T08:06:13.634Z] + java_version=17
+[2023-10-11T08:06:13.634Z] + command -v docker
+[2023-10-11T08:06:13.634Z] + command -v timeout
+[2023-10-11T08:06:13.634Z] + docker info
+[2023-10-11T08:06:13.770Z] + echo
+[2023-10-11T08:06:13.770Z] 
+[8mha:////4AhLBsOa061BgOoCjpNjB6Rl0mispfmGtnpUUeOHpS/IAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMIRTYSEqNJaaXiBiQ/jxLoztkNS8SK+xh+wiETFFqudbeb1hnUMcOJgRI80WIqdFd6NJi8xcRiujifR80V0TJEdihanljU2C7acEJYUJawkbJA6x9GSSbCVvXqoyiky1TmF/B0llFbf4QmFzOakQvrCHGB3G3Vk+nn+CmD2Ccq6znXY+w9+XfXevgAAAA==[0m[Pipeline] echo
+[2023-10-11T08:06:13.799Z] Executing `build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 11 2>&1 | tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk11_cassandra_attempt_1.log` on cassandra-mk8d2-btczb
+[8mha:////4MiZPmaZLwCDpQ9s7xte5v5IhH4x2q5kVV4N1pjjpePbAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMKRKCIkRJXWSsMLTHwYJ9adsR2SihfxNf6ARSQqtljtbDOvN6xjgBMHI3qkwVLsrPBuNHmJicNwdTyJni+iY4rsULQ4tayxWbDlhLCkKGElYYPUOY6WTIKt7NVDVU6Rqc4p5O8oobT6Dk8oZDYnFdIX5gC726gj08/zVwCzT1DWda7D3n8AvQ7Y9b4AAAA=[0m[Pipeline] sh
+[2023-10-11T08:06:13.901Z] + '[' -f /home/jenkins/agent/workspace/k8s-e2e/build.xml ']'
+[2023-10-11T08:06:13.901Z] + echo '/home/jenkins/agent/workspace/k8s-e2e/build.xml must exist'
+[2023-10-11T08:06:13.901Z] /home/jenkins/agent/workspace/k8s-e2e/build.xml must exist
+[2023-10-11T08:06:13.902Z] + exit 1
+[8mha:////4F0GTi4vz5/zG3ToAqMsSkoU6pUd9SQByV8hypq8wvMnAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIigYSQUCpayw0vMIkxTqy7YDs4FS/ia/wBi0hUbLHa2WZeb1gGDzV7g52m3lJoLA5uNHlhYt9fHSfs+IINU2CnUeokudWnGSVHDXOKEhYCVpoax8GSibAWnXqoyiky1Tn6/B0FlLa9wxMKkc1R+fiFycPmNraB6ef5K4BpiFDut7kOu+ED7xuMGL4AAAA=[0m[Pipeline] sh
+[2023-10-11T08:06:14.096Z] + cassandra_dir=/home/jenkins/agent/workspace/k8s-e2e build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 11
+[2023-10-11T08:06:14.096Z] + tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk11_cassandra_attempt_1.log
+[2023-10-11T08:06:14.096Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e '!=' x ']'
+[2023-10-11T08:06:14.096Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt '!=' x ']'
+[2023-10-11T08:06:14.096Z] + '[' -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt ']'
+[2023-10-11T08:06:14.096Z] + echo ' from _docker_run'
+[2023-10-11T08:06:14.096Z]  from _docker_run
+[2023-10-11T08:06:14.096Z] ++ grep 'property\s*name="java.default"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:06:14.096Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:06:14.096Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:06:14.096Z] + java_version_default=
+[2023-10-11T08:06:14.096Z] ++ grep 'property\s*name="java.supported"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:06:14.096Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:06:14.096Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:06:14.096Z] + java_version_supported=
+[2023-10-11T08:06:14.096Z] + '[' bullseye-build.docker == -h ']'
+[2023-10-11T08:06:14.096Z] + dockerfile=bullseye-build.docker
+[2023-10-11T08:06:14.096Z] + run_script=build-jars.sh
+[2023-10-11T08:06:14.096Z] + java_version=11
+[2023-10-11T08:06:14.096Z] + command -v docker
+[2023-10-11T08:06:14.096Z] + command -v timeout
+[2023-10-11T08:06:14.096Z] + docker info
+[2023-10-11T08:06:14.096Z] + '[' -f /home/jenkins/agent/workspace/k8s-e2e/build.xml ']'
+[2023-10-11T08:06:14.096Z] + echo '/home/jenkins/agent/workspace/k8s-e2e/build.xml must exist'
+[2023-10-11T08:06:14.096Z] /home/jenkins/agent/workspace/k8s-e2e/build.xml must exist
+[2023-10-11T08:06:14.096Z] + exit 1
+[8mha:////4MgJMEESmSKIJmHuJtHx/gT4p1sMmpGwewLPiseYiyK9AAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMJpUISEqNJaaXiBiQ/jxLoztkNS8SK+xh+wiETFFqudbeb1hnUMcOJgRI80WIqdFd6NJi8xcRiujifR80V0TJEdihanljU2C7acEJYUJawkbJA6x9GSSbCVvXqoyiky1TmF/B0llFbf4QmFzOakQvrCHGB3G3Vk+nn+CmD2Ccq6znXY+w87qYKjvgAAAA==[0m[Pipeline] sh
+[2023-10-11T08:06:14.213Z] + echo .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[2023-10-11T08:06:14.213Z] .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[8mha:////4BCN32qmSIzbMq2+CGIVo7x7B7yYSBZKU9Q/K+hnilYfAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIYGQUCpayw0vMIkxTqy7YDs4FS/ia/wBi0hUbLHa2WZeb1gGDzV7g52m3lJoLA5uNHlhYt9fHSfs+IINU2CnUeokudWnGSVHDXOKEhYCVpoax8GSibAWnXqoyiky1Tn6/B0FlLa9wxMKkc1R+fiFycPmNraB6ef5K4BpiFDut7kOu+EDabzWTr4AAAA=[0m[Pipeline] echo
+[2023-10-11T08:06:14.241Z] /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM
+[8mha:////4NRAfuafRhKZVnDPUbMuz0085Gg8PfnU263VmHF4d6riAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUYqiQEFPXKAsnCEkIaaP/S5LSTpyIq3EHApWY8GDZlqz3fEEVAxwpWNYZ7B1G5djgR5sTmyj0F08T6+jMFGEkb5gwkyBt2qUKSgYWFSWsOKwNKk/RoU2w4Z28y9pLtPUphbwdOJRO3+ABBc/kJEP6ljnA9jrqSPjj/AXAPCQom122ffN5Vm8khNl4wgAAAA==[0m[Pipeline] dir
+[2023-10-11T08:06:14.253Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM
+[8mha:////4CWROo+pgFHjFuF6lIA7OoJ9355yPmE23QDjwE9OmawLAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0AyTE1DXKwglCE0La6P/yk9JOnIircQdaKjHhwbItWe/1hiIynIidaCy2HmPtRRd6NyUxELfXQINo6CJqwkjBCmUHRcZWS1WULCzKclhJWFusA0WPLsFGNvqhy6DRlefE03aUkHtzhydkciInzelbRobtrTeR8Mf5C4CxS5AfdrPt52fxAR33berCAAAA[0m[Pipeline] {
+[8mha:////4AQbJgzAk05/oWUXKtyH3Tf73/ia5A3eYnvk1ERbqJS9AAAAox+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOJSEglR0VppeIFJjLFj3Tm2g1PxIr7GHwhEomKL1c4283zBOgY4ctBoFfWGYmvQu1HPCzOH/uo4o+ULtkyRncJG5YY7dVqw4aRgSVHCSsBGUes4GtIJtsLKu6ycJF2dU5i/g4DSdAM8oBCzOcmQvjAF2N3GLjL9PH8FMPkEZb3/VO3fsf/KvL4AAAA=[0m[Pipeline] stash
+[2023-10-11T08:06:14.414Z] + echo .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[2023-10-11T08:06:14.414Z] .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[8mha:////4F/U1mDt33ievSuzfOALL/GaXiHTzZ5JQ/gzEC4WgbIlAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSRSBEldZKwwtMbIwT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYPBXtNgKXYWvRtNXjhxGK6OJ+z5gh1TZKex1VPLSjcLtpw0LClKWAnYaOocR0smwVb08iErJ8lU5xTydxRQWnWHJxQim5MM6QtzgN1tVJHp5/krgNknKOs61/7gP3bXLBa+AAAA[0m[Pipeline] echo
+[2023-10-11T08:06:14.448Z] /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt
+[8mha:////4JXjBnkUTEHIZSzAsYGL2DqvjVuY/iTEbt/JyhKN4EB2AAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoiUqRJCTF2jLJwgJCGkjf4vSUo7cSKuxh0IVGLCg2Vbst7zBVUMcKRgWWewdxiVY4MfbU5sotBfPE2sozNThJG8YcJMgrRplyooGVhUlLDisDaoPEWHNsGGd/Iuay/R1qcU8nbgUDp9gwcUPJOTDOlb5gDb66gj4Y/zFwDzkKBsmmz73edZvQEPHy64wgAAAA==[0m[Pipeline] dir
+[2023-10-11T08:06:14.458Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt
+[8mha:////4FfQ8lOqb2nQUCdMSAHAMekLGawlCtjoxpuQ7N39b14bAAAAph+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycogURoSYukZZOEFoQkgb/V9+UtqJE3E17kBLJSY8WLYl673eUESGE7ETjcXWY6y96ELvpiQG4vYaaBANXURNGClYoeygyNhqqYqShUVZDisJa4t1oOjRJdjIRj90GTS68px42o4Scm/u8IRMTuSkOX3LyLC99SYS/jh/ATB2CfLDbrb9/Cw+mJlT6cIAAAA=[0m[Pipeline] {
+[8mha:////4Ans7fFGjl7Y9CPUaXp/2TqfRa/ZSpTcLcVGsCymbAf2AAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIi6BCiSmu54QUmNsaJdWdsh6TiRXyNPxCIRMUWq51t5vmCZYpw5GixNdQ5So3D4Hs7LRw4dhfPA7Z8xoYpsTcozSBZm3pGydnAnKKEhYCVocZzcmQzrEWr7qryimx1ynH6DgJKp2/wgEJM5qxi/sIYYXPtdWL6ef4KYAwZyv32U7vwBqhInei+AAAA[0m[Pipeline] stash
+[8mha:////4JyXWo6xBs2YydVS7gpY1/mq/zWs/9hvAIzeO2UZMBfBAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOJSUABCqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKZhiFAetrn2uw+atTfsvgAAAA==[0m[Pipeline] }
+[8mha:////4EncnSmtuvh4bSIAp5mdKhUDXUBSPNBMZ35bqeBOmckuAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSIARCqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKZhiFAetrn2uw+0tTWGvgAAAA==[0m[Pipeline] // dir
+[8mha:////4HVgSFhmIRpWP+2y5P7GI6Zr17TvBMbj8UVWLV8RdPlzAAAAph+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiIYGEUCpayw0vMIkxTqy7YDs4FS/ia/wBi0hUbLHa2WZeb1gGDzV7g52m3lJoLA5uNHlhYt9fHSfs+IINU2CnUeokudWnGSVHDXOKEhYCVpoax8GSibAWnXqoyiky1Tn6/B0FlLa9wxMKkc1R+fiFycPmNraB6ef5K4BpiFDut7kOu+EDXtYUT74AAAA=[0m[Pipeline] sh
+[8mha:////4NGdGeI3BS0SHKmRrHET3k0PsWnFEO7NbDsaIuSafPg5AAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOIiGiSEqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDyFDud5/avgFdsIJMvgAAAA==[0m[Pipeline] }
+[8mha:////4F0J9HH1k3n+L9sdxJCloUQcSPHqfJzwohtKyMXPgUpoAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOJChxCiSmu54QUmNsaJdWdsh6TiRXyNPxCIRMUWq51t5vmCZYpw5GixNdQ5So3D4Hs7LRw4dhfPA7Z8xoYpsTcozSBZm3pGydnAnKKEhYCVocZzcmQzrEWr7qryimx1ynH6DgJKp2/wgEJM5qxi/sIYYXPtdWL6ef4KYAwhQ7nffWr7Bm5T2fC+AAAA[0m[Pipeline] // dir
+[8mha:////4Pusol50zR8dMBvEx/2qqYg57g/9FpB8xp4IMiBiX6LeAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOLSRSBEldZKwwtMbIwT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYPBXtNgKXYWvRtNXjhxGK6OJ+z5gh1TZKex1VPLSjcLtpw0LClKWAnYaOocR0smwVb08iErJ8lU5xTydxRQWnWHJxQim5MM6QtzgN1tVJHp5/krgNknKOs612HvPwCM9Q6+AAAA[0m[Pipeline] sh
+[2023-10-11T08:06:14.982Z] + xz -f k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk17_cassandra_attempt_1.log
+[8mha:////4OvJNtuDCb626i0s4ue6BZrl3YQ7fMPe1bxPcjjWCxjTAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycohUYkCqEFPXKAsnCEkIaaP/S5LSTpyIq3EHApWY8GDZlqz3fEEVAxwpWNYZ7B1G5djgR5sTmyj0F08T6+jMFGEkb5gwkyBt2qUKSgYWFSWsOKwNKk/RoU2w4Z28y9pLtPUphbwdOJRO3+ABBc/kJEP6ljnA9jrqSPjj/AXAPCQo97tsTfN5Vm9FPfgvwgAAAA==[0m[Pipeline] dir
+[2023-10-11T08:06:15.019Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.I67afn88uM
+[8mha:////4JKJpW2i08gcZ2FqfyAK7T30tNR+Tscx7so2DPCx4YUuAAAApx+LCAAAAAAAAP9tjbEOgjAURR8QBldHP6LgSIwTa8PiF9RSa6F5D9uHMPlF/pr/IEri5J3uucnNeb4gjwGOFKzoDPYOo3Zi8KNdmpgo9BdPk+joLDRhJG9EY6aGWlOv2BAbWJOkkEnYGNSeokPLsJWduqvCK7TFicOyHSSkrr3BAxK5mFkF/sIcYHcd20j48/wVwDwwpFXFkO3L8nPN3zgbWwvDAAAA[0m[Pipeline] {
+[8mha:////4BI/CFJSfIYqSake1hEilGGiDCFkwJz36dG96iOp88Z/AAAAox+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxGgdqxsMzSeIIYYA5ndkCxC5Ym8mneQgRkrf/Hnv9+89wd2KcKZohWdwd5h0k4EP9pliYlif/c0iY5uQhMm8kY0ZmqoNZcNG2IDW7IcCgl7g9pTcmgZDrJTT1V6hba8cly+k4TctQO8IJOLmVXkFeYIx8fYJsKf568A5hAYirqq166+ulaRjcAAAAA=[0m[Pipeline] }
+[8mha:////4AUiGKfQQpfMciU1ZYgkOU0KcdEBJbyZwJAF/1+uDmNtAAAApR+LCAAAAAAAAP9tjTESgjAQRZcwFraWHiKoHeNQ2WZoPEEMMQYyu5gsQuWJvJp3kJEZK3/132ve6w2rFKGi6GRrsfOYjJd9GNz85EixuwYaZUsXaQgTBStrO9bU2NOCNbGFZZmAXMHaogmUPDqGjWr1QxdBoyvOHGd3VCB8c4cnZGous478hSnC9jY0ifDX+RuAqe8Z8v3uwCDK8gM8FWKgvwAAAA==[0m[Pipeline] // dir
+[8mha:////4BYoSkrLybB6xoj02pdcoQVr/7MreCpHs+pgUlIIBavAAAAAph+LCAAAAAAAAP9tjTsOwjAQBTeJKGgpOYTDR6KJqGitNJzAxMY4sXaDvSGpOBFX4w5YRKLiVW+mmdcbFjHAkYIVrcHOYWyc6P1g0xMjhe7qaRQtXURDGMkbUZuxJm1OM9bEBuZlORQSlgYbT9GhZVjJVj1U6RXa8swhuUpC7vQdnpDJVGYV+AtTgPVt0JHw1/kbgKlnyA87hmK72fcf5inQK78AAAA=[0m[Pipeline] echo
+[2023-10-11T08:06:15.112Z] Complete '.build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 17' on cassandra-mk8d2-5vk0k
+[8mha:////4P2vzCGjOnsmNm1HaZnHjxEokQKFXgFLCzE2AE6zYRguAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDCNFEVLRWGl5gYmOcWHfBvpBUvIiv8QcsIlGx1c4083rDIgY4UrCiNdg5jI0TvR9semKk0F09jaKli2gII3kjajPWpM1pxprYwLwsh0LC0mDjKTq0DCvZqocqvUJbnjkkV0nInb7DEzKZyqwCf2EKsL4NOhL+On8DMPU9Q7Hd7Bnyw+4DZjNxZr8AAAA=[0m[Pipeline] }
+[2023-10-11T08:06:15.122Z] ERROR: No files included in stash ‘cassandra_17’
+[2023-10-11T08:06:15.122Z] Retrying
+[8mha:////4EDIbJNC0GTQHSxV5DlAssTbNGaMM5RKKDpOvXQPCmtnAAAAqB+LCAAAAAAAAP9tjTESgjAQRRcYCltLDxGk0Mahss3QeIIYYgxkdjFZhMoTeTXvIMqMlb/678/8ec8X5DFARcGK1mDnMGonej/YuYmRQnfxNIqWzkITRvJG1GasqTHHBWtiA0uSFDIJK4PaU3RoGdayVXdVeIW2OHGYt4OE1DU3eEAiZzOrwF+YAmyuQxMJf56/Aph6hnRfMmTldve55m9AKep6wwAAAA==[0m[Pipeline] {
+[8mha:////4KQ/ZmoJPbNjZh5Q1JtEiTExNDYRxk0e7K7BYKyF3jmCAAAApR+LCAAAAAAAAP9tjTESwiAURH+SsbC19BBEC22cVLZMGk+AgAhh/o9AJJUn8mrewUwyY+UWO/u2ee8PrGKAhoJhTmNnMUrLej+YabFMobt5yszRlUnCSF6zVueWlD4v2FLSsKQooeKw1ig9RYsmwYY78RS1F2jqSwrTd+JQWvWAFxR8MicR0gxjgO19UJHw5/krgLFPUO13h7mP/RdWe116wAAAAA==[0m[Pipeline] sleep
+[2023-10-11T08:06:15.184Z] Sleeping for 2 min 0 sec
+[2023-10-11T08:06:15.225Z] + xz -f k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk11_cassandra_attempt_1.log
+[8mha:////4K48/FTHwrdcCezQsMLimgSlVhwZzMaPsY2ve54pfspXAAAAqB+LCAAAAAAAAP9tjTESgjAQRRcYCltLDxG0wcKhss3QeIIYYgxkdjFZhMoTeTXvIMqMlb/678/8ec8X5DFARcGK1mDnMGonej/YuYmRQnfxNIqWzkITRvJG1GasqTHHBWtiA0uSFDIJK4PaU3RoGdayVXdVeIW2OHGYt4OE1DU3eEAiZzOrwF+YAmyuQxMJf56/Aph6hrQsGbLddv+55m/EYbpDwwAAAA==[0m[Pipeline] dir
+[2023-10-11T08:06:15.253Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.moWSfQYNlt
+[8mha:////4GM7eQrzVJWvO2bRdhUg6dcO+yY+do2HDAvQF9lXYQ3xAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApTCChTqxRF04QkhCSRv+XJKWdOBFX4w6UVmLCg2Vbst7rDWUMUFMwzGlsLUZpWed7MyU2UGivngbm6MIkYSSvWaOHhpQ+LbWhpGFRlkPBYaVReooWTYI1d+IhKi/QVOcUpu3IIbfqDk/I+EROIqS5jAE2t15Fwh/nLwDGLkGx2+5nP3y/5Qdi1BftxAAAAA==[0m[Pipeline] {
+[8mha:////4FbLcY7maKRwdLiZw2BiTOX4X40MAitUgsKaaSGV0KW8AAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDHQilorXS8AJjG2PHugu2g1PxIr7GH4gSiYotVjvbzPsDqxigoWCY09hZjNKy3g9mWixT6G6eMnN0ZZIwktes1bklpc8LtpQ0LClKqDisNUpP0aJJsOFOPEXtBZr6ksL0nTiUVj3gBQWfzEmENMMYYHsfVCT8ef4KYOz7BNV+d5z78AXvkKWwwAAAAA==[0m[Pipeline] }
+[8mha:////4KmKFpKHVzWjSXVdQGLfg2h5Q7ZRATiBSxbfVQ13Y1DmAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxGgsnCsbDM0niCSGAOZXUwWofJEXs07GGXGyl/8+e837/mCVQxwoGBFZ7B3GFsnBj/atMREob94mkRHZ9ESRvJGNGZqSJvjgg2xgSVZDoWEtcHWU3RoGTayU3dVeoW2PHFI315C7vQNHpDJZGYV+AtzgO111JHw5/krgHkYGIq6rj5d7d4zyCh5wAAAAA==[0m[Pipeline] // dir
+[8mha:////4Kb1PSQHmfl1wPDdv5QL2RPqDwH1YLIpq/NZ2UYaQONgAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxGGhsaxss2k8QQRYgxkdmOyCJUn8mrewYzMWPmr/17zXm/YpAhHilYMBkeHqXMi+MnmJ2aK49XTLAa6iI4wkTdCmVlRb04rKmID64oSKglbg52n5NAy7OSgH7r2Gm195pjdQULp+js8oZC5zDryF5YI+9vUJ8Jf528AlsBQti1D1TRN+ACpL26cvwAAAA==[0m[Pipeline] echo
+[2023-10-11T08:06:15.344Z] Complete '.build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 11' on cassandra-mk8d2-btczb
+[8mha:////4KEmsp/ohcFV4vVvhjwCm7QazOwM9Sxj0s449JuArDTWAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxEGCxrHijZD4wliEmMgs4vJIlSeyKt5BxmZsfJX/73mvd6wSRFOFJ3oLPYek/ZiCKNbnpgo9tdAk+joIjRhomBFa6eWjG1WbIktrMtyKCRsLepAyaNj2MlOPVQZFLryzHFxRwm5N3d4QiaXMqvIX5gj7G+jSYS/zt8AzMPAUFTVgSGv6w/WHzIRvwAAAA==[0m[Pipeline] }
+[2023-10-11T08:06:15.354Z] ERROR: No files included in stash ‘cassandra_11’
+[2023-10-11T08:06:15.354Z] Retrying
+[8mha:////4E6LTJrO9FNf4rIul7l0QmQRWMskfVppikvmhC8Bf8+xAAAAqR+LCAAAAAAAAP9tjbEOgjAURR8QBldHP6KEGF0Mk2vTxS+oUGuheQ/bhzD5Rf6a/yBK4uSd7rnJzXm+II8BKgpWtAY7h7F2oveDnZsYKXQXT6No6SxqwkjeCGVGRY05LqiIDSxJUsgkrAzWnqJDy7CWrb7rwmu0xYnDvB0kpK65wQMSOZtZB/7CFGBzHZpI+PP8FcDUM6T7HUNWltvPNX8DlvrCCcMAAAA=[0m[Pipeline] {
+[8mha:////4IsusbN+EsJFF06vkq9kVFhvQRbk5XhEtCvaDVAVdCJLAAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjCDpEldZKwwtMbIwd687YDknFi/gaf8BKJCq2WO1sM+8PbGKAMwXNrMLBYOwN827UebGJwnBzNDFLV9YTRnKKdWrqSKp2xY6SgjVFCRWHrcLeUTSoE+y4FU9RO4G6vqSQvxOH0sgHvKDg2ZxESAvMAfb3UUbCn+evAGafoGqaw9JH/wUnbr2YwAAAAA==[0m[Pipeline] sleep
+[2023-10-11T08:06:15.439Z] Sleeping for 2 min 0 sec
+[8mha:////4GSIXxlOiuTgmzEU2Z8f3A71WShV0JJagD0Kg7bXP+ffAAAApR+LCAAAAAAAAP9tjTESwiAURH+SsbC19BDEFKkcK1uGxhMgQSRh/kcgksoTeTXvYDQzVm6xs2+b93zBKgY4UDCs1zhYjMoy70YzL5YpDBdHmfV0ZoowktNM6Cyo08cFBSUNS4oSKg5rjcpRtGgSbHgv77J2Ek19SmH+9hxK293gAQWfzUmG9IUpwPY6dpHw5/krgMknqJpd++mm9W+iQrJQwAAAAA==[0m[Pipeline] echo
+[2023-10-11T08:08:15.199Z] build_script_safe_name: _docker_run__bullseye-build.docker_build-jars_
+[8mha:////4EtUKKCmwPaqsH0k1Mff8F7Ik3FhEO6rf2jTNbyGceO1AAAAph+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxGk0Maxss3QeIIIMSZkdmOyCJUn8mreQZQZK3/x57/fvOcLFinCgaIRTmNnMTVWBN+baYmBYnfxNAhHZ9EQJvJa1HqoqdXHGWtiDXOyHAoJS42Np2TRMKykU3dVeoWmPHGcvr2E3LY3eEAmJzOryF8YI6yvfZsIf56/AhgDQ1Fttp+uduENYRGfe8AAAAA=[0m[Pipeline] sh
+[8mha:////4INlZcluMJUFU5BVlC5dfGMf78+GMFw3foXoOWRkUQiJAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjiIICUaW10vACExtjx7oztkNS8SK+xh+wEomKLVY728z7A5sY4ExBM6twMBh7w7wbdV5sojDcHE3M0pX1hJGcYp2aOpKqXbGjpGBNUULFYauwdxQN6gQ7bsVT1E6gri8p5O/EoTTyAS8oeDYnEdICc4D9fZSR8Of5K4DZJ6ia5rD00X8B5D2Qs8AAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:15.452Z] build_script_safe_name: _docker_run__bullseye-build.docker_build-jars_
+[8mha:////4GnCz4i5eAO6sgmzCwzT4CnHwiSTI7UrBctP9qUTb4QWAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjiAYJUaW10vACExtjx7oztkNS8SK+xh+wEomKLVY728z7A5sY4ExBM6twMBh7w7wbdV5sojDcHE3M0pX1hJGcYp2aOpKqXbGjpGBNUULFYauwdxQN6gQ7bsVT1E6gri8p5O/EoTTyAS8oeDYnEdICc4D9fZSR8Of5K4DZJ6ia5rD00X8BKyEINMAAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:15.504Z] + mkdir -p build
+[8mha:////4JCJHx/KZao/g1tlY65bIn9/4LXgwn0p9oUFUMHpuibQAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYRDCgqEqGitNLzAJMbYse6MfSGpeBFf4w8EIlGxxWpnm3m+YJEiHCga4TR2FlNjRfC9mZYYKHYXT4NwdBYNYSKvRa2Hmlp9nLEm1jAny6GQsNTYeEoWDcNKOnVXpVdoyhPH6dtLyG17gwdkcjKzivyFMcL62reJ8Of5K4AxMBTVZvvpahferg0H/MAAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:15.762Z] + mkdir -p build
+[8mha:////4HUmMyfQp5b2a7BIZN4VzYoUsIE7VX2vQyEzgiiIGgXFAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxFES8fKNkPjCSLEmJDZjckiVJ7Iq3kHUWas/MWf/37zni9YpAgHikY4jZ3F1FgRfG+mJQaK3cXTIBydRUOYyGtR66GmVh9nrIk1zMlyKCQsNTaekkXDsJJO3VXpFZryxHH69hJy297gAZmczKwif2GMsL72bSL8ef4KYAwMRVXtPr3dhDd6FZf+wAAAAA==[0m[Pipeline] sh
+[2023-10-11T08:08:15.834Z] + mktemp -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.XXXXXXXXXX
+[8mha:////4OlOmmu6nEsBvGoiXDyrAYKlbV8+R3pCopMESuhjbz1wAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYRDkKgQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTAGhqLa7D69rcIb/zmYNsAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:15.865Z] parts[6]: build
+[8mha:////4JGkkZ9F76n9mz8YAwHoQyBHKoRg98WzCMLU/68IRP1AAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDkagQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTAGhmK72X26qsIbPGq1HcAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:15.876Z] hash: build_docker_run.3LqMDy8yF3
+[8mha:////4Ot9by6Rkdk3ji1HqlYqrFdPOqRklWhr60kfgrkcAGovAAAAph+LCAAAAAAAAP9tjTsOwjAQRDeJKGgpOYTDR1SIitZywwmMbYwTazfYDknFibgad8AQiYopRvOmec8XzGKAAwXLGoOtw6gc63xv82IDhfbiaWANnZkijOQNE2YQpM1xQkHJwJSihIrD3KDyFB3aBAveyLusvURbn1LI355D6fQNHlDwbE4ypC+MAZbXXkfCn+evAMYuQbVe7T692XZvfVuuBMAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:15.886Z] tmp_dir /tmp/build/build_docker_run.3LqMDy8yF3
+[8mha:////4K+aK67Jahu6uyEhlrPsSem+9ZBNhPmij+v/OXih6ZELAAAAph+LCAAAAAAAAP9tjTESwiAURH+SsbC19BBEHa0cK1uGxhMgIJIw/0cgJpUn8mreQTQzVm6xs2+b93zBLAY4ULCsMdg6jMqxzvc2LzZQaC+eBtbQmSnCSN4wYQZB2hwnFJQMTClKqDjMDSpP0aFNsOCNvMvaS7T1KYX87TmUTt/gAQXP5iRD+sIYYHntdST8ef4KYOwSVOvV7tObbfcGus3vS8AAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:16.074Z] + mktemp -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.XXXXXXXXXX
+[8mha:////4Gj0vzdjIEB9yuduhqEJ39nw0GF/CNFL+Q0Snwtq2Nv+AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjgKgQFa3lhhcY2xgn1l2wHZyKF/E1/kAgEhVbrHa2mecLFjHAgYJlrcHOYVSO9X6w02KZQnfxlFlLZ6YII3nDhMmCtDnOKCgZmFOUUHFYGlSeokObYMVbeZe1l2jrUwrTt+dQOn2DBxR8MicZ0hfGAOvroCPhz/NXAGOfoGqa7ac3u/4NP+Hgg8AAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:16.106Z] parts[6]: build
+[8mha:////4FV5hI+ZeDP7qkmIc32Xn4fWCKIL6C7MHs9rVHoFRR0FAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjgESDqGgtN7zA2MY4se6C7eBUvIiv8QcCkajYYrWzzTxfsIgBDhQsaw12DqNyrPeDnRbLFLqLp8xaOjNFGMkbJkwWpM1xRkHJwJyihIrD0qDyFB3aBCveyrusvURbn1KYvj2H0ukbPKDgkznJkL4wBlhfBx0Jf56/Ahj7BFXTbD+92fVv/LLNqMAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:16.118Z] hash: build_docker_run.WKMAvXDf8n
+[8mha:////4IrxH0p2GimVvoOXZhjvt6/PzRJ3VQ4VkAnFdp/Mm4BUAAAAph+LCAAAAAAAAP9tjTESwiAURH+SsbC19BBkooWFY2XL0HgCBEQS5v8IRFJ5Iq/mHYxmxsotdvZt854vWMQABwqWtQY7h1E51vvBTotlCt3FU2YtnZkijOQNEyYL0uY4o6BkYE5RQsVhaVB5ig5tghVv5V3WXqKtTylM355D6fQNHlDwyZxkSF8YA6yvg46EP89fAYx9gqpptp/e7Po3vYPWscAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:16.129Z] tmp_dir /tmp/build/build_docker_run.WKMAvXDf8n
+[8mha:////4PHcTFknqD7KV5axX2mg5HHbMXLzGnVYj4ZPSYesXBP9AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjQIOEqGgtN7zA2MY4se6C7eBUvIiv8QcCkajYYrWzzTxfsIgBDhQsaw12DqNyrPeDnRbLFLqLp8xaOjNFGMkbJkwWpM1xRkHJwJyihIrD0qDyFB3aBCveyrusvURbn1KYvj2H0ukbPKDgkznJkL4wBlhfBx0Jf56/Ahj7BFXTbD+92fVvcp9ONsAAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:16.180Z] + echo
+[2023-10-11T08:08:16.181Z] 
+[8mha:////4ETiKStCbR93/FMvj0PPhqT96EQH6Afr4tvDmmWKFmkSAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDSBQIUdFabniBsY1xYt0F2yGpeBFf4w8YIlGxxWpnm3m+YBYDHChY1hhsHUblWOd7mxcbKLQXTwNr6MwUYSRvmDCDIG2OEwpKBqYUJVQc5gaVp+jQJljwRt5l7SXa+pRC/vYcSqdv8ICCZ3OSIX1hDLC89joS/jx/BTB2Car1avvpza57A/ezQf7AAAAA[0m[Pipeline] echo
+[2023-10-11T08:08:16.223Z] Executing `build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3 .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 17 2>&1 | tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk17_cassandra_attempt_2.log` on cassandra-mk8d2-5vk0k
+[8mha:////4C7oXkSdadM5kt/GcSb/J4WmafdloA3wFUYy2dI3JpVaAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQThKgQFa3lhhcY2xgn1l2wHZyKF/E1/kAgEhVbrHa2mecLFjHAgYJlrcHOYVSO9X6w02KZQnfxlFlLZ6YII3nDhMmCtDnOKCgZmFOUUHFYGlSeokObYMVbeZe1l2jrUwrTt+dQOn2DBxR8MicZ0hfGAOvroCPhz/NXAGOfoNo0u09vm/4NiWJBLsAAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:16.424Z] + echo
+[2023-10-11T08:08:16.424Z] 
+[8mha:////4IiaAW5OloAII+xrq7mQGUh+BKv1PPmswov056T81k9rAAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjKCWiorXc8ALjGOPEunNsB6fiRXyNPxCIRMUWq51t5vmCTQxwpGBYr3GwGJVl3k1mWSxTGK6OMuvpwhRhJKeZ0FlQp08rCkoa1hQlVBy2GpWjaNEk2PFe3mXtJJr6nMLyHTiUthvhAQVfzEmG9IU5wP42dZHw5/krgNknqJqm/XTb+DcMTk7mwAAAAA==[0m[Pipeline] echo
+[2023-10-11T08:08:16.453Z] Executing `build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 11 2>&1 | tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk11_cassandra_attempt_2.log` on cassandra-mk8d2-btczb
+[8mha:////4JeESaCQSdV5arTumsTbhU0h7G422kigZCKhm2SjRA4qAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxEGKR0r2wyNJ4gkxkBmF5NFqDyRV/MORpmx8hd//vvNe75gFQMcKFjRGewdxtaJwY82LTFR6C+eJtHRWbSEkbwRjZka0ua4YENsYEmWQyFhbbD1FB1aho3s1F2VXqEtTxzSt5eQO32DB2QymVkF/sIcYHsddST8ef4KYB4YiqqqP13vhjfPHWPNwAAAAA==[0m[Pipeline] sh
+[2023-10-11T08:08:16.521Z] + cassandra_dir=/home/jenkins/agent/workspace/k8s-e2e build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3 .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 17
+[2023-10-11T08:08:16.521Z] + tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk17_cassandra_attempt_2.log
+[2023-10-11T08:08:16.521Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e '!=' x ']'
+[2023-10-11T08:08:16.521Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3 '!=' x ']'
+[2023-10-11T08:08:16.521Z] + '[' -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3 ']'
+[2023-10-11T08:08:16.521Z] + echo ' from _docker_run'
+[2023-10-11T08:08:16.521Z]  from _docker_run
+[2023-10-11T08:08:16.521Z] ++ grep 'property\s*name="java.default"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:08:16.521Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:08:16.521Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:08:16.521Z] + java_version_default=
+[2023-10-11T08:08:16.521Z] ++ grep 'property\s*name="java.supported"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:08:16.521Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:08:16.521Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:08:16.521Z] + java_version_supported=
+[2023-10-11T08:08:16.521Z] + '[' bullseye-build.docker == -h ']'
+[2023-10-11T08:08:16.521Z] + dockerfile=bullseye-build.docker
+[2023-10-11T08:08:16.521Z] + run_script=build-jars.sh
+[2023-10-11T08:08:16.521Z] + java_version=17
+[2023-10-11T08:08:16.521Z] + command -v docker
+[2023-10-11T08:08:16.521Z] + command -v timeout
+[2023-10-11T08:08:16.521Z] + docker info
+[2023-10-11T08:08:16.521Z] + '[' -f /home/jenkins/agent/workspace/k8s-e2e/build.xml ']'
+[2023-10-11T08:08:16.521Z] + echo '/home/jenkins/agent/workspace/k8s-e2e/build.xml must exist'
+[2023-10-11T08:08:16.521Z] /home/jenkins/agent/workspace/k8s-e2e/build.xml must exist
+[2023-10-11T08:08:16.521Z] + exit 1
+[8mha:////4EcxSk7PEMTbV6MMmgnewrB4Wf3QVl1sjAar9fRApnwfAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDiqgQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTAGhmK72X26qsIbSjFsBcAAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:16.757Z] + cassandra_dir=/home/jenkins/agent/workspace/k8s-e2e build_dir=/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 11
+[2023-10-11T08:08:16.757Z] + tee k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk11_cassandra_attempt_2.log
+[2023-10-11T08:08:16.757Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e '!=' x ']'
+[2023-10-11T08:08:16.757Z] + '[' x/home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n '!=' x ']'
+[2023-10-11T08:08:16.757Z] + '[' -d /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n ']'
+[2023-10-11T08:08:16.757Z] + echo ' from _docker_run'
+[2023-10-11T08:08:16.757Z]  from _docker_run
+[2023-10-11T08:08:16.757Z] ++ grep 'property\s*name="java.default"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:08:16.757Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:08:16.757Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:08:16.757Z] + java_version_default=
+[2023-10-11T08:08:16.757Z] ++ grep 'property\s*name="java.supported"' /home/jenkins/agent/workspace/k8s-e2e/build.xml
+[2023-10-11T08:08:16.757Z] ++ sed -ne 's/.*value="\([^"]*\)".*/\1/p'
+[2023-10-11T08:08:16.757Z] grep: /home/jenkins/agent/workspace/k8s-e2e/build.xml: No such file or directory
+[2023-10-11T08:08:16.757Z] + java_version_supported=
+[2023-10-11T08:08:16.757Z] + '[' bullseye-build.docker == -h ']'
+[2023-10-11T08:08:16.757Z] + dockerfile=bullseye-build.docker
+[2023-10-11T08:08:16.757Z] + run_script=build-jars.sh
+[2023-10-11T08:08:16.757Z] + java_version=11
+[2023-10-11T08:08:16.757Z] + command -v docker
+[2023-10-11T08:08:16.757Z] + command -v timeout
+[2023-10-11T08:08:16.757Z] + docker info
+[2023-10-11T08:08:16.757Z] + '[' -f /home/jenkins/agent/workspace/k8s-e2e/build.xml ']'
+[2023-10-11T08:08:16.757Z] + echo '/home/jenkins/agent/workspace/k8s-e2e/build.xml must exist'
+[2023-10-11T08:08:16.757Z] /home/jenkins/agent/workspace/k8s-e2e/build.xml must exist
+[2023-10-11T08:08:16.757Z] + exit 1
+[8mha:////4KRP5ukVWua6Y1JEFhXZK5nvaWrVKa9KM4YSB4ee4xgbAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjKHSIitZKwwtMbIwT6y7YF5KKF/E1/oAhEhVbrHa2mecLVjHAgYIVncHeYWydGPxo0xIThf7iaRIdnUVLGMkb0ZipIW2OCzbEBpZkORQS1gZbT9GhZdjITt1V6RXa8sQhfXsJudM3eEAmk5lV4C/MAbbXUUfCn+evAOaBoaiq+tP1bngDSbo5m8AAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:16.838Z] + echo .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[2023-10-11T08:08:16.838Z] .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[8mha:////4OzvdbEGwqd93NTBsF29yoc5dgNokyMVCXk+ugzN2gcTAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDQqkQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTAGhmK7qT69q8IbzJY2U8AAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:16.866Z] /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3
+[8mha:////4Jfx824L1Fq0ab8iUqx1GYXtxB7s+G5Wj3MACWmzmtQ+AAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApCMGCmFijLJwgpCGkjf4vSUo6cSKuxh1oqcSEB8u2ZL3XG8rg4UjesEZjazEoyzrXmzGxRL69OkqsoQtThIGcZkInQbU+zVVQ1DAry6HgsNCoHAWLJsKSN/IhKyfRVOfox+3AIbf1HZ6Q8ZEcpY/fMnhY3fo6EP44fwEwdBGKzXo3+XY/fcsPEDHOCsQAAAA=[0m[Pipeline] dir
+[2023-10-11T08:08:16.877Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3
+[8mha:////4EREdvM8GSKn5CCTG+p7ZypAHieIw9NOHwZQr5n3xUtsAAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpEBIMqBNr1IUThCSEpNH/JUlpJ07E1bgDpZWY8GDZlqz3ekMZA9QUDHMaW4tRWtb53kyJDRTaq6eBObowSRjJa9booSGlT0ttKGlYlOVQcFhplJ6iRZNgzZ14iMoLNNU5hWk7csitusMTMj6RkwhpLmOAza1XkfDH+QuAsUtQbHf72Q/fb/kBi1zGC8QAAAA=[0m[Pipeline] {
+[8mha:////4OTuMzpcUyag7VLOukVKotxfDRvE1PIeosN4L/tNBBzKAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjRAESSkVrpeEFxjbGjnUXbAen4kV8jT8QJRIVW6x2tpn3B1YxQEPBMKexsxilZb0fzLRYptDdPGXm6MokYSSvWatzS0qfF2wpaVhSlFBxWGuUnqJFk2DDnXiK2gs09SWF6TtxKK16wAsKPpmTCGmGMcD2PqhI+PP8FcDYJ6h2+8Pcx/4LOdMwncAAAAA=[0m[Pipeline] stash
+[2023-10-11T08:08:16.921Z] Warning: overwriting stash ‘cassandra_17’
+[8mha:////4ER2/PQKTY89z8wiBT055TLIrDs0GHeDumebWNDvE8LvAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjRIEQSkVrpeEFxjbGjnUXbAen4kV8jT8QJRIVW6x2tpn3B1YxQEPBMKexsxilZb0fzLRYptDdPGXm6MokYSSvWatzS0qfF2wpaVhSlFBxWGuUnqJFk2DDnXiK2gs09SWF6TtxKK16wAsKPpmTCGmGMcD2PqhI+PP8FcDY9wmq3f449+ELXtm4hcAAAAA=[0m[Pipeline] }
+[8mha:////4P9jP7NUDBiGxS9+roWQaIfKNuaS8YHcWsmrb3aE6xfnAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDAtEgKlrLDS8wtjFOrLtgOyQVL+Jr/AFDJCq2WO1sM88XzGKAAwXLGoOtw6gc63xv82IDhfbiaWANnZkijOQNE2YQpM1xQkHJwJSihIrD3KDyFB3aBAveyLusvURbn1LI355D6fQNHlDwbE4ypC+MAZbXXkfCn+evAMauS1Ctt6tPb3ZvAqXibcAAAAA=[0m[Pipeline] // dir
+[8mha:////4Dz7Zn6Cs5n91+owK1bKmnHj9Ata6P/uwCZC4NG14FgbAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYRDJKgQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTAGhqLa7D69rcIbTUUVMsAAAAA=[0m[Pipeline] sh
+[2023-10-11T08:08:17.073Z] + echo .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[2023-10-11T08:08:17.073Z] .build/docker/_docker_run.sh bullseye-build.docker build-jars.sh
+[8mha:////4IxgJ8jaX2UEu/P/dEXuklgyFMPTkDBBMB+oOO0eBRq6AAAApR+LCAAAAAAAAP9tjTESwiAURH+SsbC19BBkonaOlS1D4wkQEEmY/yMQSeWJvJp3MJoZK7fY2bfNe75gEQMcKFjWGuwcRuVY7wc7LZYpdBdPmbV0ZoowkjdMmCxIm+OMgpKBOUUJFYelQeUpOrQJVryVd1l7ibY+pTB9ew6l0zd4QMEnc5IhfWEMsL4OOhL+PH8FMPYJqqbZfnq36d9KCyzIwAAAAA==[0m[Pipeline] echo
+[2023-10-11T08:08:17.131Z] /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n
+[8mha:////4EsRwwEnVBSV8E3xZ7a2U6lvocrnErcMyvAIjjE85dRSAAAAqB+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkQJwc04uTYsPkFtay00/49tsUw+ka/mOwiSOHnD5e6Sy/d6Qxk8HMkb1mnsLQZp2eBGMyeWyPdXR4l1dGGSMJDTrNWpJaVPa20paliV5VBw2GiUjoJFE2HLO/EQlRNoqnP083bgkFt1hydkfCZH4eO3TB52t1EFwh/nLwCmIUJR183i+2b5lh9I4g+txAAAAA==[0m[Pipeline] dir
+[2023-10-11T08:08:17.143Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n
+[8mha:////4FkVLvAYd3ULyPpZ6n8USm6S4fhk9bLfyjAZmCvATAZoAAAAqB+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkSJkc04sTYsPkEttRaa/8e2WCafyFfzHayQOHnD5e6Sy/d6Q+kdnMhp1iscDHpp2GgnnRKL5Iarpch6ujBJ6Mkq1qrYUqeatbYUFKzKcig4bBRKS96gDrDlvXiIygrU1Tm4tB055Ka7wxMynshBuLCU2cHuNnWe8Mf5C4B5DFDs68Pi9fdbfgDjYSWtxAAAAA==[0m[Pipeline] {
+[8mha:////4AOWWt63DFaDbjsGN8v0YGjB+WVKqrscoBWVL8rbL2WbAAAApR+LCAAAAAAAAP9tjbEOgjAURR8QB1dHP+IRE5yME2vTxS+opdZC8x62RZj8In/Nf5BA4uQdbu65y3l/YBMDnDlYbA11jqJ22PvBzgtHDt3N84gtX1EzRfYGpRklN6ZeUXIysCbLoRCwNaQ9R0c2wU606qlKr8iWlxTm7yQgd80DXpCJ2ZxUSAtMAfb3oYlMP89fAUx9guJQVUsf+y/b0T/HwAAAAA==[0m[Pipeline] stash
+[2023-10-11T08:08:17.184Z] Warning: overwriting stash ‘cassandra_11’
+[8mha:////4H8aaF8TGNKc/DGhqM/LGgBC2vBJduP515u4C8mb5lnpAAAAph+LCAAAAAAAAP9tjbEOgjAURR8QB1dHP+IRE+JinFibLn5BLbUWmvewLcLkF/lr/oMEEifvcHPPXc77A5sY4MzBYmuocxS1w94Pdl44cuhunkds+YqaKbI3KM0ouTH1ipKTgTVZDoWArSHtOTqyCXaiVU9VekW2vKQwfycBuWse8IJMzOakQlpgCrC/D01k+nn+CmDq+wTFoTouXX0B02d9r8AAAAA=[0m[Pipeline] }
+[8mha:////4PXl8jrmbpIbDYtG4ortDiPOiIdNmi2kWdXDfidKLjh4AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjBBIFSkVrpeEFxjbGjnUXbAen4kV8jT8QJRIVW6x2tpn3B1YxQEPBMKexsxilZb0fzLRYptDdPGXm6MokYSSvWatzS0qfF2wpaVhSlFBxWGuUnqJFk2DDnXiK2gs09SWF6TtxKK16wAsKPpmTCGmGMcD2PqhI+PP8FcDY9wmq3eE49/4LxPlul8AAAAA=[0m[Pipeline] // dir
+[8mha:////4LaiHIm7Ru11fWmrVdeF4XdSCivafGWpoTdN9SOWJxKCAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjCAokREVrueEFxjbGiXUXbAen4kV8jT8QiETFFqudbeb5gkUMcKBgWWuwcxiVY70f7LRYptBdPGXW0pkpwkjeMGGyIG2OMwpKBuYUJVQclgaVp+jQJljxVt5l7SXa+pTC9O05lE7f4AEFn8xJhvSFMcD6OuhI+PP8FcDYJ6iaZvPp7a5/A8DjwzLAAAAA[0m[Pipeline] sh
+[2023-10-11T08:08:17.315Z] + xz -f k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk17_cassandra_attempt_2.log
+[8mha:////4DEM1gPbUyx4922SwFKovOf0EXhc4X09YCv5wCNKYcbpAAAAqh+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApSDAgxMQaZeEEIQ0hbfR/SVLSiRNxNe5ASyUmPFi2Jeu93lAGD0fyhjUaW4tBWda53oyJJfLt1VFiDV2YIgzkNBM6Car1aa6CooZZWQ4Fh4VG5ShYNBGWvJEPWTmJpjpHP24HDrmt7/CEjI/kKH38lsHD6tbXgfDH+QuAoYtQbNa7ybf76Vt+AEu9Pz7EAAAA[0m[Pipeline] dir
+[2023-10-11T08:08:17.363Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.3LqMDy8yF3
+[8mha:////4NSngREuPTwje0jj/dkAIYOMXTtztimKH0JonKdWs1YwAAAAqh+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApSDAgxMQaZeEEIQ0hbfR/SVLSiRNxNe5ASyUmPFi2Jeu93lAGD0fyhjUaW4tBWda53oyJJfLt1VFiDV2YIgzkNBM6Car1aa6CooZZWQ4Fh4VG5ShYNBGWvJEPWTmJpjpHP24HDrmt7/CEjI/kKH38lsHD6tbXgfDH+QuAoYtQbLb7yXfr6Vt+ACDA9HrEAAAA[0m[Pipeline] {
+[8mha:////4F31oT8wjHDZ4VvkV6iAdIFZRPon5W8sFcedHuAeZJpGAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLD7FIYeVY0WbSeIIYYgxkdjEJQuWJvJp3kIEZK3/x57/fvPcHNjHAmYPF1lDnKGqHvR/svHDk0N08j9jyFTVTZG9QmlFyY+oVJScDa7IcCgFbQ9pzdGQT7ESrnqr0imx5SWH+TgJy1zzgBZmYzUmFtMAUYH8fmsj08/wVwNT3CYrqWC19+AKbrAa4wAAAAA==[0m[Pipeline] }
+[8mha:////4LnLjmTBtvmb0v3Smj/8l7wtEhKO4ndaT33NHrJabZVPAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjEBQIUdFabniBsY1xYt0F2yGpeBFf4w8YIlGxxWpnm3m+YBYDHChY1hhsHUblWOd7mxcbKLQXTwNr6MwUYSRvmDCDIG2OEwpKBqYUJVQc5gaVp+jQJljwRt5l7SXa+pRC/vYcSqdv8ICCZ3OSIX1hDLC89joS/jx/BTB2XYJqtV1/erN7A+M/KenAAAAA[0m[Pipeline] // dir
+[8mha:////4BPgxGSLl/leuPXAmbWLfryOpmIpxeBytbaIxGk3N9xjAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDQqkQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTAGhmK7qT5d7cIb+E3hAcAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:17.462Z] Complete '.build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 17' on cassandra-mk8d2-5vk0k
+[8mha:////4Eg8msn3dQgSycRuI9wHKoTHl1fhF87E81EXxNzFIrKIAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDEqkQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTCGwFBsq92nN9Ub9oMj58AAAAA=[0m[Pipeline] }
+[8mha:////4NGNCXAjGqxPKiza35f/BQMOKCMOn0hTIAy1dzKn6DVUAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxGGAhvHijZD4wliEmMgs4vJIlSeyKt5BxmZsfJX/73mvd6wSRFOFJ3oLPYek/ZiCKNbnpgo9tdAk+joIjRhomBFa6eWjG1WbIktrMtyKCRsLepAyaNj2MlOPVQZFLryzHFxRwm5N3d4QiaXMqvIX5gj7G+jSYS/zt8AzMPAUFR1zZAfqg/enhxmvwAAAA==[0m[Pipeline] // retry
+[8mha:////4BXL4JV9aEW6zxQkfD+PeZA1oOgo63QAcNs2M2l5ZiTfAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjJEBCERWtlYYXmNgYJ9ZdsC8kFS/ia/wBi0hUbLUzzbzesIgBjhSsaA12DmPjRO8Hm54YKXRXT6No6SIawkjeiNqMNWlzmrEmNjAvy6GQsDTYeIoOLcNKtuqhSq/QlmcOyVUScqfv8IRMpjKrwF+YAqxvg46Ev87fAEx9z1BsdnuGfHv4AMAGZdy/AAAA[0m[Pipeline] }
+[2023-10-11T08:08:17.568Z] + xz -f k8s-e2e_2__docker_run__bullseye-build.docker_build-jars__jdk11_cassandra_attempt_2.log
+[8mha:////4O607biu1k392LQj+Hfxyse0Fww7ZoLJIIpYXqMXwz5xAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjJBBIERWtlYYXmNgYJ9ZdsC8kFS/ia/wBi0hUbLUzzbzesIgBjhSsaA12DmPjRO8Hm54YKXRXT6No6SIawkjeiNqMNWlzmrEmNjAvy6GQsDTYeIoOLcNKtuqhSq/QlmcOyVUScqfv8IRMpjKrwF+YAqxvg46Ev87fAEx9z1BsdnuGfHv4APPlPmC/AAAA[0m[Pipeline] // node
+[8mha:////4CU9CMOjTF0uVoX+yBjbXTqoh9E7jP/SrHRQtEn8JrezAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjJEBIERWtlYYXmNgYJ9ZdsC8kFS/ia/wBi0hUbLUzzbzesIgBjhSsaA12DmPjRO8Hm54YKXRXT6No6SIawkjeiNqMNWlzmrEmNjAvy6GQsDTYeIoOLcNKtuqhSq/QlmcOyVUScqfv8IRMpjKrwF+YAqxvg46Ev87fAEx9z1BsdgeGfLv/ACF60Ha/AAAA[0m[Pipeline] }
+[2023-10-11T08:08:17.655Z] Failed in branch 17
+[8mha:////4IbKU0jhPWMvVLsQ6wLZYYhgHd42fWPo/y8zooHxtUHOAAAAqh+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpKsSAEBNr1IUThCaEtNH/JUlJJ07E1bgDKZWY8GDZlqz3ekPpHRzJadYp7A361rDBjjolFsn1V0uRdXRhLaEnq1ijYkNSnZbaUFCwKMuh4LBS2FryBnWANe/EQ1RWoK7OwaXtwCE38g5PyHgiB+HCt0wONrdResIf5y8ApiFAUdfb2Xf7+Vt+AJrK46rEAAAA[0m[Pipeline] dir
+[2023-10-11T08:08:17.695Z] Running in /home/jenkins/agent/workspace/k8s-e2e/build/build_docker_run.WKMAvXDf8n
+[8mha:////4GTE87EHhwNKn7Xsw8j3guwQLLmjWQbJnw96trPYMi7xAAAAqh+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApDCAhxMQaZeEEIQ0hbfR/SVLSiRNxNe5ASyUmPFi2Jeu93lAGD0fyhjUaW4tBWda53oyJJfLt1VFiDV2YIgzkNBM6Car1aa6CooZZWQ4Fh4VG5ShYNBGWvJEPWTmJpjpHP24HDrmt7/CEjI/kKH38lsHD6tbXgfDH+QuAoYtQbLb7yXfr6Vt+ADgDipbEAAAA[0m[Pipeline] {
+[8mha:////4EIuum7iLzKSjRi8KGWZE4i9hJy4N/O9UHe+psuTXwGHAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLD7FIY+NY0WbSeIIYYgxkdjEJQuWJvJp3kIEZK3/x57/fvPcHNjHAmYPF1lDnKGqHvR/svHDk0N08j9jyFTVTZG9QmlFyY+oVJScDa7IcCgFbQ9pzdGQT7ESrnqr0imx5SWH+TgJy1zzgBZmYzUmFtMAUYH8fmsj08/wVwNT3CYrqWC19+AK7+KQdwAAAAA==[0m[Pipeline] }
+[8mha:////4JEHC7NWIn7BF5AltrB1KyWLCBScREga/BLfyvKDmTCcAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjkEBCiIrWcsMLjG2ME+su2A5JxYv4Gn/AEImKLVY728zzBbMY4EDBssZg6zAqxzrf27zYQKG9eBpYQ2emCCN5w4QZBGlznFBQMjClKKHiMDeoPEWHNsGCN/Iuay/R1qcU8rfnUDp9gwcUPJuTDOkLY4DltdeR8Of5K4Cx6xJUq+3605vdG0EJvX7AAAAA[0m[Pipeline] // dir
+[8mha:////4LuwC9srVs/68ZmddGk+porFovMNkOsvDw576EI4cun/AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjKBINoqK10vACExvjxLoL9oWk4kV8jT9giETFFqudbeb5glUMcKBgRWewdxhbJwY/2rTERKG/eJpER2fREkbyRjRmakib44INsYElWQ6FhLXB1lN0aBk2slN3VXqFtjxxSN9eQu70DR6QyWRmFfgLc4DtddSR8Of5K4B5YCiqqv70rh7eZe6z0sAAAAA=[0m[Pipeline] echo
+[2023-10-11T08:08:17.790Z] Complete '.build/docker/_docker_run.sh bullseye-build.docker build-jars.sh 11' on cassandra-mk8d2-btczb
+[8mha:////4EQidcBr/Q96j3cQwuQ9ImFYAsF3iuT88wMeO0mVrMv3AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjCESDqGgtN7zA2MY4se6C7eBUvIiv8QcCkajYYrWzzTxfsIgBDhQsaw12DqNyrPeDnRbLFLqLp8xaOjNFGMkbJkwWpM1xRkHJwJyihIrD0qDyFB3aBCveyrusvURbn1KYvj2H0ukbPKDgkznJkL4wBlhfBx0Jf56/Ahj7PkHV7LafbjZvYRDUmcAAAAA=[0m[Pipeline] }
+[8mha:////4HUwhRy+tmzNhB/LLyPyZXF/+vxo+8AXHWKGyployz6AAAAApR+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxHGAhrHijZD4wliiDGQ2cVkESpP5NW8gxmZsfJX/73mvd6wiQFOFKzoDQ4Oo3Zi9JNNT8wUhqunWfR0EZowkjeiNXNLnWlWbIkNrMtyKCRsDWpP0aFl2MlePVTpFdryzCG5o4TcdXd4QiZTmVXgLywB9repi4S/zt8ALOPIUBzqiiGvqw9aQJlQvwAAAA==[0m[Pipeline] // retry
+[8mha:////4ER2ZXnYRMaYyjuLr9+JtU3vzrTDtgzshWQuH6pFx2nZAAAAph+LCAAAAAAAAP9tjbEOgjAURR8lDq6OfkSJJrIYJteGxS+opdZC8x62D2Hyi/w1/0EiiZN3uucs5/WGVYpQUXSytdh5TMbLPgxufnKk2F0DjbKlizSEiYKVtR1rauxpwZrYwrJMQK5gbdEESh4dw0a1+qGLoNEVZ46zOyoQvrnDEzI1l1lH/sIUYXsbmkT46/wNwNT3DPmuLBnEYf8BlPREY78AAAA=[0m[Pipeline] }
+[8mha:////4Lwrk0+owB8TvXmHrc4/Ay74hqapzxQq+ZWm2YnPOZvrAAAAph+LCAAAAAAAAP9tjbEOgjAURR8lDq6OfkSJiZHBMLk2LH5BLbUWmvewfQiTX+Sv+Q8SSZy80z1nOa83rFKEiqKTrcXOYzJe9mFw85Mjxe4aaJQtXaQhTBSsrO1YU2NPC9bEFpZlAnIFa4smUPLoGDaq1Q9dBI2uOHOc3VGB8M0dnpCpucw68hemCNvb0CTCX+dvAKa+Z8h3h5JB7MsP/+Jpwb8AAAA=[0m[Pipeline] // node
+[8mha:////4JSiT+rJH/vGCZBkoFxBeBoIwab3FTO6zq+biRRXX0HLAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjJEBIERWtlYYXmNgYJ9ZdsC8kFS/ia/wBi0hUbLUzzbzesIgBjhSsaA12DmPjRO8Hm54YKXRXT6No6SIawkjeiNqMNWlzmrEmNjAvy6GQsDTYeIoOLcNKtuqhSq/QlmcOyVUScqfv8IRMpjKrwF+YAqxvg46Ev87fAEx9z1Bs9geGfLv7AAYxMd6/AAAA[0m[Pipeline] }
+[2023-10-11T08:08:17.960Z] Failed in branch 11
+[8mha:////4M4xhDGFlyQ969rlFphQCklgOad0eykq75tyyfDotzqxAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjBEJCERWtlYYXmNgYJ9ZdsC8kFS/ia/wBi0hUbLUzzbzesIgBjhSsaA12DmPjRO8Hm54YKXRXT6No6SIawkjeiNqMNWlzmrEmNjAvy6GQsDTYeIoOLcNKtuqhSq/QlmcOyVUScqfv8IRMpjKrwF+YAqxvg46Ev87fAEx9z1Bs9geGfLf9AJZHDvy/AAAA[0m[Pipeline] // parallel
+[8mha:////4Huvapl6UmqNJHNboiAjdIb3oCwloychgB2gsW8mkwTdAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDCIkioqK10vACExvjxLoL9oWk4kV8jT9gEYmKrXammdcbFjHAkYIVrcHOYWyc6P1g0xMjhe7qaRQtXURDGMkbUZuxJm1OM9bEBuZlORQSlgYbT9GhZVjJVj1U6RXa8swhuUpC7vQdnpDJVGYV+AtTgPVt0JHw1/kbgKnvGYrtYcOQ73cffC1xCr8AAAA=[0m[Pipeline] }
+[2023-10-11T08:08:18.034Z] Failed in branch cassandra
+[8mha:////4FCJj8fK/z1n++ur8SE9Mi074/K+rm/cGCfIp7bPwhn6AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjSEgUiIrWSsMLTGyME+vO2BecihfxNf5ARCQqttqZZl5vWKUIR4pW9AYHh6lzIvjRzk9kisPVUxY9XURHmMgb0ZrckjanBVtiA8uKEioJa4Odp+TQMmxkrx6q9gptfeY4u4OE0uk7PKGQc5lV5C9MEba3USfCX+dvAKYQGKpm3zCUu+YDY68kWL8AAAA=[0m[Pipeline] // parallel
+[8mha:////4BSEHAlgHp+GxTpIzWn/farH5sBtlALF5TX+EoFRMcMpAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjoEAooqK10vACExvjxLoL9oWk4kV8jT9gEYmKrXammdcbFjHAkYIVrcHOYWyc6P1g0xMjhe7qaRQtXURDGMkbUZuxJm1OM9bEBuZlORQSlgYbT9GhZVjJVj1U6RXa8swhuUpC7vQdnpDJVGYV+AtTgPVt0JHw1/kbgKnvGYrNfsuQ7w4fOMMqn78AAAA=[0m[Pipeline] }
+[8mha:////4A475TBTWyzvJnVlBnxkfXcJq90X161ejM5jITGT5F2qAAAAph+LCAAAAAAAAP9tjbEOgjAURR8QB1dHP6LEMGhimFwbFr+g0loLzXvYPoTJL/LX/AcbSZy80z1nOa83rGKAmoIVncHeYWydGPxo0xMThf7qaRIdXURLGMkb0ZipIW1OCzbEBpZlORQS1gZbT9GhZdjITj1U6RXa8swhuaOE3Ok7PCGTqcwq8BfmANvbqCPhr/M3APMwMBS7fcWQV4cPCyBxI78AAAA=[0m[Pipeline] // stage
+[8mha:////4H2pvlu8zi0A9yo4q1YOMhue34Di9h4dCj7VLANSBG33AAAAph+LCAAAAAAAAP9tjbEOgjAURR8lDq6OfkSJ0YTBMLk2LH5BLbUWmvewfQiTX+Sv+Q8SSZy80z1nOa83rFKEiqKTrcXOYzJe9mFw85Mjxe4aaJQtXaQhTBSsrO1YU2NPC9bEFpZlAnIFa4smUPLoGDaq1Q9dBI2uOHOc3VGB8M0dnpCpucw68hemCNvb0CTCX+dvAKa+Z8h35YFB7MsPIg3Lrr8AAAA=[0m[Pipeline] }
+[2023-10-11T08:08:18.167Z] Failed in branch artifacts
+[8mha:////4JoKjS4csPAHh+XSQkaRAJ7Nan1AxUAvAUGj5U7++NZ/AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjhIAioqK10vACExvjxLoL9oWk4kV8jT9gEYmKrXammdcbFjHAkYIVrcHOYWyc6P1g0xMjhe7qaRQtXURDGMkbUZuxJm1OM9bEBuZlORQSlgYbT9GhZVjJVj1U6RXa8swhuUpC7vQdnpDJVGYV+AtTgPVt0JHw1/kbgKnvGYrNYceQb/cfEe6QEr8AAAA=[0m[Pipeline] // parallel
+[8mha:////4IjKPOzWPKn87FuXGv6v20Gj7MXeMdcPSxcUlGEB9xElAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjhIAioqK10vACExvjxLoL9oWk4kV8jT9gEYmKrXammdcbFjHAkYIVrcHOYWyc6P1g0xMjhe7qaRQtXURDGMkbUZuxJm1OM9bEBuZlORQSlgYbT9GhZVjJVj1U6RXa8swhuUpC7vQdnpDJVGYV+AtTgPVt0JHw1/kbgKnvGYrNYc+Qb3cfBc0NDb8AAAA=[0m[Pipeline] }
+[8mha:////4Cu7XnBBzxBEAQE3qwenOays9OyXgUEJ+toemKtu6LKtAAAAph+LCAAAAAAAAP9tjbEOgjAURR8lDq6OfkSJ0YTBMLk2LH5BLbUWmvewfQiTX+Sv+Q8SSZy80z1nOa83rFKEiqKTrcXOYzJe9mFw85Mjxe4aaJQtXaQhTBSsrO1YU2NPC9bEFpZlAnIFa4smUPLoGDaq1Q9dBI2uOHOc3VGB8M0dnpCpucw68hemCNvb0CTCX+dvAKa+Z8h3Zckg9ocPNi5Wsb8AAAA=[0m[Pipeline] // stage
+[8mha:////4B6PUu9VtfbiU1xrMkiyNP9iTpvwJ9SlrgE+FNiiDv5zAAAAqR+LCAAAAAAAAP9tjbEOgjAURR8QBldHP6KoiybEybVh8Qsq1Fpo3sP2YZn8In/NfxAlcfJO99zk5jxfkAcPB/JGtBo7i6G2oneDmZqI5LuLoyhaOouaMJDTotKxokYfZ6yINcxJUsgkLDTWjoJFw7CUrbqrwik0xYn9tJUSUtvc4AGJnMysPH9h9LC6Dk0g/Hn+CmDsGdLtmiHb7Pafa/4G6SLPWMMAAAA=[0m[Pipeline] stage
+[8mha:////4PYZQF1Wieo/hX0OtbT+jgQTvx8cx+1tSNs2vTbNAG0qAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpmAChTqxRF04QkhCSRv+XJKWdOBFX4w6UVmLCg2Vbst7rDWUMUFMwzGlsLUZpWed7MyU2UGivngbm6MIkYSSvWaOHhpQ+LbWhpGFRlkPBYaVReooWTYI1d+IhKi/QVOcUpu3IIbfqDk/I+EROIqS5jAE2t15Fwh/nLwDGLkGx3e1nP3y/5QdgoAvsxAAAAA==[0m[Pipeline] { (Test)
+Stage "Test" skipped due to earlier failure(s)
+[8mha:////4FTxrxZV3fKAVlotJvyComqQs+bCY6IjcVub0S0CqMoMAAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApTIAQE2uUhROENIS00f8lSUknTsTVuAMtlZjwYNmWrPd6Qxk8HMkb1mhsLQZlWed6MyaWyLdXR4k1dGGKMJDTTOgkqNanuQqKGmZlORQcFhqVo2DRRFjyRj5k5SSa6hz9uB045La+wxMyPpKj9PFbBg+rW18Hwh/nLwCGLkKx2e4n362nb/kBLs3ppsQAAAA=[0m[Pipeline] parallel
+[8mha:////4OoCSy8HL6Jm9R2p9p3XZ1mgzfTPgYOvee4XkerB6dfGAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApLAgJdWKNunCCkISQNPq/JCntxIm4GnegtBITHizbkvVebyhjgJqCYU5jazFKyzrfmymxgUJ79TQwRxcmCSN5zRo9NKT0aakNJQ2LshwKDiuN0lO0aBKsuRMPUXmBpjqnMG1HDrlVd3hCxidyEiHNZQywufUqEv44fwEwdgmK3WE7+/77LT+XwWnKxAAAAA==[0m[Pipeline] { (Branch: lint)
+[8mha:////4NWb5oDX5lkOlGH/X8bKfxoFNdrAzTw221lxUv+zIibrAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApTCChTqxRF04QkhCSRv+XJKWdOBFX4w6UVmLCg2Vbst7rDWUMUFMwzGlsLUZpWed7MyU2UGivngbm6MIkYSSvWaOHhpQ+LbWhpGFRlkPBYaVReooWTYI1d+IhKi/QVOcUpu3IIbfqDk/I+EROIqS5jAE2t15Fwh/nLwDGLkGxO2xn33+/5QcyEjUBxAAAAA==[0m[Pipeline] { (Branch: debian)
+[8mha:////4KK/4slUiT7PR4El7DHlJhI8GFFk2dVvtJgoIXWJtQ5/AAAAqB+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkTRjcQ4sTYsPkEttRaa/8e2WCafyFfzHayQOHnD5e6Sy/d6Q+kdnMhp1iscDHpp2GgnnRKL5Iarpch6ujBJ6Mkq1qrYUqeatbYUFKzKcig4bBRKS96gDrDlvXiIygrU1Tm4tB055Ka7wxMynshBuLCU2cHuNnWe8Mf5C4B5DFAc6v3i9fdbfgDnoGPwxAAAAA==[0m[Pipeline] { (Branch: redhat)
+[8mha:////4HCxzFhe+wu4Cnhq6pIdvYlPa6Bs4/QUIFKEV8pzoxhzAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BApbCDUiTXqwglCEkLS6P+SpLQTJ+Jq3IHSSkx4sGxL1nu9oYwBagqGOY2txSgt63xvpsQGCu3V08AcXZgkjOQ1a/TQkNKnpTaUNCzKcig4rDRKT9GiSbDmTjxE5QWa6pzCtB055Fbd4QkZn8hJhDSXMcDm1qtI+OP8BcDYJSh2++3sh++3/ABCcz87xAAAAA==[0m[Pipeline] { (Branch: centos7)
+[8mha:////4GYZBQRSCoNoooFWCmbdq2lokdbgW5T99qxNdBlJ8tnZAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BBp2UCIiTXqwglCE0La6P+SpKQTJ+Jq3IGUSkx4sGxL1nu9ofQOjuQ06xT2Bn1r2GBHnRKL5Pqrpcg6urCW0JNVrFGxIalOS20oKFiU5VBwWClsLXmDOsCad+IhKitQV+fg0nbgkBt5hydkPJGDcOFbJgeb2yg94Y/zFwDTEKDY7urZ9/X8LT8+KUe6xAAAAA==[0m[Pipeline] { (Branch: stress)
+[8mha:////4HLMp8QT2N/E1ClnSsGYPICKWJgM0+sEnS8l5TisY4eOAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BAp3UCIiTXqwglCG0LS6P+SpKQTJ+Jq3IGUSkx4sGxL1nu9ofQOjuQUMxJ7jb7VbLCjSolFcv3VUmSGLqwl9GQla2RsqJOnpTYUJCzKcig4rCS2lrxGFWDNjXiIygpU1Tm4tB045Lq7wxMynshBuPAtk4PNbew84Y/zFwDTEKCod9vZ9/X8LT+b+htxxAAAAA==[0m[Pipeline] { (Branch: fqltool)
+[8mha:////4I4UqBcBiCUrgoecV/abvCOJVupO3zj7CQ9tZD9c1Kc+AAAAqh+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpYEAgxMQaZeEEIQ0hbfR/SVLSiRNxNe5ASyUmPFi2Jeu93lAGD0fyhjUaW4tBWda53oyJJfLt1VFiDV2YIgzkNBM6Car1aa6CooZZWQ4Fh4VG5ShYNBGWvJEPWTmJpjpHP24HDrmt7/CEjI/kKH38lsHD6tbXgfDH+QuAoYtQrHfbyfeb6Vt+ANUtshjEAAAA[0m[Pipeline] stage
+[8mha:////4Ma2ARK3ryYYAQJ5GfnY2hz/4pyP/wQ0jAXzgqHvt8i0AAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpgAmhTqxRF04QkhCSRv+XJKWdOBFX4w6UVmLCg2Vbst7rDWUMUFMwzGlsLUZpWed7MyU2UGivngbm6MIkYSSvWaOHhpQ+LbWhpGFRlkPBYaVReooWTYI1d+IhKi/QVOcUpu3IIbfqDk/I+EROIqS5jAE2t15Fwh/nLwDGLkGxPexm33+/5QeKHH4NxAAAAA==[0m[Pipeline] { (lint)
+[8mha:////4N3WXibb33ZxYjApqEQSyv4rkbrMZXLjUKiiv1J/xRydAAAAqh+LCAAAAAAAAP9tjUEKwjAURH9bunDr0kOkCIKKuHIbsvEEMY0xbfi/JqnpyhN5Ne9ga8GVsxhmBob3ekMZPBzJG9ZobC0GZVnnejMmlsi3V0eJNXRhijCQ00zoJKjWp7kKihpmZTkUHBYalaNg0URY8kY+ZOUkmuoc/bgdOOS2vsMTMj6So/TxWwYPq1tfB8If5y8Ahi5Csd5tJ99vpm/5AaeCTlXEAAAA[0m[Pipeline] stage
+[8mha:////4MJZUTmwEToGdPc/gOOXUXSXSmvU0AtYr28G+ojhZFmUAAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpkGBAqBNr1IUThCSEpNH/JUlpJ07E1bgDpZWY8GDZlqz3ekMZA9QUDHMaW4tRWtb53kyJDRTaq6eBObowSRjJa9booSGlT0ttKGlYlOVQcFhplJ6iRZNgzZ14iMoLNNU5hWk7csitusMTMj6RkwhpLmOAza1XkfDH+QuAsUtQbA+72fffb/kBd1oaNMQAAAA=[0m[Pipeline] { (debian)
+[8mha:////4FuoNq3kPASR0oxCDYUrGByeBKo70l4+QlUJEnllkEqLAAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpWFARYmKNunCC0ISQNPq/JCntxIm4GncgpRITHizbkvVebyiDhyN5zazCzmBoDevdoFNiI/nu6mhkli6sJQzkFGvU2JBUp6U2FBUsynIoOKwUto6CQR1hza14iMoJ1NU5+rQdOORG3uEJGU/kKHz8lsnD5jbIQPjj/AXA1EcotnU9+343f8sP3bwSasQAAAA=[0m[Pipeline] stage
+[8mha:////4MBdJgvgjQZPKN+Tu09Zu5fQh+xnPH1q/Z3TF1m3OG9EAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BCpWEAIdWKNunCCkISQNPq/JCntxIm4GnegtBITHizbkvVebyhjgJqCYU5jazFKyzrfmymxgUJ79TQwRxcmCSN5zRo9NKT0aakNJQ2LshwKDiuN0lO0aBKsuRMPUXmBpjqnMG1HDrlVd3hCxidyEiHNZQywufUqEv44fwEwdgmK7WE3+/77LT/jZemVxAAAAA==[0m[Pipeline] { (redhat)
+[8mha:////4EoZmccfR4yr0S4alfDOgc8tfrEIiuAXv7excWllts4iAAAAqB+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkSJG8Q4uTYsPkFtay00/49tsUw+ka/mOwiSOHnD5e6Sy/d6Qxk8HMkb1mnsLQZp2eBGMyeWyPdXR4l1dGGSMJDTrNWpJaVPa20paliV5VBw2GiUjoJFE2HLO/EQlRNoqnP083bgkFt1hydkfCZH4eO3TB52t1EFwh/nLwCmIUKxr5vFm3r5lh/Ckb3LxAAAAA==[0m[Pipeline] stage
+[8mha:////4NJ2tiRtfZJmhs8iNN1SpHBSjf4rvS8S7UOI+hh+ZDBrAAAAqB+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkSJm8Q4sTYsPkEttRaa/8e2WCafyFfzHayQOHnD5e6Sy/d6Q+kdnMhp1iscDHpp2GgnnRKL5Iarpch6ujBJ6Mkq1qrYUqeatbYUFKzKcig4bBRKS96gDrDlvXiIygrU1Tm4tB055Ka7wxMynshBuLCU2cHuNnWe8Mf5C4B5DFDs68Pi9fdbfgCN19JGxAAAAA==[0m[Pipeline] { (centos7)
+[8mha:////4HImw2Zbc5oukYeIo3AADbR2PIcvgrW4HtH7b+rtA7QbAAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BBpYEOoE2vUhROEJoS00f8lSWknTsTVuAOBSkx4sGxL1nu+oAweavKGdRp7i6G1bHCjSYlN5PuLo4l1dGYtYSCnWaOnhpQ+LrWhqGFRlkMhYKWxdRQsmghr0cm7rJxEU52iT9tBQG7VDR6QiUSO0sdvmT1srqMKhD/OXwDMQ4Riu+fJd5x/vuUbi7LGfMQAAAA=[0m[Pipeline] stage
+[8mha:////4B0TsWMnbQBaBDQSxdBYJW2CkN3bx4VkiaeRn6AwoFDrAAAApx+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkRBV+PE2rD4BLXUWmj+H9timXwiX813sELi5A2Xu0su3+sNpXdwIqdZr3Aw6KVho510SiySG66WIuvpwiShJ6tYq2JLnWrW2lJQsCrLoeCwUSgteYM6wJb34iEqK1BX5+DSduSQm+4OT8h4IgfhwlJmB7vb1HnCH+cvAOYxQHGo68X332/5AR1ObkzEAAAA[0m[Pipeline] { (stress)
+[8mha:////4Fqlp5+1Uh+VxUFHAiqYz65hkzwwrb8yUbglInGqADDaAAAAqR+LCAAAAAAAAP9tjTEOwjAUQ39bdWBl5BAp7YYQE2vUhROEJoSk0f8lSWknTsTVuAOBSkx4sGxL1nu+oAweDuQ1swp7g6EzbHCjTolN5PuLo4lZOrOOMJBTrFVTS1Idl9pSVLAoy6HgsFLYOQoGdYQ1t+IuKidQV6fo07bnkBt5gwdkPJGj8PFbZg+b6ygD4Y/zFwDzEKGod3XyZtt8vuUb71+rqsQAAAA=[0m[Pipeline] stage
+[8mha:////4K6NmDyYGB+Xq0dFpYJTJlAx+qxu4xVOBnb8UitTAonwAAAApx+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkQxOBon1obFJ6il1kLz/9gWy+QT+Wq+gxUSJ2+43F1y+V5vKL2DEznNeoWDQS8NG+2kU2KR3HC1FFlPFyYJPVnFWhVb6lSz1paCglVZDgWHjUJpyRvUAba8Fw9RWYG6OgeXtiOH3HR3eELGEzkIF5YyO9jdps4T/jh/ATCPAYp6Xy9++H7LD4lxne3EAAAA[0m[Pipeline] { (fqltool)
+Stage "lint" skipped due to earlier failure(s)
+[8mha:////4I9WTKsVVZKCHoPtCGYQrBdTBwzZdaO26ZnSXLC1Trf+AAAApx+LCAAAAAAAAP9tjTsOwjAQRDeJKGgpOYTDr0GIitZywwmMY4wdazfYDknFibgad8AiEhVTjOZN815vmMUARwqGOY2txags63xv8mIDhfbqaWCOLkwRRvKaCT0IavRpQkFJw5SihIrDXKPyFC2aBAvu5EPWXqKpzynk78ChtM0dnlDwbE4ypC+MAZa3vomEP89fAYxdl6DarHa51/vtByuv767AAAAA[0m[Pipeline] }
+Stage "debian" skipped due to earlier failure(s)
+[8mha:////4NWZEtjxmhx+5CZnSb0rjjhb0gco4AwjHgiAgKX6YZwWAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDSCkQoqK10vAC4xjjxLoztoNT8SK+xh+wiETFFqudbeb1hkXwcCSvWa9wMBikYc6OOi+WyA9XS4n1dGGSMJBVrFWppU6dZmwpKphTlFBxWCqUloJBHWHFe/EQtRWo63P0+TtwKE13hycUPJuj8PELk4f1bewC4c/zVwCTcxGq3abJvd03H6oB++HAAAAA[0m[Pipeline] }
+Stage "redhat" skipped due to earlier failure(s)
+[8mha:////4G7uDiymVc8a9OVih63YY6eKc0qnsV5md9qB8jVodGu/AAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDFCCEqGgtN7zAOMbYse6C7ZBUvIiv8QcsIlGxxWpnm3m9YRYDHCkY5jS2FqOyrPO9yYsNFNqrp4E5ujBFGMlrJvQgqNGnCQUlDVOKEioOc43KU7RoEiy4kw9Ze4mmPqeQvwOH0jZ3eELBsznJkL4wBlje+iYS/jx/BTB2XYJqs9rmXu93Hxt6HT7AAAAA[0m[Pipeline] }
+Stage "centos7" skipped due to earlier failure(s)
+[8mha:////4JmPCqsDWKyxsWfzNsWUhbrjuJ9qyJv2Hwe6Cv/t42zYAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDNChCVLRWGl5gHGOcWHfGdnAqXsTX+AMWkajYYrWzzbzesAgejuQ16xUOBoM0zNlR58US+eFqKbGeLkwSBrKKtSq11KnTjC1FBXOKEioOS4XSUjCoI6x4Lx6itgJ1fY4+fwcOpenu8ISCZ3MUPn5h8rC+jV0g/Hn+CmByLkK12+xzb5vmA6hc0n/AAAAA[0m[Pipeline] }
+Stage "stress" skipped due to earlier failure(s)
+[8mha:////4J81P6p5t+vYqSyO9Og8oJ5aHJLffhDi1jn7PhvsnUDaAAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDVEgoFa2VhhcY2xg71l2wHZyKF/E1/kCUSFRssdrZZt4fWMUADQXDnMbOYpSW9X4w02KZQnfzlJmjK5OEkbxmrc4tKX1esKWkYUlRQsVhrVF6ihZNgg134ilqL9DUlxSm78ShtOoBLyj4ZE4ipBnGANv7oCLhz/NXAGPfJ6gOu+Pc+y9jocVUwAAAAA==[0m[Pipeline] }
+Stage "fqltool" skipped due to earlier failure(s)
+[8mha:////4FiwGZIKxvB9E735gu174VjCLZFLLg+l3SH9uud8edy1AAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSDoEIoFa2VhhcY2xg71l2wHZyKF/E1/kCUSFRssdrZZt4fWMUADQXDnMbOYpSW9X4w02KZQnfzlJmjK5OEkbxmrc4tKX1esKWkYUlRQsVhrVF6ihZNgg134ilqL9DUlxSm78ShtOoBLyj4ZE4ipBnGANv7oCLhz/NXAGPfJ6j2u+Pchy/7y7wcwAAAAA==[0m[Pipeline] }
+[8mha:////4HP/qZvgG1+vb/x8eSIdDve/rj1zFdh08DAo2TZN/qawAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYRD0iFERWu54QXGNsaJdRdsh6TiRXyNP2ARiYotVjvbzOsNqxjgSMGyzmDvMCrHBj/avNhEob96mlhHF6YII3nDhJkEaXNaUFAysKQooeKwNqg8RYc2wYZ38iFrL9HW5xTyd+BQOn2HJxQ8m5MM6QtzgO1t1JHw5/krgHkYElRts8vd7NsPMLsN4cAAAAA=[0m[Pipeline] // stage
+[8mha:////4Pw1gAQ0dEVUAGSFUIIqBrz7UvULZpuadJfoPXkS56V7AAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjIxqEUtFaaXiBiY1xYt0Z2yGpeBFf4w9YRKJii9XONvN6wyoGaCgY1mscLMbOMu9GkxebKAxXRxPr6cI6wkhOs1ZPLSl9WrClpGFJUUIlYK2xcxQtmgQb0cuHrJ1EU59TyN9RQGnVHZ5QiGxOMqQvzAG2t1FFwp/nrwBm7xNUO85z88P+A7EVGa7AAAAA[0m[Pipeline] // stage
+[8mha:////4C1q5bdsmbFgM2/xbvnlXcoZtdTDF68tiKKdsUbhXILxAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjpEBCiIrWSsMLjG2ME+vO2A5JxYv4Gn/AIhIVW6x2tpnXG1YxwJGCYb3GwWKUlnk3mrzYRGG4OppYTxcmCSM5zTo9daT0acGOkoYlRQkVh7VG6ShaNAk2vBcPUTuBpj6nkL8Dh9KqOzyh4NmcREhfmANsb6OKhD/PXwHM3ieo2qbN3ex3HwBu/3HAAAAA[0m[Pipeline] // stage
+[8mha:////4MSWSDRIqJjZuJjplvdYdhEwCJvPPWwpQze5gknx2t3PAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjQANCVLRWGl5gHGOcWHfGdnAqXsTX+AMWkajYYrWzzbzesAgejuQ16xUOBoM0zNlR58US+eFqKbGeLkwSBrKKtSq11KnTjC1FBXOKEioOS4XSUjCoI6x4Lx6itgJ1fY4+fwcOpenu8ISCZ3MUPn5h8rC+jV0g/Hn+CmByLkK1aba5m/3uA7NIMDDAAAAA[0m[Pipeline] // stage
+[8mha:////4Pero4m4/hKiwPRWiA4U/GRaxBaKV9VmOOaqdxspoR+1AAAApR+LCAAAAAAAAP9tjTESwiAURH+SsbC19BAkOnaOlS1D4wkQEEmY/yMQSeWJvJp3MJoZK7fY2bfNe75gEQMcKFjWGuwcRuVY7wc7LZYpdBdPmbV0ZoowkjdMmCxIm+OMgpKBOUUJFYelQeUpOrQJVryVd1l7ibY+pTB9ew6l0zd4QMEnc5IhfWEMsL4OOhL+PH8FMPZ9gmq72X26ad4f+8gowAAAAA==[0m[Pipeline] // stage
+[8mha:////4L22m43GUDvGF2BrByG72n/N+arcBiKqp2Ud9D+itpZfAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDkagQFa2VhheYxBg71p2xLyQVL+Jr/IFAJCq2WO1sM88XLFKEA0UjnMbOYmqsCL430xIDxe7iaRCOzqIhTOS1qPVQU6uPM9bEGuZkORQSlhobT8miYVhJp+6q9ApNeeI4fXsJuW1v8IBMTmZWkb8wRlhf+zYR/jx/BTCGwFBU292nN9Ubh5GxYMAAAAA=[0m[Pipeline] // stage
+[8mha:////4AHudcc3ubJNH/WnsHNwoVu0Rm51w8seCJhug4El0RV1AAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjUERIiIrWSsMLjG2ME+vO2A5JxYv4Gn/AIhIVW6x2tpnXG1YxwJGCYb3GwWKUlnk3mrzYRGG4OppYTxcmCSM5zTo9daT0acGOkoYlRQkVh7VG6ShaNAk2vBcPUTuBpj6nkL8Dh9KqOzyh4NmcREhfmANsb6OKhD/PXwHM3ieodk2bu9m3H1J7q5zAAAAA[0m[Pipeline] }
+[2023-10-11T08:08:18.967Z] Failed in branch lint
+[8mha:////4L1WKjhWp9yplT2tMo4MwpxsyuS5DcGQDkao/UI37a9HAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSj0AQJUdFaaXiBsY1xYt0Z2yGpeBFf4w9YRKJii9XONvN6wyoGOFIwrNc4WIzSMu9GkxebKAxXRxPr6cIkYSSnWaenjpQ+LdhR0rCkKKHisNYoHUWLJsGG9+IhaifQ1OcU8nfgUFp1hycUPJuTCOkLc4DtbVSR8Of5K4DZ+wTVrmlzN/v2A3BA203AAAAA[0m[Pipeline] }
+[2023-10-11T08:08:18.985Z] Failed in branch debian
+[8mha:////4I+945eyRDGg9+ZlMGxabTp9uoMTIjI/1q+oDVqAq2Q6AAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjUFlCVGmtNLzAxMY4se6M7ZBUvIiv8QcsIlGxxWpnm3m9YRMDnCgYNmgcLcbeMu8mkxebKYxXRzMb6MJ6wkhOs07PHSndrthR0rCmKKESsNXYO4oWTYKdGORD1k6iqc8p5O8ooLTqDk8oRDYnGdIXlgD726Qi4c/zVwCL9wmqQ8NzN5x/AAgtLCvAAAAA[0m[Pipeline] }
+[2023-10-11T08:08:18.995Z] Failed in branch redhat
+[8mha:////4Hp696yi54swWXlshV42cCpx8JwalReJfiiLNr+7MKPDAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSjUBEhKlorDS8wtjFOrDtjOyQVL+Jr/AGLSFRssdrZZl5vWMUARwqG9RoHi1Fa5t1o8mITheHqaGI9XZgkjOQ06/TUkdKnBTtKGpYUJVQc1hqlo2jRJNjwXjxE7QSa+pxC/g4cSqvu8ISCZ3MSIX1hDrC9jSoS/jx/BTB7n6DaNW3uZt9+ACoWXPrAAAAA[0m[Pipeline] }
+[2023-10-11T08:08:19.005Z] Failed in branch centos7
+[8mha:////4HZcULc1OntcYNY32qVK0YXz3+N7+IHdGzml5A9jWe8vAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQT0iFERWul4QXGNsaJdWdsh6TiRXyNP2ARiYotVjvbzOsNqxjgSMGwXuNgMUrLvBtNXmyiMFwdTaynC5OEkZxmnZ46Uvq0YEdJw5KihIrDWqN0FC2aBBvei4eonUBTn1PI34FDadUdnlDwbE4ipC/MAba3UUXCn+evAGbvE1Rt2+Te7ZsP/92MgcAAAAA=[0m[Pipeline] }
+[2023-10-11T08:08:19.014Z] Failed in branch stress
+[8mha:////4DM3nHKo8vvDx7hE4cts7Bp8vSokowr1aFfvgCQjebFyAAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjp0OIKq2VhheY2Bgn1p2xHZKKF/E1/oBFJCq2WO1sM683bGKAEwXDBo2jxdhb5t1k8mIzhfHqaGYDXVhPGMlp1um5I6XbFTtKGtYUJVQCthp7R9GiSbATg3zI2kk09TmF/B0FlFbd4QmFyOYkQ/rCEmB/m1Qk/Hn+CmDxPkHVNDw3P/AP3eb8UMAAAAA=[0m[Pipeline] }
+[2023-10-11T08:08:19.024Z] Failed in branch fqltool
+[8mha:////4D8oV4nAYB+uPoh5zZYVy+bCTssSlplSHKjHbvbuDuYTAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQDrpBQKlorDS8wsTFOrDtjOyQVL+Jr/AGLSFRssdrZZl5vWMUADQXDeo2DxdhZ5t1o8mITheHqaGI9XVhHGMlp1uqpJaVPC7aUNCwpSqgErDV2jqJFk2AjevmQtZNo6nMK+TsKKK26wxMKkc1JhvSFOcD2NqpI+PP8FcDsfYKKc557f9h9AJf9CA/AAAAA[0m[Pipeline] // parallel
+[8mha:////4KQare6f0KP4wkpxuJybrZlgABbqJCk/e6Js4vf3RrayAAAApx+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjQoEQoqK10vAC4xjjxLoztoNT8SK+xh+wiETFFqudbeb1hkXwcCSvWa9wMBikYc6OOi+WyA9XS4n1dGGSMJBVrFWppU6dZmwpKphTlFBxWCqUloJBHWHFe/EQtRWo63P0+TtwKE13hycUPJuj8PELk4f1bewC4c/zVwCTcxGqptnm3uz2H0hSO1fAAAAA[0m[Pipeline] }
+[8mha:////4B8JGhJCWMa8A/ys5lzrYCpF4tKsDdKo3G3xNacmIJwqAAAAqB+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjIiSQEBWtlYYXGMcYJ9adsR2cihfxNf6ARSQqtljtbDOvNyyChyN5zXqFg8EgDXN21HmxRH64WkqspwuThIGsYq1KLXXqNGNLUcGcooSKw1KhtBQM6ggr3ouHqK1AXZ+jz9+BQ2m6Ozyh4NkchY9fmDysb2MXCH+evwKYnItQNc0292a3/wBQXJvlwAAAAA==[0m[Pipeline] // stage
+[8mha:////4EokvdF2OQWdTtEj4Oa69vCYXNEpysOrmxKMmYoHN8mGAAAAqB+LCAAAAAAAAP9tjTEOwjAQBC+JUtBS8ggHRaJCVLRWGl5gHGOcWHfBvpBUvIiv8QcMkajYamel1TxfUMYABwpWdAZ7h1E7MfjRpiYmCv3F0yQ6OgtNGMkb0ZipodYcF2yIDSzJcigkrAxqT9GhZVjLTt1V5RXa6sQhbXsJuWtv8IBMJjOrwF+YA2yuYxsJf56/ApgHhrzeMhR1vftcyzdzGeY4wwAAAA==[0m[Pipeline] stage
+[8mha:////4Msf3e/EU3+aMcWVVgo3YLk1BmLFnwm24I9+C/CFyx45AAAAqB+LCAAAAAAAAP9tjbEOgjAYhH8gDK6OPkRJSHQxTqwNi09QS62F5v+xLZbJJ/LVfAcrJE7ecLm75PK93lB6BydymvUKB4NeGjbaSafEIrnhaimyni5MEnqyirUqttSpZq0tBQWrshwKDhuF0pI3qANseS8eorICdXUOLm1HDrnp7vCEjCdyEC4sZXawu02dJ/xx/gJgHgMUdb1f/PD9lh/XrQs+xAAAAA==[0m[Pipeline] { (Summary)
+Stage "Summary" skipped due to earlier failure(s)
+[8mha:////4FKvy6EH9ASjrrprB7nIXGe7IZZx7xl6pUV2v2/o+7S/AAAAph+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjpYACUaW10vACExtjx7oztkNS8SK+xh+wEomKLVY728z7A5sY4ExBM6twMBh7w7wbdV5sojDcHE3M0pX1hJGcYp2aOpKqXbGjpGBNUULFYauwdxQN6gQ7bsVT1E6gri8p5O/EoTTyAS8oeDYnEdICc4D9fZSR8Of5K4DZ+wRV0xyXPnwB1iH6TMAAAAA=[0m[Pipeline] }
+[8mha:////4G6x4KIjUhAYnTyc1EN6GbfSxNSDV6jgqahWw13oFxKGAAAAph+LCAAAAAAAAP9tjbEKwjAURV9bHFwd/YgUCoIgTl1DF78gNjEmDe/FJLWd/CJ/zX8wtODkHS733OW8P7CJAc4UNLMKB4OxN8y7UefFJgrDzdHELF1ZTxjJKdapqSOp2hU7SgrWFCVUHLYKe0fRoE6w41Y8Re0E6vqSQv5OHEojH/CCgmdzEiEtMAfY30cZCX+evwKYvU9QNc1x6cMXhQC7I8AAAAA=[0m[Pipeline] // stage
+[8mha:////4OjOxY9x0WDJxtqp4WEN/JybrGlwuKngvWl9Zvoc7QI7AAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYSD0iFERWul4QUmNsaJdWfsC07Fi/gafyAiEhVb7UwzrzesUoQjRSt6g4PD1DkR/GjnJzLF4eopi54uoiNM5I1oTW5Jm9OCLbGBZUUJlYS1wc5TcmgZNrJXD1V7hbY+c5zdQULp9B2eUMi5zCryF6YI29uoE+Gv8zcAUwgMVdPsGcpm9wFakp1JvwAAAA==[0m[Pipeline] }
+[8mha:////4Iam4vRzITvLUQon5vTK9FBhRvWXzW8iMIFtBcPF0rfRAAAAph+LCAAAAAAAAP9tjTsOwjAQBTeJKGgpOYTDp0IRFa2VhhOY2Bgn1m6wNyQVJ+Jq3AGLSFS86s0083rDIgY4UrCiNdg5jI0TvR9semKk0F09jaKli2gII3kjajPWpM1pxprYwLwsh0LC0mDjKTq0DCvZqocqvUJbnjkkV0nInb7DEzKZyqwCf2EKsL4NOhL+On8DMPU9Q7Hbbxjy7eEDQSMUmr8AAAA=[0m[Pipeline] // timestamps
+[8mha:////4GLgmquXY5o9mPN8CPopqUlfDnV/AzxjkFvDQKAnklGrAAAAph+LCAAAAAAAAP9tjbEOgjAURR8QB1dHP6IEXUwMk2vD4hfUUmuheQ/bhzD5Rf6a/2AjiZN3uucs5/WGVQxQU7CiM9g7jNqJwY82PTFR6K+eJtHRRWjCSN6IxkwNtea0YENsYFmWQyFhbVB7ig4tw0Z26qFKr9CWZw7JHSXkrr3DEzKZyqwCf2EOsL2NbST8df4GYB4GhmK3rxjy6vABcsBPJr8AAAA=[0m[Pipeline] }
+[8mha:////4PUcuZHAmlIwbNqyJ8WEJIzS3N9p5ibG+EM4IlW7YcWlAAAAph+LCAAAAAAAAP9tjTESgjAQRRcYC1tLDxFGLCwcKtsMjSeIJMZAZheTRag8kVfzDmZkxspf/fea93rDKgaoKVjRGewdxtaJwY82PTFR6K+eJtHRRbSEkbwRjZka0ua0YENsYFmWQyFhbbD1FB1aho3s1EOVXqEtzxySO0rInb7DEzKZyqwCf2EOsL2NOhL+On8DMA8DQ1HtK4Z8d/gATa9kML8AAAA=[0m[Pipeline] // withEnv
+[8mha:////4LsBk/PbAoDi2uM6d9hdAFSabuic6Pdc5gLdkZ00iBbCAAAApR+LCAAAAAAAAP9tjTESgjAQRZcwFraWHiKMYudQ2WZoPEEMMQYyu5gsQuWJvJp3kJEZK3/132ve6w2rFKGi6GRrsfOYjJd9GNz85EixuwYaZUsXaQgTBStrO9bU2NOCNbGFZZmAXMHaogmUPDqGjWr1QxdBoyvOHGd3VCB8c4cnZGous478hSnC9jY0ifDX+RuAqe8Z8n1ZMojd4QNSLTFivwAAAA==[0m[Pipeline] }
+[8mha:////4B7SVjpMIawSuTWOkh88NJG/WTwDOyv8W3D/bSi7YhhmAAAApR+LCAAAAAAAAP9tjTESgjAQRZcwFraWHiKMYudQ2WZoPEEMMQYyu5gsQuWJvJp3kJEZK3/132ve6w2rFKGi6GRrsfOYjJd9GNz85EixuwYaZUsXaQgTBStrO9bU2NOCNbGFZZmAXMHaogmUPDqGjWr1QxdBoyvOHGd3VCB8c4cnZGous478hSnC9jY0ifDX+RuAqe8Z8n15YBC78gNJiFDhvwAAAA==[0m[Pipeline] // withEnv
+[8mha:////4Mysifnd0Ocf66ZbAkSMRU0dSrUf3Gba7C0UtzG+T55RAAAApR+LCAAAAAAAAP9tjTEOwjAQBM+JKGgpeYQjgRAFoqK10vAC4xjjxLoL9gWn4kV8jT8QEYmKrXammdcbFinCkaKTrcXOYzJe9mFw05OZYncNlGVLF2kIEwUra5trauxpxprYwjxRQKlgadEESh4dw0q1+qGroNFVZ46TOygofHOHJwg1lVlH/sIYYX0bmkT46/wNwNj3DOVmu2MQ+w8Y/lSuvgAAAA==[0m[Pipeline] }
+[8mha:////4McO/5IippMf9J/D0C1AOvLyVc7kOTTnsNKGh/bXqJXMAAAApR+LCAAAAAAAAP9tjTEOwjAQBC+JKGgpeYQjgZQGUdFaaXiBiY1xYt0Z+4JT8SK+xh+IiETFVjvTzOsNqxThSNGK3uDgMHVOBD/a+YlMcbh6yqKni+gIE3kjWpNb0ua0YEtsYFlRQiVhbbDzlBxaho3s1UPVXqGtzxxnd5BQOn2HJxRyLrOK/IUpwvY26kT46/wNwBQCQ7XbNwxF8wFetPOevgAAAA==[0m[Pipeline] // node
+[8mha:////4JE2VneQzawNy1cKQf85a7fo5iKtGh5VmSp14P81OWa6AAAApR+LCAAAAAAAAP9tjTEOwjAQBM+JKGgpeYQjgRAFoqK10vAC4xjjxLoL9gWn4kV8jT8QEYmKrXammdcbFinCkaKTrcXOYzJe9mFw05OZYncNlGVLF2kIEwUra5trauxpxprYwjxRQKlgadEESh4dw0q1+qGroNFVZ46TOygofHOHJwg1lVlH/sIYYX0bmkT46/wNwNj3DOVmu2cQuw9UzJo6vgAAAA==[0m[Pipeline] }
+[8mha:////4J18tfongtj0uG+d2GBkWI5RFHesSw2D6JwCoF9jYAM6AAAApR+LCAAAAAAAAP9tjTEOwjAQBM+JKGgpeYQjAQUSoqK10vAC4xjjxLoL9gWn4kV8jT8QEYmKrXammdcbFinCkaKTrcXOYzJe9mFw05OZYncNlGVLF2kIEwUra5trauxpxprYwjxRQKlgadEESh4dw0q1+qGroNFVZ46TOygofHOHJwg1lVlH/sIYYX0bmkT46/wNwNj3DOVmu2cQuw8Ta83PvgAAAA==[0m[Pipeline] // podTemplate
+[8mha:////4CI1ReM95h4qQ4tah6WVxgRmV3eyor/ysbo+AGfR4EmEAAAApB+LCAAAAAAAAP9tjTEOwjAQBM+JKGgpeYQjhQohKlorDS8wsTFOrLtgX3AqXsTX+AMRkajYameaeb1hlSIcKTrZWew9ptbLIYxufjJT7K+BsuzoIlvCRMHKxuaGjD0t2BBbWCYKKBWsLbaBkkfHsFGdfugqaHTVmePsDgoKb+7wBKHmMuvIX5gibG+jSYS/zt8ATMPAUNa7PYOoP5bnzhu+AAAA[0m[Pipeline] End of Pipeline
+ERROR: No files included in stash ‘cassandra_17’
+Finished: FAILURE
