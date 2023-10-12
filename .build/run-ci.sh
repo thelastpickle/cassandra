@@ -72,18 +72,42 @@ helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/j
 
 # Install Jenkins Operator using Helm
 echo "Installing Jenkins Operator..."
-helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
+#helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
 
 echo "Jenkins Operator installed successfully!" # condition to check if above command was success
 
 # deploy jenkins Instance TODO jenkins file parameter
 kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
 
+TOKEN=$(kubectl  get secret jenkins-operator-credentials-example -o jsonpath="{.data.token}" | base64 --decode)
+
+# Trigger a new build and capture the response headers
+response_headers=$(curl -i -X POST http://localhost:8080/job/k8s-e2e/build -u jenkins-operator:$TOKEN 2>&1)
+
+
+queue_url=$(echo "$response_headers" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')
+queue_item_number=$(basename "$queue_url")
+
+# Construct the complete URL to retrieve build information
+queue_json_url="http://localhost:8080/queue/item/$queue_item_number/api/json"
+
+# Wait for the build number to become available (querying the API)
+build_number=""
+while [ -z "$build_number" ] || [ "$build_number" == "null" ]; do
+    build_info=$(curl -s "$queue_json_url" -u jenkins-operator:$TOKEN)
+    build_number=$(echo "$build_info" | jq -r '.executable.number')
+    if [ -z "$build_number" ] || [ "$build_number" == "null" ]; then
+        echo "Build number not available yet. Waiting..."
+        sleep 5  # Adjust the polling interval as needed
+    fi
+done
+
+echo "build_number $build_number"
 BUILD_DIR=/var/lib/jenkins/jobs/k8s-e2e/builds
 POD_NAME=jenkins-example
 LATEST_BUILD=$(kubectl exec -it $POD_NAME -- /bin/bash -c "ls -t $BUILD_DIR | head -n 1" | tr -d '\r')
 
-CONSOLE_LOG_FILE="$BUILD_DIR/$LATEST_BUILD/log"
+CONSOLE_LOG_FILE="$BUILD_DIR/$build_number/log"
 
 # Define a function to check if "FINISHED" is in the consoleLog
 check_finished() {
@@ -102,25 +126,8 @@ while true; do
 done
 
 LOCAL_DIR=.
-mkdir -p $LOCAL_DIR/$LATEST_BUILD
-kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$LATEST_BUILD/log $LOCAL_DIR/$LATEST_BUILD/log
-kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$LATEST_BUILD/junitResult.xml $LOCAL_DIR/$LATEST_BUILD/junitResult.xml
+mkdir -p $LOCAL_DIR/$build_number
+kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/log $LOCAL_DIR/$build_number/log
+kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/junitResult.xml $LOCAL_DIR/$build_number/junitResult.xml
 
 
-
-
-# TODO wait for job pods
-#kubectl rollout --namespace ${KUBE_NS} wait pod/ [--for=<condition>] 
-
-#sleep 120
-
-# get job pod name - TODO parameterise the job name
-#jobPodName=$(kubectl --namespace ${KUBE_NS} get po | grep k8sagent-e2e | cut -d " " -f1)
-
-# get the file - TODO parameterize the path to fetch path
-#kubectl exec --namespace ${KUBE_NS} $jobPodName -- tar cf - /home/jenkins/agent/workspace/k8s-e2e | tar xf - -C .
-
-# teardown # TODO add option to skip teardown
-#kubectl delete --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
-#kubectl delete "$(kubectl api-resources --namespaced=true --verbs=delete -o name | tr "\n" "," | sed -e 's/,$//')" --all
-#kubectl delete namespace ${KUBE_NS}

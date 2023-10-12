@@ -383,7 +383,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         }
       } finally {
         attempt = attempt + 1
-        sh "xz -f *_attempt_*.log"
+        sh "xz -f ${build_dir}/*_attempt_*.log"
         copyToNightlies("*_attempt_*.log.xz", "${build_script_safe_name}/jdk${jdk}/${arch}/")
         if (0 == statusCode) {
           dir("${build_dir}") {
@@ -517,7 +517,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
         } else {
           toCopy = ""
         }
-        sh "xz -f *_attempt_*.log"
+        sh "xz -f ${build_dir}/*_attempt_*.log"
         copyToNightlies("*_attempt_*.log.xz,console.log.xz,TESTS-TestSuites.xml.xz,build/test/logs/**,${toCopy}", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
         cleanAgent(test_script)
         if (0 != statusCode) { 
