@@ -490,7 +490,8 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     echo "test below branchName"
     echo "Starting `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     cleanWs()
-    checkout scm
+    //checkout scm
+    sh 'sudo mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
     echo "test scm success"
     //def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
     sh "mkdir -p build"
