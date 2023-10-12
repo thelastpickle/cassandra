@@ -348,10 +348,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //cleanWs()
     echo "build_script: ${build_script}"
     //checkout scm
-    //sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
-    //sh 'ln -s  /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
     sh 'sudo mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
-    //sh 'su - jenkins'
     sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     sh "echo tool success"
@@ -359,7 +356,6 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
       def build_script_safe_name = "${build_script}".replace(".build/docker/", "").replace(".sh", "_").replace(" ", "_")
-      echo "build_script_safe_name: ${build_script_safe_name}"
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${build_script_safe_name}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
       //sh 'sleep 600'
@@ -378,21 +374,11 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         statusCode = sh returnStatus:true, script:"cassandra_dir=/home/jenkins/agent/workspace/k8s-e2e build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${logfile}"
         sh "echo ${build_script}"
         echo "${build_dir}"
-        //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
-        //sh "cp -r ${build_dir} ${tmp_dir}"
-        //sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
 
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
-          //dir("${build_dir}") {
           dir("${build_dir}") {            
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**"
-            //stash name: "${arch}_${jdk}", includes: "*.jar"
-            //def container_name = "stash_${jdk}"
-            //sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
-            //sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build && apk add git'"
-            //sh "docker exec -u build ${container_name} sh -c \"cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_${jdk}\""
-            //sh "docker stop ${container_name}"
           }
         }
       } finally {
