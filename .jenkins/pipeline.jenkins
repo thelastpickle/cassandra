@@ -60,7 +60,7 @@ pipeline {
                 - sh
                 - -c
                 - chown 1000:1000 /var/run/docker.sock
-                - mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/
+                - mount --bind /tmp/k8s-e2e /home/jenkins/agent/workspace/k8s-e2e
               volumeMounts:
                 - name: docker-socket
                   mountPath: /var/run/docker.sock
