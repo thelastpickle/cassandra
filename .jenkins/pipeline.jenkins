@@ -60,7 +60,6 @@ pipeline {
                 - sh
                 - -c
                 - chown 1000:1000 /var/run/docker.sock
-                - mount --bind /tmp/k8s-e2e /home/jenkins/agent/workspace/k8s-e2e
               volumeMounts:
                 - name: docker-socket
                   mountPath: /var/run/docker.sock
@@ -351,7 +350,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //checkout scm
     //sh "find /tmp/k8s-e2e/ -mindepth 1 -maxdepth 1 -type d ! -name '.' ! -name '..' -exec ln -s {} /home/jenkins/agent/workspace/k8s-e2e \\;"
     //sh 'ln -s  /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
-    //sh 'mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
+    sh 'mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
     //sh 'su - jenkins'
     sh 'ls /home/jenkins/agent/workspace/k8s-e2e'
     sh "echo scm success"
