@@ -7,6 +7,9 @@ RUN apt-get install xz-utils -y
 RUN apt-get install bc -y
 RUN apt-get update
 RUN apt-get install coreutils -y
+RUN apt-get update && apt-get install -y sudo
+
+
 
 RUN apt-get update && \
     apt-get install -y openjdk-11-jdk openjdk-17-jdk && \
@@ -25,6 +28,8 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y docker-ce docker-ce-cli containerd.io
 
+
+RUN echo "jenkins ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/jenkins
 #VOLUME /var/run/docker.sock
 RUN usermod -aG docker jenkins
 #RUN chown -R 1000:1000 /var/run/docker.sock
