@@ -352,7 +352,6 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //sh 'ln -s  /tmp/k8s-e2e/. /home/jenkins/agent/workspace/k8s-e2e'
     sh 'mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
     //sh 'su - jenkins'
-    sh 'ls /home/jenkins/agent/workspace/k8s-e2e'
     sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     sh "echo tool success"

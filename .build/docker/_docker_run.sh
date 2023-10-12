@@ -136,11 +136,11 @@ echo "Running container ${container_name} ${container_id}"
 #sleep 600
 #docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 #docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(stat -f %u ${cassandra_dir}) $(stat -f %g ${cassandra_dir})"
-docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u) $(id -g)"
+docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u jenkins) $(id -g jenkins)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
 RETURN=$?
 current_build_dir=$(basename "${build_dir}")
-docker cp ${container_name}:"/home/build/cassandra/build/${current_build_dir}" /home/jenkins/agent/workspace/k8s-e2e/build
+#docker cp ${container_name}:"/home/build/cassandra/build/${current_build_dir}" /home/jenkins/agent/workspace/k8s-e2e/build
 
 #docker stop ${container_name} >/dev/null
 popd >/dev/null
