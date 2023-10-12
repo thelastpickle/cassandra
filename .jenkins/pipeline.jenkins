@@ -82,7 +82,7 @@ pipeline {
             tty: true
             securityContext:
               //runAsUser: 0
-              privileged: true
+              //privileged: true
           nodeSelector:
             gke-node: first
           volumes:
