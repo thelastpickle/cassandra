@@ -72,8 +72,14 @@ if ! kubectl get namespace ${KUBE_NS} >/dev/null 2>/dev/null ; then
 fi
 
 if [ -n "$INCLUDE_TEST_STAGE" ]; then
-   
+    # The variable is not empty, so it has a value
+    echo "INCLUDE_TEST_STAGE is not empty. Its value is: $INCLUDE_TEST_STAGE"
+else
+    # The variable is empty, so assign a default value
+    INCLUDE_TEST_STAGE="lint,stress,fqltool"
+    echo "INCLUDE_TEST_STAGE is empty. Assigning default value: $INCLUDE_TEST_STAGE"
 fi
+
 
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
