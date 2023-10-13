@@ -28,7 +28,6 @@
 
 # variables, with defaults
 [ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
-#[ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0"))"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
 [ -d "${build_dir}" ] || { mkdir -p "${build_dir}" ; }
 echo "$CASSANDRA_DIR from _docker_run"
@@ -122,10 +121,6 @@ docker_command="export ANT_OPTS=\"-Dbuild.dir=\${DIST_DIR} ${CASSANDRA_DOCKER_AN
 
 # run without the default seccomp profile
 # re-use the host's maven repository
-# container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unconfined --rm \
-#     -v "${cassandra_dir}":/home/build/cassandra -v ~/.m2/repository/:/home/build/.m2/repository/ -v "${build_dir}":/dist \
-#     ${docker_volume_opt} \
-#     ${image_name} sleep 1h)
 container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unconfined --rm \
     -v "${cassandra_dir}":/home/build/cassandra -v ~/.m2/repository/:/home/build/.m2/repository/ -v "${build_dir}":/dist \
     ${docker_volume_opt} \
@@ -133,16 +128,13 @@ container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unc
 
 
 echo "Running container ${container_name} ${container_id}"
-#sleep 600
 #docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh build $(id -u) $(id -g)"
-#docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(stat -f %u ${cassandra_dir}) $(stat -f %g ${cassandra_dir})"
+
 docker exec --user root ${container_name} bash -c "/home/build/cassandra/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
 RETURN=$?
-current_build_dir=$(basename "${build_dir}")
-#docker cp ${container_name}:"/home/build/cassandra/build/${current_build_dir}" /home/jenkins/agent/workspace/k8s-e2e/build
 
-#docker stop ${container_name} >/dev/null
+docker stop ${container_name} >/dev/null
 popd >/dev/null
 [ $RETURN -eq 0 ] && echo "Build directory found at ${build_dir}"
 exit $RETURN
