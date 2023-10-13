@@ -90,7 +90,7 @@ pipeline {
               path: /var/run/docker.sock
           - name: cassandra-dir
             hostPath:
-              path: /home/michael_sembwever/cassandra/cassandra
+              path: /home/jenkins/agent/workspace/k8s-e2e
         '''
     }
   }
