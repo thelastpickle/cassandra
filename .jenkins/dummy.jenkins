@@ -1,28 +1,130 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml '''
-apiVersion: v1
-kind: Pod
-metadata:
-  name: andreas-test
-spec:
-  containers:
-  - name: jnlp
-    image: jenkins/inbound-agent:4.3-4-jdk11
-    command: ["sleep", "10000"]
-'''
-
-        }
+  agent {
+    kubernetes {
+      label 'cassandra'
+      defaultContainer 'jnlp'
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            jenkins: label
+        spec:
+          initContainers:
+            - name: init-docker-socket
+              image: alpine:latest
+              imagePullPolicy: Always
+              command:
+                - sh
+                - -c
+                - chown 1000:1000 /var/run/docker.sock
+              volumeMounts:
+                - name: docker-socket
+                  mountPath: /var/run/docker.sock
+              securityContext:
+                runAsUser: 0
+          containers:
+          - name: jnlp
+            image: richamishra006/apache-k8s-agent:32
+            command:
+              - /bin/sh 
+              - -c
+              - /usr/local/bin/jenkins-agent
+            volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock   
+            tty: true
+            securityContext:
+              privileged: true
+          nodeSelector:
+            gke-node: first
+          volumes:
+          - name: docker-socket
+            hostPath:
+              path: /var/run/docker.sock
+        '''
     }
-
-    stages {
-        stage('Say Hello World') {
-            steps {
-                container("jnlp") {
-                    echo "Hello World!"
+  }
+}
+parameters {
+  string(
+    //choices: ['Init', 'lint', 'debian', 'redhat', 'centos7', 'stress', 'fqltool', 'Summary'],
+    description: 'Select the stages to run',
+    name: 'STAGES_TO_RUN'
+  )
+}
+stages {
+    stage('Select Stage') {
+      steps {
+        script {
+           def stagesToRun = params.STAGES_TO_RUN.split(',')
+          stagesToRun.each { stageName ->
+                        if (stageName == 'Init') {
+                            buildInitStage()
+                        } else if (stageName == 'lint') {
+                            buildLintStage()
+                        } else if (stageName == 'debian') {
+                            buildDebianStage()
+                        } else if (stageName == 'artifacts') {
+                            buildArtifactsStage()
+                        } else if (stageName == 'redhat') {
+                            buildRedhatStage()
+                        } else if (stageName == 'centos7') {
+                            buildCentosStage()
+                        } else if (stageName == 'stress') {
+                            buildstressStage()
+                        } else if (stageName == 'fqltool') {
+                            buildfqltoolStage()
+                       }  
+                    }
                 }
             }
         }
     }
+
+def buildInitStage() {
+  stage('Init') {
+        script { currentBuild.result = 'SUCCESS' }
+        sh 'echo "stage init"'
+  }
+}
+def buildArtifactsStage() {
+  stage('artifacts') {
+    buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+  }
+}
+
+def buildLintStage() {
+  stage('lint') {
+      sh 'echo "stage lint"'
+
+  }
+}
+
+def buildDebianStage() {
+  stage('debian') {
+      sh 'echo "stage debian"'
+
+  }
+}
+def buildRedhatStage() {
+  stage('redhat') {
+      sh 'echo "stage redhat"'
+
+  }
+}
+def buildCentosStage() {
+  stage('centos7') {
+      sh 'echo "stage centos7"'
+  }
+}
+def buildstressStage() {
+  stage('stress') {
+      sh 'echo "stage stress"'
+  }
+}
+def buildfqltoolStage() {
+  stage('fqltool') {
+      sh 'echo "stage fqltool"'
+  }
 }

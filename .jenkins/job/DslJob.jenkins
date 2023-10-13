@@ -1,16 +1,16 @@
 #!/usr/bin/env groovy
 
-job('jenkins-operator-job-dsl-seed') {
-    description('Seed Job that generates and triggers the GeneratedPipelineJob')
-    configure { project ->
-        project / 'publishers' << 'hudson.tasks.BuildTrigger' {
-            childProjects('k8s-e2e')
-            threshold {
-                name('SUCCESS')
-            }
-        }
-    }
-}
+// job('jenkins-operator-job-dsl-seed') {
+//     description('Seed Job that generates and triggers the GeneratedPipelineJob')
+//     configure { project ->
+//         project / 'publishers' << 'hudson.tasks.BuildTrigger' {
+//             childProjects('k8s-e2e')
+//             threshold {
+//                 name('SUCCESS')
+//             }
+//         }
+//     }
+// }
 
 
 

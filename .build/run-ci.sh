@@ -41,6 +41,11 @@ while [[ $# -gt 0 ]]; do
             shift            # This shifts the arguments to the left, discarding the current argument and moving to the next one.
             shift            # This is an additional shift to move to the argument after the option value.
             ;;
+        --include-test-stage)
+            INCLUDE_TEST_STAGE="$2"
+            shift
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
@@ -66,6 +71,10 @@ if ! kubectl get namespace ${KUBE_NS} >/dev/null 2>/dev/null ; then
     kubectl create namespace ${KUBE_NS}
 fi
 
+if [ -n "$INCLUDE_TEST_STAGE" ]; then
+   
+fi
+
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
 helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/chart
@@ -82,7 +91,7 @@ kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployme
 TOKEN=$(kubectl  get secret jenkins-operator-credentials-example -o jsonpath="{.data.token}" | base64 --decode)
 
 # Trigger a new build and capture the response headers
-response_headers=$(curl -i -X POST http://localhost:8080/job/k8s-e2e/build -u jenkins-operator:$TOKEN 2>&1)
+response_headers=$(curl -i -X POST http://localhost:8080/job/k8s-e2e/buildWithParameters -u jenkins-operator:$TOKEN --data-urlencode "TEST_STAGES_TO_RUN=$INCLUDE_TEST_STAGE" 2>&1)
 
 
 queue_url=$(echo "$response_headers" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')
