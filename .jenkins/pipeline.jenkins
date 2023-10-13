@@ -94,6 +94,14 @@ pipeline {
         '''
     }
   }
+  
+  parameters {
+    string(
+      //choices: 'lint\ndebian\ntedhat\ncentos7\stress\nfqltool',
+      description: 'Select the stages to run',
+      name: 'TEST_STAGES_TO_RUN'
+  )
+  }
 
   options {
     githubProjectProperty('https://github.com/apache/cassandra')
@@ -133,44 +141,46 @@ pipeline {
         }
       }
     stage('Test') {
-     parallel {
+     steps {
+      script{
+        def selectedStages = params.TEST_STAGES.split(',')
+        def parallelStages = [:]
+        for (def stageName in selectedStages) {
+          parallelStages[stageName] = {
         stage('lint') {
-          steps {
-            //buildJob(".build/docker/check-code.sh", "")
-            sh 'echo "stage lint"'
+          steps{
+            script{
+              if (stageName == 'lint') {
+                sh 'echo "Running lint stage"'
+                // Add steps specific to the lint stage
+                //buildJob(".build/docker/check-code.sh", "")
+            } else if (stageName == 'debian') {
+                sh 'echo "Running debian stage"'
+                // Add steps specific to the debian stage
+                //buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+            } else if (stageName == 'redhat') {
+                sh 'echo "Running redhat stage"'
+                // Add steps specific to the redhat stage
+                //buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+            } else if (stageName == 'centos7') {
+                sh 'echo "Running centos7 stage"'
+                // Add steps specific to the centos7 stage
+                //buildJob(".build/docker/build-redhat.sh noboolean", "*.rpm")
+            } else if (stageName == 'stress') {
+                sh 'echo "Running stress stage"'
+                // Add steps specific to the stress stage
+                testJob(".build/docker/run-tests.sh", "stress-test", 1)
+            } else if (stageName == 'fqltool') {
+                sh 'echo "Running stress fqltool"'
+                // Add steps specific to the stress stage
+                testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+            }
+            }
           }
         }
-        stage('debian') {
-          steps {
-            //buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
-            sh 'echo "stage debian"'
           }
         }
-        stage('redhat') {
-          steps {
-            //buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
-            sh 'echo "stage redhat"'
-          }
-        }
-        stage('centos7') {
-          steps {
-            //buildJob(".build/docker/build-redhat.sh noboolean", "*.rpm")
-            sh 'echo "stage centos7"'
-          }
-        }
-       stage('stress') {
-         steps {
-           //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
-           testJob(".build/docker/run-tests.sh", "stress-test", 1)
-           sh 'echo "stage stress"'
-         }
-       }
-       stage('fqltool') {
-         steps {
-           testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-           sh 'echo "stage fqltool"'
-         }
-       }
+        parallel(parallelStages)
       // XXX – commented out for infracloud/cassandra-5.0 branch
       //  stage('units') {
       //    steps {
@@ -242,16 +252,14 @@ pipeline {
       //      testJob(".build/docker/run-tests.sh", "dtest-upgrade", 64)
       //    }
       //  }
+          }
+        }
      }
-    }
+
     stage('Summary') {
       steps {
         sh 'echo "stage summary"'
-        dir("build") {
-          unstash name: "cassandra_11_stress-test"
-          //unstash name: "cassandra_11_fqltools"
-        }
-       //container('jnlp') {
+
        // FIXME is this needed if each job is submitting its own results to the overall pipeline ??
        //junit testResults: '**/build/test/**/TEST*.xml,**/cqlshlib.xml,**/nosetests.xml', testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
        
@@ -263,17 +271,9 @@ pipeline {
         //collectConsoleLog() // FIXME should this be in a final instead ? (we always want the console log archived)
         //copyToNightlies('console.log.xz,TESTS-TestSuites.xml.xz')
         
-        
-        
-      //}
       }
     }
   }
-  //post {
-  //        always {
-  //          archiveArtifacts artifacts: 'build/test/output'
-  //        }
-  //      }
 }
 
 ///////////////////////////
