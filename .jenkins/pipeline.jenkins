@@ -134,7 +134,7 @@ pipeline {
             //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
             //script { env.javaVersionDefault = javaVersionDefault() }
             //script { env.javaVersionsSupported = javaVersionsSupported() }
-            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            //buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           }
           }
@@ -148,7 +148,7 @@ pipeline {
         for (def stageName in selectedStages) {
           parallelStages[stageName] = {
         stage('lint') {
-          steps{
+          //steps{
             script{
               if (stageName == 'lint') {
                 sh 'echo "Running lint stage"'
@@ -176,7 +176,7 @@ pipeline {
                 testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
             }
             }
-          }
+          //}
         }
           }
         }
