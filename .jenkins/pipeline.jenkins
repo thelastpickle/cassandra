@@ -140,11 +140,17 @@ pipeline {
      steps {
       script{
         def selectedStages = params.TEST_STAGES_TO_RUN.split(',')
+
+        echo "TEST_STAGES_TO_RUN parameter: ${params.TEST_STAGES_TO_RUN}"
+        echo "Selected Stages: ${selectedStages}"
+
+
         def parallelStages = [:]
         for (def stageName in selectedStages) {
           parallelStages[stageName] = {
         stage(stageName) {
             script{
+              echo "Processing stage: $stageName"
               if (stageName == 'lint') {
                 sh 'echo "Running lint stage"'
                 // Add steps specific to the lint stage
@@ -175,11 +181,6 @@ pipeline {
           }
         }
         echo "parallelStages: ${parallelStages}"
-        parallelStages.each { stageName, stageContent ->
-                echo "Stage: $stageName"
-                echo "Content: ${stageContent}"
-            }
-            
         parallel(parallelStages)
       // XXX – commented out for infracloud/cassandra-5.0 branch
       //  stage('units') {
