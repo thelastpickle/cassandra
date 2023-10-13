@@ -143,7 +143,7 @@ pipeline {
     stage('Test') {
      steps {
       script{
-        def selectedStages = params.TEST_STAGES.split(',')
+        def selectedStages = params.TEST_STAGES_TO_RUN.split(',')
         def parallelStages = [:]
         for (def stageName in selectedStages) {
           parallelStages[stageName] = {
