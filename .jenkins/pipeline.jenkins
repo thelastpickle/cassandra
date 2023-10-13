@@ -130,7 +130,7 @@ pipeline {
         stage('artifacts') {
           steps {          
             sh 'echo "starting artifacts stage"'
-            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            //buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           }
           }
@@ -143,7 +143,7 @@ pipeline {
         def parallelStages = [:]
         for (def stageName in selectedStages) {
           parallelStages[stageName] = {
-        stage('lint') {
+        stage(stageName) {
             script{
               if (stageName == 'lint') {
                 sh 'echo "Running lint stage"'
