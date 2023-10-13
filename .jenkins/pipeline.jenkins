@@ -140,51 +140,46 @@ pipeline {
      steps {
       script{
         def selectedStages = params.TEST_STAGES_TO_RUN.split(',')
-
         echo "TEST_STAGES_TO_RUN parameter: ${params.TEST_STAGES_TO_RUN}"
         echo "Selected Stages: ${selectedStages}"
-        
         def parallelStages = selectedStages.collectEntries { stageName ->
-            ["$stageName": {
-                stage(stageName) {
-                    script {
-                        echo "Processing stage: $stageName"
-                        if (stageName == 'lint') {
-                            sh 'echo "Running lint stage"'
-                            // Add steps specific to the lint stage
-                        } else if (stageName == 'debian') {
-                            sh 'echo "Running debian stage"'
-                            // Add steps specific to the debian stage
-                        } else if (stageName == 'redhat') {
-                            sh 'echo "Running redhat stage"'
-                            // Add steps specific to the redhat stage
-                        } else if (stageName == 'centos7') {
-                            sh 'echo "Running centos7 stage"'
-                            // Add steps specific to the centos7 stage
-                        } else if (stageName == 'stress') {
-                            sh 'echo "Running stress stage"'
-                            // Add steps specific to the stress stage
-                        } else if (stageName == 'fqltool') {
-                            sh 'echo "Running fqltool stage"'
-                            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-                            // Add steps specific to the stress stage
-                        }
-                    }
-                }
-            }]
+        ["$stageName": {
+        stage(stageName) {
+            script{
+              echo "Processing stage: $stageName"
+              if (stageName == 'lint') {
+                sh 'echo "Running lint stage"'
+                // Add steps specific to the lint stage
+                //buildJob(".build/docker/check-code.sh", "")
+            } else if (stageName == 'debian') {
+                sh 'echo "Running debian stage"'
+                // Add steps specific to the debian stage
+                //buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+            } else if (stageName == 'redhat') {
+                sh 'echo "Running redhat stage"'
+                // Add steps specific to the redhat stage
+                //buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+            } else if (stageName == 'centos7') {
+                sh 'echo "Running centos7 stage"'
+                // Add steps specific to the centos7 stage
+                //buildJob(".build/docker/build-redhat.sh noboolean", "*.rpm")
+            } else if (stageName == 'stress') {
+                sh 'echo "Running stress stage"'
+                // Add steps specific to the stress stage
+                testJob(".build/docker/run-tests.sh", "stress-test", 1)
+            } else if (stageName == 'fqltool') {
+                sh 'echo "Running fqltool stage"'
+                // Add steps specific to the stress stage
+                testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+            }
+            }
         }
-        
+        }
+        ]
+
+        }
+        echo "parallelStages: ${parallelStages}"
         parallel(parallelStages)
-
-        
-
-
-
-
-
-
-
-        
       // XXX – commented out for infracloud/cassandra-5.0 branch
       //  stage('units') {
       //    steps {
