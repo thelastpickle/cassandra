@@ -339,7 +339,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     //cleanWs()
     echo "build_script: ${build_script}"
     //checkout scm
-    sh 'sudo mount --bind /tmp/k8s-e2e/ /home/michael_sembwever/cassandra/cassandra'
+    sh 'sudo mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     def statusCode = 0, attempt = 1
     retry(2) {
@@ -473,7 +473,7 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
     echo "Starting `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     cleanWs()
     //checkout scm
-    sh 'sudo mount --bind /tmp/k8s-e2e/ /home/michael_sembwever/cassandra/cassandra'
+    sh 'sudo mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
     sh "mkdir -p build"
     def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
     def current_build_dir = sh(returnStdout: true, script: "basename \"${build_dir}\"").trim()
