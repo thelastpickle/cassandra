@@ -81,6 +81,15 @@ else
 fi
 
 
+TARGETS=".jenkins/job/DslJob.jenkins"
+REPO_BRANCH="infracloud/cassandra-5.0"
+REPO_URL="https://github.com/infracloudio/cassandra.git"
+
+
+sed -i -e "/targets:/s|:.*$|: \"$TARGETS\"|" \
+    -e "/repositoryBranch:/s|:.*$|: \"$REPO_BRANCH\"|" \
+    -e "/repositoryUrl:/s|:.*$|: \"$REPO_URL\"|" jenkins-deployment.yaml
+
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
 helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/chart
