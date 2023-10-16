@@ -14,7 +14,7 @@
 
 
 
-pipelineJob('k8s-jenkins') {
+pipelineJob('k8s-e2e') {
     displayName('Kubernetes Plugin E2E Test')
 
     definition {
