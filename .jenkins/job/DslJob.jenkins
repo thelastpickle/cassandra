@@ -16,6 +16,9 @@
 
 pipelineJob('k8s-e2e') {
     displayName('Kubernetes Plugin E2E Test')
+    parameters {
+         stringParam('TEST_STAGES_TO_RUN', "", 'Select the stages to run')
+    }
 
     definition {
         cpsScm {
