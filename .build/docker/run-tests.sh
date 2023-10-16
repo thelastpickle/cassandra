@@ -201,17 +201,15 @@ docker_command="source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_versi
 docker_id=$(docker run --name ${container_name} ${docker_flags} ${docker_mounts} ${docker_volume_opt} ${image_name} sleep 4h)
 
 echo "Running container ${container_name} ${docker_id}"
-#sleep 600
 
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh cassandra $(id -u) $(id -g)" | tee -a ${logfile}
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
-#docker cp "${build_dir}/." ${container_name}:/home/cassandra/cassandra/build
 # capture logs and pid for container
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
-#docker cp ${container_name}:/home/cassandra/cassandra/build/. "/home/jenkins/agent/workspace/k8s-e2e/build/${current_build_dir}"
-#docker exec --user cassandra ${container_name} bash -c "mkdir -p /home/cassandra/cassandra/result/1/${target} && cp -r /home/cassandra/cassandra/build/test/output /home/cassandra/cassandra/result/1/${target}"
+
+
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
     docker inspect ${docker_id}
@@ -224,7 +222,7 @@ if [ "$status" -ne 0 ] ; then
     echo "–––"
     echo "Failure."
 fi
-# docker stop in background, ignore errors
+docker stop in background, ignore errors
 #( nohup docker stop ${docker_id} >/dev/null 2>/dev/null & )
 
 xz -f ${logfile} 2>/dev/null

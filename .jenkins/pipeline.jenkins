@@ -149,27 +149,21 @@ pipeline {
               echo "Processing stage: $stageName"
               if (stageName == 'lint') {
                 sh 'echo "Running lint stage"'
-                // Add steps specific to the lint stage
                 //buildJob(".build/docker/check-code.sh", "")
             } else if (stageName == 'debian') {
                 sh 'echo "Running debian stage"'
-                // Add steps specific to the debian stage
                 //buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
             } else if (stageName == 'redhat') {
                 sh 'echo "Running redhat stage"'
-                // Add steps specific to the redhat stage
                 //buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
             } else if (stageName == 'centos7') {
                 sh 'echo "Running centos7 stage"'
-                // Add steps specific to the centos7 stage
                 //buildJob(".build/docker/build-redhat.sh noboolean", "*.rpm")
             } else if (stageName == 'stress') {
                 sh 'echo "Running stress stage"'
-                // Add steps specific to the stress stage
                 testJob(".build/docker/run-tests.sh", "stress-test", 1)
             } else if (stageName == 'fqltool') {
                 sh 'echo "Running fqltool stage"'
-                // Add steps specific to the stress stage
                 testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
             }
             }
@@ -284,7 +278,6 @@ pipeline {
  * Return the default JDK defined by build.xml
  **/
 def javaVersionDefault() {
-  //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
   sh (returnStdout: true, script: 'grep \'property\\s*name=\"java.default\"\' build.xml | sed -ne \'s/.*value=\"\\([^\"]*\\)\".*/\\1/p\'').trim()
 }
 
@@ -292,7 +285,6 @@ def javaVersionDefault() {
  * Return the supported JDKs defined by build.xml
  **/
 def javaVersionsSupported() {
-  //sh 'cp -r /tmp/* /home/jenkins/agent/workspace/k8s-e2e'
   sh (returnStdout: true, script: 'grep \'property\\s*name=\"java.supported\"\' build.xml | sed -ne \'s/.*value=\"\\([^\"]*\\)\".*/\\1/p\'').trim()
 }
 
@@ -348,19 +340,14 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
     echo "build_script: ${build_script}"
     //checkout scm
     sh 'sudo mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
-    sh "echo scm success"
     tool type: 'jdk', name: "jdk_${jdk}_latest"
-    sh "echo tool success"
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
       def build_script_safe_name = "${build_script}".replace(".build/docker/", "").replace(".sh", "_").replace(" ", "_")
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${build_script_safe_name}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
-      //sh 'sleep 600'
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-      def tmp_dir = generatePath(build_dir.trim())
-      echo "tmp_dir ${tmp_dir}"
       try {
         sh 'echo ${build_script}'
         if (".build/docker/build-artifacts.sh" != build_script && !build_script.contains(".build/docker/_docker_run.sh")) {
@@ -371,8 +358,6 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         }
         echo "Executing `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
-        sh "echo ${build_script}"
-        echo "${build_dir}"
 
         if (".build/docker/build-artifacts.sh" == build_script || build_script.contains(".build/docker/_docker_run.sh")) {
           dir("${build_dir}") {            
@@ -483,16 +468,12 @@ parallel(tests_per_arch)
  **/
 def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) {
   echo "Spawning `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
-  echo "test"
   node(arch) {
     branchName: "${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
-    echo "test below branchName"
     echo "Starting `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     cleanWs()
     //checkout scm
     sh 'sudo mount --bind /tmp/k8s-e2e/ /home/jenkins/agent/workspace/k8s-e2e/'
-    echo "test scm success"
-    //def build_dir = '/home/jenkins/agent/workspace/k8s-e2e/build'
     sh "mkdir -p build"
     def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
     def current_build_dir = sh(returnStdout: true, script: "basename \"${build_dir}\"").trim()
@@ -528,29 +509,16 @@ def _testAxis(test_script, test_type, toCopy, arch, jdk, python, cython, split) 
       }
     }
 
-     dir("${build_dir}") {            
+     //dir("${build_dir}") {            
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}_${test_type}", includes: "test/output/**"
-            //stash name: "${arch}_${jdk}", includes: "*.jar"
-            //def container_name = "stash_${jdk}"
-            //sh "docker run --name ${container_name} -d -v /home/jenkins/agent/workspace/k8s-e2e:/home/jenkins/agent/workspace/k8s-e2e alpine:latest tail -f /dev/null"
-            //sh "docker exec ${container_name} sh -c 'adduser -D --no-create-home --uid 1000 --gecos build build && apk add git'"
-            //sh "docker exec -u build ${container_name} sh -c \"cd /home/jenkins/agent/workspace/k8s-e2e && git add build && git stash save jdk_${jdk}\""
-            //sh "docker stop ${container_name}"
-    }
+            //stash name: "${arch}_${jdk}_${test_type}", includes: "test/output/**"
+    //}
     if (currentBuild.result != 'SUCCESS') unstable("${build_name} failures")
     if (currentBuild.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
     if (currentBuild.result == 'FAILURE') currentBuild.result='FAILURE'
   }
 }
-def generatePath(build_dir) {
-    def tmp_dir = '/tmp'
-    def parts = build_dir.split('/')
-    def hash = parts.last()
-    echo "parts[6]: ${parts[6]}"
-    echo "hash: ${hash}"
-    return "${tmp_dir}/${parts[6]}/${hash}"
-}
+
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
   if (isCanonical()) {
