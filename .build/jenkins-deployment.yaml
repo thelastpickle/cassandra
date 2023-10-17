@@ -15,7 +15,7 @@ data:
 apiVersion: jenkins.io/v1alpha2
 kind: Jenkins
 metadata:
-  name: example
+  name: jenkins
 spec:
   configurationAsCode:
     configurations:
