@@ -96,12 +96,27 @@ helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/j
 
 # Install Jenkins Operator using Helm
 echo "Installing Jenkins Operator..."
-#helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
+helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
 
 echo "Jenkins Operator installed successfully!" # condition to check if above command was success
 
 # deploy jenkins Instance TODO jenkins file parameter
 kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
+
+while ! ( kubectl --namespace ${KUBE_NS} get pods | grep seed-job-agent | grep " 1/1 " | grep -q " Running" ) ; do
+        echo "Jenkins installing. Waiting..."
+        sleep 5  # Adjust the polling interval as needed
+done
+
+kubectl rollout status deployment/jenkins-operator -n ${KUBE_NS}
+
+# Port-forward the Jenkins service to access it locally
+jenkins_pod=$(kubectl get pods -n ${KUBE_NS} -l jenkins-cr=example -o jsonpath='{.items[0].metadata.name}')
+
+nohup kubectl port-forward svc/jenkins-operator-http-example 8080:8080 &
+echo "port-forwarding running in background"
+# echo "To forward the Jenkins service to another terminal, open a new terminal window and run the following command:"
+# echo "kubectl port-forward -n ${KUBE_NS} $jenkins_pod 8080:8080"
 
 TOKEN=$(kubectl  get secret jenkins-operator-credentials-example -o jsonpath="{.data.token}" | base64 --decode)
 
@@ -152,6 +167,20 @@ done
 LOCAL_DIR=.
 mkdir -p $LOCAL_DIR/$build_number
 kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/log $LOCAL_DIR/$build_number/log
-kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/junitResult.xml $LOCAL_DIR/$build_number/junitResult.xml
+zip -r $LOCAL_DIR/$build_number/files.zip $LOCAL_DIR/$build_number/log
+rm $LOCAL_DIR/$build_number/log
 
+if kubectl exec -n $KUBE_NS $POD_NAME -- test -e $BUILD_DIR/$build_number/junitResult.xml; then
+    # Copy and compress the junitResult.xml file
+    kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/junitResult.xml $LOCAL_DIR/$build_number/junitResult.xml
+
+    # Create a zip archive of the copied junitResult.xml file
+    zip -j $LOCAL_DIR/$build_number/junitResult.zip $LOCAL_DIR/$build_number/junitResult.xml
+
+    # Clean up: remove the individual junitResult.xml file
+    rm $LOCAL_DIR/$build_number/junitResult.xml
+else
+    # Display a message indicating that junitResult.xml is not generated
+    echo "junitResult.xml is not generated."
+fi
 

@@ -106,7 +106,7 @@ spec:
       runAsUser: 1000
   seedJobs:
   - id: jenkins-operator
-    targets: ".jenkins/job/DslJob.jenkins" #"cicd/jobs/k8s.jenkins" 
+    targets: ".jenkins/job/DslJob.jenkins"
     description: "Casandra Repo"
-    repositoryBranch: infracloud/cassandra-5.0 #master #infracloud/cassandra-5.0 #
-    repositoryUrl: https://github.com/infracloudio/cassandra.git
+    repositoryBranch: "infracloud/cassandra-5.0"
+    repositoryUrl: "https://github.com/infracloudio/cassandra.git"
