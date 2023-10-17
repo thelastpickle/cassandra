@@ -111,14 +111,14 @@ done
 kubectl rollout status deployment/jenkins-operator -n ${KUBE_NS}
 
 # Port-forward the Jenkins service to access it locally
-jenkins_pod=$(kubectl get pods -n ${KUBE_NS} -l jenkins-cr=example -o jsonpath='{.items[0].metadata.name}')
+jenkins_pod=$(kubectl get pods -n ${KUBE_NS} -l jenkins-cr=jenkins -o jsonpath='{.items[0].metadata.name}')
 
-nohup kubectl port-forward svc/jenkins-operator-http-example 8080:8080 &
+nohup kubectl port-forward svc/jenkins-operator-http-jenkins 8080:8080 &
 echo "port-forwarding running in background"
 # echo "To forward the Jenkins service to another terminal, open a new terminal window and run the following command:"
 # echo "kubectl port-forward -n ${KUBE_NS} $jenkins_pod 8080:8080"
 
-TOKEN=$(kubectl  get secret jenkins-operator-credentials-example -o jsonpath="{.data.token}" | base64 --decode)
+TOKEN=$(kubectl  get secret jenkins-operator-credentials-jenkins -o jsonpath="{.data.token}" | base64 --decode)
 
 # Trigger a new build and capture the response headers
 response_headers=$(curl -i -X POST http://localhost:8080/job/k8s-e2e/buildWithParameters -u jenkins-operator:$TOKEN --data-urlencode "TEST_STAGES_TO_RUN=$INCLUDE_TEST_STAGE" 2>&1)
@@ -143,7 +143,7 @@ done
 
 echo "build_number $build_number"
 BUILD_DIR=/var/lib/jenkins/jobs/k8s-e2e/builds
-POD_NAME=jenkins-example
+POD_NAME=jenkins-jenkins
 LATEST_BUILD=$(kubectl exec -it $POD_NAME -- /bin/bash -c "ls -t $BUILD_DIR | head -n 1" | tr -d '\r')
 
 CONSOLE_LOG_FILE="$BUILD_DIR/$build_number/log"
