@@ -80,10 +80,7 @@ pipeline {
               mountPath: /tmp/k8s-e2e
             tty: true
             securityContext:
-              //runAsUser: 0
               privileged: true
-          nodeSelector:
-            gke-node: first
           volumes:
           - name: docker-socket
             hostPath:
