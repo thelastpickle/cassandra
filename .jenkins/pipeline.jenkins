@@ -80,7 +80,10 @@ pipeline {
               mountPath: /tmp/k8s-e2e
             tty: true
             securityContext:
+              //runAsUser: 0
               privileged: true
+          nodeSelector:
+            gke-node: first
           volumes:
           - name: docker-socket
             hostPath:
@@ -127,7 +130,7 @@ pipeline {
         stage('artifacts') {
           steps {          
             sh 'echo "starting artifacts stage"'
-            buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             sh 'echo "finishing stage artifacts"'
           }
           }
