@@ -74,7 +74,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --repo-url <url>              Specify the repository URL."
             echo "  --repo-branch <branch>        Specify the repository branch."
             echo "  --targets <target>            Specify the build targets."
-            echo "  --tear-down <value>           Tear down Jenkins Instance, true or false."
+            echo "  --tear-down <value>           Tear down Jenkins Instance and Jenkins Operator, true or false."
             echo "  --help                        Show this help message."
             exit 0 
             ;;
