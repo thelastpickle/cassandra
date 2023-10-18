@@ -231,21 +231,12 @@ while true; do
     sleep 5  # Adjust the sleep interval as needed
 done
 
-LOCAL_DIR=.
-mkdir -p $LOCAL_DIR/$build_number
-kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/log $LOCAL_DIR/$build_number/log
-zip -r $LOCAL_DIR/$build_number/files.zip $LOCAL_DIR/$build_number/log
-rm $LOCAL_DIR/$build_number/log
+RESULTS_DIR="${CASSANDRA_DIR}/build/ci_${build_number}"
+mkdir -p ${RESULTS_DIR}
+kubectl cp -n $KUBE_NS $POD_NAME:${CONSOLE_LOG_FILE} ${RESULTS_DIR}/log
 
 if kubectl exec -n $KUBE_NS $POD_NAME -- test -e $BUILD_DIR/$build_number/junitResult.xml; then
-    # Copy and compress the junitResult.xml file
-    kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/junitResult.xml $LOCAL_DIR/$build_number/junitResult.xml
-
-    # Create a zip archive of the copied junitResult.xml file
-    zip -j $LOCAL_DIR/$build_number/junitResult.zip $LOCAL_DIR/$build_number/junitResult.xml
-
-    # Clean up: remove the individual junitResult.xml file
-    rm $LOCAL_DIR/$build_number/junitResult.xml
+    kubectl cp -n $KUBE_NS $POD_NAME:$BUILD_DIR/$build_number/junitResult.xml ${RESULTS_DIR}/junitResult.xml
 else
     # Display a message indicating that junitResult.xml is not generated
     echo "junitResult.xml is not generated."
