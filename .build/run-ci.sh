@@ -46,6 +46,38 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --repo-url)
+            REPO_URL="$2"
+            shift
+            shift;;
+        --repo-branch)
+            REPO_BRANCH="$2"
+            shift
+            shift
+            ;;
+        --targets)
+            TARGETS="$2"
+            shift
+            shift
+            ;;
+        --tear-down)
+            TEAR_DOWN="$2"
+            shift
+            shift
+            ;;
+        --help)
+            echo "Usage: your_script.sh [options]"
+            echo "Options:"
+            echo "  -c, --kubeconfig <file>       Specify the path to a Kubeconfig file."
+            echo "  -ctx, --kubecontext <context> Specify the Kubernetes context to use."
+            echo "  --include-test-stage <value>  Include test stage/s."
+            echo "  --repo-url <url>              Specify the repository URL."
+            echo "  --repo-branch <branch>        Specify the repository branch."
+            echo "  --targets <target>            Specify the build targets."
+            echo "  --tear-down <value>           Tear down Jenkins Instance, true or false."
+            echo "  --help                        Show this help message."
+            exit 0 
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
@@ -81,14 +113,45 @@ else
 fi
 
 
-TARGETS=".jenkins/job/DslJob.jenkins"
-REPO_BRANCH="infracloud/cassandra-5.0"
-REPO_URL="https://github.com/infracloudio/cassandra.git"
+if [ -n "$TARGETS" ]; then
+    # The variable is not empty, so it has a value
+    echo "TARGETS is not empty. Its value is: $TARGETS"
+else
+    # The variable is empty, so assign a default value
+    TARGETS=".jenkins/job/DslJob.jenkins"
+    echo "TARGETS is empty. Assigning default value: $TARGETS"
+fi
 
+if [ -n "$REPO_URL" ]; then
+    # The variable is not empty, so it has a value
+    echo "REPO_URL is not empty. Its value is: $REPO_URL"
+else
+    # The variable is empty, so assign a default value
+    REPO_URL="https://github.com/infracloudio/cassandra.git"
+    echo "REPO_URL is empty. Assigning default value: $REPO_URL"
+fi
 
-sed -i -e "/targets:/s|:.*$|: \"$TARGETS\"|" \
+if [ -n "$REPO_BRANCH" ]; then
+    # The variable is not empty, so it has a value
+    echo "REPO_BRANCH is not empty. Its value is: $REPO_BRANCH"
+else
+    # The variable is empty, so assign a default value
+    REPO_BRANCH="infracloud/cassandra-5.0"
+    echo "REPO_BRANCH is empty. Assigning default value: $REPO_BRANCH"
+fi
+
+if [ -n "$TEAR_DOWN" ]; then
+    # The variable is not empty, so it has a value
+    echo "TEAR_DOWN is not empty. Its value is: $TEAR_DOWN"
+else
+    # The variable is empty, so assign a default value
+    TEAR_DOWN=false
+    echo "TEAR_DOWN is empty. Assigning default value: $TEAR_DOWN"
+fi
+
+sed -e "/targets:/s|:.*$|: \"$TARGETS\"|" \
     -e "/repositoryBranch:/s|:.*$|: \"$REPO_BRANCH\"|" \
-    -e "/repositoryUrl:/s|:.*$|: \"$REPO_URL\"|" jenkins-deployment.yaml
+    -e "/repositoryUrl:/s|:.*$|: \"$REPO_URL\"|" ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml > ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
 
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
@@ -98,9 +161,13 @@ helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/j
 echo "Installing Jenkins Operator..."
 helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
 
-echo "Jenkins Operator installed successfully!" # condition to check if above command was success
+while ! ( kubectl --namespace ${KUBE_NS} get pods | grep jenkins-operator | grep " 1/1 " | grep -q " Running" ) ; do
+        echo "Jenkins installing. Waiting..."
+        sleep 5  # Adjust the polling interval as needed
+done
 
-# deploy jenkins Instance TODO jenkins file parameter
+echo "Jenkins Operator installed successfully!"
+
 kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
 
 while ! ( kubectl --namespace ${KUBE_NS} get pods | grep seed-job-agent | grep " 1/1 " | grep -q " Running" ) ; do
@@ -182,5 +249,14 @@ if kubectl exec -n $KUBE_NS $POD_NAME -- test -e $BUILD_DIR/$build_number/junitR
 else
     # Display a message indicating that junitResult.xml is not generated
     echo "junitResult.xml is not generated."
+fi
+
+
+# kill the port-forwarding process
+ps -elf | grep port-forward | head -n1 | awk -F " " '{ print $4 }' | xargs kill -9
+
+
+if [ $TEAR_DOWN ]; then
+    kubectl delete --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
 fi
 
