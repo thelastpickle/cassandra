@@ -151,7 +151,7 @@ fi
 
 sed -e "/targets:/s|:.*$|: \"$TARGETS\"|" \
     -e "/repositoryBranch:/s|:.*$|: \"$REPO_BRANCH\"|" \
-    -e "/repositoryUrl:/s|:.*$|: \"$REPO_URL\"|" ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml > ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
+    -e "/repositoryUrl:/s|:.*$|: \"$REPO_URL\"|" ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml > ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml
 
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
@@ -168,7 +168,7 @@ done
 
 echo "Jenkins Operator installed successfully!"
 
-kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
+kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml
 
 while ! ( kubectl --namespace ${KUBE_NS} get pods | grep seed-job-agent | grep " 1/1 " | grep -q " Running" ) ; do
         echo "Jenkins installing. Waiting..."
@@ -248,6 +248,7 @@ ps -elf | grep port-forward | head -n1 | awk -F " " '{ print $4 }' | xargs kill 
 
 
 if [ $TEAR_DOWN ]; then
-    kubectl delete --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.build/jenkins-deployment.yaml
+    kubectl delete --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml
+    helm uninstall --namespace ${KUBE_NS} jenkins-operator
 fi
 
