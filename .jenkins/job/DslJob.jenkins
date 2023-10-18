@@ -1,5 +1,8 @@
 #!/usr/bin/env groovy
 
+// Below section was added to trigger the generated job automatically
+// Since we are triggering the builds using curl (CLI) we don't need it for now
+
 // job('jenkins-operator-job-dsl-seed') {
 //     description('Seed Job that generates and triggers the GeneratedPipelineJob')
 //     configure { project ->
