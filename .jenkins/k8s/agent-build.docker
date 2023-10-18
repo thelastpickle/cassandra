@@ -1,0 +1,44 @@
+# Use Alpine Linux as the base image
+FROM jenkins/inbound-agent:3148.v532a_7e715ee3-4
+
+USER root
+RUN apt-get update
+RUN apt-get install xz-utils -y 
+RUN apt-get install bc -y
+RUN apt-get update
+RUN apt-get install coreutils -y
+RUN apt-get update && apt-get install -y sudo
+
+
+
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk openjdk-17-jdk && \
+    update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java && \
+    update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac && \
+    update-alternatives --install /usr/local/bin/jdk_11 java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 1 && \
+    update-alternatives --install /usr/local/bin/jdk_17 java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
+
+# Install Docker
+RUN apt-get install -y gnupg
+# Install Docker for Debian Bullseye
+RUN apt-get update && \
+    apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y docker-ce docker-ce-cli containerd.io
+
+
+RUN echo "jenkins ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/jenkins
+#VOLUME /var/run/docker.sock
+RUN usermod -aG docker jenkins
+#RUN chown -R 1000:1000 /var/run/docker.sock
+
+USER jenkins
+
+
+
+
+
+
+
