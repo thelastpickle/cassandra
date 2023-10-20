@@ -153,6 +153,9 @@ sed -e "/targets:/s|:.*$|: \"$TARGETS\"|" \
     -e "/repositoryBranch:/s|:.*$|: \"$REPO_BRANCH\"|" \
     -e "/repositoryUrl:/s|:.*$|: \"$REPO_URL\"|" ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml > ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml
 
+# get the job name from the DSL Job file
+JOB_NAME=$(grep -o "pipelineJob('\([^']*\)')" .jenkins/job/DslJob.jenkins | sed "s/pipelineJob('//;s/')//")
+
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
 helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/chart
@@ -188,7 +191,7 @@ echo "port-forwarding running in background"
 TOKEN=$(kubectl  get secret jenkins-operator-credentials-jenkins -o jsonpath="{.data.token}" | base64 --decode)
 
 # Trigger a new build and capture the response headers
-response_headers=$(curl -i -X POST http://localhost:8080/job/k8s-e2e/buildWithParameters -u jenkins-operator:$TOKEN --data-urlencode "TEST_STAGES_TO_RUN=$INCLUDE_TEST_STAGE" 2>&1)
+response_headers=$(curl -i -X POST http://localhost:8080/job/$JOB_NAME/buildWithParameters -u jenkins-operator:$TOKEN --data-urlencode "TEST_STAGES_TO_RUN=$INCLUDE_TEST_STAGE" 2>&1)
 
 
 queue_url=$(echo "$response_headers" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')
@@ -209,7 +212,7 @@ while [ -z "$build_number" ] || [ "$build_number" == "null" ]; do
 done
 
 echo "build_number $build_number"
-BUILD_DIR=/var/lib/jenkins/jobs/k8s-e2e/builds
+BUILD_DIR=/var/lib/jenkins/jobs/$JOB_NAME/builds
 POD_NAME=jenkins-jenkins
 LATEST_BUILD=$(kubectl exec -it $POD_NAME -- /bin/bash -c "ls -t $BUILD_DIR | head -n 1" | tr -d '\r')
 
@@ -251,4 +254,3 @@ if [ $TEAR_DOWN ]; then
     kubectl delete --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml
     helm uninstall --namespace ${KUBE_NS} jenkins-operator
 fi
-
