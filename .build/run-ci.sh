@@ -165,7 +165,7 @@ helm repo add --namespace ${KUBE_NS} jenkins https://raw.githubusercontent.com/j
 
 # Install Jenkins Operator using Helm
 echo "Installing Jenkins Operator..."
-#helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
+helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
 
 while ! ( kubectl --namespace ${KUBE_NS} get pods | grep jenkins-operator | grep " 1/1 " | grep -q " Running" ) ; do
         echo "Jenkins Operator installing. Waiting..."
@@ -186,7 +186,8 @@ kubectl rollout status deployment/jenkins-operator -n ${KUBE_NS}
 # Port-forward the Jenkins service to access it locally
 jenkins_pod=$(kubectl get pods -n ${KUBE_NS} -l jenkins-cr=jenkins -o jsonpath='{.items[0].metadata.name}')
 
-nohup kubectl port-forward svc/jenkins-operator-http-jenkins 8080:8080 &
+nohup kubectl port-forward svc/jenkins-operator-http-jenkins 8080:8080 > /dev/null >2&1 &
+sleep 5
 echo "port-forwarding running in background"
 # echo "To forward the Jenkins service to another terminal, open a new terminal window and run the following command:"
 # echo "kubectl port-forward -n ${KUBE_NS} $jenkins_pod 8080:8080"
@@ -194,7 +195,7 @@ echo "port-forwarding running in background"
 TOKEN=$(kubectl  get secret jenkins-operator-credentials-jenkins -o jsonpath="{.data.token}" | base64 --decode)
 
 # Trigger a new build and capture the response headers
-response_headers=$(curl -i -X POST http://localhost:8080/job/k8s-e2e/buildWithParameters -u jenkins-operator:$TOKEN --data-urlencode "TEST_STAGES_TO_RUN=$INCLUDE_TEST_STAGE" 2>&1)
+response_headers=$(curl -i -X POST http://localhost:8080/job/$JOB_NAME/buildWithParameters -u jenkins-operator:$TOKEN --data-urlencode "TEST_STAGES_TO_RUN=$INCLUDE_TEST_STAGE" 2>&1)
 
 echo "response_headers $response_headers"
 queue_url=$(echo "$response_headers" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')
