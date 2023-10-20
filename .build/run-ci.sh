@@ -165,7 +165,7 @@ echo "Installing Jenkins Operator..."
 helm upgrade --namespace ${KUBE_NS} --install jenkins-operator jenkins/jenkins-operator --set jenkins.enabled=false --set jenkins.backup.enabled=false --version 0.8.0-beta.2 
 
 while ! ( kubectl --namespace ${KUBE_NS} get pods | grep jenkins-operator | grep " 1/1 " | grep -q " Running" ) ; do
-        echo "Jenkins installing. Waiting..."
+        echo "Jenkins Operator installing. Waiting..."
         sleep 5  # Adjust the polling interval as needed
 done
 
@@ -173,7 +173,7 @@ echo "Jenkins Operator installed successfully!"
 
 kubectl apply --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml
 
-while ! ( kubectl --namespace ${KUBE_NS} get pods | grep seed-job-agent | grep " 1/1 " | grep -q " Running" ) ; do
+while ! ( kubectl --namespace ${KUBE_NS} get pods | grep jenkins-jenkins | grep " 1/1 " | grep -q " Running" ) ; do
         echo "Jenkins installing. Waiting..."
         sleep 5  # Adjust the polling interval as needed
 done
