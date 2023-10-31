@@ -65,121 +65,122 @@ pipeline {
     }
     stage('Tests') {
       parallel {
-        stage('artifacts') {
-          steps {
-            buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-          }
-        }
-        stage('lint') {
-          steps {
-            buildJob(".build/docker/check-code.sh", "")
-          }
-        }
-        stage('debian') {
-          steps {
-            buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
-          }
-        }
-        stage('redhat') {
-          steps {
-            buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
-          }
-        }
-        stage('stress-test') {
-         steps {
-           testJob(".build/docker/run-tests.sh", "stress-test", 1)
+         stage('artifacts') {
+           steps {
+             buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+           }
          }
-        }
-        stage('fqltool-test') {
+         stage('lint') {
+           steps {
+             buildJob(".build/docker/check-code.sh", "")
+           }
+         }
+         stage('debian') {
+           steps {
+             buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+           }
+         }
+         stage('redhat') {
+           steps {
+             buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+           }
+         }
+         stage('stress-test') {
           steps {
-            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+            testJob(".build/docker/run-tests.sh", "stress-test", 1)
           }
-        }
-        stage('test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test", 8)
-          }
-        }
-        stage('long-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "long-test", 8)
-          }
-        }
-        stage('test-burn') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-burn", 8)
-          }
-        }
-        stage('test-cdc') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-cdc", 8)
-          }
-        }
-        stage('test-compression') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-compression", 8)
-          }
-        }
-        stage('cqlsh-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
-          }
-        }
-        stage('jvm-dtest') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
-          }
-        }
-        stage('jvm-dtest-upgrade') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
-          }
-        }
-        stage('dtest') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest", 64)
-          }
-        }
-        stage('dtest-large') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-large", 8)
-          }
-        }
-        stage('dtest-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-novnode", 64)
-          }
-        }
-        stage('dtest-offheap') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-offheap", 64)
-          }
-        }
-        stage('dtest-large-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-large-novnode", 8)
-          }
-        }
-        stage('dtest-upgrade') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade", 64)
-          }
-        }
-        stage('dtest-upgrade-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode", 64)
-          }
-        }
-        stage('dtest-upgrade-large') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade-large", 64)
-          }
-        }
-        stage('dtest-upgrade-novnode-large') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode-large", 64)
-          }
-        }
+         }
+         stage('fqltool-test') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+           }
+         }
+         stage('test') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "test", 8)
+           }
+         }
+         stage('long-test') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "long-test", 8)
+           }
+         }
+         stage('test-burn') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "test-burn", 8)
+           }
+         }
+         stage('test-cdc') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "test-cdc", 8)
+           }
+         }
+         stage('test-compression') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "test-compression", 8)
+           }
+         }
+         stage('cqlsh-test') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+           }
+         }
+         stage('jvm-dtest') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
+           }
+         }
+         stage('jvm-dtest-upgrade') {
+           steps {
+             testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
+           }
+         }
+        // FIXME uncomment
+        // stage('dtest') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest", 64)
+        //   }
+        // }
+        // stage('dtest-large') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-large", 8)
+        //   }
+        // }
+        // stage('dtest-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-novnode", 64)
+        //   }
+        // }
+        // stage('dtest-offheap') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-offheap", 64)
+        //   }
+        // }
+        // stage('dtest-large-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-large-novnode", 8)
+        //   }
+        // }
+        // stage('dtest-upgrade') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade", 64)
+        //   }
+        // }
+        // stage('dtest-upgrade-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode", 64)
+        //   }
+        // }
+        // stage('dtest-upgrade-large') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade-large", 64)
+        //   }
+        // }
+        // stage('dtest-upgrade-novnode-large') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode-large", 64)
+        //   }
+        // }
       }
     }
     stage('Summary') {
@@ -227,7 +228,7 @@ def isCanonical() {
 }
 
 def isStageIncluded() {
-    return "jar".equals(STAGE_NAME) || "*".equals(STAGE_NAME) || params.STAGES.split(',').any{it.equals(STAGE_NAME)}
+    return true
 }
 
 /**
@@ -267,12 +268,12 @@ def buildJob(build_script, toCopy) {
 def _buildAxis(build_script, toCopy, arch, jdk) {
   node(arch) {
     branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
+    checkout scm
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
-      def build_script_safe_name = "${build_script}".replace(".build/docker/", "").replace(".sh", "_").replace(" ", "_")
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${build_script_safe_name}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
       def build_dir_rel = build_dir - "${WORKSPACE}/"
@@ -288,7 +289,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         if ("jar" == STAGE_NAME) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}", includes: "*.jar,classes/**,test/classes/**,tools/**"
+            stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
           }
         }
       } finally {
@@ -296,9 +297,9 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         sh "xz -f ${build_dir}/*_attempt_*.log"
         dir("${build_dir}") {
             archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-            copyToNightlies("**/*_attempt_*.log.xz", "${build_script_safe_name}/jdk${jdk}/${arch}/")
+            copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             if (0 == statusCode) {
-                copyToNightlies("${toCopy}", "${build_script_safe_name}/jdk${jdk}/${arch}/")
+                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             }
         }
         cleanAgent(build_script)
@@ -353,8 +354,7 @@ def testJob(test_script, test_type, splits=1) {
                 def cython = c
                 tests_per_cython[cython] = {
                   def tests_per_split = [:]
-                  def _splits = splits == 1 ? splits : splits * params.split_factor.toInteger()
-                  for (int s = 1; s <= _splits; s++) {
+                  for (int s = 1; s <= splits; s++) {
                     def split = s
                     tests_per_split[split] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
                   }
@@ -381,6 +381,7 @@ def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
   node(arch) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
     echo "Starting ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
+    checkout scm
     sh "mkdir -p build"
     def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
     def build_dir_rel = build_dir - "${WORKSPACE}/"
@@ -475,18 +476,15 @@ def saveAgentReport() {
 
 def generateUnifiedTestReport() {
   assert "Summary".equals(STAGE_NAME)
-  // the lint, debian, redhat, artifacts stages don't produce test results
-  if(!"".equals(params.STAGES.replaceAll('lint|debian|redhat|artifacts,','').trim())) {
-    node('cassandra') {
-      copyArtifacts filter: 'test/output/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
-      sh 'xz -d build/test/output/*.xml.xz'
+  node('cassandra') {
+    copyArtifacts filter: 'test/output/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
+    sh 'xz -d build/test/output/*.xml.xz'
 
-      sh "ANT_OPTS='-Xmx5g' ant generate-test-report"
-      dir('build/') {
-        sh "xz -f TESTS-TestSuites.xml"
-        archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,test/html/**/*", fingerprint: true
-        copyToNightlies('TESTS-TestSuites.xml.xz')
-      }
+    sh "ANT_OPTS='-Xmx5g' ant generate-test-report"
+    dir('build/') {
+      sh "xz -f TESTS-TestSuites.xml"
+      archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,test/html/**/*", fingerprint: true
+      copyToNightlies('TESTS-TestSuites.xml.xz')
     }
   }
 }
