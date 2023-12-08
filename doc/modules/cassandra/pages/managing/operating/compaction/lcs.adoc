@@ -4,7 +4,7 @@
 
 include::cassandra:partial$ucs-recommend.adoc[]
 
-The `LeveledCompactionStrategy (LCS)` is recommended for ready-heavy workloads, although UCS is the best recommendation for all workloads today.
+The `LeveledCompactionStrategy (LCS)` is recommended for read-heavy workloads, although UCS is the best recommendation for all workloads today.
 It alleviates some of the read operation issues with STCS, while providing reasonable write operations. 
 This strategy works with a series of levels, where each level contains a set of SSTables.
 When data in memtables is flushed, SSTables are written in the first level (L0), where SSTables are not guaranteed to be non-overlapping.

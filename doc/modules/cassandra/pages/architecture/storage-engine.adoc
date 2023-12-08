@@ -10,17 +10,17 @@
 [[commit-log]]
 == Logging writes to commit logs
 
-When a write occurs, {cassandra} writes the data to a local append-only https://cassandra.apache.org/_/glossary.html#commit-log[commit log] on disk.
+When a write occurs, {cassandra} writes the data to a local append-only (https://cassandra.apache.org/_/glossary.html#commit-log)[commit log] on disk.
 This action provides xref:cassandra:managing/configuration/cass_yaml_file.adoc[configurable durability] by logging every write made to a {cassandra} node.
 If an unexpected shutdown occurs, the commit log provides permanent durable writes of the data.
-On startup, any mutations in the commit log will be applied to https://cassandra.apache.org/_/glossary.html#memtable[memtables].
+On startup, any mutations in the commit log will be applied to (https://cassandra.apache.org/_/glossary.html#memtable)[memtables].
 The commit log is shared among tables.
 
 All mutations are write-optimized on storage in commit log segments, reducing the number of seeks needed to write to disk. 
 Commit log segments are limited by the xref:cassandra:managing/configuration/cass_yaml_file.adoc#commitlog_segment_size[`commitlog_segment_size`] option. 
 Once the defined size is reached, a new commit log segment is created. 
 Commit log segments can be archived, deleted, or recycled once all the data is flushed to
-https://cassandra.apache.org/_/glossary.html#sstable[SSTables]. 
+(https://cassandra.apache.org/_/glossary.html#sstable)[SSTables].
 Commit log segments are truncated when {cassandra} has written data older than a certain point to the SSTables. 
 Running xref:managing:tools/nodetool/drain.adoc[`nodetool drain`] before stopping {cassandra} will write everything in the memtables
 to SSTables and remove the need to sync with the commit logs on startup.
@@ -154,10 +154,7 @@ Once the new SSTable has been written, the old SSTables can be removed.
 
 == SSTable Versions
 
-This section was created using the following
-https://gist.github.com/shyamsalimkumar/49a61e5bc6f403d20c55[gist] which
-utilized this original
-http://www.bajb.net/2013/03/cassandra-sstable-format-version-numbers/[source].
+From (https://github.com/apache/cassandra/blob/cassandra-5.0/src/java/org/apache/cassandra/io/sstable/format/big/BigFormat.java#L338)[BigFormat#BigVersion].
 
 The version numbers, to date are:
 
@@ -217,11 +214,37 @@ persisted
 ** store rows natively
 * mb (3.0.7, 3.7): commit log lower bound included
 * mc (3.0.8, 3.9): commit log intervals included
-* big (3.0.0): literally BigTable format
+* md (3.0.18, 3.11.4): corrected sstable min/max clustering
+* me (3.0.25, 3.11.11): added hostId of the node from which the sstable originated
+
+=== Version 4
+
+* na (4.0-rc1): uncompressed chunks, pending repair session, isTransient, checksummed sstable metadata file, new Bloomfilter format
+* nb (4.0.0): originating host id
 
 === Version 5
 
-* bti (5.0.0): Big Trie format
+* oa (5.0): improved min/max, partition level deletion presence marker, key range (CASSANDRA-18134)
+** Long deletionTime to prevent TTL overflow
+** token space coverage
+
+== Trie-indexed Based SSTable Versions (BTI)
+
+Cassandra 5.0 introduced new SSTable formats BTI for Trie-indexed SSTables.
+To use the BTI formats configure it `cassandra.yaml` like
+
+```
+sstable:
+  selected_format: bti
+```
+
+Versions come from (https://github.com/apache/cassandra/blob/cassandra-5.0/src/java/org/apache/cassandra/io/sstable/format/bti/BtiFormat.java#L287)[BtiFormat#BtiVersion].
+
+For implementation docs see (https://github.com/apache/cassandra/blob/cassandra-5.0/src/java/org/apache/cassandra/io/sstable/format/bti/BtiFormat.md)[BtiFormat.md].
+
+=== Version 5
+
+* da (5.0): initial version of the BIT format
 
 === Example Code
 

@@ -5,7 +5,7 @@
 include::cassandra:partial$ucs-recommend.adoc[]
 
 The `TimeWindowCompactionStrategy` (TWCS) is the recommended compaction strategy for time-series and expiring Time-To-Live (TTL) workloads.
-If the working has data grouped by timestamp, TWCS can be used to group SSTables by time window, and then drop entire SSTables when they expire.
+If the workload has data grouped by timestamp, TWCS can be used to group SSTables by time window, and then drop entire SSTables when they expire.
 Thus, disk space can be reclaimed much more reliably than when using STCS or LCS.
 
 TWCS compacts SSTables using a series of time windows buckets.  
