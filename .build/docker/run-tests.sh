@@ -156,7 +156,7 @@ else
     docker_flags="--cpus=${docker_cpus} -m 5g --memory-swap 5g"
 fi
 
-docker_flags="${docker_flags} --env-file build/env.list -d --rm"
+docker_flags="${docker_flags} -d --rm"
 
 # make sure build_dir is good
 mkdir -p ${build_dir}/tmp || true
@@ -186,14 +186,7 @@ else
 fi
 
 # the docker container's env
-touch build/env.list
-cat > build/env.list <<EOF
-TEST_SCRIPT=${test_script}
-JAVA_VERSION=${java_version}
-PYTHON_VERSION=${python_version}
-cython=${cython}
-ANT_OPTS="${ANT_OPTS}"
-EOF
+docker_envs="--env TEST_SCRIPT=${test_script} --env JAVA_VERSION=${java_version} --env PYTHON_VERSION=${python_version} --env cython=${cython} --env ANT_OPTS=\"${ANT_OPTS}\""
 
 split_str="0_0"
 if [[ "${split_chunk}" =~ ^[0-9]+/[0-9]+$ ]]; then
@@ -219,7 +212,7 @@ docker_command="source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_versi
             \${CASSANDRA_DIR}/.build/docker/_docker_init_tests.sh ${target} ${split_chunk} ; exit \$?"
 
 # start the container, timeout after 4 hours
-docker_id=$(docker run --name ${container_name} ${docker_flags} ${docker_mounts} ${docker_volume_opt} ${image_name} sleep 4h)
+docker_id=$(docker run --name ${container_name} ${docker_flags} ${docker_envs} ${docker_mounts} ${docker_volume_opt} ${image_name} sleep 4h)
 
 echo "Running container ${container_name} ${docker_id}"
 
