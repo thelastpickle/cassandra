@@ -399,12 +399,12 @@ def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
       } finally {
         dir("${build_dir_rel}") {
             if (0 == statusCode) {
-                junit testResults: "test/output/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-                sh "xz -f test/output/TEST*.xml || true"
+                junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+                sh "xz -f test/output/**/TEST*.xml || true"
                 sh "xz -f test/output/cqlshlib.xml || true"
                 sh "xz -f test/output/nosetests.xml || true"
             }
-            archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
+            archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
             copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
         }
         cleanAgent(test_script)
@@ -477,8 +477,8 @@ def saveAgentReport() {
 def generateUnifiedTestReport() {
   assert "Summary".equals(STAGE_NAME)
   node('cassandra') {
-    copyArtifacts filter: 'test/output/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
-    sh 'xz -d build/test/output/*.xml.xz'
+    copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
+    sh 'xz -d build/test/output/**/*.xml.xz'
 
     sh "ANT_OPTS='-Xmx5g' ant generate-test-report"
     dir('build/') {
