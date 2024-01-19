@@ -131,7 +131,7 @@ sysctl -n hw.memsize >/dev/null 2>&1 && mem=$(sysctl -n hw.memsize)
 case ${target} in
     # test-burn doesn't have enough tests in it to split beyond 8, and burn and long we want a bit more resources anyway
     "stress-test" | "fqltool-test" | "microbench" | "test-burn" | "long-test" | "cqlsh-test" )
-        [[ ${mem} -gt $((5 * 1024 * 1024 * 1024 * ${jenkins_executors})) ]] || { echo >&2 "tests require minimum docker memory 6g (per jenkins executor (${jenkins_executors})), found ${mem}"; exit 1; }
+        # [[ ${mem} -gt $((5 * 1024 * 1024 * 1024 * ${jenkins_executors})) ]] || { echo >&2 "tests require minimum docker memory 6g (per jenkins executor (${jenkins_executors})), found ${mem}"; exit 1; }
     ;;
     "dtest" | "dtest-novnode" | "dtest-offheap" | "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-novnode"| "dtest-upgrade-large" | "dtest-upgrade-novnode-large" )
         [ -f "${cassandra_dtest_dir}/dtest.py" ] || { echo >&2 "${cassandra_dtest_dir}/dtest.py must exist"; exit 1; }
