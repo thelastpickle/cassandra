@@ -90,9 +90,11 @@ docker_mounts="${docker_mounts} -v "${build_dir}/tmp":/home/cassandra/cassandra/
 
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
+  echo "Build image not found locally"
   # try docker login to increase dockerhub rate limits
   echo "Attempting 'docker login' to increase dockerhub rate limits"
   timeout -k 5 5 docker login >/dev/null 2>/dev/null
+  echo "Pulling build image..."
   if ! ( docker pull -q ${image_name} >/dev/null 2>/dev/null ) ; then
     # Create build images containing the build tool-chain, Java and an Apache Cassandra git working directory, with retry
     echo "Building docker image ${image_name}..."
