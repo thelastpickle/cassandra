@@ -122,7 +122,7 @@ container_id=$(docker run --name ${container_name} -d --security-opt seccomp=unc
     ${docker_volume_opt} \
     ${image_name} sleep 1h)
 
-echo "Running container ${container_name} ${container_id}"
+echo "Running container ${container_name} ${container_id} using image ${image_name}"
 
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh build $(id -u) $(id -g)"
 docker exec --user build ${container_name} bash -c "${docker_command}"
