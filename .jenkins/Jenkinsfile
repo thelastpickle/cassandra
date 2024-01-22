@@ -41,10 +41,73 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-  agent { label 'cassandra' }
+  agent {
+    kubernetes {
+      label 'cassandra'
+      defaultContainer 'jnlp'
+      yaml """
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            jenkins: label
+        spec:
+          initContainers:
+            - name: init-docker-socket
+              image: alpine:latest
+              imagePullPolicy: Always
+              command:
+                - sh
+                - -c
+                - chown 1000:1000 /var/run/docker.sock
+              volumeMounts:
+                - name: docker-socket
+                  mountPath: /var/run/docker.sock
+              securityContext:
+                runAsUser: 0
+          containers:
+          - name: jnlp
+            image: apache/cassandra-jenkins-k8s:latest
+            command:
+              - /bin/sh
+              - -c
+              - |
+                /usr/local/bin/jenkins-agent
+            volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+            - name: cassandra-dir
+              mountPath: /tmp/${env.JOB_NAME}
+            tty: true
+            securityContext:
+              privileged: true
+            resources:
+              limits:
+                cpu: 2
+                memory: 7Gi
+              requests:
+                cpu: 1
+                memory: 6Gi
+          volumes:
+          - name: docker-socket
+            hostPath:
+              path: /var/run/docker.sock
+          - name: cassandra-dir
+            hostPath:
+              path: /home/jenkins/agent/workspace/${env.JOB_NAME}
+        """
+    }
+  }
+
+  parameters {
+    string(name: 'STAGES', description: 'Select the stages to run. Choices: lint,debian,redhat,stress,fqltool,…' ,defaultValue: '*')
+    string(name: 'split_factor', description: 'smaller (and more) splits by this factor', defaultValue: '1')
+    //string(name: 'jdks', description: 'jdks to test against', defaultValue: javaVersionsSupported())
+  }
 
   options {
     githubProjectProperty('https://github.com/apache/cassandra')
+    //FIXME if (! isPostCommit()) { parallelsAlwaysFailFast() }
     timestamps()
   }
   environment {
@@ -54,11 +117,12 @@ pipeline {
   stages {
     stage('init') {
       steps {
+        //TODO – check parameters are valid
         script { currentBuild.result='SUCCESS' }
         cleanWs()
       }
     }
-    stage('jar') {
+    stage('Jars') {
       steps {
         buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
       }
@@ -251,8 +315,12 @@ def isCanonical() {
   return "${JENKINS_URL}".contains("ci-cassandra.apache.org")
 }
 
+def isK8s() {
+  return true  // FIXME – how do we detect this …?
+}
+
 def isStageIncluded() {
-    return true
+    return "Jars".equals(STAGE_NAME) || "*".equals(STAGE_NAME) || params.STAGES.split(',').any{it.equals(STAGE_NAME)}
 }
 
 /**
@@ -292,7 +360,11 @@ def buildJob(build_script, toCopy) {
 def _buildAxis(build_script, toCopy, arch, jdk) {
   node(arch) {
     branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
-    checkout scm
+    if (isK8s()) {
+        sh "sudo mount --bind /tmp/${env.JOB_NAME}/ /home/jenkins/agent/workspace/${env.JOB_NAME}/"
+    } else {
+        checkout scm
+    }
     tool type: 'jdk', name: "jdk_${jdk}_latest"
     def statusCode = 0, attempt = 1
     retry(2) {
@@ -302,7 +374,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
       def build_dir_rel = build_dir - "${WORKSPACE}/"
       try {
-        if ("jar" != STAGE_NAME) {
+        if ("Jars" != STAGE_NAME) {
           dir("${build_dir}") {
             unstash name: "${arch}_${jdk}"
           }
@@ -310,7 +382,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
 
-        if ("jar" == STAGE_NAME) {
+        if ("Jars" == STAGE_NAME) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
@@ -379,9 +451,10 @@ def testJob(test_script, test_type, splits=1) {
                 def cython = c
                 tests_per_cython[cython] = {
                   def tests_per_split = [:]
-                  for (int s = 1; s <= splits; s++) {
+                  def _splits = splits == 1 ? splits : splits * params.split_factor.toInteger()
+                  for (int s = 1; s <= _splits; s++) {
                     def split = s
-                    tests_per_split[split] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+                    tests_per_split[split] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${_splits}") }
                   }
                   parallel(tests_per_split)
                 }
@@ -406,7 +479,11 @@ def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
   node(arch) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
     echo "Starting ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
-    checkout scm
+    if (isK8s()) {
+        sh "sudo mount --bind /tmp/${env.JOB_NAME}/ /home/jenkins/agent/workspace/${env.JOB_NAME}/"
+    } else {
+        checkout scm
+    }
     sh "mkdir -p build"
     def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
     def build_dir_rel = build_dir - "${WORKSPACE}/"
@@ -508,16 +585,23 @@ def saveAgentReport() {
 
 def generateUnifiedTestReport() {
   assert "Summary".equals(STAGE_NAME)
-  node('cassandra') {
-    checkout scm
-    sh "mkdir -p build"
-    copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
-    sh 'xz -d build/test/output/**/*.xml.xz || true ; xz -d test/output/cqlshlib.xml test/output/nosetests.xml || true'
-    sh "ANT_OPTS='-Xmx15g' ant generate-test-report"
-    dir('build/') {
-      sh "xz -f TESTS-TestSuites.xml"
-      archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,test/html/**/*", fingerprint: true
-      copyToNightlies('TESTS-TestSuites.xml.xz')
+  // the lint, debian, redhat, artifacts stages don't produce test results
+  if(!"".equals(params.STAGES.replaceAll('lint|debian|redhat|artifacts,','').trim())) {
+    node('cassandra') {
+      if (isK8s()) {
+          sh "sudo mount --bind /tmp/${env.JOB_NAME}/ /home/jenkins/agent/workspace/${env.JOB_NAME}/"
+      } else {
+          checkout scm
+      }
+      sh "mkdir -p build"
+      copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
+      sh 'xz -d build/test/output/**/*.xml.xz || true ; xz -d test/output/cqlshlib.xml test/output/nosetests.xml || true'
+      sh "ANT_OPTS='-Xmx15g' ant generate-test-report"
+      dir('build/') {
+        sh "xz -f TESTS-TestSuites.xml"
+        archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,test/html/**/*", fingerprint: true
+        copyToNightlies('TESTS-TestSuites.xml.xz')
+      }
     }
   }
 }
