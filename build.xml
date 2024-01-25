@@ -29,10 +29,11 @@
     <property environment="env"/>
     <property file="build.properties" />
     <property file="build.properties.default" />
+    <property file="${user.home}/.ant/build.properties"/>
     <property name="debuglevel" value="source,lines,vars"/>
 
     <!-- default version and SCM information -->
-    <property name="base.version" value="5.0-alpha2"/>
+    <property name="base.version" value="5.0-beta2"/>
     <property name="scm.connection" value="scm:https://gitbox.apache.org/repos/asf/cassandra.git"/>
     <property name="scm.developerConnection" value="scm:https://gitbox.apache.org/repos/asf/cassandra.git"/>
     <property name="scm.url" value="https://gitbox.apache.org/repos/asf?p=cassandra.git;a=tree"/>
@@ -172,6 +173,25 @@
 
     <condition property="cassandra.use_nix_recursive_delete" value="false" else="true">
         <os family="windows" />
+    </condition>
+
+    <condition property="withoutMethods">
+        <and>
+            <equals arg1="${test.methods}" arg2=""/>
+            <not>
+                <contains string="${test.name}" substring="*"/>
+            </not>
+        </and>
+    </condition>
+    <condition property="withMethods">
+        <and>
+            <not>
+                <equals arg1="${test.methods}" arg2=""/>
+            </not>
+            <not>
+                <contains string="${test.name}" substring="*"/>
+            </not>
+        </and>
     </condition>
 
     <!-- Check if all tests are being run or just one (check testclasslist target). If it's all tests don't spam the
@@ -534,6 +554,7 @@
 
     <!-- Stress build file -->
     <property name="stress.build.src" value="${basedir}/tools/stress/src" />
+    <property name="stress.build.resources" value="${basedir}/tools/stress/resources" />
     <property name="stress.test.src" value="${basedir}/tools/stress/test/unit" />
     <property name="stress.build.classes" value="${build.classes}/stress" />
     <property name="stress.test.classes" value="${build.dir}/test/stress-classes" />
@@ -560,13 +581,13 @@
         <javac compiler="modern" debug="true" debuglevel="${debuglevel}"
                source="${ant.java.version}" target="${ant.java.version}"
                encoding="utf-8" destdir="${stress.build.classes}" includeantruntime="true">
-            <src path="${stress.build.src}" />
+            <src path="${stress.build.src}"/>
             <classpath>
                 <path refid="cassandra.classpath" />
             </classpath>
         </javac>
         <copy todir="${stress.build.classes}">
-            <fileset dir="${stress.build.src}/resources" />
+            <fileset dir="${stress.build.resources}" />
         </copy>
     </target>
 
@@ -1216,12 +1237,16 @@
   <macrodef name="testlist">
     <attribute name="test.file.list"/>
     <sequential>
+      <condition property="maxMemory" value="8G" else="4G">
+          <equals arg1="${test.classlistprefix}" arg2="distributed"/>
+      </condition>
       <testmacrohelper inputdir="${test.dir}/${test.classlistprefix}" filelist="@{test.file.list}" exclude="**/*.java" timeout="${test.timeout}">
         <jvmarg value="-Dlegacy-sstable-root=${test.data}/legacy-sstables"/>
         <jvmarg value="-Dinvalid-legacy-sstable-root=${test.data}/invalid-legacy-sstables"/>
         <jvmarg value="-Dcassandra.ring_delay_ms=1000"/>
         <jvmarg value="-Dcassandra.tolerate_sstable_size=true"/>
         <jvmarg value="-Dcassandra.skip_sync=true" />
+        <jvmarg value="-Xmx${maxMemory}"/>
       </testmacrohelper>
     </sequential>
   </macrodef>
@@ -1349,24 +1374,6 @@
     ant testsome -Dtest.name=org.apache.cassandra.service.StorageServiceServerTest -Dtest.methods=testRegularMode,testGetAllRangesEmpty
   -->
   <target name="testsome" depends="maybe-build-test" description="Execute specific unit tests" >
-    <condition property="withoutMethods">
-      <and>
-        <equals arg1="${test.methods}" arg2=""/>
-        <not>
-          <contains string="${test.name}" substring="*"/>
-        </not>
-      </and>
-    </condition>
-    <condition property="withMethods">
-      <and>
-        <not>
-         <equals arg1="${test.methods}" arg2=""/>
-        </not>
-        <not>
-          <contains string="${test.name}" substring="*"/>
-        </not>
-      </and>
-    </condition>
     <testmacro inputdir="${test.unit.src}" timeout="${test.timeout}">
       <test if="withMethods" name="${test.name}" methods="${test.methods}" todir="${build.test.dir}/output/" outfile="TEST-${test.name}-${test.methods}"/>
       <test if="withoutMethods" name="${test.name}" todir="${build.test.dir}/output/" outfile="TEST-${test.name}"/>
@@ -1384,8 +1391,8 @@
   -->
   <target name="long-testsome" depends="maybe-build-test" description="Execute specific long unit tests" >
     <testmacro inputdir="${test.long.src}" timeout="${test.long.timeout}">
-      <test unless:blank="${test.methods}" name="${test.name}" methods="${test.methods}"/>
-      <test if:blank="${test.methods}" name="${test.name}"/>
+      <test if="withMethods" name="${test.name}" methods="${test.methods}" todir="${build.test.dir}/output/" outfile="TEST-${test.name}-${test.methods}"/>
+      <test if="withoutMethods" name="${test.name}" todir="${build.test.dir}/output/" outfile="TEST-${test.name}"/>
       <jvmarg value="-Dcassandra.ring_delay_ms=1000"/>
       <jvmarg value="-Dcassandra.tolerate_sstable_size=true"/>
     </testmacro>
@@ -1397,8 +1404,8 @@
   -->
   <target name="burn-testsome" depends="maybe-build-test" description="Execute specific burn unit tests" >
     <testmacro inputdir="${test.burn.src}" timeout="${test.burn.timeout}">
-      <test unless:blank="${test.methods}" name="${test.name}" methods="${test.methods}"/>
-      <test if:blank="${test.methods}" name="${test.name}"/>
+      <test if="withMethods" name="${test.name}" methods="${test.methods}" todir="${build.test.dir}/output/" outfile="TEST-${test.name}-${test.methods}"/>
+      <test if="withoutMethods" name="${test.name}" todir="${build.test.dir}/output/" outfile="TEST-${test.name}"/>
       <jvmarg value="-Dlogback.configurationFile=test/conf/logback-burntest.xml"/>
     </testmacro>
   </target>
@@ -1752,6 +1759,7 @@
       <jvmarg value="-Dcassandra.ring_delay_ms=10000"/>
       <jvmarg value="-Dcassandra.tolerate_sstable_size=true"/>
       <jvmarg value="-Dcassandra.skip_sync=true" />
+      <jvmarg value="-Xmx8G"/>
     </testmacro>
   </target>
 
@@ -1788,6 +1796,7 @@
       <jvmarg value="-Dcassandra.ring_delay_ms=10000"/>
       <jvmarg value="-Dcassandra.tolerate_sstable_size=true"/>
       <jvmarg value="-Dcassandra.skip_sync=true" />
+      <jvmarg value="-Xmx8G"/>
     </testmacro>
   </target>
 
@@ -1803,6 +1812,7 @@
       <jvmarg value="-Dcassandra.ring_delay_ms=10000"/>
       <jvmarg value="-Dcassandra.tolerate_sstable_size=true"/>
       <jvmarg value="-Dcassandra.skip_sync=true" />
+      <jvmarg value="-Xmx8G"/>
     </testmacro>
   </target>
 
@@ -2055,4 +2065,5 @@
   <import file="${build.helpers.dir}/build-checkstyle.xml"/>
   <import file="${build.helpers.dir}/build-cqlsh.xml"/>
   <import file="${build.helpers.dir}/build-bench.xml"/>
+  <import file="${build.helpers.dir}/build-sonar.xml"/>
 </project>

@@ -48,7 +48,6 @@ import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.RequestTimeoutException;
 import org.apache.cassandra.index.Index;
 import org.apache.cassandra.index.sai.QueryContext;
-import org.apache.cassandra.index.sai.analyzer.AbstractAnalyzer;
 import org.apache.cassandra.index.sai.metrics.TableQueryMetrics;
 import org.apache.cassandra.index.sai.iterators.KeyRangeIterator;
 import org.apache.cassandra.index.sai.utils.PrimaryKey;
@@ -84,16 +83,8 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
     {
         for (RowFilter.Expression expression : queryController.filterOperation())
         {
-            AbstractAnalyzer analyzer = queryController.getContext(expression).getAnalyzerFactory().create();
-            try
-            {
-                if (analyzer.transformValue())
-                    return applyIndexFilter(fullResponse, Operation.buildFilter(queryController), queryContext);
-            }
-            finally
-            {
-                analyzer.end();
-            }
+            if (queryController.hasAnalyzer(expression))
+                return applyIndexFilter(fullResponse, Operation.buildFilter(queryController), queryContext);
         }
 
         // if no analyzer does transformation
@@ -160,14 +151,8 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
         }
 
         @Override
-        @SuppressWarnings({"resource", "RedundantSuppression"}) // The iterator produced here has a nop close operation
         public UnfilteredRowIterator computeNext()
         {
-            // IMPORTANT: The correctness of the entire query pipeline relies on the fact that we consume a token
-            // and materialize its keys before moving on to the next token in the flow. This sequence must not be broken
-            // with toList() or similar. (Both the union and intersection flow constructs, to avoid excessive object
-            // allocation, reuse their token mergers as they process individual positions on the ring.)
-
             if (resultKeyIterator == null)
                 return endOfData();
 
@@ -389,6 +374,7 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
             try (UnfilteredRowIterator partition = queryController.queryStorage(key, executionController))
             {
                 queryContext.partitionsRead++;
+                queryContext.checkpoint();
 
                 return applyIndexFilter(key, partition, filterTree, queryContext);
             }
@@ -398,14 +384,11 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
         {
             Row staticRow = partition.staticRow();
 
-            // We want to short-circuit the filtering of the whole partition if the static row
-            // satisfies the filter. If that is the case we just need to return the whole partition.
-            queryContext.rowsFiltered++;
-            if (tree.isSatisfiedBy(partition.partitionKey(), staticRow, staticRow))
-                return partition;
-
             List<Unfiltered> clusters = new ArrayList<>();
 
+            // We need to filter the partition rows before filtering on the static row. If this is done in the other
+            // order then we get incorrect results if we are filtering on a partition key index on a table with a
+            // composite partition key.
             while (partition.hasNext())
             {
                 Unfiltered row = partition.next();
@@ -414,6 +397,15 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
                 if (tree.isSatisfiedBy(partition.partitionKey(), row, staticRow))
                 {
                     clusters.add(row);
+                }
+            }
+
+            if (clusters.isEmpty())
+            {
+                queryContext.rowsFiltered++;
+                if (tree.isSatisfiedBy(key.partitionKey(), staticRow, staticRow))
+                {
+                    clusters.add(staticRow);
                 }
             }
 
@@ -478,7 +470,6 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
      * Used by {@link StorageAttachedIndexSearcher#filterReplicaFilteringProtection} to filter rows for columns that
      * have transformations so won't get handled correctly by the row filter.
      */
-    @SuppressWarnings({"resource", "RedundantSuppression"})
     private static PartitionIterator applyIndexFilter(PartitionIterator response, FilterTree tree, QueryContext queryContext)
     {
         return new PartitionIterator()

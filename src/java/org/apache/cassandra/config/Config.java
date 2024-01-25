@@ -117,7 +117,7 @@ public class Config
     public volatile boolean force_new_prepared_statement_behaviour = false;
 
     public ParameterizedClass seed_provider;
-    public DiskAccessMode disk_access_mode = DiskAccessMode.auto;
+    public DiskAccessMode disk_access_mode = DiskAccessMode.mmap_index_only;
 
     public DiskFailurePolicy disk_failure_policy = DiskFailurePolicy.ignore;
     public CommitFailurePolicy commit_failure_policy = CommitFailurePolicy.stop;
@@ -386,6 +386,7 @@ public class Config
     public ParameterizedClass commitlog_compression;
     public FlushCompression flush_compression = FlushCompression.fast;
     public int commitlog_max_compression_buffers_in_pool = 3;
+    public DiskAccessMode commitlog_disk_access_mode = DiskAccessMode.legacy;
     @Replaces(oldName = "periodic_commitlog_sync_lag_block_in_ms", converter = Converters.MILLIS_DURATION_INT, deprecated = true)
     public DurationSpec.IntMillisecondsBound periodic_commitlog_sync_lag_block;
     public TransparentDataEncryptionOptions transparent_data_encryption_options = new TransparentDataEncryptionOptions();
@@ -896,6 +897,9 @@ public class Config
     public volatile int maximum_replication_factor_fail_threshold = -1;
     public volatile boolean zero_ttl_on_twcs_warned = true;
     public volatile boolean zero_ttl_on_twcs_enabled = true;
+    public volatile boolean non_partition_restricted_index_query_enabled = true;
+    public volatile int sai_sstable_indexes_per_query_warn_threshold = 32;
+    public volatile int sai_sstable_indexes_per_query_fail_threshold = -1;
 
     public volatile DurationSpec.LongNanosecondsBound streaming_state_expires = new DurationSpec.LongNanosecondsBound("3d");
     public volatile DataStorageSpec.LongBytesBound streaming_state_size = new DataStorageSpec.LongBytesBound("40MiB");
@@ -1145,6 +1149,13 @@ public class Config
         mmap,
         mmap_index_only,
         standard,
+        legacy,
+
+        /**
+         * Direct-I/O is enabled for commitlog disk only.
+         * When adding support for direct IO, update {@link org.apache.cassandra.service.StartupChecks#checkKernelBug1057843}
+         */
+        direct
     }
 
     public enum MemtableAllocationType

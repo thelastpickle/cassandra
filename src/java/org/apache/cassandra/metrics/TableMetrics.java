@@ -277,6 +277,9 @@ public class TableMetrics
     public final TableMeter rowIndexSizeAborts;
     public final TableHistogram rowIndexSize;
 
+    public final TableMeter tooManySSTableIndexesReadWarnings;
+    public final TableMeter tooManySSTableIndexesReadAborts;
+
     public final ImmutableMap<SSTableFormat<?, ?>, ImmutableMap<String, Gauge<? extends Number>>> formatSpecificGauges;
 
     private static Pair<Long, Long> totalNonSystemTablesSize(Predicate<SSTableReader> predicate)
@@ -855,6 +858,9 @@ public class TableMetrics
         rowIndexSizeAborts = createTableMeter("RowIndexSizeAborts", cfs.keyspace.metric.rowIndexSizeAborts);
         rowIndexSize = createTableHistogram("RowIndexSize", cfs.keyspace.metric.rowIndexSize, false);
 
+        tooManySSTableIndexesReadWarnings = createTableMeter("TooManySSTableIndexesReadWarnings", cfs.keyspace.metric.tooManySSTableIndexesReadWarnings);
+        tooManySSTableIndexesReadAborts = createTableMeter("TooManySSTableIndexesReadAborts", cfs.keyspace.metric.tooManySSTableIndexesReadAborts);
+
         formatSpecificGauges = createFormatSpecificGauges(cfs);
     }
 
@@ -1030,7 +1036,6 @@ public class TableMetrics
                 // using SSTableSet.CANONICAL.
                 assert sstable.openReason != SSTableReader.OpenReason.EARLY;
 
-                @SuppressWarnings("resource")
                 CompressionMetadata compressionMetadata = sstable.getCompressionMetadata();
                 compressedLengthSum += compressionMetadata.compressedFileLength;
                 dataLengthSum += compressionMetadata.dataLength;

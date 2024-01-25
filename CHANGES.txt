@@ -1,7 +1,54 @@
-5.0-alpha2
+5.0-beta2
+ * Creating a SASI index after creating an SAI index does not break secondary index queries (CASSANDRA-18939)
+ * Optionally fail when a non-partition-restricted query is issued against an index (CASSANDRA-18796)
+ * Add a startup check to fail startup when using invalid configuration with certain Kernel and FS type (CASSANDRA-19196)
+ * UCS min_sstable_size should not be lower than target_sstable_size lower bound (CASSANDRA-19112)
+ * Fix the correspondingMessagingVersion of SSTable format and improve TTL overflow tests coverage (CASSANDRA-19197)
+ * Fix resource cleanup after SAI query timeouts (CASSANDRA-19177)
+ * Suppress CVE-2023-6481 (CASSANDRA-19184)
+Merged from 4.1:
+ * Memoize Cassandra verion and add a backoff interval for failed schema pulls (CASSANDRA-18902)
+ * Fix StackOverflowError on ALTER after many previous schema changes (CASSANDRA-19166)
+Merged from 4.0:
+ * Skip version check if an endpoint is dead state in Gossiper#upgradeFromVersionSupplier (CASSANDRA-19187)
+ * Fix Gossiper::hasMajorVersion3Nodes to return false during minor upgrade (CASSANDRA-18999)
+ * Revert unnecessary read lock acquisition when reading ring version in TokenMetadata introduced in CASSANDRA-16286 (CASSANDRA-19107)
+Merged from 3.11:
+Merged from 3.0:
+
+
+5.0-beta1
+ * Fix SAI intersection queries (CASSANDRA-19011)
+ * Clone EndpointState before sending GossipShutdown message (CASSANDRA-19115)
+ * SAI indexes are marked queryable during truncation (CASSANDRA-19032)
+ * Enable Direct-IO feature for CommitLog files using Java native API's. (CASSANDRA-18464)
+ * SAI fixes for composite partitions, and static and non-static rows intersections (CASSANDRA-19034)
+ * Improve SAI IndexContext handling of indexed and non-indexed columns in queries (CASSANDRA-18166)
+ * Fixed bug where UnifiedCompactionTask constructor was calling the wrong base constructor of CompactionTask (CASSANDRA-18757)
+ * Fix SAI unindexed contexts not considering CONTAINS KEY (CASSANDRA-19040)
+ * Ensure that empty SAI column indexes do not fail on validation after full-SSTable streaming (CASSANDRA-19017)
+ * SAI in-memory index should check max term size (CASSANDRA-18926)
+ * Set default disk_access_mode to mmap_index_only (CASSANDRA-19021)
+ * Exclude net.java.dev.jna:jna dependency from dependencies of org.caffinitas.ohc:ohc-core (CASSANDRA-18992)
+ * Add UCS sstable_growth and min_sstable_size options (CASSANDRA-18945)
+ * Make cqlsh's min required Python version 3.7+ instead of 3.6+ (CASSANDRA-18960)
+ * Fix incorrect seeking through the sstable iterator by IndexState (CASSANDRA-18932)
+ * Upgrade Python driver to 3.28.0 (CASSANDRA-18960)
+ * Add retries to IR messages (CASSANDRA-18962)
  * Add metrics and logging to repair retries (CASSANDRA-18952)
  * Remove deprecated code in Cassandra 1.x and 2.x (CASSANDRA-18959)
  * ClientRequestSize metrics should not treat CONTAINS restrictions as being equality-based (CASSANDRA-18896)
+Merged from 4.0:
+ * Support max SSTable size in sorted CQLSSTableWriter (CASSANDRA-18941)
+ * Fix nodetool repair_admin summarize-pending command to not throw exception (CASSANDRA-19014)
+ * Fix cassandra-stress in simplenative mode with prepared statements (CASSANDRA-18744)
+ * Fix filtering system ks sstables for relocation on startup (CASSANDRA-18963)
+ * Remove completed coordinator sessions (CASSANDRA-18903)
+Merged from 3.0:
+ * Do not set RPC_READY to false on transports shutdown in order to not fail counter updates for deployments with coordinator and storage nodes with transports turned off (CASSANDRA-18935)
+
+
+5.0-alpha2
  * Add support for vector search in SAI (CASSANDRA-18715)
  * Remove crc_check_chance from CompressionParams (CASSANDRA-18872)
  * Fix schema loading of UDTs inside vectors inside UDTs (CASSANDRA-18964)
@@ -30,6 +77,7 @@ Merged from 4.1:
  * Internode legacy SSL storage port certificate is not hot reloaded on update (CASSANDRA-18681)
  * Nodetool paxos-only repair is no longer incremental (CASSANDRA-18466)
 Merged from 4.0:
+ * Retrieve keyspaces metadata and schema version concistently in DescribeStatement (CASSANDRA-18921)
  * Gossip NPE due to shutdown event corrupting empty statuses (CASSANDRA-18913)
  * Update hdrhistogram to 2.1.12 (CASSANDRA-18893)
  * Improve performance of compactions when table does not have an index (CASSANDRA-18773)
@@ -37,6 +85,8 @@ Merged from 4.0:
  * Enable 3rd party JDK installations for Debian package (CASSANDRA-18844)
 Merged from 3.11:
 Merged from 3.0:
+ * Suppress CVE-2023-6378 (CASSANDRA-19142) 
+ * Do not set RPC_READY to false on transports shutdown in order to not fail counter updates for deployments with coordinator and storage nodes with transports turned off (CASSANDRA-18935)
  * Suppress CVE-2023-44487 (CASSANDRA-18943)
  * Implement the logic in bin/stop-server (CASSANDRA-18838)
  * Fix nodetool enable/disablebinary to correctly set rpc readiness in gossip (CASSANDRA-18935)

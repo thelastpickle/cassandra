@@ -23,16 +23,17 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
 import org.apache.cassandra.cql3.Operator;
-import org.apache.cassandra.cql3.statements.schema.IndexTarget;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.DataRange;
 import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.MessageParams;
 import org.apache.cassandra.db.PartitionPosition;
 import org.apache.cassandra.db.PartitionRangeReadCommand;
 import org.apache.cassandra.db.ReadCommand;
@@ -42,10 +43,10 @@ import org.apache.cassandra.db.filter.ClusteringIndexFilter;
 import org.apache.cassandra.db.filter.ClusteringIndexNamesFilter;
 import org.apache.cassandra.db.filter.DataLimits;
 import org.apache.cassandra.db.filter.RowFilter;
+import org.apache.cassandra.db.guardrails.Guardrails;
 import org.apache.cassandra.db.rows.UnfilteredRowIterator;
 import org.apache.cassandra.dht.AbstractBounds;
 import org.apache.cassandra.dht.Range;
-import org.apache.cassandra.index.sai.IndexContext;
 import org.apache.cassandra.index.sai.QueryContext;
 import org.apache.cassandra.index.sai.StorageAttachedIndex;
 import org.apache.cassandra.index.sai.VectorQueryContext;
@@ -58,7 +59,9 @@ import org.apache.cassandra.index.sai.iterators.KeyRangeOrderingIterator;
 import org.apache.cassandra.index.sai.iterators.KeyRangeUnionIterator;
 import org.apache.cassandra.index.sai.metrics.TableQueryMetrics;
 import org.apache.cassandra.index.sai.utils.PrimaryKey;
+import org.apache.cassandra.net.ParamType;
 import org.apache.cassandra.schema.TableMetadata;
+import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.Pair;
 import org.apache.cassandra.utils.Throwables;
@@ -133,22 +136,16 @@ public class QueryController
         return ranges;
     }
 
-    /**
-     * @return indexed {@code IndexContext} if index is found; otherwise return non-indexed {@code IndexContext}.
-     */
-    public IndexContext getContext(RowFilter.Expression expression)
+    @Nullable
+    public StorageAttachedIndex indexFor(RowFilter.Expression expression)
     {
-        Set<StorageAttachedIndex> indexes = cfs.indexManager.getBestIndexFor(expression, StorageAttachedIndex.class);
+        return cfs.indexManager.getBestIndexFor(expression, StorageAttachedIndex.class).orElse(null);
+    }
 
-        return indexes.isEmpty() ? new IndexContext(cfs.getKeyspaceName(),
-                                                    cfs.getTableName(),
-                                                    cfs.metadata().partitionKeyType,
-                                                    cfs.getPartitioner(),
-                                                    cfs.getComparator(),
-                                                    expression.column(),
-                                                    IndexTarget.Type.VALUES,
-                                                    null)
-                                 : indexes.iterator().next().getIndexContext();
+    public boolean hasAnalyzer(RowFilter.Expression expression)
+    {
+        StorageAttachedIndex index = indexFor(expression);
+        return index != null && index.hasAnalyzer();
     }
 
     public UnfilteredRowIterator queryStorage(PrimaryKey key, ReadExecutionController executionController)
@@ -156,22 +153,15 @@ public class QueryController
         if (key == null)
             throw new IllegalArgumentException("non-null key required");
 
-        try
-        {
-            SinglePartitionReadCommand partition = SinglePartitionReadCommand.create(cfs.metadata(),
-                                                                                     command.nowInSec(),
-                                                                                     command.columnFilter(),
-                                                                                     RowFilter.none(),
-                                                                                     DataLimits.NONE,
-                                                                                     key.partitionKey(),
-                                                                                     makeFilter(key));
+        SinglePartitionReadCommand partition = SinglePartitionReadCommand.create(cfs.metadata(),
+                                                                                 command.nowInSec(),
+                                                                                 command.columnFilter(),
+                                                                                 RowFilter.none(),
+                                                                                 DataLimits.NONE,
+                                                                                 key.partitionKey(),
+                                                                                 makeFilter(key));
 
-            return partition.queryMemtableAndDisk(cfs, executionController);
-        }
-        finally
-        {
-            queryContext.checkpoint();
-        }
+        return partition.queryMemtableAndDisk(cfs, executionController);
     }
 
     /**
@@ -191,7 +181,7 @@ public class QueryController
     public KeyRangeIterator.Builder getIndexQueryResults(Collection<Expression> expressions)
     {
         // VSTODO move ANN out of expressions and into its own abstraction? That will help get generic ORDER BY support
-        expressions = expressions.stream().filter(e -> e.getOp() != Expression.IndexOperator.ANN).collect(Collectors.toList());
+        expressions = expressions.stream().filter(e -> e.getIndexOperator() != Expression.IndexOperator.ANN).collect(Collectors.toList());
 
         KeyRangeIterator.Builder builder = KeyRangeIntersectionIterator.builder(expressions.size());
 
@@ -201,9 +191,10 @@ public class QueryController
 
         try
         {
+            maybeTriggerGuardrails(queryView);
+
             for (Pair<Expression, Collection<SSTableIndex>> queryViewPair : queryView.view)
             {
-                @SuppressWarnings({"resource", "RedundantSuppression"}) // RangeIterators are closed by releaseIndexes
                 KeyRangeIterator indexIterator = IndexSearchResultIterator.build(queryViewPair.left, queryViewPair.right, mergeRange, queryContext);
 
                 builder.add(indexIterator);
@@ -217,6 +208,27 @@ public class QueryController
             throw t;
         }
         return builder;
+    }
+
+    private void maybeTriggerGuardrails(QueryViewBuilder.QueryView queryView)
+    {
+        int referencedIndexes = queryView.referencedIndexes.size();
+
+        if (Guardrails.saiSSTableIndexesPerQuery.failsOn(referencedIndexes, null))
+        {
+            String msg = String.format("Query %s attempted to read from too many indexes (%s) but max allowed is %s; " +
+                                       "query aborted (see sai_sstable_indexes_per_query_fail_threshold)",
+                                       command.toCQLString(),
+                                       referencedIndexes,
+                                       Guardrails.CONFIG_PROVIDER.getOrCreate(null).getSaiSSTableIndexesPerQueryFailThreshold());
+            Tracing.trace(msg);
+            MessageParams.add(ParamType.TOO_MANY_REFERENCED_INDEXES_FAIL, referencedIndexes);
+            throw new QueryReferencingTooManyIndexesException(msg);
+        }
+        else if (Guardrails.saiSSTableIndexesPerQuery.warnsOn(referencedIndexes, null))
+        {
+            MessageParams.add(ParamType.TOO_MANY_REFERENCED_INDEXES_WARN, referencedIndexes);
+        }
     }
 
     /**
@@ -249,10 +261,11 @@ public class QueryController
     public KeyRangeIterator getTopKRows(RowFilter.Expression expression)
     {
         assert expression.operator() == Operator.ANN;
-        var planExpression = new Expression(getContext(expression))
-                             .add(Operator.ANN, expression.getIndexValue().duplicate());
+        StorageAttachedIndex index = indexFor(expression);
+        assert index != null;
+        var planExpression = Expression.create(index).add(Operator.ANN, expression.getIndexValue().duplicate());
         // search memtable before referencing sstable indexes; otherwise we may miss newly flushed memtable index
-        KeyRangeIterator memtableResults = getContext(expression).getMemtableIndexManager().searchMemtableIndexes(queryContext, planExpression, mergeRange);
+        KeyRangeIterator memtableResults = index.memtableIndexManager().searchMemtableIndexes(queryContext, planExpression, mergeRange);
 
         QueryViewBuilder.QueryView queryView = new QueryViewBuilder(Collections.singleton(planExpression), mergeRange).build();
 
@@ -285,11 +298,13 @@ public class QueryController
         // eagerly can save some work when going from PK to row id for on disk segments.
         // Since the result is shared with multiple streams, we use an unmodifiable list.
         var sourceKeys = rawSourceKeys.stream().filter(vectorQueryContext::shouldInclude).collect(Collectors.toList());
-        var planExpression = new Expression(this.getContext(expression));
+        StorageAttachedIndex index = indexFor(expression);
+        assert index != null : "Cannot do ANN ordering on an unindexed column";
+        var planExpression = Expression.create(index);
         planExpression.add(Operator.ANN, expression.getIndexValue().duplicate());
 
         // search memtable before referencing sstable indexes; otherwise we may miss newly flushed memtable index
-        KeyRangeIterator memtableResults = this.getContext(expression).getMemtableIndexManager().limitToTopResults(queryContext, sourceKeys, planExpression);
+        KeyRangeIterator memtableResults = index.memtableIndexManager().limitToTopResults(queryContext, sourceKeys, planExpression);
         QueryViewBuilder.QueryView queryView = new QueryViewBuilder(Collections.singleton(planExpression), mergeRange).build();
 
         try
@@ -297,10 +312,10 @@ public class QueryController
             List<KeyRangeIterator> sstableIntersections = queryView.view
                                                                    .stream()
                                                                    .flatMap(pair -> pair.right.stream())
-                                                                   .map(index -> {
+                                                                   .map(idx -> {
                                                                        try
                                                                        {
-                                                                           return index.limitToTopKResults(queryContext, sourceKeys, planExpression);
+                                                                           return idx.limitToTopKResults(queryContext, sourceKeys, planExpression);
                                                                        }
                                                                        catch (IOException e)
                                                                        {
