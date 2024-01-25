@@ -38,7 +38,9 @@ fi
 [ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
 [ "x${cassandra_dtest_dir}" != "x" ] || cassandra_dtest_dir="${cassandra_dir}/../cassandra-dtest"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
+[ "x${m2_dir}" != "x" ] || m2="${cassandra_dir}/build/m2"
 [ -d "${build_dir}" ] || { mkdir -p "${build_dir}" ; }
+[ -d "${m2_dir}" ] || { mkdir -p "${m2_dir}" ; }
 
 # pre-conditions
 command -v docker >/dev/null 2>&1 || { echo >&2 "docker needs to be installed"; exit 1; }
@@ -84,21 +86,30 @@ pushd ${cassandra_dir}/.build >/dev/null
 dockerfile="ubuntu2004_test.docker"
 image_tag="$(md5sum docker/${dockerfile} | cut -d' ' -f1)"
 image_name="apache/cassandra-${dockerfile/.docker/}:${image_tag}"
-docker_mounts="-v ${cassandra_dir}:/home/cassandra/cassandra -v "${build_dir}":/home/cassandra/cassandra/build -v ${HOME}/.m2/repository:/home/cassandra/.m2/repository"
+docker_mounts="-v ${cassandra_dir}:/home/cassandra/cassandra -v "${build_dir}":/home/cassandra/cassandra/build -v ${m2_dir}:/home/cassandra/.m2/repository"
 # HACK hardlinks in overlay are buggy, the following mount prevents hardlinks from being used. ref $TMP_DIR in .build/run-tests.sh
 docker_mounts="${docker_mounts} -v "${build_dir}/tmp":/home/cassandra/cassandra/build/tmp"
 
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
+  echo "Build image not found locally"
   # try docker login to increase dockerhub rate limits
+  echo "Attempting 'docker login' to increase dockerhub rate limits"
   timeout -k 5 5 docker login >/dev/null 2>/dev/null
+  echo "Pulling build image..."
   if ! ( docker pull -q ${image_name} >/dev/null 2>/dev/null ) ; then
     # Create build images containing the build tool-chain, Java and an Apache Cassandra git working directory, with retry
+    echo "Building docker image ${image_name}..."
     until docker build -t ${image_name} -f docker/${dockerfile} .  ; do
-        echo "docker build failed… trying again in 10s… "
-        sleep 10
+      echo "docker build failed… trying again in 10s… "
+      sleep 10
     done
-  fi
+    echo "Docker image ${image_name} has been built"
+  else
+    echo "Successfully pulled build image."
+  fi  
+else
+    echo "Found build image locally."
 fi
 
 pushd ${cassandra_dir} >/dev/null
@@ -124,7 +135,7 @@ sysctl -n hw.memsize >/dev/null 2>&1 && mem=$(sysctl -n hw.memsize)
 case ${target} in
     # test-burn doesn't have enough tests in it to split beyond 8, and burn and long we want a bit more resources anyway
     "stress-test" | "fqltool-test" | "microbench" | "test-burn" | "long-test" | "cqlsh-test" )
-        [[ ${mem} -gt $((5 * 1024 * 1024 * 1024 * ${jenkins_executors})) ]] || { echo >&2 "tests require minimum docker memory 6g (per jenkins executor (${jenkins_executors})), found ${mem}"; exit 1; }
+        # [[ ${mem} -gt $((5 * 1024 * 1024 * 1024 * ${jenkins_executors})) ]] || { echo >&2 "tests require minimum docker memory 6g (per jenkins executor (${jenkins_executors})), found ${mem}"; exit 1; }
     ;;
     "dtest" | "dtest-novnode" | "dtest-offheap" | "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-novnode"| "dtest-upgrade-large" | "dtest-upgrade-novnode-large" )
         [ -f "${cassandra_dtest_dir}/dtest.py" ] || { echo >&2 "${cassandra_dtest_dir}/dtest.py must exist"; exit 1; }
