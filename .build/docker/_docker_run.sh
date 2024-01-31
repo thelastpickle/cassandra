@@ -26,6 +26,8 @@
 #
 ################################
 
+set -x
+
 # variables, with defaults
 [ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
