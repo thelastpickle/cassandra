@@ -255,7 +255,7 @@ def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
         sh "until git clone --quiet --depth 1 -b ${dtestBranch} ${dtestRepo} \"${cassandra_dtest_dir}\" ; do echo \"git cloning cassandra-dtest failed… trying again… \" ; done"
     }
 
-    tool type: 'jdk', name: "jdk_${jdk}_latest"
+    //tool type: 'jdk', name: "jdk_${jdk}_latest"
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
