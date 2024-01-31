@@ -22,16 +22,26 @@ pipeline {
     }
     stage('Tests') {
       parallel {
-         stage('artifacts') {
+        stage('artifacts') {
            steps {
              buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
            }
-         }
-         stage('lint') {
+        }
+        stage('lint') {
            steps {
              buildJob(".build/docker/check-code.sh", "")
            }
-         }
+        }
+        stage('cqlsh-test') {
+            steps {
+              testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+            }
+        }
+        stage('fqltool-test') {
+            steps {
+              testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+            }
+        }
       }
     }
   }
