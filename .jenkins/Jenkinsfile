@@ -44,6 +44,13 @@ pipeline {
         }
       }
     }
+    stage('Summary') {
+      steps {
+        generateUnifiedTestReport()
+        // FIXME – post always
+        sendNotifications()
+      }
+    }
   }
 }
 
