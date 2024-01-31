@@ -1,9 +1,9 @@
 pipeline {
   agent('any')
-  options {
+  // options {
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
-  }
+  // }
   environment {
     javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = javaVersionsSupported()
