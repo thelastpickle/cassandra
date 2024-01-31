@@ -29,7 +29,7 @@
 # variables, with defaults
 [ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
-[ "x${m2_dir}" != "x" ] || m2="${cassandra_dir}/build/m2"
+[ "x${m2_dir}" != "x" ] || m2_dir="${cassandra_dir}/build/m2"
 [ -d "${build_dir}" ] || { mkdir -p "${build_dir}" ; }
 [ -d "${m2_dir}" ] || { mkdir -p "${m2_dir}" ; }
 

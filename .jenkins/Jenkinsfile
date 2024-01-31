@@ -41,10 +41,10 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-  //agent { label 'cassandra' }
+  agent { label 'agent-dind' }
 
   options {
-    githubProjectProperty('https://github.com/HadesArchitect/cassandra')
+    // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     timestamps()
   }
   environment {
