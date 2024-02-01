@@ -130,7 +130,7 @@ mem=1
 command -v free >/dev/null 2>&1 && mem=$(free -b | grep Mem: | awk '{print $2}')
 # macos
 sysctl -n hw.memsize >/dev/null 2>&1 && mem=$(sysctl -n hw.memsize)
-
+sleep 999999999999
 # figure out resource limits, scripts, and mounts for the test type
 case ${target} in
     # test-burn doesn't have enough tests in it to split beyond 8, and burn and long we want a bit more resources anyway
