@@ -239,7 +239,7 @@ def testJob(test_script, test_type, splits=1) {
                   def tests_per_split = [:]
                   for (int s = 1; s <= splits; s++) {
                     def split = s
-                    tests_per_split[split] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+                    tests_per_split["${test_type} ${arch} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
                   }
                   parallel(tests_per_split)
                 }
