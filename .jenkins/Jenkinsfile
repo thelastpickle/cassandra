@@ -350,7 +350,7 @@ def generateUnifiedTestReport() {
     sh "mkdir -p build"
     copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
     sh 'xz -d build/test/output/**/*.xml.xz || true ; xz -d test/output/cqlshlib.xml test/output/nosetests.xml || true'
-    sh "ANT_OPTS='-Xmx15g' ant generate-test-report"
+    sh ".build/docker/_docker_run.sh bullseye-build.docker generate-test-report.sh"
     dir('build/') {
       sh "xz -f TESTS-TestSuites.xml"
       archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,test/html/**/*", fingerprint: true
