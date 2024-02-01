@@ -127,11 +127,18 @@ fi
 # find host's available cores and mem
 cores=1
 command -v nproc >/dev/null 2>&1 && cores=$(nproc --all)
-mem=1
-# linux
-command -v free >/dev/null 2>&1 && mem=$(free -b | grep Mem: | awk '{print $2}')
-# macos
-sysctl -n hw.memsize >/dev/null 2>&1 && mem=$(sysctl -n hw.memsize)
+
+case $(uname) in
+    "Linux")
+        mem=$(free -b | grep Mem: | awk '{print $2}')
+        ;;
+    "Darwin")
+        mem=$(sysctl -n hw.memsize)
+        ;;
+    *)
+        echo >&2 "Unsupported operating system, expected Linux or Darwin"
+        exit 1
+esac
 
 # figure out resource limits, scripts, and mounts for the test type
 case ${target} in
