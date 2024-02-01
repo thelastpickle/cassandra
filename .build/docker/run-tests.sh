@@ -24,6 +24,8 @@
 #  Define env variable DISABLE_INNER_SPLITS to disable inner splitting.
 #
 
+set -x
+
 # help
 if [ "$#" -lt 1 ] || [ "$#" -gt 3 ] || [ "$1" == "-h" ]; then
     echo ""
