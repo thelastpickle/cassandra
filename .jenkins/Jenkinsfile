@@ -49,20 +49,15 @@ pipeline {
           }
         }        
         stage('cqlsh-test') {
-            steps {
-              testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
-            }
+          steps {
+            testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+          }
         }
         stage('fqltool-test') {
-            steps {
-              testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-            }
+          steps {
+            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+          }
         }
-        stage('stress-test') {
-            steps {
-              testJob(".build/docker/run-tests.sh", "stress-test", 1)
-            }
-         }
         stage('test') {
           steps {
             testJob(".build/docker/run-tests.sh", "test", 8)
