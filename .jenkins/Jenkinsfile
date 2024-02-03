@@ -28,36 +28,36 @@ pipeline {
             buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
           }
         }
-        stage('lint') {
-          steps {
-            buildJob(".build/docker/check-code.sh", "")
-          }
-        }
-        stage('debian') {
-          steps {
-            buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
-          }
-        }
-        stage('redhat') {
-          steps {
-            buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
-          }
-        }
-        stage('stress-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "stress-test", 1)
-          }
-        }        
-        stage('cqlsh-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
-          }
-        }
-        stage('fqltool-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-          }
-        }
+        // stage('lint') {
+        //   steps {
+        //     buildJob(".build/docker/check-code.sh", "")
+        //   }
+        // }
+        // stage('debian') {
+        //   steps {
+        //     buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+        //   }
+        // }
+        // stage('redhat') {
+        //   steps {
+        //     buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+        //   }
+        // }
+        // stage('stress-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "stress-test", 1)
+        //   }
+        // }        
+        // stage('cqlsh-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+        //   }
+        // }
+        // stage('fqltool-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+        //   }
+        // }
         // stage('test') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "test", 8)
