@@ -24,15 +24,30 @@ pipeline {
     stage('Tests') {
       parallel {
         stage('artifacts') {
-           steps {
-             buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-           }
+          steps {
+            buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+          }
         }
         stage('lint') {
-           steps {
-             buildJob(".build/docker/check-code.sh", "")
-           }
+          steps {
+            buildJob(".build/docker/check-code.sh", "")
+          }
         }
+        stage('debian') {
+          steps {
+            buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+          }
+        }
+        stage('redhat') {
+          steps {
+            buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+          }
+        }
+        stage('stress-test') {
+          steps {
+            testJob(".build/docker/run-tests.sh", "stress-test", 1)
+          }
+        }        
         stage('cqlsh-test') {
             steps {
               testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
@@ -136,7 +151,7 @@ def buildJob(build_script, toCopy) {
       def builds_per_jdk = [:]
       for (j in jdks) {
         def jdk = j
-        builds_per_jdk[jdk] = { _buildAxis(build_script, toCopy, arch, jdk) }
+        builds_per_jdk["${STAGE_NAME} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
       }
       parallel(builds_per_jdk)
     }
