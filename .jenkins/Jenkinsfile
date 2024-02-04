@@ -55,7 +55,9 @@ pipeline {
         // }
         stage('fqltool-test') {
           parallel(
-            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+            steps(
+              testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+            )
           )
         }
         // stage('test') {
