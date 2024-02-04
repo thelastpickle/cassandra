@@ -6,7 +6,7 @@ pipeline {
   // }
   environment {
     javaVersionDefault = javaVersionDefault()
-    javaVersionsSupported = javaVersionsSupported()
+    // javaVersionsSupported = javaVersionsSupported()
     javaVersionsSupported = "11"
   }
   stages {
