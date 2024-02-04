@@ -125,7 +125,7 @@ if [[ ! -z ${JENKINS_URL+x} ]] && [[ ! -z ${NODE_NAME+x} ]] ; then
 fi
 
 # find host's available cores and mem
-cores=$(nproc --all) || { echo >&2 "Unable to check available CPU cores"; exit 1; }
+cores=$(docker run alpine nproc --all) || { echo >&2 "Unable to check available CPU cores"; exit 1; }
 
 case $(uname) in
     "Linux")
