@@ -172,12 +172,12 @@ def buildJob(build_script, toCopy) {
     return;
   }
   //def archs = ['cassandra', 'cassandra-arm64'] // uncomment when ready for arm64 testing
-  def archs = ['cassandra']
+  def archs = ['amd64']
   def jdks = "${javaVersionsSupported}".split(/,/, -1)
   def builds = [:]
   for (arch in archs) {
     for (jdk in jdks) {
-      builds["${STAGE_NAME} arch:${arch} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
+      builds["${STAGE_NAME} ${arch} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
     }
   }
   parallel(builds)
@@ -269,45 +269,58 @@ def testJob(test_script, test_type, splits=1) {
 
   // XXX – the following matrix over arrays can be better done with multi-arrays and recursion
 
-  def archs = ['cassandra']
+  def archs = ['amd64']
   def jdks = STAGE_NAME.contains("dtest-upgrade") || "simulator-dtest".equals(STAGE_NAME) ? ["${javaVersionDefault}"] : "${javaVersionsSupported}".split(/,/, -1)
   def pythons = "cqlshX".equals(STAGE_NAME) ? ['3.7', '3.8', '3.11'] : ['3.7']
   def cythons = "cqlshX".equals(STAGE_NAME) ? ['no', 'yes'] : ['no']
 
-  def tests_per_arch = [:]
-  for (a in archs) {
-    def arch = a
-    tests_per_arch[arch] = {
-      def tests_per_jdk = [:]
-      for (j in jdks) {
-        def jdk = j
-        tests_per_jdk[jdk] = {
-          def tests_per_python = [:]
-          for (p in pythons) {
-            def python = p
-            tests_per_python["${test_type} python:${python}"] = {
-              def tests_per_cython = [:]
-              for (c in cythons) {
-                def cython = c
-                tests_per_cython[cython] = {
-                  def tests_per_split = [:]
-                  for (int s = 1; s <= splits; s++) {
-                    def split = s
-                    tests_per_split["${test_type} jdk:${jdk} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
-                  }
-                  parallel(tests_per_split)
-                }
-              }
-              parallel(tests_per_cython)
-            }
+  def tests = [:]
+  for (arch in archs) {
+    for (jdk in jdks) {
+      for (python in pythons) {
+        for (cython in cythons) {
+          for (int split = 1; s <= splits; split++) {
+            tests["${test_type} ${arch} jdk:${jdk} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
           }
-          parallel(tests_per_python)
         }
       }
-      parallel(tests_per_jdk)
     }
   }
-  parallel(tests_per_arch)
+  parallel(tests)
+  // def tests_per_arch = [:]
+  // for (a in archs) {
+  //   def arch = a
+  //   tests_per_arch[arch] = {
+  //     def tests_per_jdk = [:]
+  //     for (j in jdks) {
+  //       def jdk = j
+  //       tests_per_jdk[jdk] = {
+  //         def tests_per_python = [:]
+  //         for (p in pythons) {
+  //           def python = p
+  //           tests_per_python["${test_type} python:${python}"] = {
+  //             def tests_per_cython = [:]
+  //             for (c in cythons) {
+  //               def cython = c
+  //               tests_per_cython[cython] = {
+  //                 def tests_per_split = [:]
+  //                 for (int s = 1; s <= splits; s++) {
+  //                   def split = s
+  //                   tests_per_split["${test_type} jdk:${jdk} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+  //                 }
+  //                 parallel(tests_per_split)
+  //               }
+  //             }
+  //             parallel(tests_per_cython)
+  //           }
+  //         }
+  //         parallel(tests_per_python)
+  //       }
+  //     }
+  //     parallel(tests_per_jdk)
+  //   }
+  // }
+  // parallel(tests_per_arch)
 }
 
 /**
