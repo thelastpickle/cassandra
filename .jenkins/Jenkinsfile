@@ -93,11 +93,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test-oa", 8)
         //   }
         // }
-        stage('test-system-keyspace-directory') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
-          }
-        }
+        // stage('test-system-keyspace-directory') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
+        //   }
+        // }
         // stage('jvm-dtest') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
@@ -276,7 +276,7 @@ def testJob(test_script, test_type, splits=1) {
           def tests_per_python = [:]
           for (p in pythons) {
             def python = p
-            tests_per_python[python] = {
+            tests_per_python["${test_type} python:${python}"] = {
               def tests_per_cython = [:]
               for (c in cythons) {
                 def cython = c
