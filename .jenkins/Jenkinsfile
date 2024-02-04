@@ -93,16 +93,21 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test-oa", 8)
         //   }
         // }
-        stage('jvm-dtest') {
+        stage('test-system-keyspace-directory') {
           steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
+            testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
           }
         }
-        stage('jvm-dtest-upgrade') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
-          }
-        }        
+        // stage('jvm-dtest') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
+        //   }
+        // }
+        // stage('jvm-dtest-upgrade') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
+        //   }
+        // }
       }
     }
     stage('Summary') {
@@ -172,7 +177,7 @@ def buildJob(build_script, toCopy) {
   def builds_per_arch = [:]
   for (a in archs) {
     def arch = a
-    builds_per_arch[arch] = {
+    builds_per_arch["${STAGE_NAME} arch:${arch}"] = {
       def builds_per_jdk = [:]
       for (j in jdks) {
         def jdk = j
