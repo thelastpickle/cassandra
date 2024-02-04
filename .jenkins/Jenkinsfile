@@ -68,31 +68,31 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test-trie", 8)
         //   }
         // }
-        stage('test-burn') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-burn", 10)
-          }
-        }
-        stage('test-cdc') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-cdc", 10)
-          }
-        }
-        stage('test-compression') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-compression", 10)
-          }
-        }
-        // stage('long-test') {
+        // stage('test-burn') {
         //   steps {
-        //     testJob(".build/docker/run-tests.sh", "long-test", 8)
+        //     testJob(".build/docker/run-tests.sh", "test-burn", 10)
         //   }
         // }
-        // stage('test-oa') {
+        // stage('test-cdc') {
         //   steps {
-        //     testJob(".build/docker/run-tests.sh", "test-oa", 8)
+        //     testJob(".build/docker/run-tests.sh", "test-cdc", 10)
         //   }
         // }
+        // stage('test-compression') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-compression", 10)
+        //   }
+        // }
+        stage('long-test') {
+          steps {
+            testJob(".build/docker/run-tests.sh", "long-test", 8)
+          }
+        }
+        stage('test-oa') {
+          steps {
+            testJob(".build/docker/run-tests.sh", "test-oa", 8)
+          }
+        }
       }
     }
     stage('Summary') {
