@@ -70,17 +70,17 @@ pipeline {
         // }
         stage('test-burn') {
           steps {
-            testJob(".build/docker/run-tests.sh", "test-burn", 8)
+            testJob(".build/docker/run-tests.sh", "test-burn", 10)
           }
         }
         stage('test-cdc') {
           steps {
-            testJob(".build/docker/run-tests.sh", "test-cdc", 8)
+            testJob(".build/docker/run-tests.sh", "test-cdc", 10)
           }
         }
         stage('test-compression') {
           steps {
-            testJob(".build/docker/run-tests.sh", "test-compression", 8)
+            testJob(".build/docker/run-tests.sh", "test-compression", 10)
           }
         }
         // stage('long-test') {
