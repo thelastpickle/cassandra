@@ -6,8 +6,8 @@ pipeline {
   // }
   environment {
     javaVersionDefault = javaVersionDefault()
-    // javaVersionsSupported = javaVersionsSupported()
-    javaVersionsSupported = "11"
+    javaVersionsSupported = javaVersionsSupported()
+    // javaVersionsSupported = "11"
   }
   stages {
     stage('init') {
@@ -53,11 +53,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
         //   }
         // }
-        // stage('fqltool-test') {
-        //   steps {
-        //     testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-        //   }
-        // }
+        stage('fqltool-test') {
+          steps {
+            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+          }
+        }
         // stage('test') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "test", 8)
@@ -174,21 +174,28 @@ def buildJob(build_script, toCopy) {
   //def archs = ['cassandra', 'cassandra-arm64'] // uncomment when ready for arm64 testing
   def archs = ['cassandra']
   def jdks = "${javaVersionsSupported}".split(/,/, -1)
-  def builds_per_arch = [:]
-  for (a in archs) {
-    def arch = a
-    builds_per_arch["${STAGE_NAME} arch:${arch}"] = {
-      def builds_per_jdk = [:]
-      for (j in jdks) {
-        def jdk = j
-        builds_per_jdk["${STAGE_NAME} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
-      }
-      echo "Builds per JDK: ${builds_per_jdk}"
-      parallel(builds_per_jdk)
+  def builds = [:]
+  for (arch in archs) {
+    for (jdk in jdks) {
+      builds["${STAGE_NAME} arch:${arch} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
     }
   }
-  echo "Builds per arch: ${builds_per_arch}"
   parallel(builds_per_arch)
+
+  // def builds_per_arch = [:]
+  // for (arch in archs) {
+  //   builds_per_arch["${STAGE_NAME} arch:${arch}"] = {
+  //     def builds_per_jdk = [:]
+  //     for (j in jdks) {
+  //       def jdk = j
+  //       builds_per_jdk["${STAGE_NAME} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
+  //     }
+  //     echo "Builds per JDK: ${builds_per_jdk}"
+  //     parallel(builds_per_jdk)
+  //   }
+  // }
+  // echo "Builds per arch: ${builds_per_arch}"
+  // parallel(builds_per_arch)
 }
 
 /**
