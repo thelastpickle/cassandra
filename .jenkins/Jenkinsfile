@@ -63,11 +63,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test", 8)
         //   }
         // }
-        // stage('test-trie') {
-        //   steps {
-        //     testJob(".build/docker/run-tests.sh", "test-trie", 8)
-        //   }
-        // }
+        stage('test-trie') {
+          steps {
+            testJob(".build/docker/run-tests.sh", "test-trie", 8)
+          }
+        }
         // stage('test-burn') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "test-burn", 10)
@@ -83,16 +83,16 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test-compression", 10)
         //   }
         // }
-        stage('long-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "long-test", 8)
-          }
-        }
-        stage('test-oa') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-oa", 8)
-          }
-        }
+        // stage('long-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "long-test", 8)
+        //   }
+        // }
+        // stage('test-oa') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-oa", 8)
+        //   }
+        // }
       }
     }
     stage('Summary') {
