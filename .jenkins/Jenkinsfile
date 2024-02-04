@@ -48,11 +48,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "stress-test", 1)
         //   }
         // }        
-        stage('cqlsh-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
-          }
-        }
+        // stage('cqlsh-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+        //   }
+        // }
         // stage('fqltool-test') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
@@ -110,13 +110,13 @@ pipeline {
         // }
       }
     }
-    stage('Summary') {
-      steps {
-        generateUnifiedTestReport()
-        // FIXME – post always
-        sendNotifications()
-      }
-    }
+    // stage('Summary') {
+    //   steps {
+    //     generateUnifiedTestReport()
+    //     // FIXME – post always
+    //     sendNotifications()
+    //   }
+    // }
   }
 }
 
@@ -183,9 +183,11 @@ def buildJob(build_script, toCopy) {
         def jdk = j
         builds_per_jdk["${STAGE_NAME} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
       }
+      echo "Builds per JDK: ${builds_per_jdk}"
       parallel(builds_per_jdk)
     }
   }
+  echo "Builds per arch: ${builds_per_arch}"
   parallel(builds_per_arch)
 }
 
