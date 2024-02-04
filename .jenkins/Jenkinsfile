@@ -23,11 +23,11 @@ pipeline {
     }
     stage('Tests') {
       parallel {
-        stage('artifacts') {
-          steps {
-            buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-          }
-        }
+        // stage('artifacts') {
+        //   steps {
+        //     buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+        //   }
+        // }
         // stage('lint') {
         //   steps {
         //     buildJob(".build/docker/check-code.sh", "")
@@ -54,9 +54,9 @@ pipeline {
         //   }
         // }
         stage('fqltool-test') {
-          steps {
+          parallel(
             testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-          }
+          )
         }
         // stage('test') {
         //   steps {
@@ -177,25 +177,10 @@ def buildJob(build_script, toCopy) {
   def builds = [:]
   for (arch in archs) {
     for (jdk in jdks) {
-      builds["${STAGE_NAME} ${arch} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
+      builds["${STAGE_NAME} ${arch} jdk:${jdk}"] = _buildAxis(build_script, toCopy, arch, jdk)
     }
   }
   parallel(builds)
-
-  // def builds_per_arch = [:]
-  // for (arch in archs) {
-  //   builds_per_arch["${STAGE_NAME} arch:${arch}"] = {
-  //     def builds_per_jdk = [:]
-  //     for (j in jdks) {
-  //       def jdk = j
-  //       builds_per_jdk["${STAGE_NAME} jdk:${jdk}"] = { _buildAxis(build_script, toCopy, arch, jdk) }
-  //     }
-  //     echo "Builds per JDK: ${builds_per_jdk}"
-  //     parallel(builds_per_jdk)
-  //   }
-  // }
-  // echo "Builds per arch: ${builds_per_arch}"
-  // parallel(builds_per_arch)
 }
 
 /**
@@ -279,14 +264,14 @@ def testJob(test_script, test_type, splits=1) {
     for (jdk in jdks) {
       for (python in pythons) {
         for (cython in cythons) {
-          for (int split = 1; s <= splits; split++) {
+          for (int split = 1; split <= splits; split++) {
             tests["${test_type} ${arch} jdk:${jdk} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
           }
         }
       }
     }
   }
-  parallel(tests)
+  return tests;
   // def tests_per_arch = [:]
   // for (a in archs) {
   //   def arch = a
