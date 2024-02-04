@@ -129,7 +129,7 @@ cores=$(nproc --all) || { echo >&2 "Unable to check available CPU cores"; exit 1
 
 case $(uname) in
     "Linux")
-        mem=$(free -b | grep Mem: | awk '{print $2}') || { echo >&2 "Unable to check available memory"; exit 1; }
+        mem=$(docker run alpine free -b | grep Mem: | awk '{print $2}') || { echo >&2 "Unable to check available memory"; exit 1; }
         ;;
     "Darwin")
         mem=$(sysctl -n hw.memsize) || { echo >&2 "Unable to check available memory"; exit 1; }
