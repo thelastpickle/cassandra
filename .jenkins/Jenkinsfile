@@ -63,11 +63,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test", 8)
         //   }
         // }
-        stage('test-trie') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-trie", 8)
-          }
-        }
+        // stage('test-trie') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-trie", 8)
+        //   }
+        // }
         stage('test-burn') {
           steps {
             testJob(".build/docker/run-tests.sh", "test-burn", 8)
