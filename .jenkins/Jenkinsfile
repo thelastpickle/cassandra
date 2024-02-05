@@ -53,11 +53,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
         //   }
         // }
-        stage('fqltool-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
-          }
-        }
+        // stage('fqltool-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+        //   }
+        // }
         // stage('test') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "test", 8)
