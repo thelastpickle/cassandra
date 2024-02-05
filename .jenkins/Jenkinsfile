@@ -21,7 +21,7 @@ pipeline {
         buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
       }
     }
-    stage('Tests') {
+    // stage('Tests') {
       // parallel {
         // stage('artifacts') {
         //   steps {
@@ -109,7 +109,7 @@ pipeline {
         //   }
         // }
       // }
-    }
+    // }
     // stage('Summary') {
     //   steps {
     //     generateUnifiedTestReport()
