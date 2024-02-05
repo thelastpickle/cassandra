@@ -175,13 +175,6 @@ def buildJob(build_script, toCopy) {
   def archs = ['amd64']
   def jdks = "${javaVersionsSupported}".split(/,/, -1)
   def builds = [:]
-  // for (arch in archs) {
-  //   for (jdk in jdks) {
-  //     def a = arch
-  //     def j = jdk
-  //     builds["${STAGE_NAME} ${a} jdk:${j}"] = { _buildAxis(build_script, toCopy, a, j) }
-  //   }
-  // }
   archs.each { arch ->
     jdks.each { jdk ->
         builds["${STAGE_NAME} $arch jdk:$jdk"] = { _buildAxis(build_script, toCopy, arch, jdk) }
@@ -268,16 +261,17 @@ def testJob(test_script, test_type, splits=1) {
   def cythons = "cqlshX".equals(STAGE_NAME) ? ['no', 'yes'] : ['no']
 
   def tests = [:]
-  for (arch in archs) {
-    for (jdk in jdks) {
-      for (python in pythons) {
-        for (cython in cythons) {
-          for (int split = 1; split <= splits; split++) {
-            tests["${test_type} ${arch} jdk:${jdk} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+  archs.each { arch ->
+      jdks.each { jdk ->
+          pythons.each { python ->
+              cythons.each { cython ->
+                  (1..splits).each { split ->
+                      tests["${test_type} $arch jdk:$jdk ${split}/${splits}"] =
+                          { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+                  }
+              }
           }
-        }
       }
-    }
   }
   parallel(tests)
 }
