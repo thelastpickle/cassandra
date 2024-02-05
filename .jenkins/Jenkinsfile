@@ -265,10 +265,15 @@ def testJob(test_script, test_type, splits=1) {
       jdks.each { jdk ->
           pythons.each { python ->
               cythons.each { cython ->
-                  (1..splits).each { split ->
-                      tests["${test_type} $arch jdk:$jdk ${split}/${splits}"] =
-                          { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+                  for (int s = 1; s <= splits; s++) {
+                    def split = s
+                    tests["${test_type} $arch jdk:$jdk ${split}/${splits}"] = 
+                      { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
                   }
+                  // (1..splits).each { split ->
+                  //     tests["${test_type} $arch jdk:$jdk ${split}/${splits}"] =
+                  //         { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
+                  // }
               }
           }
       }
