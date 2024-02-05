@@ -187,7 +187,7 @@ def buildJob(build_script, toCopy) {
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _buildAxis(build_script, toCopy, arch, jdk) {
-  node(arch) {
+  node(arch == "amd64" ? "cassandra" : "cassandra-arm64") {
     branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
     checkout scm
     //tool type: 'jdk', name: "jdk_${jdk}_latest"
