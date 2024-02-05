@@ -175,11 +175,16 @@ def buildJob(build_script, toCopy) {
   def archs = ['amd64']
   def jdks = "${javaVersionsSupported}".split(/,/, -1)
   def builds = [:]
-  for (arch in archs) {
-    for (jdk in jdks) {
-      def a = arch
-      def j = jdk
-      builds["${STAGE_NAME} ${a} jdk:${j}"] = { _buildAxis(build_script, toCopy, a, j) }
+  // for (arch in archs) {
+  //   for (jdk in jdks) {
+  //     def a = arch
+  //     def j = jdk
+  //     builds["${STAGE_NAME} ${a} jdk:${j}"] = { _buildAxis(build_script, toCopy, a, j) }
+  //   }
+  // }
+  archs.each { arch ->
+    jdks.each { jdk ->
+        builds["${STAGE_NAME} $arch jdk:$jdk"] = { _buildAxis(build_script, toCopy, arch, jdk) }
     }
   }
   parallel(builds)
