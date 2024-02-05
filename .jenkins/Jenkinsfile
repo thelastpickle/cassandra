@@ -187,7 +187,7 @@ def buildJob(build_script, toCopy) {
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _buildAxis(build_script, toCopy, arch, jdk) {
-  node(arch == "amd64" ? "cassandra" : "cassandra-arm64") {
+  node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
     checkout scm
     //tool type: 'jdk', name: "jdk_${jdk}_latest"
@@ -275,11 +275,23 @@ def testJob(test_script, test_type, splits=1) {
 }
 
 /**
+ * Backward compatibility to support ci-cassandra.a.o Renders node architecture by real architecture name
+ **/
+def _getNodeArch(arch) {
+  switch(arch) {
+    case "arm64":
+      return "cassandra-arm64"
+    default:
+      return "cassandra"
+  }
+}
+
+/**
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
  **/
 def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
   echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
-  node(arch) {
+  node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
     echo "Starting ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
     checkout scm
@@ -384,7 +396,7 @@ def saveAgentReport() {
 
 def generateUnifiedTestReport() {
   assert "Summary".equals(STAGE_NAME)
-  node('cassandra') {
+  node(_getNodeArch('amd64')) {
     checkout scm
     sh "mkdir -p build"
     copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
