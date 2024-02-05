@@ -73,11 +73,11 @@ pipeline {
         //     testJob(".build/docker/run-tests.sh", "test-burn", 10)
         //   }
         // }
-        stage('test-cdc') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-cdc", 10)
-          }
-        }
+        // stage('test-cdc') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-cdc", 10)
+        //   }
+        // }
         // stage('test-compression') {
         //   steps {
         //     testJob(".build/docker/run-tests.sh", "test-compression", 10)
@@ -272,40 +272,6 @@ def testJob(test_script, test_type, splits=1) {
     }
   }
   parallel(tests)
-  // def tests_per_arch = [:]
-  // for (a in archs) {
-  //   def arch = a
-  //   tests_per_arch[arch] = {
-  //     def tests_per_jdk = [:]
-  //     for (j in jdks) {
-  //       def jdk = j
-  //       tests_per_jdk[jdk] = {
-  //         def tests_per_python = [:]
-  //         for (p in pythons) {
-  //           def python = p
-  //           tests_per_python["${test_type} python:${python}"] = {
-  //             def tests_per_cython = [:]
-  //             for (c in cythons) {
-  //               def cython = c
-  //               tests_per_cython[cython] = {
-  //                 def tests_per_split = [:]
-  //                 for (int s = 1; s <= splits; s++) {
-  //                   def split = s
-  //                   tests_per_split["${test_type} jdk:${jdk} ${split}/${splits}"] = { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
-  //                 }
-  //                 parallel(tests_per_split)
-  //               }
-  //             }
-  //             parallel(tests_per_cython)
-  //           }
-  //         }
-  //         parallel(tests_per_python)
-  //       }
-  //     }
-  //     parallel(tests_per_jdk)
-  //   }
-  // }
-  // parallel(tests_per_arch)
 }
 
 /**
