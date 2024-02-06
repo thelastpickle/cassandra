@@ -16,12 +16,22 @@ pipeline {
         cleanWs()
       }
     }
-    stage('matrix') {
+    stage('jar') {
+      parallel {
+        stage('jdk:11') {
+          build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11")
+        }
+        stage('jdk:17') {
+          build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17")
+        }
+      }
+    }
+    stage('Tests') {
       matrix {
         axes {
             axis { 
               name 'arch'
-              values 'amd64', 'arm64' 
+              values 'amd64'//, 'arm64' 
             }
             axis { 
               name 'jdk'
@@ -29,13 +39,17 @@ pipeline {
             }
         }
         stages {
-          stage('jar') {
-            steps {
-              echo "${arch} jdk:${jdk}"
-              // script {
-                _buildAxis(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk)
-              // }
-            }
+          stage('artifacts') {
+            build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
+          }
+          stage('lint') {
+            build(".build/docker/check-code.sh", "", arch, jdk)
+          }
+          stage('debian') {
+            build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
+          }
+          stage('redhat') {
+            build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
           }
         }
       }
@@ -182,37 +196,11 @@ def isStageIncluded() {
 }
 
 /**
- * Executes `${build_script} ${jdk}` for each arch, and jdk.
- *
- * Stashes the jarfiles for `package-artifacts.sh`
- * Copies build artifacts and logfiles to nightlies
- * Cleans the agent (docker prune) afterwards
- * Stops the pipeline on any failure
- **/
-def buildJob(build_script, toCopy) {
-  if (! isStageIncluded()) {
-    echo "Skipping ${STAGE_NAME}"
-    return;
-  }
-  //def archs = ['amd64', 'arm64'] // uncomment when ready for arm64 testing
-  def archs = ['amd64']
-  def jdks = "${javaVersionsSupported}".split(/,/, -1)
-  def builds = [:]
-  archs.each { arch ->
-    jdks.each { jdk ->
-        builds["${STAGE_NAME} $arch jdk:$jdk"] = _buildAxis(build_script, toCopy, arch, jdk)
-    }
-  }
-  // parallel(builds)
-  return builds
-}
-
-/**
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
-def _buildAxis(build_script, toCopy, arch, jdk) {
-  //echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
-  // return {
+def build(build_script, toCopy, arch, jdk) {
+  steps {
+    echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
     node(_getNodeArch(arch)) {
       branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
       checkout scm
@@ -259,7 +247,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         }
       }
     }
-  // }
+  }
 }
 
 /**
