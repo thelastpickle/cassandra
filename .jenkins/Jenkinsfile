@@ -17,9 +17,9 @@ pipeline {
       }
     }
     stage('jar') {
-      parallel {
+      parallel (
         buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
-      }
+      )
     }
     // stage('Tests') {
     //   parallel {
@@ -181,6 +181,7 @@ def buildJob(build_script, toCopy) {
     }
   }
   // parallel(builds)
+  return builds
 }
 
 /**
