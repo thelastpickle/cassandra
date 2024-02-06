@@ -24,7 +24,7 @@ pipeline {
       }
     }
     stage('Tests') {
-      parallel {
+      parallel (
         'artifacts': {
           steps {
             script {
@@ -114,7 +114,7 @@ pipeline {
     //         testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
     //       }
     //     }
-      }
+      )
     }
     // stage('Summary') {
     //   steps {
