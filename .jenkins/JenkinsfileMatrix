@@ -19,8 +19,14 @@ pipeline {
     stage('jar') {
       matrix {
         axes {
-            axis { name 'ARCH', values 'amd64', 'arm64' }
-            axis { name 'JDK', values '11', '17' }
+            axis { 
+              name 'ARCH'
+              values 'amd64', 'arm64' 
+            }
+            axis { 
+              name 'JDK'
+              values '11', '17' 
+            }
         }
       }
       steps {
