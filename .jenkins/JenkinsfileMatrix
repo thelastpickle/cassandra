@@ -19,7 +19,7 @@ pipeline {
     stage('matrix') {
       matrix {
         axes {
-            axis(name 'ARCH', values 'amd64', 'arm64')
+            ARCH 'amd64', 'arm64'
             axis {
               name 'JDK'
               values '11', '17' 
