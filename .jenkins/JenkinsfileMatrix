@@ -20,19 +20,21 @@ pipeline {
       matrix {
         axes {
             axis { 
-              name 'ARCH'
+              name 'arch'
               values 'amd64', 'arm64' 
             }
             axis { 
-              name 'JDK'
+              name 'jdk'
               values '11', '17' 
             }
         }
         stages {
-          stage(jar) {
+          stage('jar') {
             steps {
-              echo "${ARCH} jdk:${JDK}"
-              _buildAxis(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", ARCH, JDK)
+              echo "${arch} jdk:${jdk}"
+              script {
+                _buildAxis(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk)
+              }
             }
           }
         }
