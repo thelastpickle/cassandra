@@ -29,14 +29,12 @@ pipeline {
             }
         }
         stages {
-          script {
-            stage("${ARCH} jdk:${JDK}") {
-              steps {
-                echo "${ARCH} jdk:${JDK}"
-                // script {
-                //   buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
-                // }
-              }
+          stage("${ARCH} jdk:${JDK}") {
+            steps {
+              echo "${ARCH} jdk:${JDK}"
+              // script {
+              //   buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
+              // }
             }
           }
         }
