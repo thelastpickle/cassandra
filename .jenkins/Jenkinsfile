@@ -192,7 +192,7 @@ def buildJob(build_script, toCopy) {
 def _buildAxis(build_script, toCopy, arch, jdk) {
   echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   def stage = STAGE_NAME
-  return {
+  // return {
     stage("${stage} ${build_script} arch jdk:${jdk}") {
       node(_getNodeArch(arch)) {
         branchName: "${stage} ${build_script} ${jdk} ${NODE_NAME}"
@@ -242,7 +242,7 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
         }
       }
     }
-  }
+  // }
 }
 
 /**
