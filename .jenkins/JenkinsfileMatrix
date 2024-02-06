@@ -29,7 +29,7 @@ pipeline {
             }
         }
         stages {
-          stage("${ARCH} jdk:$JDK") {
+          stage('jar') {
             steps {
               echo "${ARCH} jdk:$JDK"
               // script {
