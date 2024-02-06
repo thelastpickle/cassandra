@@ -187,6 +187,7 @@ def buildJob(build_script, toCopy) {
     }
   }
   // parallel(builds)
+  return builds
 }
 
 /**
