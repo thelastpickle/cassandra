@@ -20,12 +20,12 @@ pipeline {
       parallel {
         stage('jdk:11') {
           steps {
-            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", STAGE_NAME)
+            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", "jar")
           }
         }
         stage('jdk:17') {
           steps {
-            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17", STAGE_NAME)
+            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17", "jar")
           }
         }
       }
