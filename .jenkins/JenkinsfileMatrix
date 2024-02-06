@@ -20,12 +20,12 @@ pipeline {
       parallel {
         stage('jdk:11') {
           steps {
-            build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11")
+            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11")
           }
         }
         stage('jdk:17') {
           steps {
-            build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17")
+            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17")
           }
         }
       }
@@ -45,22 +45,22 @@ pipeline {
         stages {
           stage('artifacts') {
             steps {
-              build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
+              _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
             }
           }
           stage('lint') {
             steps {
-              build(".build/docker/check-code.sh", "", arch, jdk)
+              _build(".build/docker/check-code.sh", "", arch, jdk)
             }
           }
           stage('debian') {
             steps {
-              build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
+              _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
             }
           }
           stage('redhat') {
             steps {
-              build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
+              _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
             }
           }
         }
@@ -210,7 +210,7 @@ def isStageIncluded() {
 /**
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
-def build(build_script, toCopy, arch, jdk) {
+def _build(build_script, toCopy, arch, jdk) {
   echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
