@@ -24,15 +24,15 @@ pipeline {
       }
     }
     stage('Tests') {
-      parallel (
-        'artifacts': {
+      parallel {
+        stage('artifacts') {
           steps {
             script {
               parallel buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
-        },
-        'lint': {
+        }
+        stage('lint') {
           steps {
             script {
               parallel buildJob(".build/docker/check-code.sh", "")
@@ -114,7 +114,7 @@ pipeline {
     //         testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
     //       }
     //     }
-      )
+      }
     }
     // stage('Summary') {
     //   steps {
