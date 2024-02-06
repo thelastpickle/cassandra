@@ -16,20 +16,17 @@ pipeline {
         cleanWs()
       }
     }
-    stage('jar') {
+    stage('matrix') {
       matrix {
         axes {
-            axis { 
-              name 'ARCH'
-              values 'amd64', 'arm64' 
-            }
-            axis { 
+            axis name 'ARCH', values 'amd64', 'arm64'
+            axis {
               name 'JDK'
               values '11', '17' 
             }
         }
         stages {
-          stage(ARCH) {
+          stage('jar') {
             steps {
               echo "${ARCH} jdk:${JDK}"
               // script {
