@@ -28,12 +28,12 @@ pipeline {
               values '11', '17' 
             }
         }
-      }
-      steps {
-        echo "${ARCH} jdk:$JDK"
-        // script {
-        //   buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
-        // }
+        steps {
+          echo "${ARCH} jdk:$JDK"
+          // script {
+          //   buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
+          // }
+        }
       }
     }
     // stage('Tests') {
