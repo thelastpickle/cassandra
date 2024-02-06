@@ -230,27 +230,29 @@ def _build(build_script, toCopy, arch, jdk, unstash=true, stash=false) {
         }
         echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
-echo "223"        
+echo "233"        
         if (stash) {
+echo "235"
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+echo "238"
             stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
-          }
-        }
 echo "240"
+          }
+echo "242"
+        }
       } finally {
+echo "245"
         attempt = attempt + 1
         sh "xz -f ${build_dir}/*_attempt_*.log"
         dir("${build_dir}") {
             archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-echo "246"
             copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             if (0 == statusCode) {
                 copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             }
         }
         sh "rm -rf \"${build_dir}\""
-echo "253"
         cleanAgent(build_script)
         if (0 != statusCode) {
           currentBuild.result = 'FAILURE'
