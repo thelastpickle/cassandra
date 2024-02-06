@@ -180,7 +180,7 @@ def buildJob(build_script, toCopy) {
         builds["${STAGE_NAME} $arch jdk:$jdk"] = { _buildAxis(build_script, toCopy, arch, jdk) }
     }
   }
-  parallel(builds)
+  // parallel(builds)
 }
 
 /**
