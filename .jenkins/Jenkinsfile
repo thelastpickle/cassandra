@@ -17,8 +17,10 @@ pipeline {
       }
     }
     stage('jar') {
-      script {
-        parallel buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
+      steps {
+        script {
+          parallel buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
+        }
       }
     }
     // stage('Tests') {
