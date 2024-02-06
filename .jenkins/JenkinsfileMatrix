@@ -19,10 +19,10 @@ pipeline {
     stage('jar') {
       parallel {
         stage('jdk:11') {
-          _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11")
+          _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", false, true)
         }
         stage('jdk:17') {
-          _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17")
+          _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17", false, true)
         }
       }
     }
@@ -198,7 +198,7 @@ def isStageIncluded() {
 /**
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
-def _build(build_script, toCopy, arch, jdk) {
+def _build(build_script, toCopy, arch, jdk, unstash=true, stash=false) {
   steps {
     echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
     node(_getNodeArch(arch)) {
@@ -212,7 +212,7 @@ def _build(build_script, toCopy, arch, jdk) {
         def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
         def build_dir_rel = build_dir - "${WORKSPACE}/"
         try {
-          if ("jar" != STAGE_NAME) {
+          if (unstash) {
             dir("${build_dir}") {
               unstash name: "${arch}_${jdk}"
             }
@@ -220,7 +220,7 @@ def _build(build_script, toCopy, arch, jdk) {
           echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
           statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
 
-          if ("jar" == STAGE_NAME) {
+          if (stash) {
             dir("${build_dir}") {
               // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
               stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
