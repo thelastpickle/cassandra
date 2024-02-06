@@ -18,18 +18,16 @@ pipeline {
     }
     stage('jar') {
       steps {
-        script {
-          parallel buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
-        }
+        buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
       }
     }
-    // stage('Tests') {
-    //   parallel {
-    //     stage('artifacts') {
-    //       steps {
-    //         buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-    //       }
-    //     }
+    stage('Tests') {
+      parallel {
+        stage('artifacts') {
+          steps {
+            buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+          }
+        }
     //     stage('lint') {
     //       steps {
     //         buildJob(".build/docker/check-code.sh", "")
@@ -110,8 +108,8 @@ pipeline {
     //         testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
     //       }
     //     }
-    //   }
-    // }
+      }
+    }
     // stage('Summary') {
     //   steps {
     //     generateUnifiedTestReport()
@@ -182,8 +180,7 @@ def buildJob(build_script, toCopy) {
         builds["${STAGE_NAME} $arch jdk:$jdk"] = { _buildAxis(build_script, toCopy, arch, jdk) }
     }
   }
-  // parallel(builds)
-  return builds
+  parallel(builds)
 }
 
 /**
@@ -191,58 +188,52 @@ def buildJob(build_script, toCopy) {
  **/
 def _buildAxis(build_script, toCopy, arch, jdk) {
   echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
-  def stage = STAGE_NAME
-  // return {
-    stage("${stage} ${build_script} arch jdk:${jdk}") {
-      node(_getNodeArch(arch)) {
-        branchName: "${stage} ${build_script} ${jdk} ${NODE_NAME}"
-        checkout scm
-        //tool type: 'jdk', name: "jdk_${jdk}_latest"
-        def statusCode = 0, attempt = 1
-        retry(2) {
-          if (attempt > 1) { sleep(60 * attempt) }
-          def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${stage}_jdk${jdk}_${arch}_attempt_${attempt}.log"
-          sh "mkdir -p build"
-          def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-          def build_dir_rel = build_dir - "${WORKSPACE}/"
-          try {
-            if ("jar" != stage) {
-              dir("${build_dir}") {
-                unstash name: "${arch}_${jdk}"
-              }
-            }
-            echo "Executing ${stage} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-            statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
-
-            if ("jar" == stage) {
-              dir("${build_dir}") {
-                // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-                stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
-              }
-            }
-          } finally {
-            attempt = attempt + 1
-            sh "xz -f ${build_dir}/*_attempt_*.log"
-            dir("${build_dir}") {
-                archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-                copyToNightlies("**/*_attempt_*.log.xz", "${stage}/jdk${jdk}/${arch}/")
-                if (0 == statusCode) {
-                    copyToNightlies("${toCopy}", "${stage}/jdk${jdk}/${arch}/")
-                }
-            }
-            sh "rm -rf \"${build_dir}\""
-            cleanAgent(build_script)
-            if (0 != statusCode) {
-              currentBuild.result = 'FAILURE'
-              error("FAILED ${stage}'${build_script} ${jdk}' on ${NODE_NAME}")
-            } else {
-              echo "Completed ${stage} '${build_script} ${jdk}' on ${NODE_NAME}"
-            }
+  node(_getNodeArch(arch)) {
+    branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
+    checkout scm
+    def statusCode = 0, attempt = 1
+    retry(2) {
+      if (attempt > 1) { sleep(60 * attempt) }
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+      sh "mkdir -p build"
+      def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
+      def build_dir_rel = build_dir - "${WORKSPACE}/"
+      try {
+        if ("jar" != STAGE_NAME) {
+          dir("${build_dir}") {
+            unstash name: "${arch}_${jdk}"
           }
+        }
+        echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
+        statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
+
+        if ("jar" == STAGE_NAME) {
+          dir("${build_dir}") {
+            // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+            stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
+          }
+        }
+      } finally {
+        attempt = attempt + 1
+        sh "xz -f ${build_dir}/*_attempt_*.log"
+        dir("${build_dir}") {
+            archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
+            copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+            if (0 == statusCode) {
+                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+            }
+        }
+        sh "rm -rf \"${build_dir}\""
+        cleanAgent(build_script)
+        if (0 != statusCode) {
+          currentBuild.result = 'FAILURE'
+          error("FAILED ${STAGE_NAME}'${build_script} ${jdk}' on ${NODE_NAME}")
+        } else {
+          echo "Completed ${STAGE_NAME} '${build_script} ${jdk}' on ${NODE_NAME}"
         }
       }
     }
-  // }
+  }
 }
 
 /**
@@ -322,7 +313,6 @@ def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
         sh "until git clone --quiet --depth 1 -b ${dtestBranch} ${dtestRepo} \"${cassandra_dtest_dir}\" ; do echo \"git cloning cassandra-dtest failed… trying again… \" ; done"
     }
 
-    //tool type: 'jdk', name: "jdk_${jdk}_latest"
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
