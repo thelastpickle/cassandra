@@ -25,14 +25,14 @@ pipeline {
     }
     stage('Tests') {
       parallel {
-        stage('artifacts') {
+        'artifacts': {
           steps {
             script {
               parallel buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
-        }
-        stage('lint') {
+        },
+        'lint': {
           steps {
             script {
               parallel buildJob(".build/docker/check-code.sh", "")
