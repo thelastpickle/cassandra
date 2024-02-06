@@ -19,14 +19,10 @@ pipeline {
     stage('jar') {
       parallel {
         stage('jdk:11') {
-          steps {
-            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11")
-          }
+          _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11")
         }
         stage('jdk:17') {
-          steps {
-            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17")
-          }
+          _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17")
         }
       }
     }
@@ -44,24 +40,16 @@ pipeline {
         }
         stages {
           stage('artifacts') {
-            steps {
-              _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
-            }
+            _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
           }
           stage('lint') {
-            steps {
-              _build(".build/docker/check-code.sh", "", arch, jdk)
-            }
+            _build(".build/docker/check-code.sh", "", arch, jdk)
           }
           stage('debian') {
-            steps {
-              _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
-            }
+            _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
           }
           stage('redhat') {
-            steps {
-              _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
-            }
+            _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
           }
         }
       }
@@ -211,49 +199,51 @@ def isStageIncluded() {
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _build(build_script, toCopy, arch, jdk) {
-  echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
-  node(_getNodeArch(arch)) {
-    branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
-    checkout scm
-    def statusCode = 0, attempt = 1
-    retry(2) {
-      if (attempt > 1) { sleep(60 * attempt) }
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
-      sh "mkdir -p build"
-      def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-      def build_dir_rel = build_dir - "${WORKSPACE}/"
-      try {
-        if ("jar" != STAGE_NAME) {
-          dir("${build_dir}") {
-            unstash name: "${arch}_${jdk}"
-          }
-        }
-        echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-        statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
-
-        if ("jar" == STAGE_NAME) {
-          dir("${build_dir}") {
-            // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
-          }
-        }
-      } finally {
-        attempt = attempt + 1
-        sh "xz -f ${build_dir}/*_attempt_*.log"
-        dir("${build_dir}") {
-            archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-            copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-            if (0 == statusCode) {
-                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+  steps {
+    echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
+    node(_getNodeArch(arch)) {
+      branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
+      checkout scm
+      def statusCode = 0, attempt = 1
+      retry(2) {
+        if (attempt > 1) { sleep(60 * attempt) }
+        def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+        sh "mkdir -p build"
+        def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
+        def build_dir_rel = build_dir - "${WORKSPACE}/"
+        try {
+          if ("jar" != STAGE_NAME) {
+            dir("${build_dir}") {
+              unstash name: "${arch}_${jdk}"
             }
-        }
-        sh "rm -rf \"${build_dir}\""
-        cleanAgent(build_script)
-        if (0 != statusCode) {
-          currentBuild.result = 'FAILURE'
-          error("FAILED ${STAGE_NAME}'${build_script} ${jdk}' on ${NODE_NAME}")
-        } else {
-          echo "Completed ${STAGE_NAME} '${build_script} ${jdk}' on ${NODE_NAME}"
+          }
+          echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
+          statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
+
+          if ("jar" == STAGE_NAME) {
+            dir("${build_dir}") {
+              // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+              stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
+            }
+          }
+        } finally {
+          attempt = attempt + 1
+          sh "xz -f ${build_dir}/*_attempt_*.log"
+          dir("${build_dir}") {
+              archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
+              copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+              if (0 == statusCode) {
+                  copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+              }
+          }
+          sh "rm -rf \"${build_dir}\""
+          cleanAgent(build_script)
+          if (0 != statusCode) {
+            currentBuild.result = 'FAILURE'
+            error("FAILED ${STAGE_NAME}'${build_script} ${jdk}' on ${NODE_NAME}")
+          } else {
+            echo "Completed ${STAGE_NAME} '${build_script} ${jdk}' on ${NODE_NAME}"
+          }
         }
       }
     }
