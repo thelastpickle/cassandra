@@ -47,7 +47,6 @@ pipeline {
     }
     stage('jar') {
       parallel {
-        script 
         stage('jdk:11') {
           steps {
             _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", "jar")
