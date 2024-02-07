@@ -64,15 +64,15 @@ pipeline {
         axes {
             axis { 
               name 'arch'
-              script {
+              values archsEnabled[0], archsEnabled[1] //script {
                 //for (int i = 0; i < archsEnabled.size(); i++) {
-                  values archsEnabled[0], archsEnabled[1]
+                  //  archsEnabled[0], archsEnabled[1]
                 //}
               }
             }
             axis { 
               name 'jdk'
-              values jdksEnabled
+              values '11', '17'
             }
         }
         stages {
