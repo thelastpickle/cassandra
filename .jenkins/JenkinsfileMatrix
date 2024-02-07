@@ -23,15 +23,17 @@ pipeline {
   }
   stages {
     stage('init') {
-      archs = [parameters.architecture]
-      if (parameters.architecture == "all") {
-        archs = ["amd64", "arm64"]
+      script {
+        archs = [parameters.architecture]
+        if (parameters.architecture == "all") {
+          archs = ["amd64", "arm64"]
+        }
+        jdks = [parameters.jdk]
+        if (parameters.jdk == "all") {
+          jdks = ["11", "17"]
+        }
+        env.javaVersionsSupported = jdks.join(',')
       }
-      jdks = [parameters.jdk]
-      if (parameters.jdk == "all") {
-        jdks = ["11", "17"]
-      }
-      env.javaVersionsSupported = jdks.join(',')
       steps {
         script { currentBuild.result='SUCCESS' }
         cleanWs()
