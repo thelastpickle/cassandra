@@ -229,16 +229,16 @@ def isCanonical() {
   return "${JENKINS_URL}".contains("ci-cassandra.apache.org")
 }
 
-def isStageIncluded() {
-    return true
+def isStageEnabled(stage_name) {
+    return params."stage_${stage_name}"
 }
 
 /**
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
-  if (action == "artifacts") {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional('action')
+  if (!isStageEnabled(action)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
     return
   }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
