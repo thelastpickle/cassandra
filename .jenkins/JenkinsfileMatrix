@@ -230,7 +230,7 @@ def isCanonical() {
 }
 
 def isStageEnabled(stage_name) {
-    return params."stage_${stage_name}"
+    return params."stage_${stage_name}" || "jar" == stage_name
 }
 
 /**
@@ -242,7 +242,7 @@ def _build(build_script, toCopy, arch, jdk, action) {
     return
   }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
-  node(_getNodeArch(arch)) {
+  node(getNodeArch(arch)) {
     branchName: "${action} ${build_script} ${jdk} ${NODE_NAME}"
     checkout scm
     def statusCode = 0, attempt = 1
@@ -338,7 +338,7 @@ def testJob(test_script, test_type, splits=1) {
 /**
  * Backward compatibility to support ci-cassandra.a.o Renders node architecture by real architecture name
  **/
-def _getNodeArch(arch) {
+def getNodeArch(arch) {
   return "cassandra" // REMOVEME
   switch(arch) {
     case "arm64":
@@ -457,7 +457,7 @@ def saveAgentReport() {
 
 def generateUnifiedTestReport() {
   assert "Summary".equals(STAGE_NAME)
-  node(_getNodeArch('amd64')) {
+  node(_('amd64')) {
     checkout scm
     sh "mkdir -p build"
     copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
