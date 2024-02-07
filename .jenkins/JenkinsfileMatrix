@@ -1,4 +1,5 @@
 def jdks = []
+def jdkDefault = ""
 def archs = []
 pipeline {
   agent('any')
@@ -34,6 +35,8 @@ pipeline {
             jdks = ["11", "17"]
           }
           env.javaVersionsSupported = jdks.join(',')
+          jdkDefault = javaVersionDefault()
+          env.javaVersionDefault = javaVersionDefault()
           currentBuild.result='SUCCESS' 
         }
         cleanWs()
@@ -234,6 +237,10 @@ def isStageIncluded() {
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
+  if (action == "artifacts") {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional('action')
+    return
+  }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(_getNodeArch(arch)) {
     branchName: "${action} ${build_script} ${jdk} ${NODE_NAME}"
