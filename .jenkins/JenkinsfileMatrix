@@ -17,9 +17,6 @@ pipeline {
     choice(name: 'ARCHITECTURE', choices: ['amd64', 'arm64', 'all'], description: 'Pick architecture')
     choice(name: 'JDK', choices: ['all', '11', '17'], description: 'Pick JDK version')
   }
-  script {
-    
-  }
   stages {
     stage('init') {
       steps {
