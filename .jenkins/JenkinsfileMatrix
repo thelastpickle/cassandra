@@ -68,7 +68,7 @@ pipeline {
                 //for (int i = 0; i < archsEnabled.size(); i++) {
                   //  archsEnabled[0], archsEnabled[1]
                 //}
-              }
+              // }
             }
             axis { 
               name 'jdk'
