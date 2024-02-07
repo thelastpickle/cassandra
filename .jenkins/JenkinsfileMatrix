@@ -1,3 +1,5 @@
+def jdks = []
+def archs = []
 pipeline {
   agent('any')
   // options {
@@ -8,6 +10,15 @@ pipeline {
     javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = javaVersionsSupported()
     // javaVersionsSupported = "11"
+  }
+  parameters {
+    string(name: 'REPOSITORY', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
+    string(name: 'BRANCH', defaultValue: '*/aleks-cassius', description: 'Branch')
+    choice(name: 'ARCHITECTURE', choices: ['amd64', 'arm64', 'all'], description: 'Pick architecture')
+    choice(name: 'JDK', choices: ['all', '11', '17'], description: 'Pick JDK version')
+  }
+  script {
+    
   }
   stages {
     stage('init') {
