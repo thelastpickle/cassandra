@@ -25,12 +25,12 @@ pipeline {
     stage('init') {
       steps {
         script {
-          archs = [parameters.architecture]
-          if (parameters.architecture == "all") {
+          archs = [params.architecture]
+          if (params.architecture == "all") {
             archs = ["amd64", "arm64"]
           }
-          jdks = [parameters.jdk]
-          if (parameters.jdk == "all") {
+          jdks = [params.jdk]
+          if (params.jdk == "all") {
             jdks = ["11", "17"]
           }
           env.javaVersionsSupported = jdks.join(',')
