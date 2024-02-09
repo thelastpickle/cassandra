@@ -24,6 +24,7 @@ pipeline {
     booleanParam(name: 'stage_lint', defaultValue: false, description: 'Disable to exlude "lint" stage') // return default to true
     booleanParam(name: 'stage_debian', defaultValue: false, description: 'Disable to exlude "debian" stage') // return default to true
     booleanParam(name: 'stage_redhat', defaultValue: false, description: 'Disable to exlude "redhat" stage') // return default to true
+    booleanParam(name: 'stage_fqltool-test', defaultValue: false, description: 'Disable to exlude "redhat" stage') // return default to true
   }
   stages {
     stage('init') {
