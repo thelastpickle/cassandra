@@ -46,15 +46,28 @@ pipeline {
       }
     }
     // stage('jar') {
-    //   parallel {
-    //     stage('jdk:11') {
-    //       steps {
-    //         _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", "jar")
-    //       }
+    //   matrix {
+    //     axes {
+    //         axis { 
+    //           name 'arch'
+    //           values 'amd64', 'arm64'
+    //         }
+    //         axis { 
+    //           name 'jdk'
+    //           values '11', '17'
+    //         }
     //     }
-    //     stage('jdk:17') {
-    //       steps {
-    //         _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17", "jar")
+    //     when {
+    //       allOf {
+    //         expression { params.architecture == 'all' || params.architecture == env.arch }
+    //         expression { params.jdk == 'all' || params.jdk == env.jdk }
+    //       }
+    //     }        
+    //     stages {
+    //       stage('jar') {
+    //         steps {
+    //           _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk, "jar")
+    //         }
     //       }
     //     }
     //   }
@@ -76,6 +89,7 @@ pipeline {
             expression { params.architecture == 'all' || params.architecture == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
             // expression { params."stage_${env.STAGE_NAME}" } // doesn't work?
+            environment(name: "STAGE_NAME", value: "debian")
           }
         }        
         stages {
