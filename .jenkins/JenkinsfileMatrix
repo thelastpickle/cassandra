@@ -91,6 +91,7 @@ pipeline {
           }
           stage('debian') {
             steps {
+              echo env.STAGE_NAME 
               _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk, STAGE_NAME)
             }
           }
@@ -256,7 +257,6 @@ def isJdkEnabled(jdk) {
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
   if (!isStageEnabled(action)) {
-    echo "Stage '${action}' is marked for skipping."
     org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
     return
   }
