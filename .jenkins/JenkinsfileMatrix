@@ -75,6 +75,7 @@ pipeline {
           allOf {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
+            expression { isStageEnabled(env.STAGE_NAME) }
           }
         }        
         stages {
