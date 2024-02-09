@@ -75,8 +75,7 @@ pipeline {
           allOf {
             expression { params.architecture == 'all' || params.architecture == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
-            // expression { params."stage_${env.STAGE_NAME}" }
-            expression { env.STAGE_NAME == "debian" }
+            // expression { params."stage_${env.STAGE_NAME}" } // doesn't work?
           }
         }        
         stages {
@@ -256,10 +255,11 @@ def isJdkEnabled(jdk) {
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
-  // if (!isStageEnabled(action)) {
-  //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-  //   return
-  // }
+  if (!isStageEnabled(action)) {
+    echo "Stage '${action}' is marked for skipping."
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+    return
+  }
   // if (!isArchEnabled(arch)) {
   //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
   //   return
