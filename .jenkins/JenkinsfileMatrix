@@ -74,8 +74,8 @@ pipeline {
         when {
           allOf {
             expression { params.arch == 'all' || params.arch == env.arch }
-            expression { params.jdk == 'all' || params.jdk == env.jdk }
-            expression { params."stage_${env.STAGE_NAME}" }
+            // expression { params.jdk == 'all' || params.jdk == env.jdk }
+            // expression { params."stage_${env.STAGE_NAME}" }
           }
         }        
         stages {
