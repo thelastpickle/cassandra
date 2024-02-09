@@ -75,7 +75,8 @@ pipeline {
           allOf {
             expression { params.architecture == 'all' || params.architecture == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
-            expression { params."stage_${env.STAGE_NAME}" }
+            // expression { params."stage_${env.STAGE_NAME}" }
+            expression { env.STAGE_NAME == "debian" }
           }
         }        
         stages {
