@@ -76,7 +76,6 @@ pipeline {
             expression { params.architecture == 'all' || params.architecture == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
             // expression { params."stage_${env.STAGE_NAME}" } // doesn't work?
-            expression { env.STAGE_NAME == "redhat" }
           }
         }        
         stages {
@@ -92,7 +91,6 @@ pipeline {
           }
           stage('debian') {
             steps {
-              echo env.STAGE_NAME 
               _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk, STAGE_NAME)
             }
           }
@@ -261,14 +259,6 @@ def _build(build_script, toCopy, arch, jdk, action) {
     org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
     return
   }
-  // if (!isArchEnabled(arch)) {
-  //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-  //   return
-  // }
-  // if (!isJdkEnabled(jdk)) {
-  //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-  //   return
-  // }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
     branchName: "${action} ${build_script} ${jdk} ${NODE_NAME}"
