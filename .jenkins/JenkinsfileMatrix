@@ -45,33 +45,33 @@ pipeline {
         cleanWs()
       }
     }
-    // stage('jar') {
-    //   matrix {
-    //     axes {
-    //         axis { 
-    //           name 'arch'
-    //           values 'amd64', 'arm64'
-    //         }
-    //         axis { 
-    //           name 'jdk'
-    //           values '11', '17'
-    //         }
-    //     }
-    //     when {
-    //       allOf {
-    //         expression { params.architecture == 'all' || params.architecture == env.arch }
-    //         expression { params.jdk == 'all' || params.jdk == env.jdk }
-    //       }
-    //     }        
-    //     stages {
-    //       stage('jar') {
-    //         steps {
-    //           _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk, "jar")
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+    stage('jar') {
+      matrix {
+        axes {
+            axis { 
+              name 'arch'
+              values 'amd64', 'arm64'
+            }
+            axis { 
+              name 'jdk'
+              values '11', '17'
+            }
+        }
+        when {
+          allOf {
+            expression { params.architecture == 'all' || params.architecture == env.arch }
+            expression { params.jdk == 'all' || params.jdk == env.jdk }
+          }
+        }        
+        stages {
+          stage('jar') {
+            steps {
+              _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk, "jar")
+            }
+          }
+        }
+      }
+    }
     stage('Tests') {
       matrix {
         axes {
@@ -88,7 +88,7 @@ pipeline {
           allOf {
             expression { params.architecture == 'all' || params.architecture == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
-            expression { return params."stage_${env.STAGE_NAME}" } // doesn't work?
+            // expression { return params."stage_${env.STAGE_NAME}" } // doesn't work?
           }
         }        
         stages {
@@ -269,8 +269,8 @@ def isJdkEnabled(jdk) {
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
   if (!isStageEnabled(action)) {
-    // org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-    // return
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+    return
   }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
