@@ -67,7 +67,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk, "jar")
+              _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk)
             }
           }
         }
@@ -95,27 +95,27 @@ pipeline {
         stages {
           stage('artifacts') {
             steps {
-              _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk, STAGE_NAME)
+              _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
             }
           }
           stage('lint') {
             steps {
-              _build(".build/docker/check-code.sh", "", arch, jdk, STAGE_NAME)
+              _build(".build/docker/check-code.sh", "", arch, jdk)
             }
           }
           stage('debian') {
             steps {
-              _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk, STAGE_NAME)
+              _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
             }
           }
           stage('redhat') {
             steps {
-              _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk, STAGE_NAME)
+              _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
             }
           }
           stage('fqltool-test') {
             steps {
-              testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+              testJob("fqltool-test")
             }
           }
         }
@@ -149,67 +149,67 @@ pipeline {
     //     }
     //     stage('stress-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "stress-test", 1)
+    //         testJob("stress-test", 1)
     //       }
     //     }        
     //     stage('cqlsh-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+    //         testJob("cqlsh-test", 1)
     //       }
     //     }
     //     stage('fqltool-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+    //         testJob("fqltool-test", 1)
     //       }
     //     }
     //     stage('test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test", 8)
+    //         testJob("test", 8)
     //       }
     //     }
     //     stage('test-trie') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-trie", 8)
+    //         testJob("test-trie", 8)
     //       }
     //     }
     //     stage('test-burn') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-burn", 10)
+    //         testJob("test-burn", 10)
     //       }
     //     }
     //     stage('test-cdc') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-cdc", 10)
+    //         testJob("test-cdc", 10)
     //       }
     //     }
     //     stage('test-compression') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-compression", 10)
+    //         testJob("test-compression", 10)
     //       }
     //     }
     //     stage('long-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "long-test", 8)
+    //         testJob("long-test", 8)
     //       }
     //     }
     //     stage('test-oa') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-oa", 8)
+    //         testJob("test-oa", 8)
     //       }
     //     }
     //     stage('test-system-keyspace-directory') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
+    //         testJob("test-system-keyspace-directory", 8)
     //       }
     //     }
     //     stage('jvm-dtest') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
+    //         testJob("jvm-dtest", 8)
     //       }
     //     }
     //     stage('jvm-dtest-upgrade') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
+    //         testJob("jvm-dtest-upgrade", 8)
     //       }
     //     }
     //   }
@@ -273,32 +273,32 @@ def isJdkEnabled(jdk) {
 /**
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
-def _build(build_script, toCopy, arch, jdk, action) {
-  if (!isStageEnabled(action)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+def _build(build_script, toCopy, arch, jdk) {
+  if (!isStageEnabled(STAGE_NAME)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
     return
   }
-  echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
+  echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
-    branchName: "${action} ${build_script} ${jdk} ${NODE_NAME}"
+    branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
     checkout scm
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${action}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
       def build_dir_rel = build_dir - "${WORKSPACE}/"
       try {
-        if ("jar" != action) {
+        if ("jar" != STAGE_NAME) {
           dir("${build_dir}") {
             unstash name: "${arch}_${jdk}"
           }
         }
-        echo "Executing ${action} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
+        echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
 
-        if ("jar" == action) {
+        if ("jar" == STAGE_NAME) {
           dir("${build_dir}") {
             // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
             stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
@@ -309,18 +309,18 @@ def _build(build_script, toCopy, arch, jdk, action) {
         sh "xz -f ${build_dir}/*_attempt_*.log"
         dir("${build_dir}") {
             archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-            copyToNightlies("**/*_attempt_*.log.xz", "${action}/jdk${jdk}/${arch}/")
+            copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             if (0 == statusCode) {
-                copyToNightlies("${toCopy}", "${action}/jdk${jdk}/${arch}/")
+                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             }
         }
         sh "rm -rf \"${build_dir}\""
         cleanAgent(build_script)
         if (0 != statusCode) {
           currentBuild.result = 'FAILURE'
-          error("FAILED ${action}'${build_script} ${jdk}' on ${NODE_NAME}")
+          error("FAILED ${STAGE_NAME}'${build_script} ${jdk}' on ${NODE_NAME}")
         } else {
-          echo "Completed ${action} '${build_script} ${jdk}' on ${NODE_NAME}"
+          echo "Completed ${STAGE_NAME} '${build_script} ${jdk}' on ${NODE_NAME}"
         }
       }
     }
@@ -333,15 +333,12 @@ def _build(build_script, toCopy, arch, jdk, action) {
  * Cleans the agent (docker prune) afterwards
  * Stops the pipeline on any failure
  **/
-def testJob(test_script, test_type, splits=1) {
+def testJob(test_type, splits=1) {
+
+  test_script = ".build/docker/run-tests.sh"
+
   // we don't actually need the test_script and test_type, but they are useful explicit for readability and intuitive feedback in the declarative section.
   assert STAGE_NAME.equals(test_type) : "Stage's name expected to match test_type (" + STAGE_NAME + " != " + test_type + ")"
-  assert ".build/docker/run-tests.sh".equals(test_script) : "testJob is hardcoded to '.build/docker/run-tests.sh', found " + test_script
-
-  if (! isStageIncluded()) {
-    echo "Skipping ${STAGE_NAME}"
-    return;
-  }
 
   // XXX – the following matrix over arrays can be better done with multi-arrays and recursion
 
@@ -376,7 +373,6 @@ def testJob(test_script, test_type, splits=1) {
  * Backward compatibility to support ci-cassandra.a.o Renders node architecture by real architecture name
  **/
 def getNodeArch(arch) {
-  return "cassandra" // REMOVEME
   switch(arch) {
     case "arm64":
       return "cassandra-arm64"
@@ -389,6 +385,11 @@ def getNodeArch(arch) {
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
  **/
 def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
+  if (!isStageEnabled(STAGE_NAME)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+    return
+  }
+
   echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
   node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
