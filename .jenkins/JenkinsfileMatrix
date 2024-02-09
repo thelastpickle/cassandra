@@ -88,8 +88,7 @@ pipeline {
           allOf {
             expression { params.architecture == 'all' || params.architecture == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
-            // expression { params."stage_${env.STAGE_NAME}" } // doesn't work?
-            environment(name: "STAGE_NAME", value: "debian")
+            expression { return params."stage_${env.STAGE_NAME}" } // doesn't work?
           }
         }        
         stages {
@@ -270,8 +269,8 @@ def isJdkEnabled(jdk) {
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
   if (!isStageEnabled(action)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-    return
+    // org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+    // return
   }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
