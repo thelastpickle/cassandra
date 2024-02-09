@@ -71,6 +71,9 @@ pipeline {
               values '11', '17'
             }
         }
+        when {
+            expression { archsEnabled.contains(env.arch) }
+        }        
         stages {
           stage('artifacts') {
             steps {
@@ -248,18 +251,18 @@ def isJdkEnabled(jdk) {
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
-  if (!isStageEnabled(action)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-    return
-  }
-  if (!isArchEnabled(arch)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-    return
-  }
-  if (!isJdkEnabled(jdk)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
-    return
-  }
+  // if (!isStageEnabled(action)) {
+  //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+  //   return
+  // }
+  // if (!isArchEnabled(arch)) {
+  //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+  //   return
+  // }
+  // if (!isJdkEnabled(jdk)) {
+  //   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+  //   return
+  // }
   echo "Spawning ${action} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
     branchName: "${action} ${build_script} ${jdk} ${NODE_NAME}"
