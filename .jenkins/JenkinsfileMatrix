@@ -64,11 +64,7 @@ pipeline {
         axes {
             axis { 
               name 'arch'
-              values "${archsEnabled[0]}", "${archsEnabled[1]}" //script {
-                //for (int i = 0; i < archsEnabled.size(); i++) {
-                  //  archsEnabled[0], archsEnabled[1]
-                //}
-              // }
+              values 'amd64', 'arm64'
             }
             axis { 
               name 'jdk'
@@ -240,11 +236,27 @@ def isStageEnabled(stage_name) {
     return params."stage_${stage_name}" || "jar" == stage_name
 }
 
+def isArchEnabled(arch) {
+    return archsEnabled.contains(arch)
+}
+
+def isJdkEnabled(jdk) {
+    return jdksEnabled.contains(jdk)
+}
+
 /**
  * Executes `${build_script} ${jdk}` for stated arch, and jdk.
  **/
 def _build(build_script, toCopy, arch, jdk, action) {
   if (!isStageEnabled(action)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+    return
+  }
+  if (!isArchEnabled(arch)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
+    return
+  }
+  if (!isJdkEnabled(jdk)) {
     org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(action)
     return
   }
