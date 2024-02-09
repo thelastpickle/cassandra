@@ -1,5 +1,5 @@
-def jdksSupported = ["11", "17"]
-def archsSupported = ["amd64", "arm64"]
+def jdksSupported = ["all", "11", "17"]
+def archsSupported = ["amd64", "arm64", "all"]
 def archsEnabled = []
 def jdksEnabled = []
 def jdkDefault = null
@@ -18,8 +18,8 @@ pipeline {
   parameters {
     string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
     string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
-    choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
-    choice(name: 'jdk', choices: ["all"] + jdksSupported, description: 'Pick JDK versions.')
+    choice(name: 'architecture', choices: archsSupported, description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
+    choice(name: 'jdk', choices: jdksSupported, description: 'Pick JDK versions.')
     booleanParam(name: 'stage_artifacts', defaultValue: true, description: 'Disable to exlude "artifacts" stage')
     booleanParam(name: 'stage_lint', defaultValue: true, description: 'Disable to exlude "lint" stage')
     booleanParam(name: 'stage_debian', defaultValue: true, description: 'Disable to exlude "debian" stage')
