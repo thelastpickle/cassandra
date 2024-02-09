@@ -45,20 +45,20 @@ pipeline {
         cleanWs()
       }
     }
-    stage('jar') {
-      parallel {
-        stage('jdk:11') {
-          steps {
-            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", "jar")
-          }
-        }
-        stage('jdk:17') {
-          steps {
-            _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17", "jar")
-          }
-        }
-      }
-    }
+    // stage('jar') {
+    //   parallel {
+    //     stage('jdk:11') {
+    //       steps {
+    //         _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "11", "jar")
+    //       }
+    //     }
+    //     stage('jdk:17') {
+    //       steps {
+    //         _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", "amd64", "17", "jar")
+    //       }
+    //     }
+    //   }
+    // }
     stage('Tests') {
       matrix {
         axes {
@@ -75,7 +75,7 @@ pipeline {
           allOf {
             expression { params.arch == 'all' || params.arch == env.arch }
             expression { params.jdk == 'all' || params.jdk == env.jdk }
-            expression { isStageEnabled(env.STAGE_NAME) }
+            expression { params."stage_${env.STAGE_NAME}" }
           }
         }        
         stages {
