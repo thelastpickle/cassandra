@@ -45,11 +45,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              node(getNodeArch(env.arch)) {
-                customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
-                _build("build-jars.sh")
-                stash name: "${arch}_${jdk}"
-              }
+              _build("build-jars.sh")
             }
           }
         }
@@ -77,17 +73,8 @@ pipeline {
         stages {
           stage('artifacts') {
             steps {
-              script {
-                if (!isStageEnabled(STAGE_NAME)) {
-                  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                  return
-                }
-              }
-              node(getNodeArch(env.arch)) {
-                customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
-                unstash name: "${arch}_${jdk}"
-                _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-              }
+              unstash name: "${arch}_${jdk}"
+              _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
           stage('lint') {
@@ -275,57 +262,39 @@ def isJdkEnabled(jdk) {
  * Executes `${build_script} ${toCopy}`
  **/
 def _build(build_script, toCopy="") {
-  build_script = ".build/docker/${build_script}"
-  echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
-  // node(getNodeArch(arch)) {
-    // branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
-    // checkout scm
-    // customWorkspace "workspace/arch-${arch}/jdk-${jdk}"
-    // def statusCode = 0, attempt = 1
-    // retry(2) {
-    //   if (attempt > 1) { sleep(60 * attempt) }
-      // def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+  if (!isStageEnabled(STAGE_NAME)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+    return
+  }
+  node(getNodeArch(env.arch)) {
+    ws("workspace/${JOB_NAME}/${arch}/jdk-${jdk}") {
+      build_script = ".build/docker/${build_script}"
+      echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
+      if ("jar" != STAGE_NAME) {
+        unstash name: "${arch}_${jdk}"
+      }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-      // sh "mkdir -p build"
-      // def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-      // try {
-        // if ("jar" != STAGE_NAME) {
-        //   dir("${build_dir}") {
-        //     unstash name: "${arch}_${jdk}"
-        //   }
-        // }
-        // echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-        echo "Executing ${STAGE_NAME} `${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-        statusCode = sh returnStatus:true, script:"build_dir=${WORKSPACE} ${build_script} ${jdk} > ${logfile} 2>&1"
-        sh "cat ${logfile}"
+      echo "Executing ${STAGE_NAME} `${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
+      statusCode = sh returnStatus:true, script:"build_dir=${WORKSPACE} ${build_script} ${jdk} > ${logfile} 2>&1"
+      sh "cat ${logfile}"
 
-        // if ("jar" == STAGE_NAME) {
-        //   dir("${build_dir}") {
-        //     // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-        //     stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
-        //   }
-        // }
-      // } finally {
-        // attempt = attempt + 1
-        // sh "xz -f ${build_dir}/*_attempt_*.log"
-        sh "xz -f *.log"
-        // dir("${build_dir}") {
-        archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
-        copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-        if (0 == statusCode) {
-            copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-        }
-        // }
-        // sh "rm -rf \"${build_dir}\""
-        cleanAgent(build_script)
-        if (0 != statusCode) {
-          currentBuild.result = 'FAILURE'
-          error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
-          return;
-        }
-      // }
-    //}
-  // }
+      if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+        stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
+      }
+      sh "xz -f *.log"
+      archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
+      copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+      if (0 == statusCode) {
+          copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+      }
+      cleanAgent(build_script)
+      if (0 != statusCode) {
+        currentBuild.result = 'FAILURE'
+        error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
+        return;
+      }
+    }
+  }
 }
 
 /**
