@@ -3,7 +3,7 @@ def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to updat
 def jdkDefault = null
 
 pipeline {
-  // agent('any')
+  agent('any')
   // options {
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
@@ -76,12 +76,14 @@ pipeline {
         }
         stages {
           stage('artifacts') {
+            script {
+              if (!isStageEnabled(STAGE_NAME)) {
+                org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                return
+              }
+            }
             steps {
-                if (!isStageEnabled(STAGE_NAME)) {
-                  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                  return
-                }
-                node(getNodeArch(env.arch)) {
+              node(getNodeArch(env.arch)) {
                 customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
                 unstash name: "${arch}_${jdk}"
                 _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
