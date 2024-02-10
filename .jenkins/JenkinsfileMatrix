@@ -76,13 +76,13 @@ pipeline {
         }
         stages {
           stage('artifacts') {
-            script {
-              if (!isStageEnabled(STAGE_NAME)) {
-                org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-                return
-              }
-            }
             steps {
+              script {
+                if (!isStageEnabled(STAGE_NAME)) {
+                  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                  return
+                }
+              }
               node(getNodeArch(env.arch)) {
                 customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
                 unstash name: "${arch}_${jdk}"
