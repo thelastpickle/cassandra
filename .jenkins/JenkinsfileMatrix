@@ -265,7 +265,9 @@ def isStageEnabled(stage_name) {
 }
 
 def isArchEnabled(arch) {
-    return archsEnabled.contains(arch)
+    script {
+      return archsEnabled.contains(arch)
+    }
 }
 
 def isJdkEnabled(jdk) {
