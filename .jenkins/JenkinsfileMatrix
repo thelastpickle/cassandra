@@ -285,10 +285,11 @@ def _build(build_script, toCopy="") {
     // branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
     // checkout scm
     // customWorkspace "workspace/arch-${arch}/jdk-${jdk}"
-    def statusCode = 0, attempt = 1
+    // def statusCode = 0, attempt = 1
     // retry(2) {
     //   if (attempt > 1) { sleep(60 * attempt) }
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+      // def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
       // sh "mkdir -p build"
       // def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
       // try {
@@ -299,7 +300,8 @@ def _build(build_script, toCopy="") {
         // }
         // echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
         echo "Executing ${STAGE_NAME} `${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-        statusCode = sh returnStatus:true, script:"build_dir=${WORKSPACE} ${build_script} ${jdk} 2>&1 | tee ${logfile}"
+        statusCode = sh returnStatus:true, script:"build_dir=${WORKSPACE} ${build_script} ${jdk} > ${logfile} 2>&1"
+        sh "cat ${logfile}"
 
         // if ("jar" == STAGE_NAME) {
         //   dir("${build_dir}") {
@@ -310,10 +312,10 @@ def _build(build_script, toCopy="") {
       // } finally {
         // attempt = attempt + 1
         // sh "xz -f ${build_dir}/*_attempt_*.log"
-        sh "xz -f *_attempt_*.log"
+        sh "xz -f *.log"
         // dir("${build_dir}") {
-            archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-            copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+            archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
+            copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             if (0 == statusCode) {
                 copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             }
