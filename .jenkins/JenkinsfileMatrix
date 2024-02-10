@@ -261,17 +261,15 @@ def isCanonical() {
 }
 
 def isStageEnabled(stage_name) {
-    return params."stage_${stage_name}" || "jar" == stage_name
+  return params."stage_${stage_name}" || "jar" == stage_name
 }
 
 def isArchEnabled(arch) {
-    script {
-      return archsEnabled.contains(arch)
-    }
+  return params.architecture == arch || params.architecture == "all"
 }
 
 def isJdkEnabled(jdk) {
-    return jdksEnabled.contains(jdk)
+  return params.jdk == jdk || params.jdk == "all"
 }
 
 /**
