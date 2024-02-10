@@ -1,5 +1,5 @@
-def jdksSupported = ["11", "17"]
-def archsSupported = ["amd64", "arm64"]
+def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis, they can't use variables :(
+def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis, they can't use variables :(
 def jdkDefault = null
 
 pipeline {
@@ -29,33 +29,33 @@ pipeline {
         cleanWs()
       }
     }
-    // stage('jar') {
-    //   matrix {
-    //     axes {
-    //         axis { 
-    //           name 'arch'
-    //           values 'amd64', 'arm64'
-    //         }
-    //         axis { 
-    //           name 'jdk'
-    //           values '11', '17'
-    //         }
-    //     }
-    //     when {
-    //       allOf {
-    //         expression { isArchEnabled(env.arch) }
-    //         expression { isJdkEnabled(env.jdk) }
-    //       }
-    //     }        
-    //     stages {
-    //       stage('jar') {
-    //         steps {
-    //           _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk)
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+    stage('jar') {
+      matrix {
+        axes {
+            axis { 
+              name 'arch'
+              values 'amd64', 'arm64'
+            }
+            axis { 
+              name 'jdk'
+              values '11', '17'
+            }
+        }
+        when {
+          allOf {
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
+          }
+        }        
+        stages {
+          stage('jar') {
+            steps {
+              _build("build-jars.sh")
+            }
+          }
+        }
+      }
+    }
     stage('Tests') {
       matrix {
         axes {
@@ -72,41 +72,34 @@ pipeline {
           allOf {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
-            expression { 
-              echo "!!!"; 
-              env.each { key, value ->
-                println "${key}: ${value}"
-              }
-              return true; 
-            } //params."stage_${env.STAGE_NAME}" } // doesn't work? O_o
-          }
+            // expression { isStageEnabled(env.STAGE_NAME) } // In `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...), not a real stage name O_o
         }        
         stages {
           stage('artifacts') {
             steps {
-              _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
+              _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
-          // stage('lint') {
-          //   steps {
-          //     _build(".build/docker/check-code.sh", "", arch, jdk)
-          //   }
-          // }
-          // stage('debian') {
-          //   steps {
-          //     _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
-          //   }
-          // }
-          // stage('redhat') {
-          //   steps {
-          //     _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
-          //   }
-          // }
-          // stage('fqltool-test') {
-          //   steps {
-          //     testJob("fqltool-test")
-          //   }
-          // }
+          stage('lint') {
+            steps {
+              _build("check-code.sh")
+            }
+          }
+          stage('debian') {
+            steps {
+              _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
+            }
+          }
+          stage('redhat') {
+            steps {
+              _build("build-redhat.sh rpm", "*.rpm")
+            }
+          }
+          stage('fqltool-test') {
+            steps {
+              testJob("fqltool-test")
+            }
+          }
         }
       }
     }
@@ -247,8 +240,8 @@ def isCanonical() {
   return "${JENKINS_URL}".contains("ci-cassandra.apache.org")
 }
 
-def isStageEnabled(stage_name) {
-  return params."stage_${stage_name}" || "jar" == stage_name
+def isStageEnabled(stage) {
+  return params."stage_${stage}" || "jar" == stage
 }
 
 def isArchEnabled(arch) {
@@ -260,13 +253,14 @@ def isJdkEnabled(jdk) {
 }
 
 /**
- * Executes `${build_script} ${jdk}` for stated arch, and jdk.
+ * Executes `${build_script} ${toCopy}`
  **/
-def _build(build_script, toCopy, arch, jdk) {
+def _build(build_script, toCopy="") {
   if (!isStageEnabled(STAGE_NAME)) {
     org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
     return
   }
+  build_script = ".build/docker/${build_script}"
   echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
