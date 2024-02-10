@@ -3,7 +3,7 @@ def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to updat
 def jdkDefault = null
 
 pipeline {
-  agent('any')
+  // agent('any')
   // options {
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
@@ -24,11 +24,6 @@ pipeline {
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
   }
   stages {
-    stage('init') {
-      steps {
-        cleanWs()
-      }
-    }
     stage('jar') {
       matrix {
         axes {
@@ -47,17 +42,14 @@ pipeline {
             expression { isJdkEnabled(env.jdk) }
           }
         }
-        agent {
-          node {
-            label getNodeArch(env.arch)
-            customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
-          }
-        }
         stages {
           stage('jar') {
             steps {
-              _build("build-jars.sh")
-              stash name: "${arch}_${jdk}"
+              node(getNodeArch(env.arch)) {
+                customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
+                _build("build-jars.sh")
+                stash name: "${arch}_${jdk}"
+              }
             }
           }
         }
@@ -82,17 +74,18 @@ pipeline {
             // expression { isStageEnabled(env.STAGE_NAME) } // In `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...), not a real stage name O_o
           }
         }
-        agent {
-          node {
-            label getNodeArch(env.arch)
-            customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
-          }
-        } 
         stages {
           stage('artifacts') {
             steps {
-              unstash name: "${arch}_${jdk}"
-              _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+                if (!isStageEnabled(STAGE_NAME)) {
+                  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+                  return
+                }
+                node(getNodeArch(env.arch)) {
+                customWorkspace "workspace/${env.JOB_NAME}/arch-${env.arch}/jdk-${env.jdk}"
+                unstash name: "${arch}_${jdk}"
+                _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+              }
             }
           }
           stage('lint') {
@@ -223,6 +216,11 @@ pipeline {
     //   }
     // }
   }
+  post {
+    always {
+      cleanWs()
+    }
+  }
 }
 
 ///////////////////////////
@@ -275,10 +273,6 @@ def isJdkEnabled(jdk) {
  * Executes `${build_script} ${toCopy}`
  **/
 def _build(build_script, toCopy="") {
-  if (!isStageEnabled(STAGE_NAME)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-    return
-  }
   build_script = ".build/docker/${build_script}"
   echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
   // node(getNodeArch(arch)) {
@@ -314,11 +308,11 @@ def _build(build_script, toCopy="") {
         // sh "xz -f ${build_dir}/*_attempt_*.log"
         sh "xz -f *.log"
         // dir("${build_dir}") {
-            archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
-            copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-            if (0 == statusCode) {
-                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-            }
+        archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
+        copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+        if (0 == statusCode) {
+            copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+        }
         // }
         // sh "rm -rf \"${build_dir}\""
         cleanAgent(build_script)
