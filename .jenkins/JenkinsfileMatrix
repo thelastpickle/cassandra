@@ -49,8 +49,8 @@ pipeline {
         }
         agent {
           node {
-            label getNodeArch($arch)
-            customWorkspace "arch-${arch}/jdk-${jdk}"
+            label getNodeArch(env.arch)
+            customWorkspace "arch-${env.arch}/jdk-${env.jdk}"
           }
         }
         stages {
@@ -84,8 +84,8 @@ pipeline {
         }
         agent {
           node {
-            label getNodeArch($arch)
-            customWorkspace "arch-${arch}/jdk-${jdk}"
+            label getNodeArch(env.arch)
+            customWorkspace "arch-${env.arch}/jdk-${env.jdk}"
           }
         } 
         stages {
