@@ -73,6 +73,7 @@ pipeline {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
             // expression { isStageEnabled(env.STAGE_NAME) } // In `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...), not a real stage name O_o
+          }
         }        
         stages {
           stage('artifacts') {
