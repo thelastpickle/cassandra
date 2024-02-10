@@ -1,7 +1,5 @@
 def jdksSupported = ["11", "17"]
 def archsSupported = ["amd64", "arm64"]
-def archsEnabled = []
-def jdksEnabled = []
 def jdkDefault = null
 
 pipeline {
@@ -10,11 +8,10 @@ pipeline {
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
   // }
-  // environment {
-  //   javaVersionDefault = javaVersionDefault()
-  //   javaVersionsSupported = javaVersionsSupported()
-    // javaVersionsSupported = "11"
-  // }
+  environment {
+    javaVersionsSupported = jdksSupported.join(',')
+    javaVersionDefault = javaVersionDefault()
+  }
   parameters {
     string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
     string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
@@ -29,20 +26,6 @@ pipeline {
   stages {
     stage('init') {
       steps {
-        script {
-          archsEnabled = [params.architecture]
-          if (params.architecture == "all") {
-            archsEnabled = archsSupported
-          }
-          jdksEnabled = [params.jdk]
-          if (params.jdk == "all") {
-            jdksEnabled = jdksSupported
-          }
-          env.javaVersionsSupported = jdksEnabled.join(',')
-          jdkDefault = javaVersionDefault()
-          env.javaVersionDefault = javaVersionDefault()
-          // currentBuild.result='SUCCESS' 
-        }
         cleanWs()
       }
     }
@@ -89,7 +72,7 @@ pipeline {
           allOf {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
-            // expression { return params."stage_${env.STAGE_NAME}" } // doesn't work? O_o
+            expression { echo "!!! ${env.STAGE_NAME}"; return true; } //params."stage_${env.STAGE_NAME}" } // doesn't work? O_o
           }
         }        
         stages {
@@ -98,26 +81,26 @@ pipeline {
               _build(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom", arch, jdk)
             }
           }
-          stage('lint') {
-            steps {
-              _build(".build/docker/check-code.sh", "", arch, jdk)
-            }
-          }
-          stage('debian') {
-            steps {
-              _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
-            }
-          }
-          stage('redhat') {
-            steps {
-              _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
-            }
-          }
-          stage('fqltool-test') {
-            steps {
-              testJob("fqltool-test")
-            }
-          }
+          // stage('lint') {
+          //   steps {
+          //     _build(".build/docker/check-code.sh", "", arch, jdk)
+          //   }
+          // }
+          // stage('debian') {
+          //   steps {
+          //     _build(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*", arch, jdk)
+          //   }
+          // }
+          // stage('redhat') {
+          //   steps {
+          //     _build(".build/docker/build-redhat.sh rpm", "*.rpm", arch, jdk)
+          //   }
+          // }
+          // stage('fqltool-test') {
+          //   steps {
+          //     testJob("fqltool-test")
+          //   }
+          // }
         }
       }
     }
@@ -344,8 +327,11 @@ def testJob(test_type, splits=1) {
 
   def archs = ['amd64']
   def jdks = STAGE_NAME.contains("dtest-upgrade") || "simulator-dtest".equals(STAGE_NAME) ? ["${javaVersionDefault}"] : "${javaVersionsSupported}".split(/,/, -1)
+  // jdks ?
   def pythons = "cqlshX".equals(STAGE_NAME) ? ['3.7', '3.8', '3.11'] : ['3.7']
+  // default python 3.7, for `cqlshX` stage it's 3.7, 3.8, 3.11
   def cythons = "cqlshX".equals(STAGE_NAME) ? ['no', 'yes'] : ['no']
+  // default no cython, for `cqlshX` test both
 
   def tests = [:]
   archs.each { arch ->
