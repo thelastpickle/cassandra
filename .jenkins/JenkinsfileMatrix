@@ -4,10 +4,11 @@ def jdkDefault = null
 
 pipeline {
   agent('any')
-  // options {
+  options {
+    skipDefaultCheckout()
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
-  // }
+  }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
     javaVersionDefault = javaVersionDefault()
