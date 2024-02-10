@@ -62,7 +62,7 @@ pipeline {
           allOf {
             // expression { params.architecture == 'all' || params.architecture == env.arch }
             // expression { params.jdk == 'all' || params.jdk == env.jdk }
-            expression { isArchEnabled(env.arch) }
+            expression { _isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
           }
         }        
@@ -264,7 +264,7 @@ def isStageEnabled(stage_name) {
     return params."stage_${stage_name}" || "jar" == stage_name
 }
 
-def isArchEnabled(arch) {
+def _isArchEnabled(arch) {
     return archsEnabled.contains(arch)
 }
 
