@@ -49,6 +49,7 @@ pipeline {
         }
         agent {
           node {
+            label getNodeArch($arch)
             customWorkspace "arch-${arch}/jdk-${jdk}"
           }
         }
@@ -83,6 +84,7 @@ pipeline {
         }
         agent {
           node {
+            label getNodeArch($arch)
             customWorkspace "arch-${arch}/jdk-${jdk}"
           }
         } 
