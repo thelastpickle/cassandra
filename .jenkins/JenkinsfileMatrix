@@ -29,33 +29,33 @@ pipeline {
         cleanWs()
       }
     }
-    stage('jar') {
-      matrix {
-        axes {
-            axis { 
-              name 'arch'
-              values 'amd64', 'arm64'
-            }
-            axis { 
-              name 'jdk'
-              values '11', '17'
-            }
-        }
-        when {
-          allOf {
-            expression { isArchEnabled(env.arch) }
-            expression { isJdkEnabled(env.jdk) }
-          }
-        }        
-        stages {
-          stage('jar') {
-            steps {
-              _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk)
-            }
-          }
-        }
-      }
-    }
+    // stage('jar') {
+    //   matrix {
+    //     axes {
+    //         axis { 
+    //           name 'arch'
+    //           values 'amd64', 'arm64'
+    //         }
+    //         axis { 
+    //           name 'jdk'
+    //           values '11', '17'
+    //         }
+    //     }
+    //     when {
+    //       allOf {
+    //         expression { isArchEnabled(env.arch) }
+    //         expression { isJdkEnabled(env.jdk) }
+    //       }
+    //     }        
+    //     stages {
+    //       stage('jar') {
+    //         steps {
+    //           _build(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "", arch, jdk)
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     stage('Tests') {
       matrix {
         axes {
