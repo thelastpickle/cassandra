@@ -20,11 +20,11 @@ pipeline {
     string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
     choice(name: 'architecture', choices: archsSupported, description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
     choice(name: 'jdk', choices: jdksSupported, description: 'Pick JDK versions.')
-    booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude "artifacts" stage') // return default to true
-    booleanParam(name: 'stage_lint', defaultValue: false, description: 'Disable to exlude "lint" stage') // return default to true
-    booleanParam(name: 'stage_debian', defaultValue: false, description: 'Disable to exlude "debian" stage') // return default to true
-    booleanParam(name: 'stage_redhat', defaultValue: false, description: 'Disable to exlude "redhat" stage') // return default to true
-    booleanParam(name: 'stage_fqltool-test', defaultValue: false, description: 'Disable to exlude "redhat" stage') // return default to true
+    booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
+    booleanParam(name: 'stage_lint', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
   }
   stages {
     stage('init') {
@@ -60,8 +60,10 @@ pipeline {
         }
         when {
           allOf {
-            expression { params.architecture == 'all' || params.architecture == env.arch }
-            expression { params.jdk == 'all' || params.jdk == env.jdk }
+            // expression { params.architecture == 'all' || params.architecture == env.arch }
+            // expression { params.jdk == 'all' || params.jdk == env.jdk }
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
           }
         }        
         stages {
