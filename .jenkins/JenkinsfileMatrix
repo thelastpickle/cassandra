@@ -264,8 +264,8 @@ def _build(build_script, toCopy="") {
   build_script = ".build/docker/${build_script}"
   echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
   node(getNodeArch(arch)) {
-    branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
-    checkout scm
+    // branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
+    // checkout scm
     def statusCode = 0, attempt = 1
     retry(2) {
       if (attempt > 1) { sleep(60 * attempt) }
