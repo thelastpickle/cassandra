@@ -60,10 +60,8 @@ pipeline {
         }
         when {
           allOf {
-            // expression { params.architecture == 'all' || params.architecture == env.arch }
-            // expression { params.jdk == 'all' || params.jdk == env.jdk }
-            expression { return isArchEnabled(env.arch) }
-            expression { return isJdkEnabled(env.jdk) }
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
           }
         }        
         stages {
@@ -89,9 +87,9 @@ pipeline {
         }
         when {
           allOf {
-            expression { params.architecture == 'all' || params.architecture == env.arch }
-            expression { params.jdk == 'all' || params.jdk == env.jdk }
-            // expression { return params."stage_${env.STAGE_NAME}" } // doesn't work?
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
+            // expression { return params."stage_${env.STAGE_NAME}" } // doesn't work? O_o
           }
         }        
         stages {
