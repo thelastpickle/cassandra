@@ -73,31 +73,26 @@ pipeline {
         stages {
           stage('artifacts') {
             steps {
-              unstash name: "${arch}_${jdk}"
               _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
           stage('lint') {
             steps {
-              unstash name: "${arch}_${jdk}"
               _build("check-code.sh")
             }
           }
           stage('debian') {
             steps {
-              unstash name: "${arch}_${jdk}"
               _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
             }
           }
           stage('redhat') {
             steps {
-              unstash name: "${arch}_${jdk}"
               _build("build-redhat.sh rpm", "*.rpm")
             }
           }
           // stage('fqltool-test') {
           //   steps {
-          //     unstash name: "${arch}_${jdk}"
           //     testJob("fqltool-test")
           //   }
           // }
