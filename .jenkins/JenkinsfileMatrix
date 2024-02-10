@@ -280,11 +280,11 @@ def _build(build_script, toCopy="") {
     return
   }
   build_script = ".build/docker/${build_script}"
-  echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
+  echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
   node(getNodeArch(arch)) {
     // branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
     // checkout scm
-    customWorkspace "workspace/arch-${arch}/jdk-${jdk}"
+    // customWorkspace "workspace/arch-${arch}/jdk-${jdk}"
     def statusCode = 0, attempt = 1
     // retry(2) {
     //   if (attempt > 1) { sleep(60 * attempt) }
