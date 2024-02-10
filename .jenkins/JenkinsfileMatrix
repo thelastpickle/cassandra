@@ -72,7 +72,7 @@ pipeline {
           allOf {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
-            expression { echo "!!! ${env.STAGE_NAME}"; return true; } //params."stage_${env.STAGE_NAME}" } // doesn't work? O_o
+            expression { echo "!!! ${env}"; return true; } //params."stage_${env.STAGE_NAME}" } // doesn't work? O_o
           }
         }        
         stages {
