@@ -1,5 +1,5 @@
-def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis, they can't use variables :(
-def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis, they can't use variables :(
+def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
+def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = null
 
 pipeline {
@@ -272,7 +272,6 @@ def _build(build_script, toCopy="") {
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
       sh "mkdir -p build"
       def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-      def build_dir_rel = build_dir - "${WORKSPACE}/"
       try {
         if ("jar" != STAGE_NAME) {
           dir("${build_dir}") {
