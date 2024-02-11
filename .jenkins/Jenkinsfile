@@ -1,3 +1,45 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+//
+// Jenkins CI declaration.
+//
+// This file is declarative initially.
+// The declarative component describes the pipeline stages and to what CI-agnostic scripts they map to.
+// These CI-agnostic scripts are used as an intermediate dockerised layer above the ant build.xml
+// The ant build.xml is never invoked directly.
+//
+// Below the declarative section there is groovy scripting methods for all the logic between
+//  the 10k ft declarative view and the CI-agnostic scripts.
+//
+// This Jenkinsfile is expected to work on any ci-cassandra.a.o clone.
+// Functionality that depends upon ASF Infra and the canonical ci-cassandra.a.o setup (e.g. post-commit builds)
+//  is required to quietly fail when run on other environments.
+//
+//
+//  Job definitions are still being migrated from (where other CI jobs can also be found):
+//    https://github.com/apache/cassandra-builds/blob/trunk/jenkins-dsl/cassandra_job_dsl_seed.groovy
+//
+//
+// Syntax help can be found at https://ci-cassandra.apache.org/pipeline-syntax/
+//
+// Validate/lint this file using the following command
+// `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
+
 def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = null
