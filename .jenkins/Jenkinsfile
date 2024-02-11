@@ -23,9 +23,7 @@ pipeline {
   environment {
     javaVersionsSupported = jdksSupported.join(',')
     javaVersionDefault = javaVersionDefault()
-    // stage_artifacts = params.stage_artifacts
   }
-
   stages {
     stage('jar') {
       matrix {
@@ -70,38 +68,30 @@ pipeline {
           allOf {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
-            // expression { isStageEnabled(env.STAGE_NAME) } // In `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...), not a real stage name O_o
+            // expression { isStageEnabled(env.STAGE_NAME) } // In matrix-level `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...)
           }
         }
         stages {
           stage('artifacts') {
-            when {
-              expression { isStageEnabled(env.STAGE_NAME) }
-            }
+            when { expression { isStageEnabled(env.STAGE_NAME) } }
             steps {
               _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
           stage('lint') {
-            when {
-              expression { isStageEnabled(env.STAGE_NAME) }
-            }
+            when { expression { isStageEnabled(env.STAGE_NAME) } }
             steps {
               _build("check-code.sh")
             }
           }
           stage('debian') {
-            when {
-              expression { isStageEnabled(env.STAGE_NAME) }
-            }
+            when { expression { isStageEnabled(env.STAGE_NAME) } }
             steps {
               _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
             }
           }
           stage('redhat') {
-            when {
-              expression { isStageEnabled(env.STAGE_NAME) }
-            }
+            when { expression { isStageEnabled(env.STAGE_NAME) } }
             steps {
               _build("build-redhat.sh rpm", "*.rpm")
             }
