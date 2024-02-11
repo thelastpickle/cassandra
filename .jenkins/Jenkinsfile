@@ -289,7 +289,7 @@ def _build(build_script, toCopy="") {
       sh "cat ${logfile}"
 
       if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-        stash name: "${arch}_${jdk}", useDefaultExcludes=false //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+        stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: "*.jar,classes/**,test/classes/**,tools/**"
       }
       sh "xz -f *.log"
       archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
