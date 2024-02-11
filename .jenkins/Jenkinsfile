@@ -245,7 +245,7 @@ pipeline {
     always {
       cleanWs()
       script {
-        if stageFailed {
+        if (stageFailed) {
           currentBuild.result='FAILURE'
         }
       }
