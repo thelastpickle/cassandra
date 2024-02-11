@@ -26,6 +26,11 @@ pipeline {
     javaVersionDefault = javaVersionDefault()
   }
   stages {
+    stage('init') {
+      steps {
+        script { currentBuild.result='SUCCESS' }
+      }
+    }
     stage('jar') {
       matrix {
         axes {
