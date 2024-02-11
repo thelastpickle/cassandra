@@ -16,26 +16,9 @@
 // under the License.
 //
 //
-// Jenkins CI declaration.
-//
-// This file is declarative initially.
-// The declarative component describes the pipeline stages and to what CI-agnostic scripts they map to.
-// These CI-agnostic scripts are used as an intermediate dockerised layer above the ant build.xml
-// The ant build.xml is never invoked directly.
-//
-// Below the declarative section there is groovy scripting methods for all the logic between
-//  the 10k ft declarative view and the CI-agnostic scripts.
-//
-// This Jenkinsfile is expected to work on any ci-cassandra.a.o clone.
-// Functionality that depends upon ASF Infra and the canonical ci-cassandra.a.o setup (e.g. post-commit builds)
-//  is required to quietly fail when run on other environments.
-//
-//
-//  Job definitions are still being migrated from (where other CI jobs can also be found):
+// Jenkins declaration of how to build and test the current codebase.
+//  Jenkins infrastructure related settings should be kept in
 //    https://github.com/apache/cassandra-builds/blob/trunk/jenkins-dsl/cassandra_job_dsl_seed.groovy
-//
-//
-// Syntax help can be found at https://ci-cassandra.apache.org/pipeline-syntax/
 //
 // Validate/lint this file using the following command
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
