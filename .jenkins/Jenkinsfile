@@ -6,6 +6,7 @@ pipeline {
   agent('any')
   options {
     skipDefaultCheckout()
+    // retry(3) // Do we need it?
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
   }
@@ -53,6 +54,7 @@ pipeline {
       }
     }
     stage('Tests') {
+      failFast false
       matrix {
         axes {
             axis { 
