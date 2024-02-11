@@ -28,6 +28,9 @@ pipeline {
   stages {
     stage('init') {
       steps {
+        cleanWs(disableDeferredWipeout: true)
+        checkout scm
+        stash name: "repository", useDefaultExcludes: false
         script { currentBuild.result='SUCCESS' }
       }
     }
@@ -274,14 +277,13 @@ def _build(build_script, toCopy="") {
     return
   }
   node(getNodeArch(env.arch)) {
-    ws("workspace/${JOB_NAME}/${arch}/jdk-${jdk}") {
+    ws("workspace/${JOB_NAME}/${STAGE_NAME}/${arch}/jdk-${jdk}") {
       build_script = ".build/docker/${build_script}"
       echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
       cleanWs(disableDeferredWipeout: true)
+      unstash name: "repository"
       if ("jar" != STAGE_NAME) {
         unstash name: "${arch}_${jdk}"
-      } else {
-        checkout scm
       }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
       echo "Executing ${STAGE_NAME} `${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
