@@ -79,28 +79,30 @@ pipeline {
           }
         }
         stages {
-          stage('artifacts') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
-            steps {
-              _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+          parallel {
+            stage('artifacts') {
+              when { expression { isStageEnabled(env.STAGE_NAME) } }
+              steps {
+                _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+              }
             }
-          }
-          stage('lint') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
-            steps {
-              _build("check-code.sh")
+            stage('lint') {
+              when { expression { isStageEnabled(env.STAGE_NAME) } }
+              steps {
+                _build("check-code.sh")
+              }
             }
-          }
-          stage('debian') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
-            steps {
-              _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
+            stage('debian') {
+              when { expression { isStageEnabled(env.STAGE_NAME) } }
+              steps {
+                _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
+              }
             }
-          }
-          stage('redhat') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
-            steps {
-              _build("build-redhat.sh rpm", "*.rpm")
+            stage('redhat') {
+              when { expression { isStageEnabled(env.STAGE_NAME) } }
+              steps {
+                _build("build-redhat.sh rpm", "*.rpm")
+              }
             }
           }
           // stage('fqltool-test') {
