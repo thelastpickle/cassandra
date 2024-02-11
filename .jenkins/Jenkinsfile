@@ -26,6 +26,7 @@
 def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = null
+def stageFailed = false
 
 pipeline {
   agent('any')
@@ -243,6 +244,11 @@ pipeline {
   post {
     always {
       cleanWs()
+      script {
+        if stageFailed {
+          currentBuild.result='FAILURE'
+        }
+      }
     }
   }
 }
@@ -311,7 +317,6 @@ def _build(build_script, toCopy="") {
         unstash name: "${arch}_${jdk}"
       }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-      echo "Executing ${STAGE_NAME} `${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
       statusCode = sh returnStatus:true, script:"build_dir=${WORKSPACE} ${build_script} ${jdk} > ${logfile} 2>&1"
       sh "cat ${logfile}"
 
@@ -329,7 +334,9 @@ def _build(build_script, toCopy="") {
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
         }
-        return;
+        script {
+          stageFailed = false
+        }
       }
     }
   }
