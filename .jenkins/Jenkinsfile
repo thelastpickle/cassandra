@@ -332,7 +332,7 @@ def isJdkEnabled(jdk) {
  **/
 def _build(build_script, toCopy="") {
   node(getNodeArch(env.arch)) {
-    ws("workspace/${JOB_NAME}/${STAGE_NAME}/${arch}/jdk-${jdk}/${phase}") {
+    ws("workspace/${JOB_NAME}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
       build_script = ".build/docker/${build_script}"
       echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
       cleanWs(disableDeferredWipeout: true)
