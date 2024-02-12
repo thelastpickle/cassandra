@@ -55,7 +55,7 @@ pipeline {
     stage('init') {
       steps {
         cleanWs(disableDeferredWipeout: true)
-        checkout scm
+        checkout scm // shallow clone, single branch, no history on pre-commit
         stash name: "repository", useDefaultExcludes: false
         script { currentBuild.result='SUCCESS' }
       }
@@ -323,8 +323,12 @@ def isJdkEnabled(jdk) {
   return params.jdk == jdk || params.jdk == "all"
 }
 
+// def _axis() {
+//     return
+// }
+
 /**
- * Executes `${build_script} ${toCopy}`
+ * Renders build script into pipeline steps
  **/
 def _build(build_script, toCopy="") {
   node(getNodeArch(env.arch)) {
@@ -332,8 +336,9 @@ def _build(build_script, toCopy="") {
       build_script = ".build/docker/${build_script}"
       echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
       cleanWs(disableDeferredWipeout: true)
-      unstash name: "repository"
-      if ("jar" != STAGE_NAME) {
+      if ("jar" == STAGE_NAME) {
+        unstash name: "repository"
+      } else {
         unstash name: "${arch}_${jdk}"
       }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
@@ -341,7 +346,7 @@ def _build(build_script, toCopy="") {
       sh "cat ${logfile}"
 
       if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-        stash name: "${arch}_${jdk}", includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+        stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
       }
       sh "xz -f *.log"
       archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
