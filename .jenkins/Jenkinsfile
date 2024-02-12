@@ -124,10 +124,12 @@ pipeline {
             }
           }
           stage('lint') {
+            when {
               allOf {
                 expression { isStageEnabled(env.STAGE_NAME) }
                 expression { "B" == env.phase }
               }
+            }
             steps {
               _build("check-code.sh")
             }
