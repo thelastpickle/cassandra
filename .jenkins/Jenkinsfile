@@ -327,10 +327,6 @@ def isJdkEnabled(jdk) {
  * Executes `${build_script} ${toCopy}`
  **/
 def _build(build_script, toCopy="") {
-  if (!isStageEnabled(STAGE_NAME)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-    return
-  }
   node(getNodeArch(env.arch)) {
     ws("workspace/${JOB_NAME}/${STAGE_NAME}/${arch}/jdk-${jdk}") {
       build_script = ".build/docker/${build_script}"
