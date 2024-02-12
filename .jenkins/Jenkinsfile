@@ -63,7 +63,9 @@ pipeline {
     stage('jar') {
       matrix {
         axes {
-            _axis()
+            script {
+              _axis()
+            }
             axis { 
               name 'jdk'
               values '11', '17'
