@@ -99,6 +99,10 @@ pipeline {
               name 'jdk'
               values '11', '17'
             }
+            axis { 
+              name 'phase'
+              values 'A', 'B'
+            }
         }
         when {
           allOf {
@@ -109,25 +113,43 @@ pipeline {
         }
         stages {
           stage('artifacts') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
+            when { 
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
             steps {
               _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
           stage('lint') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "B" == env.phase }
+              }
             steps {
               _build("check-code.sh")
             }
           }
           stage('debian') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
             steps {
               _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
             }
           }
           stage('redhat') {
-            when { expression { isStageEnabled(env.STAGE_NAME) } }
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "B" == env.phase }
+              }
+            }
             steps {
               _build("build-redhat.sh rpm", "*.rpm")
             }
@@ -570,3 +592,4 @@ def emailContent() {
   For complete test report and logs see https://nightlies.apache.org/cassandra/${JOB_NAME}/${BUILD_NUMBER}/
   '''
 }
+ё
