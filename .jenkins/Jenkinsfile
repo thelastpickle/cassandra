@@ -63,10 +63,7 @@ pipeline {
     stage('jar') {
       matrix {
         axes {
-            axis { 
-              name 'arch'
-              values 'amd64', 'arm64'
-            }
+            _axis()
             axis { 
               name 'jdk'
               values '11', '17'
@@ -323,9 +320,12 @@ def isJdkEnabled(jdk) {
   return params.jdk == jdk || params.jdk == "all"
 }
 
-// def _axis() {
-//     return
-// }
+def _axis() {
+  return axis { 
+    name 'arch'
+    values 'amd64', 'arm64'
+  }
+}
 
 /**
  * Renders build script into pipeline steps
