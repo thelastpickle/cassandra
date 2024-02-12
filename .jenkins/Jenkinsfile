@@ -595,4 +595,3 @@ def emailContent() {
   For complete test report and logs see https://nightlies.apache.org/cassandra/${JOB_NAME}/${BUILD_NUMBER}/
   '''
 }
-ё
