@@ -64,31 +64,12 @@ pipeline {
         steps {
             node(getNodeArch("amd64")) {
                 ws("workspace/${JOB_NAME}/${STAGE_NAME}/${BUILD_NUMBER}") {
-
-                cleanWs(disableDeferredWipeout: true)
-            sh "rm -rf ./* ./**"
-            checkout scm
-                // if ("jar" == STAGE_NAME) {
-                //     // unstash name: "repository"
-                // } else {
-                //     // unstash name: "${arch}_${jdk}"
-                // }
-                def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-                //   statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}' ${build_script} ${jdk} > ${logfile} 2>&1"
-                //   sh "cat ${logfile}"
-
-            statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}' CASSANDRA_DIR='${WORKSPACE}' .build/docker/build-artifacts.sh ${jdk} >> ${logfile} 2>&1"
-            sh "cat ${logfile}"
-
-            if (0 != statusCode) {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
+                    sh "rm -rf ./* ./**"
+                    checkout scm
+                    sh "ls -la"
+                    sh "ps aux"
+                    sh "build_dir='${WORKSPACE}' CASSANDRA_DIR='${WORKSPACE}' .build/docker/build-artifacts.sh"
                 }
-                script {
-                stageFailed = false
-                }
-                }
-            }
             }
         }
     }
