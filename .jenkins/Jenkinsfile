@@ -64,7 +64,6 @@ pipeline {
         steps {
             node(getNodeArch("amd64")) {
                 ws("workspace/${JOB_NAME}/${STAGE_NAME}/${BUILD_NUMBER}") {
-                def build_script = ".build/docker/${build_script}"
 
                 cleanWs(disableDeferredWipeout: true)
             sh "rm -rf ./* ./**"
