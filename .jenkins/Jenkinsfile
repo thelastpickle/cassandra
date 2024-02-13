@@ -62,11 +62,11 @@ pipeline {
     // }
     stage('experiment') {
         steps {
-            node(getNodeArch("amd64")) {
-                sh "rm -rf ./* ./**"
-                checkout changelog: false, scm: scmGit(branches: [[name: '*/aleks-cassius']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: 'https://github.com/HadesArchitect/cassandra']])
+            // node(getNodeArch("amd64")) {
+                // sh "rm -rf ./* ./**"
+                // checkout changelog: false, scm: scmGit(branches: [[name: '*/aleks-cassius']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: 'https://github.com/HadesArchitect/cassandra']])
                 sh "build_dir='${WORKSPACE}' CASSANDRA_DIR='${WORKSPACE}' .build/docker/build-artifacts.sh"
-            }
+            // }
         }
     }
     stage('jar') {
