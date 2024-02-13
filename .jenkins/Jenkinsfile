@@ -52,14 +52,14 @@ pipeline {
     javaVersionDefault = javaVersionDefault()
   }
   stages {
-    stage('init') {
-      steps {
-        cleanWs(disableDeferredWipeout: true)
-        checkout scm // shallow clone, single branch, no history on pre-commit
-        stash name: "repository", useDefaultExcludes: false
-        script { currentBuild.result='SUCCESS' }
-      }
-    }
+    // stage('init') {
+    //   steps {
+    //     cleanWs(disableDeferredWipeout: true)
+    //     checkout scm // shallow clone, single branch, no history on pre-commit
+    //     stash name: "repository", useDefaultExcludes: false
+    //     script { currentBuild.result='SUCCESS' }
+    //   }
+    // }
     stage('jar') {
       matrix {
         axes {
@@ -339,7 +339,7 @@ def _build(build_script, toCopy="") {
       build_script = ".build/docker/${build_script}"
       echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
       cleanWs(disableDeferredWipeout: true)
-sh "rm -rf ./* ./**"      
+sh "rm -rf ./* ./**"
 checkout scm
       if ("jar" == STAGE_NAME) {
         // unstash name: "repository"
