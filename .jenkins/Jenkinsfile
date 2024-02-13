@@ -63,13 +63,9 @@ pipeline {
     stage('experiment') {
         steps {
             node(getNodeArch("amd64")) {
-                ws("workspace/${JOB_NAME}/${STAGE_NAME}/${BUILD_NUMBER}") {
-                    sh "rm -rf ./* ./**"
-                    checkout scm
-                    sh "ls -la"
-                    sh "ps aux"
-                    sh "build_dir='${WORKSPACE}' CASSANDRA_DIR='${WORKSPACE}' .build/docker/build-artifacts.sh"
-                }
+                sh "rm -rf ./* ./**"
+                checkout changelog: false, scm: scmGit(branches: [[name: '*/aleks-cassius']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: 'https://github.com/HadesArchitect/cassandra']])
+                sh "build_dir='${WORKSPACE}' CASSANDRA_DIR='${WORKSPACE}' .build/docker/build-artifacts.sh"
             }
         }
     }
