@@ -1,3 +1,28 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+//
+// Jenkins declaration of how to build and test the current codebase.
+//  Jenkins infrastructure related settings should be kept in
+//    https://github.com/apache/cassandra-builds/blob/trunk/jenkins-dsl/cassandra_job_dsl_seed.groovy
+//
+// Validate/lint this file using the following command
+// `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
+
 def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = null
@@ -5,10 +30,12 @@ def stageFailed = false
 
 pipeline {
   agent('any')
-  // options {
+  options {
+    skipDefaultCheckout()
+    // retry(3) // Do we need it?
     // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
     // timestamps()
-  // }
+  }
   parameters {
     string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
     string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
@@ -21,45 +48,138 @@ pipeline {
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
   }
   environment {
+    javaVersionsSupported = jdksSupported.join(',')
     javaVersionDefault = javaVersionDefault()
-    javaVersionsSupported = javaVersionsSupported()
-    // javaVersionsSupported = "11"
   }
   stages {
     stage('init') {
       steps {
+        cleanWs(disableDeferredWipeout: true)
+        checkout scm // shallow clone, single branch, no history on pre-commit
+        stash name: "repository", useDefaultExcludes: false
         script { currentBuild.result='SUCCESS' }
-        cleanWs()
       }
     }
     stage('jar') {
-      steps {
-        script {
-          parallel buildJob(".build/docker/_docker_run.sh bullseye-build.docker build-jars.sh", "")
+      matrix {
+        axes {
+          axis { 
+            name 'arch'
+            values 'amd64', 'arm64'
+          }
+          axis { 
+            name 'jdk'
+            values '11', '17'
+          }
+        }
+        when {
+          allOf {
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
+          }
+        }
+        stages {
+          stage('jar') {
+            steps {
+              _build("build-jars.sh")
+            }
+          }
         }
       }
     }
     stage('Tests') {
-      parallel {
-        stage('artifacts') {
-          steps {
-            script {
-              parallel buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+      failFast false
+      matrix {
+        axes {
+            axis { 
+              name 'arch'
+              values 'amd64', 'arm64'
+            }
+            axis { 
+              name 'jdk'
+              values '11', '17'
+            }
+            axis { 
+              name 'phase'
+              values 'A', 'B'
+            }
+        }
+        when {
+          allOf {
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
+            // expression { isStageEnabled(env.STAGE_NAME) } // In matrix-level `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...)
+          }
+        }
+        stages {
+          stage('artifacts') {
+            when { 
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
+            steps {
+              _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
-        }
-        stage('lint') {
-          steps {
-            script {
-              parallel buildJob(".build/docker/check-code.sh", "")
+          stage('lint') {
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "B" == env.phase }
+              }
+            }
+            steps {
+              _build("check-code.sh")
             }
           }
-        }
-        stage('fqltool-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+          stage('debian') {
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
+            steps {
+              _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
+            }
           }
+          stage('redhat') {
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "B" == env.phase }
+              }
+            }
+            steps {
+              _build("build-redhat.sh rpm", "*.rpm")
+            }
+          }
+          // stage('fqltool-test') {
+          //   steps {
+          //     testJob("fqltool-test")
+          //   }
+          // }
         }
+      }
+    }
+    // stage('Tests') {
+    //   parallel {
+    //     stage('artifacts') {
+    //       steps {
+    //         script {
+    //           parallel buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+    //         }
+    //       }
+    //     }
+    //     stage('lint') {
+    //       steps {
+    //         script {
+    //           parallel buildJob(".build/docker/check-code.sh", "")
+    //         }
+    //       }
+    //     }
     //     stage('debian') {
     //       steps {
     //         buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
@@ -72,85 +192,95 @@ pipeline {
     //     }
     //     stage('stress-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "stress-test", 1)
+    //         testJob("stress-test", 1)
     //       }
     //     }        
     //     stage('cqlsh-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+    //         testJob("cqlsh-test", 1)
     //       }
     //     }
     //     stage('fqltool-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "fqltool-test", 1)
+    //         testJob("fqltool-test", 1)
     //       }
     //     }
     //     stage('test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test", 8)
+    //         testJob("test", 8)
     //       }
     //     }
     //     stage('test-trie') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-trie", 8)
+    //         testJob("test-trie", 8)
     //       }
     //     }
     //     stage('test-burn') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-burn", 10)
+    //         testJob("test-burn", 10)
     //       }
     //     }
     //     stage('test-cdc') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-cdc", 10)
+    //         testJob("test-cdc", 10)
     //       }
     //     }
     //     stage('test-compression') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-compression", 10)
+    //         testJob("test-compression", 10)
     //       }
     //     }
     //     stage('long-test') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "long-test", 8)
+    //         testJob("long-test", 8)
     //       }
     //     }
     //     stage('test-oa') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-oa", 8)
+    //         testJob("test-oa", 8)
     //       }
     //     }
     //     stage('test-system-keyspace-directory') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
+    //         testJob("test-system-keyspace-directory", 8)
     //       }
     //     }
     //     stage('jvm-dtest') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
+    //         testJob("jvm-dtest", 8)
     //       }
     //     }
     //     stage('jvm-dtest-upgrade') {
     //       steps {
-    //         testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
+    //         testJob("jvm-dtest-upgrade", 8)
     //       }
     //     }
-      }
-    }
-    // stage('Summary') {
-    //   steps {
-    //     generateUnifiedTestReport()
-    //     // FIXME – post always
-    //     sendNotifications()
     //   }
     // }
+    stage('Summary') {
+      steps {
+        // generateUnifiedTestReport()
+        // FIXME – post always
+        // sendNotifications()
+        script {
+          if (stageFailed) {
+            // currentBuild.result='FAILURE'
+            error("Build failed due to failed stages")
+          }
+        }
+      }
+    }
+  }
+  post {
+    always {
+      cleanWs()
+    }
   }
 }
 
 ///////////////////////////
 //// scripting support ////
 ///////////////////////////
-
 
 /**
  * Return the default JDK defined by build.xml
@@ -181,85 +311,62 @@ def isCanonical() {
   return "${JENKINS_URL}".contains("ci-cassandra.apache.org")
 }
 
-def isStageIncluded() {
-    return true
+def isStageEnabled(stage) {
+  return params."stage_${stage}" || "jar" == stage
 }
 
-/**
- * Executes `${build_script} ${jdk}` for each arch, and jdk.
- *
- * Stashes the jarfiles for `package-artifacts.sh`
- * Copies build artifacts and logfiles to nightlies
- * Cleans the agent (docker prune) afterwards
- * Stops the pipeline on any failure
- **/
-def buildJob(build_script, toCopy) {
-  if (! isStageIncluded()) {
-    echo "Skipping ${STAGE_NAME}"
-    return;
-  }
-  //def archs = ['amd64', 'arm64'] // uncomment when ready for arm64 testing
-  def archs = ['amd64']
-  def jdks = "${javaVersionsSupported}".split(/,/, -1)
-  def builds = [:]
-  archs.each { arch ->
-    jdks.each { jdk ->
-        builds["${STAGE_NAME} $arch jdk:$jdk"] = _buildAxis(build_script, toCopy, arch, jdk)
-    }
-  }
-  // parallel(builds)
-  return builds
+def isArchEnabled(arch) {
+  return params.architecture == arch || params.architecture == "all"
 }
 
-/**
- * Executes `${build_script} ${jdk}` for stated arch, and jdk.
- **/
-def _buildAxis(build_script, toCopy, arch, jdk) {
-  //echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk}"
-  return {
-    node(_getNodeArch(arch)) {
-      branchName: "${STAGE_NAME} ${build_script} ${jdk} ${NODE_NAME}"
-      checkout scm
-      def statusCode = 0, attempt = 1
-      retry(2) {
-        if (attempt > 1) { sleep(60 * attempt) }
-        def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}_attempt_${attempt}.log"
-        sh "mkdir -p build"
-        def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-        def build_dir_rel = build_dir - "${WORKSPACE}/"
-        try {
-          if ("jar" != STAGE_NAME) {
-            dir("${build_dir}") {
-              unstash name: "${arch}_${jdk}"
-            }
-          }
-          echo "Executing ${STAGE_NAME} `build_dir=${build_dir} ${build_script} ${jdk} 2>&1 | tee ${logfile}` on ${NODE_NAME}"
-          statusCode = sh returnStatus:true, script:"build_dir=\"${build_dir}\" ${build_script} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
+def isJdkEnabled(jdk) {
+  return params.jdk == jdk || params.jdk == "all"
+}
 
-          if ("jar" == STAGE_NAME) {
-            dir("${build_dir}") {
-              // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-              stash name: "${arch}_${jdk}"//, includes: "*.jar,classes/**,test/classes/**,tools/**"
-            }
-          }
-        } finally {
-          attempt = attempt + 1
-          sh "xz -f ${build_dir}/*_attempt_*.log"
-          dir("${build_dir}") {
-              archiveArtifacts artifacts: "**/*_attempt_*.log.xz", fingerprint: true
-              copyToNightlies("**/*_attempt_*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-              if (0 == statusCode) {
-                  copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-              }
-          }
-          sh "rm -rf \"${build_dir}\""
-          cleanAgent(build_script)
-          if (0 != statusCode) {
-            currentBuild.result = 'FAILURE'
-            error("FAILED ${STAGE_NAME}'${build_script} ${jdk}' on ${NODE_NAME}")
-          } else {
-            echo "Completed ${STAGE_NAME} '${build_script} ${jdk}' on ${NODE_NAME}"
-          }
+// def _axis() {
+//   return axis { 
+//     name 'arch'
+//     values 'amd64', 'arm64'
+//   }
+// }
+
+/**
+ * Renders build script into pipeline steps
+ **/
+def _build(build_script, toCopy="") {
+  node(getNodeArch(env.arch)) {
+    ws("workspace/${JOB_NAME}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
+      build_script = ".build/docker/${build_script}"
+      echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
+      cleanWs(disableDeferredWipeout: true)
+      if ("jar" == STAGE_NAME) {
+        unstash name: "repository"
+      } else {
+        unstash name: "${arch}_${jdk}"
+      }
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
+      statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}' ${build_script} ${jdk} > ${logfile} 2>&1"
+    //   sh "cat ${logfile}"
+
+statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}' .build/docker/build-artifacts.sh ${jdk} >> ${logfile} 2>&1"
+sh "cat ${logfile}"
+
+      if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+        stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+      }
+      sh "xz -f *.log"
+      archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
+      copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+      if (0 == statusCode) {
+          copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+      }
+      cleanAgent(build_script)
+      if (0 != statusCode) {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
+        }
+        script {
+          stageFailed = false
         }
       }
     }
@@ -272,22 +379,22 @@ def _buildAxis(build_script, toCopy, arch, jdk) {
  * Cleans the agent (docker prune) afterwards
  * Stops the pipeline on any failure
  **/
-def testJob(test_script, test_type, splits=1) {
+def testJob(test_type, splits=1) {
+
+  test_script = ".build/docker/run-tests.sh"
+
   // we don't actually need the test_script and test_type, but they are useful explicit for readability and intuitive feedback in the declarative section.
   assert STAGE_NAME.equals(test_type) : "Stage's name expected to match test_type (" + STAGE_NAME + " != " + test_type + ")"
-  assert ".build/docker/run-tests.sh".equals(test_script) : "testJob is hardcoded to '.build/docker/run-tests.sh', found " + test_script
-
-  if (! isStageIncluded()) {
-    echo "Skipping ${STAGE_NAME}"
-    return;
-  }
 
   // XXX – the following matrix over arrays can be better done with multi-arrays and recursion
 
   def archs = ['amd64']
   def jdks = STAGE_NAME.contains("dtest-upgrade") || "simulator-dtest".equals(STAGE_NAME) ? ["${javaVersionDefault}"] : "${javaVersionsSupported}".split(/,/, -1)
+  // jdks ?
   def pythons = "cqlshX".equals(STAGE_NAME) ? ['3.7', '3.8', '3.11'] : ['3.7']
+  // default python 3.7, for `cqlshX` stage it's 3.7, 3.8, 3.11
   def cythons = "cqlshX".equals(STAGE_NAME) ? ['no', 'yes'] : ['no']
+  // default no cython, for `cqlshX` test both
 
   def tests = [:]
   archs.each { arch ->
@@ -314,7 +421,7 @@ def testJob(test_script, test_type, splits=1) {
 /**
  * Backward compatibility to support ci-cassandra.a.o Renders node architecture by real architecture name
  **/
-def _getNodeArch(arch) {
+def getNodeArch(arch) {
   switch(arch) {
     case "arm64":
       return "cassandra-arm64"
@@ -327,6 +434,11 @@ def _getNodeArch(arch) {
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
  **/
 def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
+  if (!isStageEnabled(STAGE_NAME)) {
+    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
+    return
+  }
+
   echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
   node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
@@ -432,7 +544,7 @@ def saveAgentReport() {
 
 def generateUnifiedTestReport() {
   assert "Summary".equals(STAGE_NAME)
-  node(_getNodeArch('amd64')) {
+  node(_('amd64')) {
     checkout scm
     sh "mkdir -p build"
     copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
