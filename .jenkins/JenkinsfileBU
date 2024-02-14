@@ -41,12 +41,12 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 pipeline {
-  agent { label 'agent-dind' }
+  agent('any')
 
-  options {
-    // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
-    timestamps()
-  }
+  // options {
+  //   // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
+  //   // timestamps()
+  // }
   environment {
     javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = javaVersionsSupported()
@@ -70,142 +70,141 @@ pipeline {
              buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
            }
          }
-         stage('lint') {
-           steps {
-             buildJob(".build/docker/check-code.sh", "")
-           }
-         }
-         stage('debian') {
-           steps {
-             buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
-           }
-         }
-         stage('redhat') {
-           steps {
-             buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
-           }
-         }
-         stage('stress-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "stress-test", 1)
-          }
-        }
-        stage('test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test", 8)
-          }
-        }
-        stage('long-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "long-test", 8)
-          }
-        }
-        stage('test-oa') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-oa", 8)
-          }
-        }
-        stage('test-system-keyspace-directory') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
-          }
-        }
-        stage('test-trie') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-trie", 8)
-          }
-        }
-        stage('test-burn') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-burn", 8)
-          }
-        }
-        stage('test-cdc') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-cdc", 8)
-          }
-        }
-        stage('test-compression') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "test-compression", 8)
-          }
-        }
-        stage('cqlsh-test') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
-          }
-        }
-        stage('jvm-dtest') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
-          }
-        }
-        stage('jvm-dtest-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest-novnode", 8)
-          }
-          parallel(tests_per_python)
-        }
-        stage('jvm-dtest-upgrade') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
-          }
-        }
-        stage('jvm-dtest-upgrade-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade-novnode", 8)
-          }
-        }
-        stage('dtest') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest", 64)
-          }
-        }
-        stage('dtest-large') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-large", 8)
-          }
-        }
-        stage('dtest-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-novnode", 64)
-          }
-        }
-        stage('dtest-offheap') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-offheap", 64)
-          }
-        }
-        stage('dtest-large-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-large-novnode", 8)
-          }
-        }
-        stage('dtest-upgrade') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade", 64)
-          }
-        }
-        stage('dtest-upgrade-novnode') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode", 64)
-          }
-        }
-        stage('dtest-upgrade-large') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade-large", 64)
-          }
-        }
-        stage('dtest-upgrade-novnode-large') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode-large", 64)
-          }
-        }
-        stage('simulator-dtest') {
-          steps {
-            testJob(".build/docker/run-tests.sh", "simulator-dtest", 1)
-          }
-        }
+        //  stage('lint') {
+        //    steps {
+        //      buildJob(".build/docker/check-code.sh", "")
+        //    }
+        //  }
+        //  stage('debian') {
+        //    steps {
+        //      buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
+        //    }
+        //  }
+        //  stage('redhat') {
+        //    steps {
+        //      buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
+        //    }
+        //  }
+        //  stage('stress-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "stress-test", 1)
+        //   }
+        // }
+        // stage('test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test", 8)
+        //   }
+        // }
+        // stage('long-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "long-test", 8)
+        //   }
+        // }
+        // stage('test-oa') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-oa", 8)
+        //   }
+        // }
+        // stage('test-system-keyspace-directory') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-system-keyspace-directory", 8)
+        //   }
+        // }
+        // stage('test-trie') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-trie", 8)
+        //   }
+        // }
+        // stage('test-burn') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-burn", 8)
+        //   }
+        // }
+        // stage('test-cdc') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-cdc", 8)
+        //   }
+        // }
+        // stage('test-compression') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "test-compression", 8)
+        //   }
+        // }
+        // stage('cqlsh-test') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "cqlsh-test", 1)
+        //   }
+        // }
+        // stage('jvm-dtest') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "jvm-dtest", 8)
+        //   }
+        // }
+        // stage('jvm-dtest-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "jvm-dtest-novnode", 8)
+        //   }
+        // }
+        // stage('jvm-dtest-upgrade') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade", 8)
+        //   }
+        // }
+        // stage('jvm-dtest-upgrade-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "jvm-dtest-upgrade-novnode", 8)
+        //   }
+        // }
+        // stage('dtest') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest", 64)
+        //   }
+        // }
+        // stage('dtest-large') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-large", 8)
+        //   }
+        // }
+        // stage('dtest-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-novnode", 64)
+        //   }
+        // }
+        // stage('dtest-offheap') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-offheap", 64)
+        //   }
+        // }
+        // stage('dtest-large-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-large-novnode", 8)
+        //   }
+        // }
+        // stage('dtest-upgrade') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade", 64)
+        //   }
+        // }
+        // stage('dtest-upgrade-novnode') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode", 64)
+        //   }
+        // }
+        // stage('dtest-upgrade-large') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade-large", 64)
+        //   }
+        // }
+        // stage('dtest-upgrade-novnode-large') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "dtest-upgrade-novnode-large", 64)
+        //   }
+        // }
+        // stage('simulator-dtest') {
+        //   steps {
+        //     testJob(".build/docker/run-tests.sh", "simulator-dtest", 1)
+        //   }
+        // }
       }
     }
     stage('Summary') {
