@@ -29,7 +29,7 @@ def jdkDefault = null
 def stageFailed = false
 
 pipeline {
-  agent('any')
+  agent none
   options {
     skipDefaultCheckout()
     // retry(3) // Do we need it?
