@@ -52,14 +52,14 @@ pipeline {
     javaVersionDefault = javaVersionDefault()
   }
   stages {
-    stage('init') {
-      steps {
-        cleanWs(disableDeferredWipeout: true)
-        checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
-        stash name: "repository", useDefaultExcludes: false
-        script { currentBuild.result='SUCCESS' }
-      }
-    }
+    // stage('init') {
+    //   steps {
+        // cleanWs(disableDeferredWipeout: true)
+        // checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+        // stash name: "repository", useDefaultExcludes: false
+    //     script { currentBuild.result='SUCCESS' }
+    //   }
+    // }
     stage('jar') {
       matrix {
         axes {
@@ -346,7 +346,8 @@ def _build(build_script, toCopy="") {
     //   unstash name: "repository"
     //   dir(build_dir) {
         if ("jar" == STAGE_NAME) {
-            unstash name: "repository"
+            // unstash name: "repository"
+            checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
         } else {
             unstash name: "${arch}_${jdk}"
         }
