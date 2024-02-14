@@ -122,7 +122,11 @@ pipeline {
               }
             }
             steps {
-              _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+            //   _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+                _build(
+                    "_docker_run.sh bullseye-build.docker ant -f build.xml artifacts -Dant.gen-doc.skip=true -Dcheck.skip=true",
+                    "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom"
+                )
             }
           }
           stage('lint') {
