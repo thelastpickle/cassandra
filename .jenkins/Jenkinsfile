@@ -318,11 +318,11 @@ def isStageEnabled(stage) {
 }
 
 def isArchEnabled(arch) {
-  return params.architecture == arch || params.architecture == "all"
+  return params.architecture == arch || "all" == params.architecture
 }
 
 def isJdkEnabled(jdk) {
-  return params.jdk == jdk || params.jdk == "all"
+  return params.jdk == jdk || "all" == params.jdk
 }
 
 // def _axis() {
@@ -432,11 +432,6 @@ def getNodeArch(arch) {
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
  **/
 def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
-  if (!isStageEnabled(STAGE_NAME)) {
-    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(STAGE_NAME)
-    return
-  }
-
   echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
   node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
