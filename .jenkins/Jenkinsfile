@@ -122,11 +122,7 @@ pipeline {
               }
             }
             steps {
-            //   _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-                _build(
-                    "_docker_run.sh bullseye-build.docker ant -f build.xml artifacts -Dant.gen-doc.skip=true -Dcheck.skip=true",
-                    "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom"
-                )
+                _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
             }
           }
           stage('lint') {
@@ -342,47 +338,35 @@ def isJdkEnabled(jdk) {
 def _build(build_script, toCopy="") {
   node(getNodeArch(env.arch)) {
     ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
-      echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
-      cleanWs(disableDeferredWipeout: true)
-
-      sh "mkdir build"
-    //   def build_dir = sh(returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build-XXXXXXXXXX").trim()
-      def build_dir = "${WORKSPACE}/build"
-      build_script = ".build/docker/${build_script}"
-    //   unstash name: "repository"
-    //   dir(build_dir) {
+        cleanWs(disableDeferredWipeout: true)
+        sh "mkdir build"
+        build_script = ".build/docker/${build_script}"
         if ("jar" == STAGE_NAME) {
-            // unstash name: "repository"
             checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
         } else {
             unstash name: "${arch}_${jdk}"
         }
-    //   }
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-    //   statusCode = sh returnStatus:true, script:"build_dir='${build_dir}' ${build_script} ${jdk} > ${logfile} 2>&1"
+        def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
+
         statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
-      sh "cat ${logfile}"
+        sh "cat ${logfile}"
 
         if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            // dir(build_dir) {
-                stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
-            // }
+            stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
         }
-      sh "xz -f *.log"
-      archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
-      copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-      if (0 == statusCode) {
-          copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-      }
-      cleanAgent(build_script)
-      if (0 != statusCode) {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
+        sh "xz -f *.log"
+        archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
+        copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+        if (0 == statusCode) {
+            copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
         }
-        script {
-          stageFailed = false
+        cleanAgent(build_script)
+        if (0 != statusCode) {
+            stageFailed = true
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
+            }
         }
-      }
     }
   }
 }
