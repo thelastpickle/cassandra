@@ -348,7 +348,8 @@ def _build(build_script, toCopy="") {
       echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
       cleanWs(disableDeferredWipeout: true)
 
-      def build_dir = sh(returnStdout: true, script:"mktemp -d ${WORKSPACE}/build-XXXXXXXXXX").trim()
+      sh "mkdir -p build"
+      def build_dir = sh(returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build-XXXXXXXXXX").trim()
       build_script = ".build/docker/${build_script}"
       unstash name: "repository"
       dir(build_dir) {
@@ -359,7 +360,7 @@ def _build(build_script, toCopy="") {
         }
       }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-      statusCode = sh returnStatus:true, script:"build_dir='${build_dir}' CASSANDRA_DIR='${build_dir}' ${build_script} ${jdk} > ${logfile} 2>&1"
+      statusCode = sh returnStatus:true, script:"build_dir='${build_dir}' ${build_script} ${jdk} > ${logfile} 2>&1"
       sh "cat ${logfile}"
 
         if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
