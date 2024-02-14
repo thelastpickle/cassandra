@@ -51,7 +51,7 @@ pipeline {
     // javaVersionsSupported = jdksSupported.join(',')
     // javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = jdksSupported.join(',')
-    javaVersionDefault = jdkDefault
+    javaVersionDefault = "${jdkDefault}"
   }
   stages {
     // stage('init') {
