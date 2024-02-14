@@ -60,15 +60,6 @@ pipeline {
         script { currentBuild.result='SUCCESS' }
       }
     }
-    // stage('experiment') {
-    //     steps {
-    //         node(getNodeArch("amd64")) {
-    //             sh "rm -rf ./* ./**"
-    //             checkout changelog: false, scm: scmGit(branches: [[name: '*/aleks-cassius']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: 'https://github.com/HadesArchitect/cassandra']])
-    //             sh "build_dir='${WORKSPACE}' CASSANDRA_DIR='${WORKSPACE}' .build/docker/build-artifacts.sh"
-    //         }
-    //     }
-    // }
     stage('jar') {
       matrix {
         axes {
@@ -348,25 +339,27 @@ def _build(build_script, toCopy="") {
       echo "Spawning ${STAGE_NAME} `${build_script} ${toCopy}` with arch=${arch} jdk=${jdk} workspace=${WORKSPACE}"
       cleanWs(disableDeferredWipeout: true)
 
-      sh "mkdir -p build"
-      def build_dir = sh(returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build-XXXXXXXXXX").trim()
+      sh "mkdir build"
+    //   def build_dir = sh(returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build-XXXXXXXXXX").trim()
+      def build_dir = "${WORKSPACE}/build"
       build_script = ".build/docker/${build_script}"
-      unstash name: "repository"
-      dir(build_dir) {
+    //   unstash name: "repository"
+    //   dir(build_dir) {
         if ("jar" == STAGE_NAME) {
             unstash name: "repository"
         } else {
             unstash name: "${arch}_${jdk}"
         }
-      }
+    //   }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-      statusCode = sh returnStatus:true, script:"build_dir='${build_dir}' ${build_script} ${jdk} > ${logfile} 2>&1"
+    //   statusCode = sh returnStatus:true, script:"build_dir='${build_dir}' ${build_script} ${jdk} > ${logfile} 2>&1"
+        statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
       sh "cat ${logfile}"
 
         if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            dir(build_dir) {
+            // dir(build_dir) {
                 stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
-            }
+            // }
         }
       sh "xz -f *.log"
       archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
