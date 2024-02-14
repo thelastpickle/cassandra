@@ -349,7 +349,7 @@ def _build(build_script, toCopy="") {
       cleanWs(disableDeferredWipeout: true)
 
       def build_dir = sh(returnStdout: true, script:"mktemp -d ${WORKSPACE}/build-XXXXXXXXXX").trim()
-      def build_script = "${build_dir}/.build/docker/${build_script}"
+      build_script = "${build_dir}/.build/docker/${build_script}"
       dir(build_dir) {
         if ("jar" == STAGE_NAME) {
             unstash name: "repository"
