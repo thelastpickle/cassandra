@@ -25,7 +25,7 @@
 
 def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
-def jdkDefault = null
+def jdkDefault = 11
 def stageFailed = false
 
 pipeline {
@@ -48,8 +48,10 @@ pipeline {
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
   }
   environment {
+    // javaVersionsSupported = jdksSupported.join(',')
+    // javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = jdksSupported.join(',')
-    javaVersionDefault = javaVersionDefault()
+    javaVersionDefault = jdkDefault
   }
   stages {
     // stage('init') {
