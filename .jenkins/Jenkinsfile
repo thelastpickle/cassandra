@@ -359,7 +359,7 @@ def _build(build_script, toCopy="") {
         }
       }
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
-      statusCode = sh returnStatus:true, script:"build_dir='${build_dir}/' ${build_script} ${jdk} > ${logfile} 2>&1"
+      statusCode = sh returnStatus:true, script:"build_dir='${build_dir}' CASSANDRA_DIR='${build_dir}' ${build_script} ${jdk} > ${logfile} 2>&1"
       sh "cat ${logfile}"
 
         if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
