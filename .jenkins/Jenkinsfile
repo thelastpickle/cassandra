@@ -540,7 +540,7 @@ def _testAxisOld(test_script, test_type, arch, jdk, python, cython, split) {
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
-    if (!isCanonical() or "" == sourceFiles) {
+    if (!isCanonical() || "" == sourceFiles) {
         return;
     }
 
