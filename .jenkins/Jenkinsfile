@@ -85,6 +85,9 @@ pipeline {
             steps {
               _build("build-jars.sh")
             }
+            post {
+                failure { currentBuild.result = 'FAILURE' }
+            }
           }
         }
       }
@@ -336,39 +339,89 @@ def isJdkEnabled(jdk) {
  * Renders build script into pipeline steps
  **/
 def _build(build_script, toCopy="") {
-  node(getNodeArch(env.arch)) {
+  node(getNodeArch(arch)) {
     ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
-        cleanWs(disableDeferredWipeout: true)
-        sh "mkdir build"
         build_script = ".build/docker/${build_script}"
-        if ("jar" == STAGE_NAME) {
-            checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
-        } else {
-            unstash name: "${arch}_${jdk}"
-        }
-        def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
+        logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
 
-        statusCode = sh returnStatus:true, script:"build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
-        sh "cat ${logfile}"
+        cleanWs(disableDeferredWipeout: true)
+        fetchSource(STAGE_NAME, arch, jdk)
 
-        if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+        catchError(buildResult: null, message: 'shit happens', stageResult: 'FAILURE') {
+            sh script:"mkdir build && build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
+            if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
+                stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+            }
+            copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
         }
+
         sh "xz -f *.log"
         archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
         copyToNightlies("**/*.log.xz", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-        if (0 == statusCode) {
-            copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
-        }
         cleanAgent(build_script)
-        if (0 != statusCode) {
-            stageFailed = true
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                error("FAILED stage:${STAGE_NAME} '${build_script} ${arch} jdk:${jdk}' on ${NODE_NAME}")
-            }
-        }
     }
   }
+}
+
+def _test(test_script, test_type, arch, jdk, python, cython, split) {
+  echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
+  node(_getNodeArch(arch)) {
+    branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
+    echo "Starting ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
+    checkout scm
+    sh "mkdir -p build"
+    def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
+    def build_dir_rel = build_dir - "${WORKSPACE}/"
+
+    def cassandra_dtest_dir = "${build_dir}/cassandra-dtest"
+    if (STAGE_NAME.startsWith("dtest")) {
+        def dtestRepo = "https://github.com/apache/cassandra-dtest"
+        def dtestBranch =  "trunk"
+        sh "until git clone --quiet --depth 1 -b ${dtestBranch} ${dtestRepo} \"${cassandra_dtest_dir}\" ; do echo \"git cloning cassandra-dtest failed… trying again… \" ; done"
+    }
+
+    def statusCode = 0, attempt = 1
+    retry(2) {
+      if (attempt > 1) { sleep(60 * attempt) }
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
+      try {
+        dir("${build_dir}") {
+          unstash name: "${arch}_${jdk}"
+        }
+        echo "Executing ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
+        statusCode = sh returnStatus:true, script:"python_version=\"${python}\" cython=\"${cython}\" build_dir=\"${build_dir}\" cassandra_dtest_dir=\"${cassandra_dtest_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
+      } finally {
+        dir("${build_dir_rel}") {
+            if (0 == statusCode) {
+                junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+                sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
+            }
+            archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
+            copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
+        }
+        sh "rm -rf \"${build_dir}\""
+        cleanAgent(test_script)
+        if (0 != statusCode) {
+          currentBuild.result = 'FAILURE'
+          error("FAILED ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME}")
+        } else {
+          echo "Completed ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME}"
+        }
+      }
+    }
+
+    if (currentBuild.result != 'SUCCESS') unstable("${STAGE_NAME} failures (arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME})")
+    if (currentBuild.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
+    if (currentBuild.result == 'FAILURE') currentBuild.result='FAILURE'
+  }
+}
+
+def fetchSource(stage, arch, jdk) {
+    if ("jar" == stage) {
+        checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+    } else {
+        unstash name: "${arch}_${jdk}"
+    }
 }
 
 /**
@@ -421,17 +474,19 @@ def testJob(test_type, splits=1) {
  **/
 def getNodeArch(arch) {
   switch(arch) {
+    case "amd64":
+      return "cassandra"
     case "arm64":
       return "cassandra-arm64"
     default:
-      return "cassandra"
+      error("Unsupported architecture '${arch}'")
   }
 }
 
 /**
  * Executes `.build/test-docker.sh ${testDockerImage} ${test_type} ${split}` for the stated arch, jdk, python, cython, and split.
  **/
-def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
+def _testAxisOld(test_script, test_type, arch, jdk, python, cython, split) {
   echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
   node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
@@ -485,22 +540,24 @@ def _testAxis(test_script, test_type, arch, jdk, python, cython, split) {
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {
-  if (isCanonical()) {
+    if (!isCanonical() or "" == sourceFiles) {
+        return;
+    }
+
     def remotePath = remoteDirectory.startsWith("cassandra/") ? "${remoteDirectory}" : "cassandra/${JOB_NAME}/${BUILD_NUMBER}/${remoteDirectory}"
     def attempt = 1
     retry(9) {
-      if (attempt > 1) { sleep(60 * attempt) }
-      sshPublisher(
+        if (attempt > 1) { sleep(60 * attempt) }
+        sshPublisher(
         continueOnError: true, failOnError: false,
         publishers: [
-          sshPublisherDesc(
-          configName: "Nightlies",
-          transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
-          )
+            sshPublisherDesc(
+            configName: "Nightlies",
+            transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
+            )
         ])
     }
     echo "archived to https://nightlies.apache.org/${remotePath}"
-  }
 }
 
 def cleanAgent(job_name) {
