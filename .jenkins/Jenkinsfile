@@ -389,7 +389,7 @@ def _test(test_type) { //, arch, jdk, python, cython, split) {
             sh label: "Build Logs", script: "cat ${logfile}"
             dir("build") {
                 archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
-                copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
+                copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_1_1".replace("/", "_"))
             }
             
             cleanAgent(".build/docker/run-tests.sh")
