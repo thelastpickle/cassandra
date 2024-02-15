@@ -86,7 +86,7 @@ pipeline {
               _build("build-jars.sh")
             }
             post {
-                failure { currentBuild.result = 'FAILURE' }
+                failure { script { currentBuild.result='FAILURE' }}
             }
           }
         }
