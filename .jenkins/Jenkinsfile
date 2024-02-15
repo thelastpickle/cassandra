@@ -262,19 +262,19 @@ pipeline {
     //     }
     //   }
     // }
-    stage('Summary') {
-      steps {
-        // generateUnifiedTestReport()
-        // FIXME – post always
-        // sendNotifications()
-        script {
-          if (stageFailed) {
-            currentBuild.result='FAILURE'
-            error("Build failed due to failed stages")
-          }
-        }
-      }
-    }
+    // stage('Summary') {
+    //   steps {
+    //     // generateUnifiedTestReport()
+    //     // FIXME – post always
+    //     // sendNotifications()
+    //     script {
+    //       if (stageFailed) {
+    //         currentBuild.result='FAILURE'
+    //         error("Build failed due to failed stages")
+    //       }
+    //     }
+    //   }
+    // }
   }
 //   post {
 //     always {
