@@ -380,7 +380,7 @@ def _test(test_script, test_type="notset") { //, arch, jdk, python, cython, spli
             def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
             catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-                sh script:"python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' ${test_script} ${test_type} ${split} ${jdk} > ${logfile} 2>&1"
+                sh script:"python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' ${test_script} ${test_type} '1/1' ${jdk} > ${logfile} 2>&1"
                 dir("build") {
                     junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
                     sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
