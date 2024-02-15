@@ -381,14 +381,17 @@ def _test(test_script, test_type="notset") { //, arch, jdk, python, cython, spli
 
             catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
                 sh script:"python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' ${test_script} ${test_type} '1/1' ${jdk} > ${logfile} 2>&1"
+                sh label: "Build logs", script: "cat ${logfile}"
                 dir("build") {
                     junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
                     sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
                 }
             }
-            archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
-            copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
-
+            dir("build") {
+                archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
+                copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
+            }
+            
             cleanAgent(test_script)
         }
     }
