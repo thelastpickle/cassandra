@@ -163,7 +163,10 @@ pipeline {
           }
           stage('fqltool-test') {
             when {
+              allOf {
                 expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
             }
             steps {
               _test("fqltool-test")
