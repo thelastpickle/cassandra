@@ -348,7 +348,7 @@ def _build(build_script, toCopy="") {
         fetchSource(STAGE_NAME, arch, jdk)
 
         catchError(buildResult: null, message: 'shit happens', stageResult: 'FAILURE') {
-            sh script:"mkdir build && build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
+            sh script:"mkdir build; build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
             if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
                 stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
             }
