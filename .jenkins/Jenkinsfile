@@ -367,12 +367,14 @@ def _build(build_script, toCopy="") {
 }
 
 def _test(test_script, test_type="notset") { //, arch, jdk, python, cython, split) {
+    def python = "3.7"
+    def cython = "no"
     node(getNodeArch(arch)) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
             cleanWs(disableDeferredWipeout: true)
             fetchSource(STAGE_NAME, arch, jdk)
 
-            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
+            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
             catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
                 sh script:"python_version=\"${python}\" cython=\"${cython}\" build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
