@@ -162,6 +162,9 @@ pipeline {
             }
           }
           stage('fqltool-test') {
+            when {
+                expression { isStageEnabled(env.STAGE_NAME) }
+            }
             steps {
               _test("fqltool-test")
             }
@@ -363,7 +366,7 @@ def _build(build_script, toCopy="") {
     }
 }
 
-def _test(test_script, test_type) { //, arch, jdk, python, cython, split) {
+def _test(test_script, test_type="notset") { //, arch, jdk, python, cython, split) {
     node(getNodeArch(arch)) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
             cleanWs(disableDeferredWipeout: true)
