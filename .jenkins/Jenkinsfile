@@ -345,7 +345,7 @@ def _build(build_script, toCopy="") {
             fetchSource(STAGE_NAME, arch, jdk)
 
             build_script = ".build/docker/${build_script}"
-            logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
+            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
 
             catchError(buildResult: null, message: 'Build task failed', stageResult: 'FAILURE') {
                 sh script:"build_dir='${WORKSPACE}/build' ${build_script} ${jdk} > ${logfile} 2>&1"
@@ -354,7 +354,6 @@ def _build(build_script, toCopy="") {
                 }
                 copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
             }
-
             sh label: "Build logs", script: "cat ${logfile}"
             sh "xz -f *.log"
             archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
@@ -372,22 +371,18 @@ def _test(test_script, test_type) { //, arch, jdk, python, cython, split) {
 
             def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
 
-            statusCode = sh returnStatus:true, script:"python_version=\"${python}\" cython=\"${cython}\" build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
-            dir("build") {
-                catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
+            catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
+                sh script:"python_version=\"${python}\" cython=\"${cython}\" build_dir=\"${build_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
+                dir("build") {
                     junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
                     sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
                 }
-                archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
-                copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
             }
+            archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
+            copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
 
             cleanAgent(test_script)
         }
-
-        if (currentBuild.result != 'SUCCESS') unstable("${STAGE_NAME} failures (arch=${arch} jdk=${jdk} python=${python} cython=${cython})")
-        if (currentBuild.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
-        if (currentBuild.result == 'FAILURE') currentBuild.result='FAILURE'
     }
 }
 
