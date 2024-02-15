@@ -46,6 +46,9 @@ pipeline {
     booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
     booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
   }
   environment {
     // javaVersionsSupported = jdksSupported.join(',')
