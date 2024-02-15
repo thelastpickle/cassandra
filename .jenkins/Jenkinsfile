@@ -172,35 +172,43 @@ pipeline {
               _test("fqltool-test")
             }
           }
+        stage('test') {
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
+            steps {
+              _test("test")
+            }
+          }
+        stage('stress-test') {
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
+            steps {
+              _test("stress-test")
+            }
+          }
+        stage('cqlsh-test') {
+            when {
+              allOf {
+                expression { isStageEnabled(env.STAGE_NAME) }
+                expression { "A" == env.phase }
+              }
+            }
+            steps {
+              _test("cqlsh-test")
+            }
+          }
         }
       }
     }
-    // stage('Tests') {
-    //   parallel {
-    //     stage('artifacts') {
-    //       steps {
-    //         script {
-    //           parallel buildJob(".build/docker/build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-    //         }
-    //       }
-    //     }
-    //     stage('lint') {
-    //       steps {
-    //         script {
-    //           parallel buildJob(".build/docker/check-code.sh", "")
-    //         }
-    //       }
-    //     }
-    //     stage('debian') {
-    //       steps {
-    //         buildJob(".build/docker/build-debian.sh", "cassandra_*,cassandra-tools_*")
-    //       }
-    //     }
-    //     stage('redhat') {
-    //       steps {
-    //         buildJob(".build/docker/build-redhat.sh rpm", "*.rpm")
-    //       }
-    //     }
+
     //     stage('stress-test') {
     //       steps {
     //         testJob("stress-test", 1)
