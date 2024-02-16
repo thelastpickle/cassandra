@@ -389,9 +389,7 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
                 }
             }
             sh "xz -f *.log"
-            archiveArtifacts 
-              artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", 
-              fingerprint: true
+            archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
             copyToNightlies("*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split.current}_${split.all}".replace("/", "_"))
             
             cleanAgent(".build/docker/run-tests.sh")
