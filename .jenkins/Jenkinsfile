@@ -49,6 +49,7 @@ pipeline {
     booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
   }
   environment {
     // javaVersionsSupported = jdksSupported.join(',')
@@ -197,6 +198,28 @@ pipeline {
               _test("test", [current: 2, all: 10])
             }
           }
+        stage('test-compression_1/10') {
+          when {
+            allOf {
+              expression { isStageEnabled('test-compression') }
+              expression { "B" == env.phase }
+            }
+          }
+          steps {
+            _test("test-compression", [current: 1, all: 10])
+          }
+        }
+        stage('test-compression_2/10') {
+          when {
+            allOf {
+              expression { isStageEnabled('test-compression') }
+              expression { "B" == env.phase }
+            }
+          }
+          steps {
+            _test("test-compression", [current: 2, all: 10])
+          }
+        }
         stage('stress-test') {
             when {
               allOf {
@@ -223,53 +246,15 @@ pipeline {
       }
     }
 
-    //     stage('test-trie') {
-    //       steps {
     //         testJob("test-trie", 8)
-    //       }
-    //     }
-    //     stage('test-burn') {
-    //       steps {
     //         testJob("test-burn", 10)
-    //       }
-    //     }
-    //     stage('test-cdc') {
-    //       steps {
     //         testJob("test-cdc", 10)
-    //       }
-    //     }
-    //     stage('test-compression') {
-    //       steps {
-    //         testJob("test-compression", 10)
-    //       }
-    //     }
-    //     stage('long-test') {
-    //       steps {
     //         testJob("long-test", 8)
-    //       }
-    //     }
-    //     stage('test-oa') {
-    //       steps {
     //         testJob("test-oa", 8)
-    //       }
-    //     }
-    //     stage('test-system-keyspace-directory') {
-    //       steps {
     //         testJob("test-system-keyspace-directory", 8)
-    //       }
-    //     }
-    //     stage('jvm-dtest') {
-    //       steps {
     //         _dtest("jvm-dtest", 8)
-    //       }
-    //     }
-    //     stage('jvm-dtest-upgrade') {
-    //       steps {
     //         testJob("jvm-dtest-upgrade", 8)
-    //       }
-    //     }
-    //   }
-    // }
+    //  
     // stage('Summary') {
     //   steps {
     //     // generateUnifiedTestReport()
