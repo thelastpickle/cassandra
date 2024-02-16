@@ -356,7 +356,7 @@ def _build(build_script, toCopy="") {
             def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
 
             catchError(buildResult: null, message: 'Build task failed', stageResult: 'FAILURE') {
-                sh script:"set -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${jdk} 2>&1 | tee ${logfile}"
+                sh script:"#!/usr/bin/bash; set -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${jdk} 2>&1 | tee ${logfile}"
                 if ("jar" == STAGE_NAME) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
                     stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
                 }
