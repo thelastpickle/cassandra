@@ -178,7 +178,7 @@ pipeline {
         stage('test 1/10') {
             when {
               allOf {
-                // expression { isStageEnabled(env.STAGE_NAME) }
+                expression { isStageEnabled('test') }
                 expression { "A" == env.phase }
               }
             }
@@ -189,7 +189,7 @@ pipeline {
         stage('test 2/10') {
             when {
               allOf {
-                // expression { isStageEnabled(env.STAGE_NAME) }
+                expression { isStageEnabled('test') }
                 expression { "B" == env.phase }
               }
             }
