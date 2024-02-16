@@ -175,7 +175,7 @@ pipeline {
               _test("fqltool-test")
             }
           }
-        stage('test 1/10') {
+        stage('test_1/10') {
             when {
               allOf {
                 expression { isStageEnabled('test') }
@@ -186,7 +186,7 @@ pipeline {
               _test("test", [current: 1, all: 10])
             }
           }
-        stage('test 2/10') {
+        stage('test_2/10') {
             when {
               allOf {
                 expression { isStageEnabled('test') }
