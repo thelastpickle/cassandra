@@ -183,7 +183,7 @@ pipeline {
               }
             }
             steps {
-              _test("test", [curent: 2, all: 10])
+              _test("test", [current: 2, all: 10])
             }
           }
         stage('stress-test') {
