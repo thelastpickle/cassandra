@@ -246,7 +246,6 @@ pipeline {
             steps {
               _test("cqlsh-test")
             }
-          }
         }
         stage('test-trie') {
             when {
