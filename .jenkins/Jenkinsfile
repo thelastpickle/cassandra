@@ -110,9 +110,13 @@ pipeline {
               values '11', '17'
             }
             axis { 
-              name 'phase'
-              values 'A', 'B'
+              name 'python'
+              values '3.7', '3.8', '3.11'
             }
+            // axis { 
+            //   name 'phase'
+            //   values 'A', 'B'
+            // }
         }
         when {
           allOf {
@@ -381,11 +385,11 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
 
             catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
                 sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${logfile}"
-                dir("build") {
+                // dir("build") {
                     // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
                     junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
                     sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
-                }
+                // }
             }
             sh "xz -f *.log"
             archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
