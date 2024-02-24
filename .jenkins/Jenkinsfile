@@ -189,7 +189,7 @@ pipeline {
               }
             }
             steps {
-              _test("test", [current: 1, all: 10])
+              _test("test", [current: 1, all: 40])
             }
           }
         stage('test_2/10') {
@@ -200,7 +200,7 @@ pipeline {
               }
             }
             steps {
-              _test("test", [current: 2, all: 10])
+              _test("test", [current: 2, all: 40])
             }
           }
         stage('test-compression_1/10') {
