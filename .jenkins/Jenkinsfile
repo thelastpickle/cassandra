@@ -381,11 +381,11 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
       cleanWs(disableDeferredWipeout: true)
       fetchSource(STAGE_NAME, arch, jdk)
 
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
+      def logfile = "${WORKSPACE}/build/${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
       catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
           sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${logfile}"
-          dir("${WORKSPACE}/build" - "${WORKSPACE}/") {
+          dir("build") {
             junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
             sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
             // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
