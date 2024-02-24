@@ -113,10 +113,10 @@ pipeline {
             //   name 'python'
             //   values '3.7', '3.8', '3.11'
             // }
-            // axis { 
-            //   name 'phase'
-            //   values 'A', 'B'
-            // }
+            axis { 
+              name 'phase'
+              values 'A', 'B'
+            }
         }
         when {
           allOf {
