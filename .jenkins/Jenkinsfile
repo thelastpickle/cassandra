@@ -387,9 +387,9 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
           // sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${logfile}"
           sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1"
           dir("build") {
-            junit testResults: "test/output/nosetests.xml"
-            junit testResults: "test/output/cqlshlib.xml"
-            junit testResults: "test/output/**/TEST*.xml"
+            junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
+            junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
+            junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
             sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
             // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
             // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
