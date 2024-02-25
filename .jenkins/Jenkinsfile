@@ -394,7 +394,7 @@ def build_dir_rel = build_dir - "${WORKSPACE}/"
             // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
             // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
             //sh "ls -la test/output/"
-            junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
+            junit testResults: "test/output/**/TEST*.xml"//, allowEmptyResults: true
             sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
             // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
             // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
