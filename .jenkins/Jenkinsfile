@@ -383,7 +383,7 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
     ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
       cleanWs(disableDeferredWipeout: true)
       fetchSource(STAGE_NAME, arch, jdk)
-      def logfile = "${WORKSPACE}/build/${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
+      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
 sh "mkdir -p build"
 def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
