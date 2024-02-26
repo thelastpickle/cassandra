@@ -27,6 +27,11 @@ def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = 11
 def stageFailed = false
+def buildMap = [
+  jar: [script: 'build-jars.sh', toCopy: null],
+  artifacts: [script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
+  lint: [script: 'check-code.sh', toCopy: null]
+]
 
 pipeline {
   agent none
@@ -85,13 +90,10 @@ pipeline {
             expression { isJdkEnabled(env.jdk) }
           }
         }
-        environment {
-          phase = "default"
-        }
         stages {
           stage('jar') {
             steps {
-              _build("build-jars.sh")
+              _build("jar")
             }
             post {
                 failure { script { currentBuild.result='FAILURE' }}
@@ -112,157 +114,168 @@ pipeline {
               name 'jdk'
               values '11', '17'
             }
+            axis { 
+              name 'step'
+              values 'artifacts', 'lint', 'debian', 'redhat'
+            }
             // axis { 
             //   name 'python'
             //   values '3.7', '3.8', '3.11'
             // }
-            axis { 
-              name 'phase'
-              values 'A', 'B'
-            }
+            // axis { 
+            //   name 'phase'
+            //   values 'A', 'B'
+            // }
         }
         when {
           allOf {
             expression { isArchEnabled(env.arch) }
             expression { isJdkEnabled(env.jdk) }
-            // expression { isStageEnabled(env.STAGE_NAME) } // In matrix-level `when` condition STAGE_NAME is "wrong" (MATRIX ARCH.. JDK...)
+            expression { isStageEnabled(env.step) }
           }
         }
         stages {
-          stage('artifacts') {
-            when { 
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "A" == env.phase }
-              }
-            }
+          stage('step') {
             steps {
-                _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-            }
-          }
-          stage('lint') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "B" == env.phase }
-              }
-            }
-            steps {
-              _build("check-code.sh")
-            }
-          }
-          stage('debian') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "A" == env.phase }
-              }
-            }
-            steps {
-              _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
-            }
-          }
-          stage('redhat') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "B" == env.phase }
-              }
-            }
-            steps {
-              _build("build-redhat.sh rpm", "*.rpm")
-            }
-          }
-          stage('fqltool-test') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "A" == env.phase }
-              }
-            }
-            steps {
-              _test("fqltool-test")
-            }
-          }
-        stage('test_1/10') {
-            when {
-              allOf {
-                expression { isStageEnabled('test') }
-                expression { "A" == env.phase }
-              }
-            }
-            steps {
-              _test("test", [current: 1, all: 40])
-            }
-          }
-        stage('test_2/10') {
-            when {
-              allOf {
-                expression { isStageEnabled('test') }
-                expression { "B" == env.phase }
-              }
-            }
-            steps {
-              _testAxisTest("test", env.arch, env.jdk, "2/40")
-            }
-          }
-        stage('test-compression_1/10') {
-          when {
-            allOf {
-              expression { isStageEnabled('test-compression') }
-              expression { "B" == env.phase }
-            }
-          }
-          steps {
-            _test("test-compression", [current: 1, all: 10])
-          }
-        }
-        stage('test-compression_2/10') {
-          when {
-            allOf {
-              expression { isStageEnabled('test-compression') }
-              expression { "B" == env.phase }
-            }
-          }
-          steps {
-            _test("test-compression", [current: 2, all: 10])
-          }
-        }
-        stage('stress-test') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "A" == env.phase }
-              }
-            }
-            steps {
-              _test("stress-test")
-            }
-          }
-        stage('cqlsh-test') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "A" == env.phase }
-              }
-            }
-            steps {
-              _test("cqlsh-test")
-            }
-        }
-        stage('test-trie') {
-            when {
-              allOf {
-                expression { isStageEnabled(env.STAGE_NAME) }
-                expression { "A" == env.phase }
-              }
-            }
-            steps {
-              _test('test-trie')
+              _build(env.step)
             }
           }
         }
-      }
+      //   stages {
+      //     stage('artifacts') {
+      //       when { 
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //           _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
+      //       }
+      //     }
+      //     stage('lint') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "B" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _build("check-code.sh")
+      //       }
+      //     }
+      //     stage('debian') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
+      //       }
+      //     }
+      //     stage('redhat') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "B" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _build("build-redhat.sh rpm", "*.rpm")
+      //       }
+      //     }
+      //     stage('fqltool-test') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _test("fqltool-test")
+      //       }
+      //     }
+      //   stage('test_1/10') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled('test') }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _test("test", [current: 1, all: 40])
+      //       }
+      //     }
+      //   stage('test_2/10') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled('test') }
+      //           expression { "B" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _testAxisTest("test", env.arch, env.jdk, "2/40")
+      //       }
+      //     }
+      //   stage('test-compression_1/10') {
+      //     when {
+      //       allOf {
+      //         expression { isStageEnabled('test-compression') }
+      //         expression { "B" == env.phase }
+      //       }
+      //     }
+      //     steps {
+      //       _test("test-compression", [current: 1, all: 10])
+      //     }
+      //   }
+      //   stage('test-compression_2/10') {
+      //     when {
+      //       allOf {
+      //         expression { isStageEnabled('test-compression') }
+      //         expression { "B" == env.phase }
+      //       }
+      //     }
+      //     steps {
+      //       _test("test-compression", [current: 2, all: 10])
+      //     }
+      //   }
+      //   stage('stress-test') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _test("stress-test")
+      //       }
+      //     }
+      //   stage('cqlsh-test') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _test("cqlsh-test")
+      //       }
+      //   }
+      //   stage('test-trie') {
+      //       when {
+      //         allOf {
+      //           expression { isStageEnabled(env.STAGE_NAME) }
+      //           expression { "A" == env.phase }
+      //         }
+      //       }
+      //       steps {
+      //         _test('test-trie')
+      //       }
+      //     }
+      //   }
+      // }
     }
 
     //         testJob("test-trie", 8)
@@ -351,7 +364,9 @@ def isJdkEnabled(jdk) {
 /**
  * Renders build script into pipeline steps
  **/
-def _build(build_script, toCopy="") {
+def _build(step) {
+    def build_script = buildMap[step].script
+    def toCopy = buildMap[step].toCopy 
     node(getNodeArch(arch)) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
             cleanWs(disableDeferredWipeout: true)
