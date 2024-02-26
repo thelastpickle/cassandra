@@ -85,6 +85,9 @@ pipeline {
             expression { isJdkEnabled(env.jdk) }
           }
         }
+        environment {
+          phase = "default"
+        }
         stages {
           stage('jar') {
             steps {
