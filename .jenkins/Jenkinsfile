@@ -141,6 +141,10 @@ pipeline {
             }
           }
         }
+      }
+    }
+  }
+}
       //   stages {
       //     stage('artifacts') {
       //       when { 
