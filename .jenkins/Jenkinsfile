@@ -93,7 +93,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build('jar', buildMap['jar'].script, buildMap['jar'].toCopy)
+              _build('jar', buildMap['jar'])
             }
             post {
                 failure { script { currentBuild.result='FAILURE' }}
