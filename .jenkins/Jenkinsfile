@@ -135,9 +135,9 @@ pipeline {
           }
         }
         stages {
-          stage('step') {
+          stage(step) {
             steps {
-              _build(env.step, buildMap[env.step].script, buildMap[env.step].toCopy)
+              _build(step, buildMap[step])
             }
           }
         }
@@ -368,14 +368,16 @@ def isJdkEnabled(jdk) {
 /**
  * Renders build script into pipeline steps
  **/
-def _build(step, build_script, toCopy="") {
+def _build(step, command) {
+    def build_script = command.script
+    def toCopy = command.toCopy
     node(getNodeArch(arch)) {
-        ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
+        ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${step}/${arch}/jdk-${jdk}") {
             cleanWs(disableDeferredWipeout: true)
-            fetchSource(STAGE_NAME, arch, jdk)
+            fetchSource(step, arch, jdk)
 
             build_script = ".build/docker/${build_script}"
-            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${STAGE_NAME}_jdk${jdk}_${arch}.log"
+            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${step}_jdk${jdk}_${arch}.log"
 
             catchError(buildResult: null, message: 'Build task failed', stageResult: 'FAILURE') {
                 // sh script:"#!/usr/bin/bash; set -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${jdk} 2>&1 | tee ${logfile}"
