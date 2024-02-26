@@ -482,7 +482,8 @@ def getNodeArch(arch) {
   }
 }
 
-def _testAxisTest(".build/docker/run-tests.sh", test_type, arch, jdk, python="3.7", cython="no", split) {
+def _testAxisTest(test_type, arch, jdk, python="3.7", cython="no", split) {
+  def test_script = ".build/docker/run-tests.sh"
   echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
   node(_getNodeArch(arch)) {
     branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
