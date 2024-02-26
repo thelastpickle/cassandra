@@ -243,8 +243,10 @@ docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/dock
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
 # capture logs and pid for container
+set -o pipefail
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
+set +o pipefail
 
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
