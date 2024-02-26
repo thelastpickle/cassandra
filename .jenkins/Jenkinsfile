@@ -93,7 +93,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build("jar")
+              _build('jar', buildMap['jar'].script, buildMap['jar'].toCopy)
             }
             post {
                 failure { script { currentBuild.result='FAILURE' }}
@@ -116,7 +116,7 @@ pipeline {
             }
             axis { 
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat'
+              values 'artifacts', 'lint'//, 'debian', 'redhat'
             }
             // axis { 
             //   name 'python'
@@ -137,7 +137,7 @@ pipeline {
         stages {
           stage('step') {
             steps {
-              _build(env.step)
+              _build(env.step, buildMap[env.step].script, buildMap[env.step].toCopy)
             }
           }
         }
@@ -368,9 +368,7 @@ def isJdkEnabled(jdk) {
 /**
  * Renders build script into pipeline steps
  **/
-def _build(step) {
-    def build_script = buildMap[step].script
-    def toCopy = buildMap[step].toCopy 
+def _build(step, build_script, toCopy="") {
     node(getNodeArch(arch)) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
             cleanWs(disableDeferredWipeout: true)
