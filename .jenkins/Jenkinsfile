@@ -380,16 +380,17 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
     ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
       cleanWs(disableDeferredWipeout: true)
       fetchSource(STAGE_NAME, arch, jdk)
-
-      //def logfile = "${WORKSPACE}/build/${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
+      def logfile = "${WORKSPACE}/build/${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
 sh "mkdir -p build"
 def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
 def build_dir_rel = build_dir - "${WORKSPACE}/"
 
+dir("${build_dir}") {
+  fetchSource(STAGE_NAME, arch, jdk)
+}
       catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-          // sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${logfile}"
-          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${build_dir}' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1"
+          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${build_dir}' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
           dir("${build_dir_rel}") {
             // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
             // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
