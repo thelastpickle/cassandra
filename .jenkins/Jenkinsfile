@@ -33,7 +33,8 @@ def stepsMap = [
   lint: [type: 'build', script: 'check-code.sh', toCopy: null],
   debian: [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
   redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
-  'cqlsh-test': [type: 'test', test: 'cqlsh-test']
+  'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
+  'fqltool-test': [type: 'test', test: 'fqltool-test'],
 ]
 
 pipeline {
@@ -115,7 +116,7 @@ pipeline {
             }
             axis { 
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test'
+              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test'
             }
             axis { 
               name 'python'
