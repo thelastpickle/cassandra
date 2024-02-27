@@ -180,7 +180,7 @@ pipeline {
                   if ('build' == stepsMap[step].type) {
                     _build(step, stepsMap[step])
                   } else {
-                    _test(stepsMap[step].test)
+                    _test(stepsMap[step])
                   }
                 }
               }
@@ -305,7 +305,8 @@ def _build(step, command) {
     }
 }
 
-def _test(test_type, command) { //, arch, jdk, python, cython, split) {
+def _test(command) { //, arch, jdk, python, cython, split) {
+  def test_type = command.test
   def split = env.split
   def splits = command.splits
   def python = env.python
