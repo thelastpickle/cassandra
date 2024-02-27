@@ -145,7 +145,7 @@ pipeline {
           stage('test') {
             steps {
               script {
-                stage("${arch} jdk${jdk} ${step}") {
+                stage(getStepName(step, arch, jdk, python) {
                   if ('build' == stepsMap[step].type) {
                     _build(step, stepsMap[step])
                   } else {
@@ -331,6 +331,13 @@ pipeline {
 ///////////////////////////
 //// scripting support ////
 ///////////////////////////
+
+def getStepName(step, arch, jdk, python) {
+  python = "3.7" == python ?: " python${python}"
+  arch = "amd64" == arch ?: " ${arch}"
+
+  return "${step}${arch} jdk${jdk}${python}"
+}
 
 /**
  * Return the default JDK defined by build.xml
