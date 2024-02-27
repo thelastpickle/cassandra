@@ -338,7 +338,7 @@ def _build(step, command) {
 }
 
 def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, cython, split) {
-  def python = "3.7"
+  def python = env.python
   def cython = "no"
   node(getNodeArch(arch)) {
     ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${test_type}/${arch}/jdk-${jdk}") {
