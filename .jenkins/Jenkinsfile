@@ -35,6 +35,7 @@ def stepsMap = [
   redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
   'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
   'fqltool-test': [type: 'test', test: 'fqltool-test'],
+  'test-cdc': [type: 'test', test: 'test-cdc'],
 ]
 
 pipeline {
@@ -56,6 +57,7 @@ pipeline {
     booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
@@ -116,7 +118,7 @@ pipeline {
             }
             axis { 
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test'
+              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc'
             }
             axis { 
               name 'python'
@@ -185,13 +187,11 @@ pipeline {
     }
   }
 }
-      //         _test("fqltool-test")
-      //         _test("test", [current: 1, all: 40])
-      //         _test("test-compression", [current: 2, all: 10])
-      //         _test("stress-test")
+    //         _test("test", [current: 1, all: 40])
+    //         _test("test-compression", [current: 2, all: 10])
+    //         _test("stress-test")
     //         testJob("test-trie", 8)
     //         testJob("test-burn", 10)
-    //         testJob("test-cdc", 10)
     //         testJob("long-test", 8)
     //         testJob("test-oa", 8)
     //         testJob("test-system-keyspace-directory", 8)
