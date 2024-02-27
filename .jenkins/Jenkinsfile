@@ -28,12 +28,12 @@ def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to updat
 def jdkDefault = 11
 def stageFailed = false
 def steps = [
-  jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
-  artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
-  lint: [type: 'build', script: 'check-code.sh', toCopy: null],
-  debian: [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
-  redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
-  cqlsh-test: [type: 'test', test: 'cqlsh-test'],
+  'jar': [type: 'build', script: 'build-jars.sh', toCopy: null],
+  'artifacts': [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
+  'lint': [type: 'build', script: 'check-code.sh', toCopy: null],
+  'debian': [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
+  'redhat': [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
+  'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
 ]
 
 pipeline {
