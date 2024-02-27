@@ -96,7 +96,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build('jar', steps.jar)
+              _build('jar', steps['jar'])
             }
           }
         }
