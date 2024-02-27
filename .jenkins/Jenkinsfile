@@ -146,11 +146,7 @@ pipeline {
             steps {
               script {
                 stage("${arch} jdk${jdk} ${step}") {
-                  // if ("build" == steps[step].type) {
-                    _build(step, steps[step])
-                  // } else {
-                  //   _test(step)
-                  // }
+                  _build(step, steps[step])
                 }
               }
             }
