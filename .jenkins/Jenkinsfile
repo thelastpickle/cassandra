@@ -108,6 +108,10 @@ pipeline {
               name 'python'
               values '3.7', '3.8', '3.11'
             }
+            axis { 
+              name 'cython'
+              values 'yes', 'no'
+            }
         }
         excludes {
           exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
@@ -128,6 +132,16 @@ pipeline {
             axis {
               name 'arch'
               notValues 'amd64'
+            }
+          }
+          exclude { // Disable cython for all but cqlsh-test
+            axis {
+              name 'step'
+              notValues 'cqlsh-test'
+            }
+            axis {
+              name 'cython'
+              values 'yes'
             }
           }
         }
