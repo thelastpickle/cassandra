@@ -27,7 +27,7 @@ def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = 11
 def stageFailed = false
-def steps = [
+def stepsMap = [
   jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
   artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
   lint: [type: 'build', script: 'check-code.sh', toCopy: null],
@@ -96,7 +96,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build('jar', steps['jar'])
+              _build('jar', stepsMap['jar'])
             }
           }
         }
@@ -146,7 +146,7 @@ pipeline {
             steps {
               script {
                 stage("${arch} jdk${jdk} ${step}") {
-                  _build(step, steps[step])
+                  _build(step, stepsMap[step])
                 }
               }
             }
