@@ -23,10 +23,16 @@
 // Validate/lint this file using the following command
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
+// METHOD TOO LARGE ISSUE: https://issues.jenkins.io/browse/JENKINS-37984
+// Run in Jenkins Script Console: 
+// org.jenkinsci.plugins.pipeline.modeldefinition.parser.RuntimeASTTransformer.SCRIPT_SPLITTING_TRANSFORMATION=true
+// org.jenkinsci.plugins.pipeline.modeldefinition.parser.RuntimeASTTransformer.SCRIPT_SPLITTING_ALLOW_LOCAL_VARIABLES=true
+
 def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = 11
 def stageFailed = false
+def splits = 10
 def stepsMap = [
   jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
   artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
@@ -35,7 +41,7 @@ def stepsMap = [
   redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
   'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
   'fqltool-test': [type: 'test', test: 'fqltool-test'],
-  'test-cdc': [type: 'test', test: 'test-cdc'],
+  'test-cdc': [type: 'test', test: 'test-cdc', splits: 5],
 ]
 
 pipeline {
@@ -112,6 +118,10 @@ pipeline {
               name 'cython'
               values 'yes', 'no'
             }
+            axis { 
+              name 'split'
+              values 1, 2, 3, 4, 5
+            }
         }
         excludes {
           exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
@@ -142,6 +152,16 @@ pipeline {
             axis {
               name 'cython'
               values 'yes'
+            }
+          }
+          exclude { // Disable splits for all but proper stages
+            axis {
+              name 'step'
+              notValues 'test-cdc', 'test'
+            }
+            axis {
+              name 'split'
+              notValues 1
             }
           }
         }
@@ -285,7 +305,9 @@ def _build(step, command) {
     }
 }
 
-def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, cython, split) {
+def _test(test_type, command) { //, arch, jdk, python, cython, split) {
+  def split = env.split
+  def splits = command.splits
   def python = env.python
   def cython = env.cython
   node(getNodeArch(arch)) {
@@ -302,7 +324,7 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
   // fetchSource(test_type, arch, jdk)
 // }
       catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${logfile}"
+          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split}/${splits}' ${jdk} 2>&1 | tee ${logfile}"
           dir("build") {
             // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
             // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
@@ -317,7 +339,7 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
       sh "xz -f *.log"
       archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
       // archiveArtifacts artifacts: "build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
-      copyToNightlies("*.log.xz,build/test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split.current}_${split.all}".replace("/", "_"))
+      copyToNightlies("*.log.xz,build/test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}_${splits}".replace("/", "_"))
       
       cleanAgent(".build/docker/run-tests.sh")
     }
