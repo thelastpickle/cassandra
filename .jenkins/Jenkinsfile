@@ -123,14 +123,24 @@ pipeline {
             }
         }
         excludes {
-          exclude {
-            axis {
-              name 'python'
-              values '3.8', '3.11'
-            }
+          exclude { // Allow only python 3.7 for all steps but cqlsh-test
             axis {
               name 'step'
               notValues 'cqlsh-test'
+            }
+            axis {
+              name 'python'
+              notValues '3.7'
+            }
+          }
+          exclude { // Allow only amd64 for cqlsh-test
+            axis {
+              name 'step'
+              values 'cqlsh-test'
+            }
+            axis {
+              name 'arch'
+              notValues 'amd64'
             }
           }
         }
@@ -160,51 +170,6 @@ pipeline {
     }
   }
 }
-      //   stages {
-      //     stage('artifacts') {
-      //       when { 
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //           _build("build-artifacts.sh", "apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom")
-      //       }
-      //     }
-      //     stage('lint') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "B" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //         _build("check-code.sh")
-      //       }
-      //     }
-      //     stage('debian') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //         _build("build-debian.sh", "cassandra_*,cassandra-tools_*")
-      //       }
-      //     }
-      //     stage('redhat') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "B" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //         _build("build-redhat.sh rpm", "*.rpm")
-      //       }
-      //     }
       //     stage('fqltool-test') {
       //       when {
       //         allOf {
@@ -227,28 +192,6 @@ pipeline {
       //         _test("test", [current: 1, all: 40])
       //       }
       //     }
-      //   stage('test_2/10') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled('test') }
-      //           expression { "B" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //         _testAxisTest("test", env.arch, env.jdk, "2/40")
-      //       }
-      //     }
-      //   stage('test-compression_1/10') {
-      //     when {
-      //       allOf {
-      //         expression { isStageEnabled('test-compression') }
-      //         expression { "B" == env.phase }
-      //       }
-      //     }
-      //     steps {
-      //       _test("test-compression", [current: 1, all: 10])
-      //     }
-      //   }
       //   stage('test-compression_2/10') {
       //     when {
       //       allOf {
@@ -271,29 +214,6 @@ pipeline {
       //         _test("stress-test")
       //       }
       //     }
-      //   stage('cqlsh-test') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //         _test("cqlsh-test")
-      //       }
-      //   }
-      //   stage('test-trie') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
-      //         _test('test-trie')
-      //       }
-      //     }
-      //   }
       // }
     // }
 
