@@ -97,15 +97,11 @@ pipeline {
             steps {
               _build('jar', buildMap['jar'])
             }
-            post {
-                failure { script { currentBuild.result='FAILURE' }}
-            }
           }
         }
       }
     }
     stage('Tests') {
-      failFast false
       matrix {
         axes {
             axis { 
@@ -120,14 +116,22 @@ pipeline {
               name 'step'
               values 'artifacts', 'lint', 'debian', 'redhat'
             }
-            // axis { 
-            //   name 'python'
-            //   values '3.7', '3.8', '3.11'
-            // }
-            // axis { 
-            //   name 'phase'
-            //   values 'A', 'B'
-            // }
+            axis { 
+              name 'python'
+              values '3.7', '3.8', '3.11'
+            }
+        }
+        excludes {
+          exclude {
+            axis {
+              name 'python'
+              notValues '3.7'
+            }
+            axis {
+              name 'step'
+              values 'artifacts', 'lint', 'debian', 'redhat'
+            }
+          }
         }
         when {
           allOf {
@@ -137,7 +141,7 @@ pipeline {
           }
         }
         stages {
-          stage('${step}') {
+          stage(env.step) {
             steps {
               _build(step, buildMap[step])
             }
