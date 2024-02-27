@@ -115,7 +115,7 @@ pipeline {
             }
             axis { 
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test'
+              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh'
             }
             axis { 
               name 'python'
