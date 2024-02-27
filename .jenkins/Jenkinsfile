@@ -333,8 +333,8 @@ pipeline {
 ///////////////////////////
 
 def getStepName(step, arch, jdk, python) {
-  python = "3.7" == python ?: " python${python}"
-  arch = "amd64" == arch ?: " ${arch}"
+  python = "3.7" == python ? "" : " python${python}"
+  arch = "amd64" == arch ? "" : " ${arch}"
 
   return "${step}${arch} jdk${jdk}${python}"
 }
