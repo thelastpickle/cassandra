@@ -123,7 +123,7 @@ pipeline {
             }
         }
         excludes {
-          exclude { // Allow only python 3.7 for all steps but cqlsh-test
+          exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
             axis {
               name 'step'
               notValues 'cqlsh-test'
@@ -170,53 +170,10 @@ pipeline {
     }
   }
 }
-      //     stage('fqltool-test') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
       //         _test("fqltool-test")
-      //       }
-      //     }
-      //   stage('test_1/10') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled('test') }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
       //         _test("test", [current: 1, all: 40])
-      //       }
-      //     }
-      //   stage('test-compression_2/10') {
-      //     when {
-      //       allOf {
-      //         expression { isStageEnabled('test-compression') }
-      //         expression { "B" == env.phase }
-      //       }
-      //     }
-      //     steps {
-      //       _test("test-compression", [current: 2, all: 10])
-      //     }
-      //   }
-      //   stage('stress-test') {
-      //       when {
-      //         allOf {
-      //           expression { isStageEnabled(env.STAGE_NAME) }
-      //           expression { "A" == env.phase }
-      //         }
-      //       }
-      //       steps {
+      //         _test("test-compression", [current: 2, all: 10])
       //         _test("stress-test")
-      //       }
-      //     }
-      // }
-    // }
-
     //         testJob("test-trie", 8)
     //         testJob("test-burn", 10)
     //         testJob("test-cdc", 10)
@@ -225,7 +182,6 @@ pipeline {
     //         testJob("test-system-keyspace-directory", 8)
     //         _dtest("jvm-dtest", 8)
     //         testJob("jvm-dtest-upgrade", 8)
-    //  
     // stage('Summary') {
     //   steps {
     //     // generateUnifiedTestReport()
