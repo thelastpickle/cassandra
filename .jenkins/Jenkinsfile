@@ -43,8 +43,6 @@ pipeline {
   options {
     skipDefaultCheckout()
     // retry(3) // Do we need it?
-    // githubProjectProperty('https://github.com/HadesArchitect/cassandra')
-    // timestamps()
   }
   parameters {
     string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
@@ -60,8 +58,6 @@ pipeline {
     booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
   }
   environment {
-    // javaVersionsSupported = jdksSupported.join(',')
-    // javaVersionDefault = javaVersionDefault()
     javaVersionsSupported = jdksSupported.join(',')
     javaVersionDefault = "${jdkDefault}"
   }
@@ -112,10 +108,6 @@ pipeline {
               name 'python'
               values '3.7', '3.8', '3.11'
             }
-            axis { 
-              name 'cython'
-              values 'yes', 'no'
-            }
         }
         excludes {
           exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
@@ -136,16 +128,6 @@ pipeline {
             axis {
               name 'arch'
               notValues 'amd64'
-            }
-          }
-          exclude { // Allow only amd64 for cqlsh-test
-            axis {
-              name 'step'
-              notValues 'cqlsh-test'
-            }
-            axis {
-              name 'cython'
-              values 'yes'
             }
           }
         }
