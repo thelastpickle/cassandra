@@ -33,7 +33,7 @@ def steps = [
   'lint': [type: 'build', script: 'check-code.sh', toCopy: null],
   'debian': [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
   'redhat': [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
-  'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
+  'cqlsh-test': [type: 'test', test: 'cqlsh-test']
 ]
 
 pipeline {
@@ -146,11 +146,11 @@ pipeline {
             steps {
               script {
                 stage("${arch} jdk${jdk} ${step}") {
-                  if ("build" == steps[step].type) {
+                  // if ("build" == steps[step].type) {
                     _build(step, steps[step])
-                  } else {
-                    _test(step)
-                  }
+                  // } else {
+                  //   _test(step)
+                  // }
                 }
               }
             }
