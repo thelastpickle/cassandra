@@ -145,7 +145,7 @@ pipeline {
           stage('test') {
             steps {
               script {
-                stage(getStepName(step, arch, jdk, python) {
+                stage(getStepName(step, arch, jdk, python)) {
                   if ('build' == stepsMap[step].type) {
                     _build(step, stepsMap[step])
                   } else {
