@@ -58,10 +58,6 @@ pipeline {
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
   }
   environment {
     // javaVersionsSupported = jdksSupported.join(',')
@@ -70,14 +66,6 @@ pipeline {
     javaVersionDefault = "${jdkDefault}"
   }
   stages {
-    // stage('init') {
-    //   steps {
-        // cleanWs(disableDeferredWipeout: true)
-        // checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
-        // stash name: "repository", useDefaultExcludes: false
-    //     script { currentBuild.result='SUCCESS' }
-    //   }
-    // }
     stage('jar') {
       matrix {
         axes {
@@ -271,13 +259,6 @@ def isJdkEnabled(jdk) {
   return params.jdk == jdk || "all" == params.jdk
 }
 
-// def _axis() {
-//   return axis { 
-//     name 'arch'
-//     values 'amd64', 'arm64'
-//   }
-// }
-
 /**
  * Renders build script into pipeline steps
  **/
@@ -361,44 +342,9 @@ def fetchSource(stage, arch, jdk) {
  * Cleans the agent (docker prune) afterwards
  * Stops the pipeline on any failure
  **/
-def testJob(test_type, splits=1) {
-
-  test_script = ".build/docker/run-tests.sh"
-
-  // we don't actually need the test_script and test_type, but they are useful explicit for readability and intuitive feedback in the declarative section.
-  assert STAGE_NAME.equals(test_type) : "Stage's name expected to match test_type (" + STAGE_NAME + " != " + test_type + ")"
-
-  // XXX – the following matrix over arrays can be better done with multi-arrays and recursion
-
-  def archs = ['amd64']
-  def jdks = STAGE_NAME.contains("dtest-upgrade") || "simulator-dtest".equals(STAGE_NAME) ? ["${javaVersionDefault}"] : "${javaVersionsSupported}".split(/,/, -1)
-  // jdks ?
-  def pythons = "cqlshX".equals(STAGE_NAME) ? ['3.7', '3.8', '3.11'] : ['3.7']
-  // default python 3.7, for `cqlshX` stage it's 3.7, 3.8, 3.11
-  def cythons = "cqlshX".equals(STAGE_NAME) ? ['no', 'yes'] : ['no']
-  // default no cython, for `cqlshX` test both
-
-  def tests = [:]
-  archs.each { arch ->
-      jdks.each { jdk ->
-          pythons.each { python ->
-              cythons.each { cython ->
-                  for (int s = 1; s <= splits; s++) {
-                    def split = s
-                    tests["${test_type} $arch jdk:$jdk ${split}/${splits}"] = 
-                      { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
-                  }
-                  // (1..splits).each { split ->
-                  //     tests["${test_type} $arch jdk:$jdk ${split}/${splits}"] =
-                  //         { _testAxis(test_script, test_type, arch, jdk, python, cython, "${split}/${splits}") }
-                  // }
-              }
-          }
-      }
-  }
-  
-  return tests
-}
+// def testJob(test_type, splits=1) {
+//   def jdks = STAGE_NAME.contains("dtest-upgrade") || "simulator-dtest".equals(STAGE_NAME) ? ["${javaVersionDefault}"] : "${javaVersionsSupported}".split(/,/, -1)
+// }
 
 /**
  * Backward compatibility to support ci-cassandra.a.o Renders node architecture by real architecture name
@@ -411,60 +357,6 @@ def getNodeArch(arch) {
       return "cassandra-arm64"
     default:
       error("Unsupported architecture '${arch}'")
-  }
-}
-
-def _testAxisTest(test_type, arch, jdk, python="3.7", cython="no", split) {
-  def test_script = ".build/docker/run-tests.sh"
-  echo "Spawning ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython}"
-  node(getNodeArch(arch)) {
-    branchName: "${STAGE_NAME} ${test_script} ${test_type} ${split} ${jdk} ${NODE_NAME}"
-    echo "Starting ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python${python} cython=${cython} on ${NODE_NAME}"
-    checkout scm
-    sh "mkdir -p build"
-    def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-    def build_dir_rel = build_dir - "${WORKSPACE}/"
-
-    def cassandra_dtest_dir = "${build_dir}/cassandra-dtest"
-    if (STAGE_NAME.startsWith("dtest")) {
-        def dtestRepo = "https://github.com/apache/cassandra-dtest"
-        def dtestBranch =  "trunk"
-        sh "until git clone --quiet --depth 1 -b ${dtestBranch} ${dtestRepo} \"${cassandra_dtest_dir}\" ; do echo \"git cloning cassandra-dtest failed… trying again… \" ; done"
-    }
-
-    def statusCode = 0, attempt = 1
-    retry(2) {
-      if (attempt > 1) { sleep(60 * attempt) }
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}_attempt_${attempt}.log"
-      try {
-        dir("${build_dir}") {
-          unstash name: "${arch}_${jdk}"
-        }
-        echo "Executing ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}` on ${NODE_NAME} with jdk=${jdk} python=${python} cython=${cython}"
-        statusCode = sh returnStatus:true, script:"python_version=\"${python}\" cython=\"${cython}\" build_dir=\"${build_dir}\" cassandra_dtest_dir=\"${cassandra_dtest_dir}\" ${test_script} ${test_type} ${split} ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
-      } finally {
-        dir("${build_dir_rel}") {
-            if (0 == statusCode) {
-                junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-                sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
-            }
-            archiveArtifacts artifacts: "**/*_attempt_*.log.xz,test/logs/**,test/output/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
-            copyToNightlies("*_attempt_*.log.xz,test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}".replace("/", "_"))
-        }
-        sh "rm -rf \"${build_dir}\""
-        cleanAgent(test_script)
-        if (0 != statusCode) {
-          currentBuild.result = 'FAILURE'
-          error("FAILED ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME}")
-        } else {
-          echo "Completed ${STAGE_NAME} `${test_script} ${test_type} ${split} ${jdk}` with arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME}"
-        }
-      }
-    }
-
-    if (currentBuild.result != 'SUCCESS') unstable("${STAGE_NAME} failures (arch=${arch} jdk=${jdk} python=${python} cython=${cython} on ${NODE_NAME})")
-    if (currentBuild.result == 'ABORTED' && currentBuild.result != 'FAILURE') currentBuild.result='ABORTED'
-    if (currentBuild.result == 'FAILURE') currentBuild.result='FAILURE'
   }
 }
 
