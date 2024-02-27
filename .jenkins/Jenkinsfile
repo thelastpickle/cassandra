@@ -27,12 +27,13 @@ def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = 11
 def stageFailed = false
-def buildMap = [
-  jar: [script: 'build-jars.sh', toCopy: null],
-  artifacts: [script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
-  lint: [script: 'check-code.sh', toCopy: null],
-  debian: [script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
-  redhat: [script: 'build-redhat.sh rpm', toCopy: '*.rpm']
+def steps = [
+  jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
+  artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
+  lint: [type: 'build', script: 'check-code.sh', toCopy: null],
+  debian: [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
+  redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
+  cqlsh-test: [type: 'test', test: 'cqlsh-test'],
 ]
 
 pipeline {
@@ -95,7 +96,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build('jar', buildMap['jar'])
+              _build('jar', steps.jar)
             }
           }
         }
@@ -114,7 +115,7 @@ pipeline {
             }
             axis { 
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat'
+              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test'
             }
             axis { 
               name 'python'
@@ -129,7 +130,7 @@ pipeline {
             }
             axis {
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat'
+              notValues 'cqlsh-test'
             }
           }
         }
@@ -145,7 +146,11 @@ pipeline {
             steps {
               script {
                 stage("${arch} jdk${jdk} ${step}") {
-                  _build(step, buildMap[step])
+                  if ("build" == steps[step].type) {
+                    _build(step, steps[step])
+                  } else {
+                    _test(step)
+                  }
                 }
               }
             }
