@@ -137,7 +137,7 @@ pipeline {
           }
         }
         stages {
-          stage("${step}") {
+          stage('${step}') {
             steps {
               _build(step, buildMap[step])
             }
