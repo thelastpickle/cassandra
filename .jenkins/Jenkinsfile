@@ -141,9 +141,13 @@ pipeline {
           }
         }
         stages {
-          stage(env.step) {
+          stage('Tests') {
             steps {
-              _build(step, buildMap[step])
+              script {
+                stage("${step}") {
+                  _build(step, buildMap[step])
+                }
+              }
             }
           }
         }
