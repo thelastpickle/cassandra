@@ -149,7 +149,7 @@ pipeline {
                   if ('build' == stepsMap[step].type) {
                     _build(step, stepsMap[step])
                   } else {
-                    _test(step)
+                    _test(stepsMap[step].test)
                   }
                 }
               }
@@ -421,9 +421,9 @@ def _test(test_type, Map split = [current: 1, all: 1]) { //, arch, jdk, python, 
   def python = "3.7"
   def cython = "no"
   node(getNodeArch(arch)) {
-    ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${STAGE_NAME}/${arch}/jdk-${jdk}/${env.phase}") {
+    ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${test_type}/${arch}/jdk-${jdk}") {
       cleanWs(disableDeferredWipeout: true)
-      fetchSource(STAGE_NAME, arch, jdk)
+      fetchSource(test_type, arch, jdk)
       def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
 sh "mkdir -p build"
@@ -431,7 +431,7 @@ def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/bui
 def build_dir_rel = build_dir - "${WORKSPACE}/"
 
 dir("${build_dir}") {
-  fetchSource(STAGE_NAME, arch, jdk)
+  fetchSource(test_type, arch, jdk)
 }
       catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
           sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${build_dir}' .build/docker/run-tests.sh ${test_type} '${split.current}/${split.all}' ${jdk} 2>&1 | tee ${build_dir}/${logfile}"
