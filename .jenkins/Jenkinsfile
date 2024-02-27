@@ -126,7 +126,7 @@ pipeline {
           exclude {
             axis {
               name 'python'
-              notValues '3.7'
+              values '3.8', '3.11'
             }
             axis {
               name 'step'
@@ -142,7 +142,7 @@ pipeline {
           }
         }
         stages {
-          stage('Tests') {
+          stage('test') {
             steps {
               script {
                 stage("${arch} jdk${jdk} ${step}") {
