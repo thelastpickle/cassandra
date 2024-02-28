@@ -32,7 +32,7 @@ def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = 11
 def stageFailed = false
-def splits = 10
+def splits = 5
 def stepsMap = [
   jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
   artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
@@ -124,7 +124,7 @@ pipeline {
             }
             axis { 
               name 'split'
-              values 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+              values 1, 2, 3, 4, 5
             }
         }
         excludes {
