@@ -32,7 +32,7 @@ def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix
 def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
 def jdkDefault = 11
 def stageFailed = false
-def splits = 5
+def splits = 10
 def stepsMap = [
   jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
   artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
@@ -42,6 +42,8 @@ def stepsMap = [
   'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
   'fqltool-test': [type: 'test', test: 'fqltool-test'],
   'test-cdc': [type: 'test', test: 'test-cdc', splits: splits],
+  'test': [type: 'test', test: 'test', splits: splits],
+  'test-trie': [type: 'test', test: 'test-trie', splits: splits],
 ]
 
 pipeline {
@@ -62,6 +64,8 @@ pipeline {
     booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
@@ -108,7 +112,7 @@ pipeline {
             }
             axis { 
               name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc'
+              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie'
             }
             axis { 
               name 'python'
@@ -120,7 +124,7 @@ pipeline {
             }
             axis { 
               name 'split'
-              values 1, 2, 3, 4, 5
+              values 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
             }
         }
         excludes {
@@ -157,7 +161,7 @@ pipeline {
           exclude { // Disable splits for all but proper stages
             axis {
               name 'step'
-              notValues 'test-cdc', 'test'
+              notValues 'test-cdc', 'test', 'test-trie'
             }
             axis {
               name 'split'
@@ -191,10 +195,9 @@ pipeline {
     }
   }
 }
-    //         _test("test", [current: 1, all: 40])
+
     //         _test("test-compression", [current: 2, all: 10])
     //         _test("stress-test")
-    //         testJob("test-trie", 8)
     //         testJob("test-burn", 10)
     //         testJob("long-test", 8)
     //         testJob("test-oa", 8)
