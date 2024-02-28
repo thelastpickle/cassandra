@@ -231,7 +231,7 @@ def getStepName(step, arch, jdk, python, cython, split, command) {
   arch = "amd64" == arch ? "" : " ${arch}"
   python = "3.7" == python ? "" : " python${python}"
   cython = "no" == cython ? "" : " cython"
-  split = command.containsKey('splits') && command.splits > 1 ? "${split}/${command.splits}" : ""
+  split = command.containsKey('splits') && command.splits > 1 ? " ${split}/${command.splits}" : ""
 
   return "${step}${arch} jdk${jdk}${python}${cython}${split}"
 }
