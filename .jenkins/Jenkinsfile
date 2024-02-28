@@ -176,7 +176,7 @@ pipeline {
           stage('test') { // Looks weird but we can't set custom stage name here, only in substage
             steps {
               script {
-                stage(getStepName(step, arch, jdk, python, cython, split)) {
+                stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
                   if ('build' == stepsMap[step].type) {
                     _build(step, stepsMap[step])
                   } else {
@@ -227,11 +227,11 @@ pipeline {
 //// scripting support ////
 ///////////////////////////
 
-def getStepName(step, arch, jdk, python, cython, split) {
+def getStepName(step, arch, jdk, python, cython, split, command) {
   arch = "amd64" == arch ? "" : " ${arch}"
   python = "3.7" == python ? "" : " python${python}"
   cython = "no" == cython ? "" : " cython"
-  split = stepsMap['step'].containsKey('splits') && stepsMap['step'].splits > 1 ? "${split}/${stepsMap['step'].splits}" : ""
+  split = command.containsKey('splits') && command.splits > 1 ? "${split}/${command.splits}" : ""
 
   return "${step}${arch} jdk${jdk}${python}${cython}${split}"
 }
