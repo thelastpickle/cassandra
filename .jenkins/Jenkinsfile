@@ -179,15 +179,7 @@ pipeline {
         stages {
           stage('test') { // Looks weird but we can't set custom stage name here, only in substage
             steps {
-              script {
-                stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
-                  if ('build' == stepsMap[step].type) {
-                    _build(step, stepsMap[step])
-                  } else {
-                    _test(stepsMap[step])
-                  }
-                }
-              }
+              _matrixSteps()
             }
           }
         }
@@ -196,6 +188,17 @@ pipeline {
   }
 }
 
+def _matrixSteps() {
+  return script {
+    stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
+      if ('build' == stepsMap[step].type) {
+        _build(step, stepsMap[step])
+      } else {
+        _test(stepsMap[step])
+      }
+    }
+  }
+}
     //         _test("test-compression", [current: 2, all: 10])
     //         _test("stress-test")
     //         testJob("test-burn", 10)
