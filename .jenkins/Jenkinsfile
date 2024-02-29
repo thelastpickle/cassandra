@@ -72,7 +72,7 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
 def Map tasks = [failFast: false]
 for (axis in _axes) {
   tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])] = { ->
-    "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis.collect { k, v -> "${k}=${v}" })
+    "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis)
   }
 }
 
@@ -322,7 +322,7 @@ def _build(step, command, axisEnv) {
     def build_script = command.script
     def toCopy = command.toCopy
     node(getNodeArch(arch)) {
-      withEnv(axisEnv) {
+      withEnv(axisEnv.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${step}/${arch}/jdk-${jdk}") {
             cleanWs(disableDeferredWipeout: true)
             fetchSource(step, arch, jdk)
@@ -347,44 +347,46 @@ def _build(step, command, axisEnv) {
     }
 }
 
-def _test(step, command) { //, arch, jdk, python, cython, split) {
+def _test(step, command, axisEnv) {
   def test_type = step
-  def split = env.split
+  def split = axisEnv.split
   def splits = command.splits ? command.splits : 1 
-  def python = env.python
-  def cython = env.cython
-  node(getNodeArch(arch)) {
-    ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${test_type}/${arch}/jdk-${jdk}/python-${python}") {
-      cleanWs(disableDeferredWipeout: true)
-      fetchSource(test_type, arch, jdk)
-      def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
+  def python = axisEnv.python
+  def cython = axisEnv.cython
+  node(getNodeArch(axisEnv.arch)) {
+    withEnv(axisEnv.collect { k, v -> "${k}=${v}" }) {
+      ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${test_type}/${arch}/jdk-${jdk}/python-${python}") {
+        cleanWs(disableDeferredWipeout: true)
+        fetchSource(test_type, arch, jdk)
+        def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${test_type}_jdk${jdk}_python_${python}_${cython}_${arch}.log"
 
-// sh "mkdir -p build"
-// def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-// def build_dir_rel = build_dir - "${WORKSPACE}/"
+  // sh "mkdir -p build"
+  // def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
+  // def build_dir_rel = build_dir - "${WORKSPACE}/"
 
-// dir("${build_dir}") {
-  // fetchSource(test_type, arch, jdk)
-// }
-      catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split}/${splits}' ${jdk} 2>&1 | tee ${logfile}"
-          dir("build") {
-            // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
-            // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
-            //sh "ls -la test/output/"
-            junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
-            sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
-            // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-            // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-            // sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
-          }
+  // dir("${build_dir}") {
+    // fetchSource(test_type, arch, jdk)
+  // }
+        catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
+            sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${python}' cython='${cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${test_type} '${split}/${splits}' ${jdk} 2>&1 | tee ${logfile}"
+            dir("build") {
+              // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
+              // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
+              //sh "ls -la test/output/"
+              junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
+              sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
+              // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+              // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+              // sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
+            }
+        }
+        sh "xz -f *.log"
+        archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
+        // archiveArtifacts artifacts: "build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
+        copyToNightlies("*.log.xz,build/test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}_${splits}".replace("/", "_"))
+        
+        cleanAgent(".build/docker/run-tests.sh")
       }
-      sh "xz -f *.log"
-      archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
-      // archiveArtifacts artifacts: "build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
-      copyToNightlies("*.log.xz,build/test/logs/**", "${test_type}/${arch}/jdk${jdk}/python${python}/cython_${cython}/" + "split_${split}_${splits}".replace("/", "_"))
-      
-      cleanAgent(".build/docker/run-tests.sh")
     }
   }
 }
