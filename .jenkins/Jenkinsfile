@@ -63,21 +63,24 @@ pipeline {
     string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
     choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
     choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
-    booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
-    booleanParam(name: 'stage_lint', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-burn', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
+    for (step in stepsMap) {
+      booleanParam(name: "stage_${step.key}", defaultValue: false) // return default to true
+    }
+    // booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
+    // booleanParam(name: 'stage_lint', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test-burn', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
+    // booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
