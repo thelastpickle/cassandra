@@ -74,7 +74,7 @@ for (axis in _axes) {
   def name = getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])
   print "Scheduling ${name}..."
   tasks[step == "jar" ? "jars" : "tests"][name] = { ->
-    "${stepsMap[step].type}"(step, stepsMap[axis.step], axis)
+    "${stepsMap[step].type}"(step, stepsMap[step], axis)
   }
 }
 
@@ -301,7 +301,7 @@ def isJdkEnabled(jdk) {
  * Renders build script into pipeline steps
  **/
 def build(step, command, axisEnv) {
-    print "Rendering ${step} ${command.inspect()}..."
+    print "Rendering ${step} ${command.inspect()} ${axisEnv.inspect()}..."
     def build_script = command.script
     def toCopy = command.toCopy
     node(getNodeArch(arch)) {
@@ -331,7 +331,7 @@ def build(step, command, axisEnv) {
 }
 
 def test(step, command, axisEnv) {
-  print "Rendering ${step} ${command.inspect()}..."
+  print "Rendering ${step} ${command.inspect()} ${axisEnv.inspect()}..."
   def test_type = step
   def split = axisEnv.split
   def splits = command.splits ? command.splits : 1 
