@@ -34,11 +34,11 @@ def jdkDefault = 11
 def stageFailed = false
 def splits = 5
 def stepsMap = [
-  jar: [type: 'build', script: 'build-jars.sh', toCopy: null],
-  artifacts: [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
-  lint: [type: 'build', script: 'check-code.sh', toCopy: null],
-  debian: [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
-  redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
+  'jar': [type: 'build', script: 'build-jars.sh', toCopy: null],
+  'artifacts': [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
+  'lint': [type: 'build', script: 'check-code.sh', toCopy: null],
+  'debian': [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
+  'redhat': [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
   'cqlsh-test': [type: 'test', splits: false],
   'fqltool-test': [type: 'test', splits: false],
   'test-cdc': [type: 'test', splits: splits],
@@ -51,6 +51,45 @@ def stepsMap = [
   'test-oa': [type: 'test', splits: splits],
   'test-system-keyspace-directory': [type: 'test', splits: splits],
 ]
+
+def Map matrix_axes = [
+    arch: ['amd64', 'arm64'],
+    jdk: [11, 17],
+    python: ["3.7", "3.8", "3.11"],
+    step: ['artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test']
+]
+
+@NonCPS
+def List getMatrixAxes(Map matrix_axes) {
+    List axes = []
+    matrix_axes.each { axis, values ->
+        List axisList = []
+        values.each { value ->
+            axisList << [(axis): value]
+        }
+        axes << axisList
+    }
+    axes.combinations()*.sum()
+}
+
+def List axes = getMatrixAxes(matrix_axes).findAll { axis ->
+    // !(axis['BROWSER'] == 'safari' && axis['PLATFORM'] == 'linux') &&
+    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') // Use only python 3.7 for all tests but cqlsh
+}
+
+def Map tasks = [failFast: false]
+
+for(int i = 0; i < axes.size(); i++) {
+  Map axis = axes[i]
+  List axisEnv = axis.collect { k, v ->
+      "${k}=${v}"
+  }
+  tasks[axisEnv.join(', ')] = { ->
+    withEnv(axisEnv) {
+      _build(step, stepsMap[step])
+    }
+  }
+}
 
 pipeline {
   agent none
@@ -112,99 +151,100 @@ pipeline {
       }
     }
     stage('Tests') {
-      matrix {
-        axes {
-            axis { 
-              name 'arch'
-              values 'amd64', 'arm64'
-            }
-            axis { 
-              name 'jdk'
-              values '11', '17'
-            }
-            axis { 
-              name 'step'
-              values 'artifacts', 'lint', 'debian'//, 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
-            }
-            axis { 
-              name 'python'
-              values '3.7', '3.8', '3.11'
-            }
-            axis { 
-              name 'cython'
-              values 'yes', 'no'
-            }
-            axis { 
-              name 'split'
-              values 1, 2, 3, 4, 5
-            }
-        }
-        excludes {
-          exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
-            axis {
-              name 'step'
-              notValues 'cqlsh-test'
-            }
-            axis {
-              name 'python'
-              notValues '3.7'
-            }
-          }
-          exclude { // Allow only amd64 for cqlsh-test
-            axis {
-              name 'step'
-              values 'cqlsh-test'
-            }
-            axis {
-              name 'arch'
-              notValues 'amd64'
-            }
-          }
-          exclude { // Disable cython for all but cqlsh-test
-            axis {
-              name 'step'
-              notValues 'cqlsh-test'
-            }
-            axis {
-              name 'cython'
-              values 'yes'
-            }
-          }
-          exclude { // Disable splits for all but proper stages
-            axis {
-              name 'step'
-              notValues 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
-            }
-            axis {
-              name 'split'
-              notValues 1
-            }
-          }
-        }
-        when {
-          allOf {
-            expression { isArchEnabled(env.arch) }
-            expression { isJdkEnabled(env.jdk) }
-            expression { isStageEnabled(env.step) }
-          }
-        }
-        stages {
-          stage('test') { // Looks weird but we can't set custom stage name here, only in substage
-            steps {
-              script {
-                stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
-                  "_${stepsMap[step].type}"(step, stepsMap[step]) 
-                  // if ('build' == stepsMap[step].type) {
-                  //   _build(step, stepsMap[step])
-                  // } else {
-                  //   _test(steps, stepsMap[step])
-                  // }
-                }
-              }
-            }
-          }
-        }
-      }
+      parallel(tasks)
+      // matrix {
+      //   axes {
+      //       axis { 
+      //         name 'arch'
+      //         values 'amd64', 'arm64'
+      //       }
+      //       axis { 
+      //         name 'jdk'
+      //         values '11', '17'
+      //       }
+      //       axis { 
+      //         name 'step'
+      //         values 'artifacts', 'lint', 'debian'//, 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
+      //       }
+      //       axis { 
+      //         name 'python'
+      //         values '3.7', '3.8', '3.11'
+      //       }
+      //       axis { 
+      //         name 'cython'
+      //         values 'yes', 'no'
+      //       }
+      //       axis { 
+      //         name 'split'
+      //         values 1, 2, 3, 4, 5
+      //       }
+      //   }
+      //   excludes {
+      //     exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
+      //       axis {
+      //         name 'step'
+      //         notValues 'cqlsh-test'
+      //       }
+      //       axis {
+      //         name 'python'
+      //         notValues '3.7'
+      //       }
+      //     }
+      //     exclude { // Allow only amd64 for cqlsh-test
+      //       axis {
+      //         name 'step'
+      //         values 'cqlsh-test'
+      //       }
+      //       axis {
+      //         name 'arch'
+      //         notValues 'amd64'
+      //       }
+      //     }
+      //     exclude { // Disable cython for all but cqlsh-test
+      //       axis {
+      //         name 'step'
+      //         notValues 'cqlsh-test'
+      //       }
+      //       axis {
+      //         name 'cython'
+      //         values 'yes'
+      //       }
+      //     }
+      //     exclude { // Disable splits for all but proper stages
+      //       axis {
+      //         name 'step'
+      //         notValues 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
+      //       }
+      //       axis {
+      //         name 'split'
+      //         notValues 1
+      //       }
+      //     }
+      //   }
+      //   when {
+      //     allOf {
+      //       expression { isArchEnabled(env.arch) }
+      //       expression { isJdkEnabled(env.jdk) }
+      //       expression { isStageEnabled(env.step) }
+      //     }
+      //   }
+      //   stages {
+      //     stage('test') { // Looks weird but we can't set custom stage name here, only in substage
+      //       steps {
+      //         script {
+      //           stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
+      //             "_${stepsMap[step].type}"(step, stepsMap[step]) 
+      //             // if ('build' == stepsMap[step].type) {
+      //             //   _build(step, stepsMap[step])
+      //             // } else {
+      //             //   _test(steps, stepsMap[step])
+      //             // }
+      //           }
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
     }
   }
 }
