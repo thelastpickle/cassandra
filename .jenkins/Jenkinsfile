@@ -70,10 +70,11 @@ def Map tasks = [
   tests: [failFast: false],
 ]
 for (axis in _axes) {
+  def step = axis.step
   def name = getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])
   print "Scheduling ${name}..."
-  tasks[axis.step == "jar" ? "jars" : "tests"][name] = { ->
-    "${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis)
+  tasks[step == "jar" ? "jars" : "tests"][name] = { ->
+    "${stepsMap[step].type}"(step, stepsMap[axis.step], axis)
   }
 }
 
