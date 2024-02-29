@@ -50,9 +50,9 @@ def stepsMap = [
 // define axes
 def Map matrix_axes = [
     arch: ['amd64', 'arm64'],
-    jdk: ["11", "17"],
-    python: ["3.7", "3.8", "3.11"],
-    cython: ["yes", "no"],
+    jdk: ['11', '17'],
+    python: ['3.7', '3.8', '3.11'],
+    cython: ['yes', 'no'],
     step: ['jar', 'artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test']
 ]
 
@@ -122,33 +122,6 @@ pipeline {
     javaVersionDefault = "${jdkDefault}"
   }
   stages {
-    // stage('jar') {
-    //   matrix {
-    //     axes {
-    //       axis { 
-    //         name 'arch'
-    //         values 'amd64', 'arm64'
-    //       }
-    //       axis { 
-    //         name 'jdk'
-    //         values '11', '17'
-    //       }
-    //     }
-    //     when {
-    //       allOf {
-    //         expression { isArchEnabled(env.arch) }
-    //         expression { isJdkEnabled(env.jdk) }
-    //       }
-    //     }
-    //     stages {
-    //       stage('jar') {
-    //         steps {
-    //           _build('jar', stepsMap['jar'], [])
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
     stage('jar') {
       steps {
         script {
@@ -327,6 +300,7 @@ def isJdkEnabled(jdk) {
  * Renders build script into pipeline steps
  **/
 def _build(step, command, axisEnv) {
+    print "Rendering ${step} ${command.inspect()}..."
     def build_script = command.script
     def toCopy = command.toCopy
     node(getNodeArch(arch)) {
