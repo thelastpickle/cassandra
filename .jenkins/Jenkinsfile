@@ -70,11 +70,11 @@ def Map tasks = [
   tests: [failFast: false],
 ]
 for (axis in _axes) {
-  def step = axis.step
+  def _axis = axis
   def name = getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])
   print "Scheduling ${name}..."
   tasks[step == "jar" ? "jars" : "tests"][name] = { ->
-    "${stepsMap[step].type}"(step, stepsMap[step], axis)
+    "${stepsMap[_axis].type}"(_axis.step, stepsMap[_axis.step], _axis)
   }
 }
 
@@ -306,24 +306,24 @@ def build(step, command, axisEnv) {
     def toCopy = command.toCopy
     node(getNodeArch(arch)) {
       withEnv(axisEnv.collect { k, v -> "${k}=${v}" }) {
-        ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${step}/${arch}/jdk-${jdk}") {
+        ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${step}/${env.arch}/jdk-${env.jdk}") {
             cleanWs(disableDeferredWipeout: true)
-            fetchSource(step, arch, jdk)
+            fetchSource(step, env.arch, env.jdk)
 
             build_script = ".build/docker/${build_script}"
-            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${step}_jdk${jdk}_${arch}.log"
+            def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${step}_jdk${env.jdk}_${env.arch}.log"
 
             catchError(buildResult: null, message: 'Build task failed', stageResult: 'FAILURE') {
                 // sh script:"#!/usr/bin/bash; set -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${jdk} 2>&1 | tee ${logfile}"
-                sh label: 'RUNNING BUILD TASK...', script: "#!/usr/bin/bash \nset -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${jdk} 2>&1 | tee ${logfile}"
+                sh label: 'RUNNING BUILD TASK...', script: "#!/usr/bin/bash \nset -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${env.jdk} 2>&1 | tee ${logfile}"
                 if ("jar" == step) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-                    stash name: "${arch}_${jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+                    stash name: "${env.arch}_${env.jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
                 }
-                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${jdk}/${arch}/")
+                copyToNightlies("${toCopy}", "${STAGE_NAME}/jdk${env.jdk}/${env.arch}/")
             }
             sh "xz -f *.log"
             archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
-            copyToNightlies("**/*.log.xz", "${step}/jdk${jdk}/${arch}/")
+            copyToNightlies("**/*.log.xz", "${step}/jdk${env.jdk}/${env.arch}/")
             cleanAgent(build_script)
         }
       }
