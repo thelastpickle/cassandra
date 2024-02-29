@@ -69,12 +69,11 @@ def Map tasks = [
   jars: [failFast: false],
   tests: [failFast: false],
 ]
-for (axis in _axes) {
-  def _axis = axis
-  def name = getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])
+for (def cell in _axes.collect { it.clone() }) {
+  def name = getStepName(cell.step, cell.arch, cell.jdk, cell.python, cell.cython, 1, stepsMap[cell.step])
   print "Scheduling ${name}..."
-  tasks[step == "jar" ? "jars" : "tests"][name] = { ->
-    "${stepsMap[_axis].type}"(_axis.step, stepsMap[_axis.step], _axis)
+  tasks[cell.step == "jar" ? "jars" : "tests"][name] = { ->
+    "${stepsMap[cell.step].type}"(cell.step, stepsMap[cell.step], cell)
   }
 }
 
