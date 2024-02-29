@@ -111,100 +111,101 @@ pipeline {
         }
       }
     }
-    // stage('Tests') {
-    //   matrix {
-    //     axes {
-    //         axis { 
-    //           name 'arch'
-    //           values 'amd64', 'arm64'
-    //         }
-    //         axis { 
-    //           name 'jdk'
-    //           values '11', '17'
-    //         }
-    //         axis { 
-    //           name 'step'
-    //           values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
-    //         }
-    //         axis { 
-    //           name 'python'
-    //           values '3.7', '3.8', '3.11'
-    //         }
-    //         axis { 
-    //           name 'cython'
-    //           values 'yes', 'no'
-    //         }
-    //         axis { 
-    //           name 'split'
-    //           values 1, 2, 3, 4, 5
-    //         }
-    //     }
-    //     excludes {
-    //       exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
-    //         axis {
-    //           name 'step'
-    //           notValues 'cqlsh-test'
-    //         }
-    //         axis {
-    //           name 'python'
-    //           notValues '3.7'
-    //         }
-    //       }
-    //       exclude { // Allow only amd64 for cqlsh-test
-    //         axis {
-    //           name 'step'
-    //           values 'cqlsh-test'
-    //         }
-    //         axis {
-    //           name 'arch'
-    //           notValues 'amd64'
-    //         }
-    //       }
-    //       exclude { // Disable cython for all but cqlsh-test
-    //         axis {
-    //           name 'step'
-    //           notValues 'cqlsh-test'
-    //         }
-    //         axis {
-    //           name 'cython'
-    //           values 'yes'
-    //         }
-    //       }
-    //       exclude { // Disable splits for all but proper stages
-    //         axis {
-    //           name 'step'
-    //           notValues 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
-    //         }
-    //         axis {
-    //           name 'split'
-    //           notValues 1
-    //         }
-    //       }
-    //     }
-    //     when {
-    //       allOf {
-    //         expression { isArchEnabled(env.arch) }
-    //         expression { isJdkEnabled(env.jdk) }
-    //         expression { isStageEnabled(env.step) }
-    //       }
-    //     }
-    //     stages {
-    //       stage('test') { // Looks weird but we can't set custom stage name here, only in substage
-    //         steps {
-    //           script {
-    //             stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
-    //               if ('build' == stepsMap[step].type) {
-    //                 _build(step, stepsMap[step])
-    //               } else {
-    //                 _test(stepsMap[step])
-    //               }
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+    stage('Tests') {
+      matrix {
+        axes {
+            axis { 
+              name 'arch'
+              values 'amd64', 'arm64'
+            }
+            axis { 
+              name 'jdk'
+              values '11', '17'
+            }
+            axis { 
+              name 'step'
+              values 'artifacts', 'lint', 'debian'//, 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
+            }
+            axis { 
+              name 'python'
+              values '3.7', '3.8', '3.11'
+            }
+            axis { 
+              name 'cython'
+              values 'yes', 'no'
+            }
+            axis { 
+              name 'split'
+              values 1, 2, 3, 4, 5
+            }
+        }
+        excludes {
+          exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
+            axis {
+              name 'step'
+              notValues 'cqlsh-test'
+            }
+            axis {
+              name 'python'
+              notValues '3.7'
+            }
+          }
+          exclude { // Allow only amd64 for cqlsh-test
+            axis {
+              name 'step'
+              values 'cqlsh-test'
+            }
+            axis {
+              name 'arch'
+              notValues 'amd64'
+            }
+          }
+          exclude { // Disable cython for all but cqlsh-test
+            axis {
+              name 'step'
+              notValues 'cqlsh-test'
+            }
+            axis {
+              name 'cython'
+              values 'yes'
+            }
+          }
+          exclude { // Disable splits for all but proper stages
+            axis {
+              name 'step'
+              notValues 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
+            }
+            axis {
+              name 'split'
+              notValues 1
+            }
+          }
+        }
+        when {
+          allOf {
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
+            expression { isStageEnabled(env.step) }
+          }
+        }
+        stages {
+          stage('test') { // Looks weird but we can't set custom stage name here, only in substage
+            steps {
+              script {
+                stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
+                  "_${stepsMap[step].type}"(step, stepsMap[step]) 
+                  // if ('build' == stepsMap[step].type) {
+                  //   _build(step, stepsMap[step])
+                  // } else {
+                  //   _test(steps, stepsMap[step])
+                  // }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
     //         _dtest "jvm-dtest"
