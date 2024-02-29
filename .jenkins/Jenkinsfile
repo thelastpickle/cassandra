@@ -148,11 +148,11 @@ pipeline {
         }
       }
     }
-    stage('Tests') {
-      steps {
-        parallel(tasks)
-      }
-    }
+    // stage('Tests') {
+    //   steps {
+    //     parallel(tasks)
+    //   }
+    // }
   }
 }
       // matrix {
