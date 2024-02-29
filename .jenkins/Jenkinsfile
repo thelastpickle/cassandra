@@ -151,7 +151,7 @@ pipeline {
       }
     }
     stage('Tests') {
-      parallel(tasks)
+      parallel tasks
       // matrix {
       //   axes {
       //       axis { 
