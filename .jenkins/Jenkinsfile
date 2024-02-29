@@ -39,11 +39,17 @@ def stepsMap = [
   lint: [type: 'build', script: 'check-code.sh', toCopy: null],
   debian: [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
   redhat: [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
-  'cqlsh-test': [type: 'test', test: 'cqlsh-test'],
-  'fqltool-test': [type: 'test', test: 'fqltool-test'],
-  'test-cdc': [type: 'test', test: 'test-cdc', splits: splits],
-  'test': [type: 'test', test: 'test', splits: splits],
-  'test-trie': [type: 'test', test: 'test-trie', splits: splits],
+  'cqlsh-test': [type: 'test', splits: false],
+  'fqltool-test': [type: 'test', splits: false],
+  'test-cdc': [type: 'test', splits: splits],
+  'test': [type: 'test', splits: splits],
+  'test-trie': [type: 'test', splits: splits],
+  'test-compression': [type: 'test', splits: splits],
+  'stress-test': [type: 'test', splits: splits],
+  'test-burn': [type: 'test', splits: splits],
+  'long-test': [type: 'test', splits: splits],
+  'test-oa': [type: 'test', splits: splits],
+  'test-system-keyspace-directory': [type: 'test', splits: splits],
 ]
 
 pipeline {
@@ -66,6 +72,12 @@ pipeline {
     booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-burn', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
@@ -99,114 +111,104 @@ pipeline {
         }
       }
     }
-    stage('Tests') {
-      matrix {
-        axes {
-            axis { 
-              name 'arch'
-              values 'amd64', 'arm64'
-            }
-            axis { 
-              name 'jdk'
-              values '11', '17'
-            }
-            axis { 
-              name 'step'
-              values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie'
-            }
-            axis { 
-              name 'python'
-              values '3.7', '3.8', '3.11'
-            }
-            axis { 
-              name 'cython'
-              values 'yes', 'no'
-            }
-            axis { 
-              name 'split'
-              values 1, 2, 3, 4, 5
-            }
-        }
-        excludes {
-          exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
-            axis {
-              name 'step'
-              notValues 'cqlsh-test'
-            }
-            axis {
-              name 'python'
-              notValues '3.7'
-            }
-          }
-          exclude { // Allow only amd64 for cqlsh-test
-            axis {
-              name 'step'
-              values 'cqlsh-test'
-            }
-            axis {
-              name 'arch'
-              notValues 'amd64'
-            }
-          }
-          exclude { // Disable cython for all but cqlsh-test
-            axis {
-              name 'step'
-              notValues 'cqlsh-test'
-            }
-            axis {
-              name 'cython'
-              values 'yes'
-            }
-          }
-          exclude { // Disable splits for all but proper stages
-            axis {
-              name 'step'
-              notValues 'test-cdc', 'test', 'test-trie'
-            }
-            axis {
-              name 'split'
-              notValues 1
-            }
-          }
-        }
-        when {
-          allOf {
-            expression { isArchEnabled(env.arch) }
-            expression { isJdkEnabled(env.jdk) }
-            expression { isStageEnabled(env.step) }
-          }
-        }
-        stages {
-          stage('test') { // Looks weird but we can't set custom stage name here, only in substage
-            steps {
-              _matrixSteps()
-            }
-          }
-        }
-      }
-    }
+    // stage('Tests') {
+    //   matrix {
+    //     axes {
+    //         axis { 
+    //           name 'arch'
+    //           values 'amd64', 'arm64'
+    //         }
+    //         axis { 
+    //           name 'jdk'
+    //           values '11', '17'
+    //         }
+    //         axis { 
+    //           name 'step'
+    //           values 'artifacts', 'lint', 'debian', 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
+    //         }
+    //         axis { 
+    //           name 'python'
+    //           values '3.7', '3.8', '3.11'
+    //         }
+    //         axis { 
+    //           name 'cython'
+    //           values 'yes', 'no'
+    //         }
+    //         axis { 
+    //           name 'split'
+    //           values 1, 2, 3, 4, 5
+    //         }
+    //     }
+    //     excludes {
+    //       exclude { // Allow only python 3.7 for all steps (except cqlsh-test)
+    //         axis {
+    //           name 'step'
+    //           notValues 'cqlsh-test'
+    //         }
+    //         axis {
+    //           name 'python'
+    //           notValues '3.7'
+    //         }
+    //       }
+    //       exclude { // Allow only amd64 for cqlsh-test
+    //         axis {
+    //           name 'step'
+    //           values 'cqlsh-test'
+    //         }
+    //         axis {
+    //           name 'arch'
+    //           notValues 'amd64'
+    //         }
+    //       }
+    //       exclude { // Disable cython for all but cqlsh-test
+    //         axis {
+    //           name 'step'
+    //           notValues 'cqlsh-test'
+    //         }
+    //         axis {
+    //           name 'cython'
+    //           values 'yes'
+    //         }
+    //       }
+    //       exclude { // Disable splits for all but proper stages
+    //         axis {
+    //           name 'step'
+    //           notValues 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
+    //         }
+    //         axis {
+    //           name 'split'
+    //           notValues 1
+    //         }
+    //       }
+    //     }
+    //     when {
+    //       allOf {
+    //         expression { isArchEnabled(env.arch) }
+    //         expression { isJdkEnabled(env.jdk) }
+    //         expression { isStageEnabled(env.step) }
+    //       }
+    //     }
+    //     stages {
+    //       stage('test') { // Looks weird but we can't set custom stage name here, only in substage
+    //         steps {
+    //           script {
+    //             stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
+    //               if ('build' == stepsMap[step].type) {
+    //                 _build(step, stepsMap[step])
+    //               } else {
+    //                 _test(stepsMap[step])
+    //               }
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   }
 }
-
-def _matrixSteps() {
-  return script {
-    stage(getStepName(step, arch, jdk, python, cython, split, stepsMap[step])) {
-      if ('build' == stepsMap[step].type) {
-        _build(step, stepsMap[step])
-      } else {
-        _test(stepsMap[step])
-      }
-    }
-  }
-}
-    //         _test("test-compression", [current: 2, all: 10])
-    //         _test("stress-test")
-    //         testJob("test-burn", 10)
-    //         testJob("long-test", 8)
-    //         testJob("test-oa", 8)
-    //         testJob("test-system-keyspace-directory", 8)
-    //         _dtest("jvm-dtest", 8)
-    //         testJob("jvm-dtest-upgrade", 8)
+    //         _dtest "jvm-dtest"
+    //         _dtest "jvm-dtest-upgrade"
     // stage('Summary') {
     //   steps {
     //     // generateUnifiedTestReport()
@@ -237,7 +239,7 @@ def getStepName(step, arch, jdk, python, cython, split, command) {
   arch = "amd64" == arch ? "" : " ${arch}"
   python = "cqlsh-test" != step ? "" : " python${python}"
   cython = "no" == cython ? "" : " cython"
-  split = command.containsKey('splits') && command.splits > 1 ? " ${split}/${command.splits}" : ""
+  split = command.containsKey('splits') && command.splits ? " ${split}/${command.splits}" : ""
 
   return "${step}${arch} jdk${jdk}${python}${cython}${split}"
 }
@@ -313,10 +315,10 @@ def _build(step, command) {
     }
 }
 
-def _test(command) { //, arch, jdk, python, cython, split) {
-  def test_type = command.test
+def _test(step, command) { //, arch, jdk, python, cython, split) {
+  def test_type = step
   def split = env.split
-  def splits = command.splits
+  def splits = command.splits ? command.splits : 1 
   def python = env.python
   def cython = env.cython
   node(getNodeArch(arch)) {
