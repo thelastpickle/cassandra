@@ -304,7 +304,7 @@ def build(step, command, axisEnv) {
     print "Rendering ${step} ${command.inspect()} ${axisEnv.inspect()}..."
     def build_script = command.script
     def toCopy = command.toCopy
-    node(getNodeArch(arch)) {
+    node(getNodeArch(axisEnv.arch)) {
       withEnv(axisEnv.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${step}/${env.arch}/jdk-${env.jdk}") {
             cleanWs(disableDeferredWipeout: true)
