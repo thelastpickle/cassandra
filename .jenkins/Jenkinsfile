@@ -53,7 +53,7 @@ def Map matrix_axes = [
     jdk: ["11", "17"],
     python: ["3.7", "3.8", "3.11"],
     cython: ["yes", "no"],
-    step: ['artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test']
+    step: ['jar', 'artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test']
 ]
 
 // exclude redundant cells
@@ -65,11 +65,14 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
 }
 
 // Prepare tasks
-def Map tasks = [failFast: false]
+def Map tasks = [
+  jars: [failFast: false],
+  tests: [failFast: false],
+]
 for (axis in _axes) {
   def name = getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])
   print "Scheduling ${name}..."
-  tasks[name] = { ->
+  tasks[axis.step == "jar" ? "jars" : "tests"][name] = { ->
     "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis)
   }
 }
@@ -119,37 +122,44 @@ pipeline {
     javaVersionDefault = "${jdkDefault}"
   }
   stages {
+    // stage('jar') {
+    //   matrix {
+    //     axes {
+    //       axis { 
+    //         name 'arch'
+    //         values 'amd64', 'arm64'
+    //       }
+    //       axis { 
+    //         name 'jdk'
+    //         values '11', '17'
+    //       }
+    //     }
+    //     when {
+    //       allOf {
+    //         expression { isArchEnabled(env.arch) }
+    //         expression { isJdkEnabled(env.jdk) }
+    //       }
+    //     }
+    //     stages {
+    //       stage('jar') {
+    //         steps {
+    //           _build('jar', stepsMap['jar'], [])
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     stage('jar') {
-      matrix {
-        axes {
-          axis { 
-            name 'arch'
-            values 'amd64', 'arm64'
-          }
-          axis { 
-            name 'jdk'
-            values '11', '17'
-          }
-        }
-        when {
-          allOf {
-            expression { isArchEnabled(env.arch) }
-            expression { isJdkEnabled(env.jdk) }
-          }
-        }
-        stages {
-          stage('jar') {
-            steps {
-              _build('jar', stepsMap['jar'], [])
-            }
-          }
+      steps {
+        script {
+          parallel(tasks['jars'])
         }
       }
     }
     stage('Tests') {
       steps {
         script {
-          parallel(tasks)
+          parallel(tasks['tests'])
         }
       }
     }
