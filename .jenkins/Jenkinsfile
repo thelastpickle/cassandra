@@ -71,7 +71,7 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
 // Prepare tasks
 def Map tasks = [failFast: false]
 for (axis in _axes) {
-  tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step].command)] = { ->
+  tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])] = { ->
     "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis.collect { k, v -> "${k}=${v}" })
   }
 }
