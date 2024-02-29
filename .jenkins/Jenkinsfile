@@ -330,7 +330,7 @@ def _build(step, command, axisEnv) {
 }
 
 def _test(step, command, axisEnv) {
-  print "Rendering ${step} ${command.inspect()}..."~
+  print "Rendering ${step} ${command.inspect()}..."
   def test_type = step
   def split = axisEnv.split
   def splits = command.splits ? command.splits : 1 
