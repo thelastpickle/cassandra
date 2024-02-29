@@ -65,7 +65,7 @@ def Map matrix_axes = [
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
     !(axis['cython'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
-    !(axis['arch'] != 'amd64' && axis['step'] != 'cqlsh-test') // run cqlsh-test only on amd64
+    !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') // run cqlsh-test only on amd64
 }
 
 // Prepare tasks
