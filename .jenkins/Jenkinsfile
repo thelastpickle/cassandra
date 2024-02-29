@@ -23,13 +23,8 @@
 // Validate/lint this file using the following command
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
-// METHOD TOO LARGE ISSUE: https://issues.jenkins.io/browse/JENKINS-37984
-// Run in Jenkins Script Console: 
-// org.jenkinsci.plugins.pipeline.modeldefinition.parser.RuntimeASTTransformer.SCRIPT_SPLITTING_TRANSFORMATION=true
-// org.jenkinsci.plugins.pipeline.modeldefinition.parser.RuntimeASTTransformer.SCRIPT_SPLITTING_ALLOW_LOCAL_VARIABLES=true
-
-def jdksSupported = ["11", "17"] // Updating JDKs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
-def archsSupported = ["amd64", "arm64"] // Updating Archs? Don't forget to update matrix axis (stages 'jar' and 'Tests'), they can't use variables :(
+def jdksSupported = ["11", "17"] 
+def archsSupported = ["amd64", "arm64"]
 def jdkDefault = 11
 def stageFailed = false
 def splits = 5
@@ -124,33 +119,33 @@ pipeline {
     javaVersionDefault = "${jdkDefault}"
   }
   stages {
-    // stage('jar') {
-    //   matrix {
-    //     axes {
-    //       axis { 
-    //         name 'arch'
-    //         values 'amd64', 'arm64'
-    //       }
-    //       axis { 
-    //         name 'jdk'
-    //         values '11', '17'
-    //       }
-    //     }
-    //     when {
-    //       allOf {
-    //         expression { isArchEnabled(env.arch) }
-    //         expression { isJdkEnabled(env.jdk) }
-    //       }
-    //     }
-    //     stages {
-    //       stage('jar') {
-    //         steps {
-    //           _build('jar', stepsMap['jar'], [])
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+    stage('jar') {
+      matrix {
+        axes {
+          axis { 
+            name 'arch'
+            values 'amd64', 'arm64'
+          }
+          axis { 
+            name 'jdk'
+            values '11', '17'
+          }
+        }
+        when {
+          allOf {
+            expression { isArchEnabled(env.arch) }
+            expression { isJdkEnabled(env.jdk) }
+          }
+        }
+        stages {
+          stage('jar') {
+            steps {
+              _build('jar', stepsMap['jar'], [])
+            }
+          }
+        }
+      }
+    }
     stage('Tests') {
       steps {
         script {
