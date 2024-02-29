@@ -54,8 +54,9 @@ def stepsMap = [
 
 def Map matrix_axes = [
     arch: ['amd64', 'arm64'],
-    jdk: [11, 17],
+    jdk: ["11", "17"],
     python: ["3.7", "3.8", "3.11"],
+    cython: ["yes", "no"],
     step: ['artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test']
 ]
 
@@ -74,7 +75,8 @@ def List getMatrixAxes(Map matrix_axes) {
 
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     // !(axis['BROWSER'] == 'safari' && axis['PLATFORM'] == 'linux') &&
-    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') // Use only python 3.7 for all tests but cqlsh
+    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test')  && // Use only python 3.7 for all tests but cqlsh
+    !(axis['python'] != 'no' && axis['step'] != 'cqlsh-test') // cython only for cqlsh-test
 }
 
 def Map tasks = [failFast: false]
@@ -84,7 +86,8 @@ for(int i = 0; i < _axes.size(); i++) {
   List axisEnv = axis.collect { k, v ->
       "${k}=${v}"
   }
-  tasks[axisEnv.join(', ')] = { ->
+  tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step].command)] = { ->
+  // tasks[axisEnv.join(', ')] = { ->
     _build(step, stepsMap[step], axisEnv)
   }
 }
@@ -160,24 +163,8 @@ pipeline {
       // matrix {
       //   axes {
       //       axis { 
-      //         name 'arch'
-      //         values 'amd64', 'arm64'
-      //       }
-      //       axis { 
-      //         name 'jdk'
-      //         values '11', '17'
-      //       }
-      //       axis { 
       //         name 'step'
       //         values 'artifacts', 'lint', 'debian'//, 'redhat', 'cqlsh-test', 'fqltool-test', 'test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
-      //       }
-      //       axis { 
-      //         name 'python'
-      //         values '3.7', '3.8', '3.11'
-      //       }
-      //       axis { 
-      //         name 'cython'
-      //         values 'yes', 'no'
       //       }
       //       axis { 
       //         name 'split'
