@@ -71,7 +71,9 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
 // Prepare tasks
 def Map tasks = [failFast: false]
 for (axis in _axes) {
-  tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])] = { ->
+  def name = getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step])
+  print "Scheduling ${name}..."
+  tasks[name] = { ->
     "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis)
   }
 }
