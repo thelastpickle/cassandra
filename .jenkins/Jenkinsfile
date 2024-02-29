@@ -52,6 +52,7 @@ def stepsMap = [
   'test-system-keyspace-directory': [type: 'test', splits: splits],
 ]
 
+// define axes
 def Map matrix_axes = [
     arch: ['amd64', 'arm64'],
     jdk: ["11", "17"],
@@ -59,6 +60,21 @@ def Map matrix_axes = [
     cython: ["yes", "no"],
     step: ['artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test']
 ]
+
+// exclude redundant cells
+def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
+    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
+    !(axis['python'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
+    !(axis['arch'] != 'amd64' && axis['step'] != 'cqlsh-test') // run cqlsh-test only on amd64
+}
+
+// Prepare tasks
+def Map tasks = [failFast: false]
+for (axis in _axes) {
+  tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step].command)] = { ->
+    "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axis.collect { k, v -> "${k}=${v}" })
+  }
+}
 
 @NonCPS
 def List getMatrixAxes(Map matrix_axes) {
@@ -71,26 +87,6 @@ def List getMatrixAxes(Map matrix_axes) {
         axes << axisList
     }
     axes.combinations()*.sum()
-}
-
-def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
-    // !(axis['BROWSER'] == 'safari' && axis['PLATFORM'] == 'linux') &&
-    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh
-    !(axis['python'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test
-    !(axis['arch'] != 'amd64' && axis['step'] != 'cqlsh-test') // amd64only for cqlsh-test
-}
-
-def Map tasks = [failFast: false]
-
-for(int i = 0; i < _axes.size(); i++) {
-  Map axis = _axes[i]
-  List axisEnv = axis.collect { k, v ->
-      "${k}=${v}"
-  }
-  tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step].command)] = { ->
-  // tasks[axisEnv.join(', ')] = { ->
-    "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axisEnv)
-  }
 }
 
 pipeline {
