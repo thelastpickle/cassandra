@@ -75,8 +75,9 @@ def List getMatrixAxes(Map matrix_axes) {
 
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     // !(axis['BROWSER'] == 'safari' && axis['PLATFORM'] == 'linux') &&
-    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test')  && // Use only python 3.7 for all tests but cqlsh
-    !(axis['python'] != 'no' && axis['step'] != 'cqlsh-test') // cython only for cqlsh-test
+    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh
+    !(axis['python'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test
+    !(axis['arch'] != 'amd64' && axis['step'] != 'cqlsh-test') // amd64only for cqlsh-test
 }
 
 def Map tasks = [failFast: false]
@@ -88,7 +89,7 @@ for(int i = 0; i < _axes.size(); i++) {
   }
   tasks[getStepName(axis.step, axis.arch, axis.jdk, axis.python, axis.cython, 1, stepsMap[axis.step].command)] = { ->
   // tasks[axisEnv.join(', ')] = { ->
-    _build(step, stepsMap[step], axisEnv)
+    "_${stepsMap[axis.step].type}"(axis.step, stepsMap[axis.step], axisEnv)
   }
 }
 
