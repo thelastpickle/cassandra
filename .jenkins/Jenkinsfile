@@ -85,9 +85,7 @@ for(int i = 0; i < _axes.size(); i++) {
       "${k}=${v}"
   }
   tasks[axisEnv.join(', ')] = { ->
-    withEnv(axisEnv) {
-      _build(step, stepsMap[step])
-    }
+    _build(step, stepsMap[step], axisEnv)
   }
 }
 
@@ -334,10 +332,11 @@ def isJdkEnabled(jdk) {
 /**
  * Renders build script into pipeline steps
  **/
-def _build(step, command) {
+def _build(step, command, axisEnv) {
     def build_script = command.script
     def toCopy = command.toCopy
     node(getNodeArch(arch)) {
+      withEnv(axisEnv) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${step}/${arch}/jdk-${jdk}") {
             cleanWs(disableDeferredWipeout: true)
             fetchSource(step, arch, jdk)
@@ -358,6 +357,7 @@ def _build(step, command) {
             copyToNightlies("**/*.log.xz", "${step}/jdk${jdk}/${arch}/")
             cleanAgent(build_script)
         }
+      }
     }
 }
 
