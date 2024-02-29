@@ -142,7 +142,7 @@ pipeline {
         stages {
           stage('jar') {
             steps {
-              _build('jar', stepsMap['jar'])
+              _build('jar', stepsMap['jar'], [])
             }
           }
         }
