@@ -72,15 +72,15 @@ def List getMatrixAxes(Map matrix_axes) {
     axes.combinations()*.sum()
 }
 
-def List axes = getMatrixAxes(matrix_axes).findAll { axis ->
+def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     // !(axis['BROWSER'] == 'safari' && axis['PLATFORM'] == 'linux') &&
     !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') // Use only python 3.7 for all tests but cqlsh
 }
 
 def Map tasks = [failFast: false]
 
-for(int i = 0; i < axes.size(); i++) {
-  Map axis = axes[i]
+for(int i = 0; i < _axes.size(); i++) {
+  Map axis = _axes[i]
   List axisEnv = axis.collect { k, v ->
       "${k}=${v}"
   }
