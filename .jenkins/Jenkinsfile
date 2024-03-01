@@ -65,7 +65,7 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
     !(axis['jdk'] != '11' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
     // Disable splits for all but proper stages
-    !(axis['split'] != 1 && axis['step'] !in ['test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'])
+    !(axis['split'] != 1 && !['test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'].contains(axis['step']))
 }
 
 // Prepare tasks
