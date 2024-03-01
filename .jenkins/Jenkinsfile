@@ -54,7 +54,7 @@ def Map matrix_axes = [
     python: ['3.7', '3.8', '3.11'],
     cython: ['yes', 'no'],
     // step: ['jar', 'artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test', 'test-cdc'], 
-    step: stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet(),
+    step: stepsMap.keySet(),
     // TODO: render from stepsMap // 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
     split: [1, 2, 3, 4, 5] //, 6, 7, 8, 9, 10 // temporarily disabled
 ]
@@ -66,7 +66,7 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
     !(axis['jdk'] != '11' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
     // Disable splits for all but proper stages
-    !(axis['split'] != 1 && !['test-cdc', 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'].contains(axis['step']))
+    !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step']))
 }
 
 // Prepare tasks
