@@ -23,11 +23,7 @@
 // Validate/lint this file using the following command
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
-def jdksSupported = ["11", "17"] 
-def archsSupported = ["amd64", "arm64"]
-def jdkDefault = 11
-def stageFailed = false
-def splits = matrix_axes['split'].size()
+// Steps config
 def stepsMap = [
   'jar': [type: 'build', script: 'build-jars.sh', toCopy: null],
   'artifacts': [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
@@ -47,19 +43,23 @@ def stepsMap = [
   'test-system-keyspace-directory': [type: 'test', splits: splits],
 ]
 
-// define axes
+// define matrix axes
 def Map matrix_axes = [
-    arch: ['amd64'],// 'arm64'],
+    arch: ['amd64'],// 'arm64'], // todo disable with parameter
     jdk: ['11', '17'],
     python: ['3.7', '3.8', '3.11'],
     cython: ['yes', 'no'],
-    // step: ['jar', 'artifacts', 'lint', 'debian', 'redhat', 'fqltool-test', 'cqlsh-test', 'test-cdc'], 
     step: stepsMap.keySet(),
-    // TODO: render from stepsMap // 'test', 'test-trie', 'test-compression', 'stress-test', 'test-burn', 'long-test', 'test-oa', 'test-system-keyspace-directory'
     split: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ]
 
-// exclude redundant cells
+def jdksSupported = ["11", "17"] 
+def archsSupported = ["amd64", "arm64"]
+def jdkDefault = 11
+def stageFailed = false
+def splits = matrix_axes['split'].size()
+
+// exclude redundant intersections
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
     !(axis['cython'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
@@ -76,7 +76,7 @@ def Map tasks = [
 ]
 for (def axis in _axes) {
   def cell = axis
-  def name = getStepName(cell.step, cell.arch, cell.jdk, cell.python, cell.cython, cell.split, stepsMap[cell.step])
+  def name = getStepName(cell, stepsMap[cell.step])
   tasks[cell.step == "jar" ? "jars" : "tests"][name] = { ->
     "${stepsMap[cell.step].type}"(stepsMap[cell.step], cell)
   }
@@ -175,13 +175,13 @@ pipeline {
 //// scripting support ////
 ///////////////////////////
 
-def getStepName(step, arch, jdk, python, cython, split, command) {
-  arch = "amd64" == arch ? "" : " ${arch}"
-  python = "cqlsh-test" != step ? "" : " python${python}"
-  cython = "no" == cython ? "" : " cython"
-  split = command.containsKey('splits') && command.splits ? " ${split}/${command.splits}" : ""
+def getStepName(cell, command) {
+  arch = "amd64" == cell.arch ? "" : " ${cell.arch}"
+  python = "cqlsh-test" != cell.step ? "" : " python${cell.python}"
+  cython = "no" == cell.cython ? "" : " cython"
+  split = command.containsKey('splits') && command.splits ? " ${cell.split}/${command.splits}" : ""
 
-  return "${step}${arch} jdk${jdk}${python}${cython}${split}"
+  return "${cell.step}${arch} jdk${cell.jdk}${python}${cython}${split}"
 }
 
 /**
