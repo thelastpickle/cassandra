@@ -260,7 +260,7 @@ def test(command, cell) {
 
         def cassandra_dtest_dir = "${build_dir}/cassandra-dtest"
         if (command.containsKey('dtest') && command['dtest']) {
-          checkout changelog: false, poll: false, scm: scmGit(branches: [[name: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${build_dir}/cassandra-dtest"]], userRemoteConfigs: [[url: 'https://github.com/apache/cassandra-dtest']])
+          checkout changelog: false, poll: false, scm: scmGit(branches: [[name: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${WORKSPACE}/build/cassandra-dtest"]], userRemoteConfigs: [[url: 'https://github.com/apache/cassandra-dtest']])
         }
 
   // sh "mkdir -p build"
