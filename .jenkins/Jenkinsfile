@@ -25,7 +25,7 @@
 def jdksSupported = ["11", "17"] 
 def archsSupported = ["amd64", "arm64"]
 def jdkDefault = 11
-def stageFailed = false
+def stageResults = [:]
 def splits = 10
 
 // Steps config
@@ -46,6 +46,7 @@ def stepsMap = [
   'long-test': [type: 'test', splits: splits],
   'test-oa': [type: 'test', splits: splits],
   'test-system-keyspace-directory': [type: 'test', splits: splits],
+  'jvm-dtest': [type: 'test', splits: splits, dtest: true]
 ]
 
 // define matrix axes
@@ -123,6 +124,7 @@ pipeline {
     booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
@@ -146,28 +148,24 @@ pipeline {
         }
       }
     }
+    stage('Summary') {
+      steps {
+        // generateUnifiedTestReport()
+        // FIXME – post always
+        // sendNotifications()
+        script {
+          if(stageResults.find { it.value  == "FAILURE" }) {
+            currentBuild.result='FAILURE'
+            error("Build failed due to failed stages")
+          }
+        }
+      }
+    }
   }
 }
 
-//     }
-//   }
+//         _dtest "jvm-dtest-upgrade"
 // }
-    //         _dtest "jvm-dtest"
-    //         _dtest "jvm-dtest-upgrade"
-    // stage('Summary') {
-    //   steps {
-    //     // generateUnifiedTestReport()
-    //     // FIXME – post always
-    //     // sendNotifications()
-    //     script {
-    //       if (stageFailed) {
-    //         currentBuild.result='FAILURE'
-    //         error("Build failed due to failed stages")
-    //       }
-    //     }
-    //   }
-    // }
-  // }
 //   post {
 //     always {
 //       cleanWs()
@@ -269,6 +267,11 @@ def test(command, cell) {
         fetchSource(cell.step, cell.arch, cell.jdk)
         def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_python_${cell.python}_${cell.cython}_${cell.arch}.log"
 
+        def cassandra_dtest_dir = "${build_dir}/cassandra-dtest"
+        if (command.containsKey('dtest') && command['dtest']) {
+          checkout changelog: false, poll: false, scm: scmGit(branches: [[name: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${build_dir}/cassandra-dtest"]], userRemoteConfigs: [[url: 'https://github.com/apache/cassandra-dtest']])
+        }
+
   // sh "mkdir -p build"
   // def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
   // def build_dir_rel = build_dir - "${WORKSPACE}/"
@@ -276,18 +279,23 @@ def test(command, cell) {
   // dir("${build_dir}") {
     // fetchSource(cell.step, arch, jdk)
   // }
+        def stageError = true
         catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-            sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${cell.python}' cython='${cell.cython}' build_dir='${WORKSPACE}/build' .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee ${logfile}"
-            dir("build") {
-              // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
-              // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
-              //sh "ls -la test/output/"
-              junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
-              sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
-              // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-              // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-              // sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
-            }
+          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${cell.python}' cython='${cell.cython}' build_dir='${WORKSPACE}/build' cassandra_dtest_dir='${cassandra_dtest_dir}' .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee ${logfile}"
+          dir("build") {
+            // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
+            // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
+            //sh "ls -la test/output/"
+            junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
+            sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
+            // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+            // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+            // sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
+          }
+          def stageError = false
+        }
+        if (stageError) {
+          stageResults[getStepName(cell, command)] = "FAILURE"
         }
         sh "xz -f *.log"
         archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
