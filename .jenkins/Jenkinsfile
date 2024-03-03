@@ -48,6 +48,7 @@ def stepsMap = [
   'test-system-keyspace-directory': [type: 'test', splits: splits],
   'jvm-dtest': [type: 'test', splits: splits, dtest: true]
 ]
+// _dtest "jvm-dtest-upgrade"
 
 // define matrix axes
 def Map matrix_axes = [
@@ -163,16 +164,6 @@ pipeline {
     }
   }
 }
-
-//         _dtest "jvm-dtest-upgrade"
-// }
-//   post {
-//     always {
-//       cleanWs()
-//     }
-//   }
-//   }
-// }
 
 ///////////////////////////
 //// scripting support ////
