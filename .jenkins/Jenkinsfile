@@ -50,7 +50,7 @@ def stepsMap = [
 
 // define matrix axes
 def Map matrix_axes = [
-    arch: ['amd64', 'arm64'], // todo disable with parameter
+    arch: ['amd64', 'arm64'],
     jdk: ['11', '17'],
     python: ['3.7', '3.8', '3.11'],
     cython: ['yes', 'no'],
@@ -137,6 +137,9 @@ pipeline {
       }
     }
     stage('Tests') {
+      when {
+        expression { tasks['tests'].size() > 0 }
+      }
       steps {
         script {
           parallel(tasks['tests'])
