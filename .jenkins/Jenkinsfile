@@ -292,7 +292,7 @@ def test(command, cell) {
             // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
             // sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
           }
-          def stageError = false
+          stageError = false
         }
         if (stageError) {
           stageResults[getStepName(cell, command)] = "FAILURE"
