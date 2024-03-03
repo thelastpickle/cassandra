@@ -138,7 +138,7 @@ pipeline {
     }
     stage('Tests') {
       when {
-        expression { tasks['tests'].size() > 0 }
+        expression { tasks['tests'].size() > 1 } // Skip if empty (but failfast counts as an element)
       }
       steps {
         script {
