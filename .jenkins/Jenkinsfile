@@ -24,7 +24,8 @@
 
 def jdksSupported = ["11", "17"] 
 def archsSupported = ["amd64", "arm64"]
-def jdkDefault = 11
+def jdkDefault = "11"
+def pythonDefault = "3.7"
 def stageResults = [:]
 def splits = 10
 
@@ -46,9 +47,9 @@ def stepsMap = [
   'long-test': [type: 'test', splits: splits],
   'test-oa': [type: 'test', splits: splits],
   'test-system-keyspace-directory': [type: 'test', splits: splits],
-  'jvm-dtest': [type: 'test', splits: splits, dtest: true]
+  'jvm-dtest': [type: 'test', splits: splits, dtest: true],
+  'jvm-dtest-upgrade': [type: 'test', splits: splits, dtest: true],
 ]
-// _dtest "jvm-dtest-upgrade"
 
 // define matrix axes
 def Map matrix_axes = [
@@ -65,10 +66,10 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
     (isJdkEnabled(axis['jdk'])) && // skip disabled jdks
     (isStageEnabled(axis['step'])) && // skip disabled steps
-    !(axis['python'] != '3.7' && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
+    !(axis['python'] != pythonDefault && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
     !(axis['cython'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
     !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
-    !(axis['jdk'] != '11' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
+    !(axis['jdk'] != jdkDefault && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
     // Disable splits for all but proper stages
     !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step']))
 }
@@ -84,19 +85,6 @@ for (def axis in _axes) {
   tasks[cell.step == "jar" ? "jars" : "tests"][name] = { ->
     "${stepsMap[cell.step].type}"(stepsMap[cell.step], cell) // build() or test()
   }
-}
-
-@NonCPS
-def List getMatrixAxes(Map matrix_axes) {
-    List axes = []
-    matrix_axes.each { axis, values ->
-        List axisList = []
-        values.each { value ->
-            axisList << [(axis): value]
-        }
-        axes << axisList
-    }
-    axes.combinations()*.sum()
 }
 
 pipeline {
@@ -126,6 +114,7 @@ pipeline {
     booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
     booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
     booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_jvm-dtest-upgrade', defaultValue: false) // return default to true
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
@@ -141,7 +130,7 @@ pipeline {
     }
     stage('Tests') {
       when {
-        expression { tasks['tests'].size() > 1 } // Skip if empty (but failfast counts as an element)
+        expression { tasks['tests'].size() > 1 } // Skip if empty (failfast counts as an element)
       }
       steps {
         script {
@@ -151,9 +140,6 @@ pipeline {
     }
     stage('Summary') {
       steps {
-        // generateUnifiedTestReport()
-        // FIXME – post always
-        // sendNotifications()
         script {
           if(stageResults.find { it.value  == "FAILURE" }) {
             currentBuild.result='FAILURE'
@@ -161,6 +147,12 @@ pipeline {
           }
         }
       }
+    }
+  }
+  post { 
+    always { 
+      generateUnifiedTestReport()
+      sendNotifications()
     }
   }
 }
@@ -385,10 +377,8 @@ def saveAgentReport() {
 /////////////////////////////////////////
 
 def generateUnifiedTestReport() {
-  assert "Summary".equals(STAGE_NAME)
   node(getNodeArch('amd64')) {
     checkout scm
-    sh "mkdir -p build"
     copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
     sh 'xz -d build/test/output/**/*.xml.xz || true ; xz -d test/output/cqlshlib.xml test/output/nosetests.xml || true'
     sh ".build/docker/_docker_run.sh bullseye-build.docker generate-test-report.sh"
@@ -442,4 +432,17 @@ def emailContent() {
   -------------------------------------------------------------------------------
   For complete test report and logs see https://nightlies.apache.org/cassandra/${JOB_NAME}/${BUILD_NUMBER}/
   '''
+}
+
+@NonCPS
+def List getMatrixAxes(Map matrix_axes) {
+    List axes = []
+    matrix_axes.each { axis, values ->
+        List axisList = []
+        values.each { value ->
+            axisList << [(axis): value]
+        }
+        axes << axisList
+    }
+    axes.combinations()*.sum()
 }
