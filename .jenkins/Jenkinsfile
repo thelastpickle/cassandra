@@ -49,7 +49,13 @@ def stepsMap = [
   'test-system-keyspace-directory': [type: 'test', splits: splits],
   'jvm-dtest': [type: 'test', splits: splits, dtest: true],
   'jvm-dtest-upgrade': [type: 'test', splits: splits, dtest: true],
+  'dtest': [type: 'test', splits: splits, dtest: true],
+  'dtest-novnode': [type: 'test', splits: splits, dtest: true],
+  'dtest-offheap': [type: 'test', splits: splits, dtest: true],
 ]
+
+// "microbench" Missing?
+// "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-novnode"| "dtest-upgrade-large" | "dtest-upgrade-novnode-large"
 
 // define matrix axes
 def Map matrix_axes = [
@@ -71,7 +77,9 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
     !(axis['jdk'] != jdkDefault && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
     // Disable splits for all but proper stages
-    !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step']))
+    !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step'])) &&
+     // run dtests only on amd64
+    !(axis['arch'] != 'amd64' && stepsMap.findAll { entry -> entry.value.containsKey('dtest') && entry.value.dtest }.keySet().contains(axis['step']))
 }
 
 // Prepare tasks
