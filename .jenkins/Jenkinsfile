@@ -258,7 +258,7 @@ def test(command, cell) {
         fetchSource(cell.step, cell.arch, cell.jdk)
         def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_python_${cell.python}_${cell.cython}_${cell.arch}.log"
 
-        def cassandra_dtest_dir = "${build_dir}/cassandra-dtest"
+        def cassandra_dtest_dir = "${WORKSPACE}/build/cassandra-dtest"
         if (command.containsKey('dtest') && command['dtest']) {
           checkout changelog: false, poll: false, scm: scmGit(branches: [[name: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${WORKSPACE}/build/cassandra-dtest"]], userRemoteConfigs: [[url: 'https://github.com/apache/cassandra-dtest']])
         }
