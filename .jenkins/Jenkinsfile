@@ -123,6 +123,9 @@ pipeline {
     booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
     booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
     booleanParam(name: 'stage_jvm-dtest-upgrade', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_dtest', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_dtest-novnode', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_dtest-offheap', defaultValue: false) // return default to true
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
