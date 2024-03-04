@@ -24,6 +24,7 @@
 
 def jdksSupported = ["11", "17"] 
 def archsSupported = ["amd64", "arm64"]
+def pythonsSupported = ["3.7", "3.8", "3.11"] 
 def jdkDefault = "11"
 def pythonDefault = "3.8"
 def stageResults = [:]
@@ -53,15 +54,14 @@ def stepsMap = [
   'dtest-novnode': [type: 'test', splits: splits, dtest: true],
   'dtest-offheap': [type: 'test', splits: splits, dtest: true],
 ]
-
 // "microbench" Missing?
 // "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-novnode"| "dtest-upgrade-large" | "dtest-upgrade-novnode-large"
 
 // define matrix axes
 def Map matrix_axes = [
-    arch: ['amd64', 'arm64'],
-    jdk: ['11', '17'],
-    python: ['3.7', '3.8', '3.11'],
+    arch: archsSupported,
+    jdk: jdksSupported,
+    python: pythonsSupported,
     cython: ['yes', 'no'],
     step: stepsMap.keySet(),
     split: (1..splits).toList()
