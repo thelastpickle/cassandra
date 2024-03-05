@@ -141,9 +141,6 @@ pipeline {
       }
     }
     stage('Summary') {
-      when {
-        expression { tasks['tests'].size() > 1 } // Skip if empty (failfast counts as an element)
-      }
       steps {
         script {
           if(stageResults.find { it.value  == "FAILURE" }) {
