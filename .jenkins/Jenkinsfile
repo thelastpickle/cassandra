@@ -84,32 +84,35 @@ properties([
   parameters(configuration)
 ])
 
-// exclude redundant intersections
-def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
-    (isArchEnabled(axis['arch'])) && // skip disabled archs
-    (isJdkEnabled(axis['jdk'])) && // skip disabled jdks
-    (isStageEnabled(axis['step'])) && // skip disabled steps
-    !(axis['python'] != pythonDefault && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
-    !(axis['cython'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
-    !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
-    !(axis['jdk'] != jdkDefault && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
-    // Disable splits for all but proper stages
-    !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step'])) &&
-     // run dtests only on amd64
-    !(axis['arch'] != 'amd64' && stepsMap.findAll { entry -> entry.value.containsKey('dtest') && entry.value.dtest }.keySet().contains(axis['step']))
-}
-
-// Prepare tasks
-def Map tasks = [
-  jars: [failFast: false],
-  tests: [failFast: false],
-]
-for (def axis in _axes) {
-  def cell = axis
-  def name = getStepName(cell, stepsMap[cell.step])
-  tasks[cell.step == "jar" ? "jars" : "tests"][name] = { ->
-    "${stepsMap[cell.step].type}"(stepsMap[cell.step], cell) // build() or test()
+def getTasks(phase) {
+  def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
+      (isArchEnabled(axis['arch'])) && // skip disabled archs
+      (isJdkEnabled(axis['jdk'])) && // skip disabled jdks
+      (isStageEnabled(axis['step'])) && // skip disabled steps
+      !(axis['python'] != pythonDefault && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
+      !(axis['cython'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
+      !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
+      !(axis['jdk'] != jdkDefault && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
+      // Disable splits for all but proper stages
+      !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step'])) &&
+      // run dtests only on amd64
+      !(axis['arch'] != 'amd64' && stepsMap.findAll { entry -> entry.value.containsKey('dtest') && entry.value.dtest }.keySet().contains(axis['step']))
   }
+
+  def Map tasks = [
+    jars: [failFast: false],
+    tests: [failFast: false],
+  ]
+
+  for (def axis in _axes) {
+    def cell = axis
+    def name = getStepName(cell, stepsMap[cell.step])
+    tasks[cell.step == "jar" ? "jars" : "tests"][name] = { ->
+      "${stepsMap[cell.step].type}"(stepsMap[cell.step], cell) // build() or test()
+    }
+  }
+
+  return tasks[phase]
 }
 
 pipeline {
@@ -126,7 +129,7 @@ pipeline {
     stage('jar') {
       steps {
         script {
-          parallel(tasks['jars'])
+          parallel(getTasks('jars'))
         }
       }
     }
