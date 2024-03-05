@@ -108,9 +108,9 @@ configuration = [
 for (step in stepsMap.keySet()) {
   configuration.add(booleanParam(name: "stage_${step}", defaultValue: false))
 }
-
+echo configuration.inspect()
 properties([
-  parameters (configuration)
+  parameters(configuration)
 ])
 
 pipeline {
