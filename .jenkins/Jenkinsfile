@@ -144,7 +144,7 @@ pipeline {
     stage('jar') {
       steps {
         script {
-          parallel(getTasks('jars'))
+          parallel(tasks['jars'])
         }
       }
     }
