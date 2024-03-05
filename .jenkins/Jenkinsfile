@@ -71,6 +71,19 @@ def Map matrix_axes = [
     split: (1..splits).toList()
 ]
 
+configuration = [
+  string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository'),
+  string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch'),
+  choice(name: 'arch', choices: ['all'] + archsSupported, description: 'Architecture'),
+  choice(name: 'jdk', choices: ['all'] + jdksSupported, description: 'JDK'),
+]
+for (step in stepsMap.keySet()) {
+  configuration.add(booleanParam(name: "stage_${step}", defaultValue: 'jar' == step ? true : false))
+}
+properties([
+  parameters(configuration)
+])
+
 // exclude redundant intersections
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
@@ -98,19 +111,6 @@ for (def axis in _axes) {
     "${stepsMap[cell.step].type}"(stepsMap[cell.step], cell) // build() or test()
   }
 }
-
-configuration = [
-  string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository'),
-  string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch'),
-  choice(name: 'arch', choices: ['all'] + archsSupported, description: 'Architecture'),
-  choice(name: 'jdk', choices: ['all'] + jdksSupported, description: 'JDK'),
-]
-for (step in stepsMap.keySet()) {
-  configuration.add(booleanParam(name: "stage_${step}", defaultValue: 'jar' == step ? true : false))
-}
-properties([
-  parameters(configuration)
-])
 
 pipeline {
   agent none
