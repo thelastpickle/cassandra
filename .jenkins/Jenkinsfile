@@ -106,7 +106,7 @@ configuration = [
   choice(name: 'jdk', choices: ['all'] + jdksSupported, description: 'JDK'),
 ]
 for (step in stepsMap.keySet()) {
-  configuration[] = booleanParam(name: "stage_${step}", defaultValue: false)
+  configuration.add(booleanParam(name: "stage_${step}", defaultValue: false))
 }
 
 properties([
