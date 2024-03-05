@@ -71,7 +71,6 @@ def Map matrix_axes = [
     split: (1..splits).toList()
 ]
 
-// exclude redundant intersections
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
     (isJdkEnabled(axis['jdk'])) && // skip disabled jdks
@@ -82,7 +81,7 @@ def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     !(axis['jdk'] != jdkDefault && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
     // Disable splits for all but proper stages
     !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step'])) &&
-     // run dtests only on amd64
+    // run dtests only on amd64
     !(axis['arch'] != 'amd64' && stepsMap.findAll { entry -> entry.value.containsKey('dtest') && entry.value.dtest }.keySet().contains(axis['step']))
 }
 
@@ -145,7 +144,7 @@ pipeline {
     stage('jar') {
       steps {
         script {
-          parallel(tasks['jars'])
+          parallel(getTasks('jars'))
         }
       }
     }
