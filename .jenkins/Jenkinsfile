@@ -53,9 +53,13 @@ def stepsMap = [
   'dtest': [type: 'test', splits: splits, dtest: true],
   'dtest-novnode': [type: 'test', splits: splits, dtest: true],
   'dtest-offheap': [type: 'test', splits: splits, dtest: true],
+  'dtest-large': [type: 'test', splits: splits, dtest: true],
+  'dtest-large-novnode': [type: 'test', splits: splits, dtest: true],
+  'dtest-upgrade': [type: 'test', splits: splits, dtest: true],
+  'dtest-upgrade-novnode': [type: 'test', splits: splits, dtest: true],
+  'dtest-upgrade-large': [type: 'test', splits: splits, dtest: true],
+  'dtest-upgrade-novnode-large': [type: 'test', splits: splits, dtest: true],
 ]
-// "microbench" Missing?
-// "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-novnode"| "dtest-upgrade-large" | "dtest-upgrade-novnode-large"
 
 // define matrix axes
 def Map matrix_axes = [
@@ -95,38 +99,53 @@ for (def axis in _axes) {
   }
 }
 
+properties([
+  [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
+  parameters (
+    [
+      choice(choices: archsSupported, description: 'architecture', name: 'arch'),
+      choice(choices: jdksSupported, description: 'JDK', name: 'jdk')
+    ]
+)])
+
 pipeline {
   agent none
   options {
     skipDefaultCheckout()
     // retry(3) // Do we need it?
   }
-  parameters {
-    string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
-    string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
-    choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
-    choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
-    booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
-    booleanParam(name: 'stage_lint', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-burn', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_jvm-dtest-upgrade', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-novnode', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-offheap', defaultValue: false) // return default to true
-  }
+  // parameters {
+  //   string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
+  //   string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
+  //   choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
+  //   choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
+  //   booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
+  //   booleanParam(name: 'stage_lint', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test-burn', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_jvm-dtest-upgrade', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-novnode', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-offheap', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-large', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-large-novnode', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-upgrade', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-upgrade-novnode', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-upgrade-large', defaultValue: false) // return default to true
+  //   booleanParam(name: 'stage_dtest-upgrade-novnode-large', defaultValue: false) // return default to true
+  // }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
     javaVersionDefault = "${jdkDefault}"
