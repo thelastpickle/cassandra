@@ -99,20 +99,19 @@ for (def axis in _axes) {
   }
 }
 
+configuration = [
+  string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository'),
+  string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch'),
+  choice(name: 'arch', choices: ['all'] + archsSupported, description: 'Architecture'),
+  choice(name: 'jdk', choices: ['all'] + jdksSupported, description: 'JDK'),
+]
+for (step in stepsMap.keySet()) {
+  configuration[] = booleanParam(name: "stage_${step}", defaultValue: false)
+}
+
 properties([
-  parameters (
-    [
-      string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository'),
-      string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch'),
-      choice(name: 'arch', choices: ['all'] + archsSupported, description: 'Architecture'),
-      choice(name: 'jdk', choices: ['all'] + jdksSupported, description: 'JDK'),
-      script {
-        for (step in stepsMap.keySet()) {
-          booleanParam(name: "stage_${step}", defaultValue: false)
-        }
-      }
-    ]
-)])
+  parameters (configuration)
+])
 
 pipeline {
   agent none
