@@ -84,6 +84,7 @@ properties([
   parameters(configuration)
 ])
 
+@NonCPS
 def getTasks(phase) {
   def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
       (isArchEnabled(axis['arch'])) && // skip disabled archs
