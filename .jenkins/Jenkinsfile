@@ -100,7 +100,6 @@ for (def axis in _axes) {
 }
 
 properties([
-  [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
   parameters (
     [
       choice(choices: archsSupported, description: 'architecture', name: 'arch'),
