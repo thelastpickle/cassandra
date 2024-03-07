@@ -208,7 +208,7 @@ TEST_SCRIPT=${test_script}
 JAVA_VERSION=${java_version}
 PYTHON_VERSION=${python_version}
 cython=${cython}
-ANT_OPTS="${ANT_OPTS}"
+ANT_OPTS="-Dtesttag.extra=.arch=$(arch).python${python_version}"
 EOF
 
 split_str="0_0"
