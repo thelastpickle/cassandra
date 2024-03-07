@@ -70,6 +70,8 @@ def Map matrix_axes = [
     split: (1..splits).toList()
 ]
 
+def List enabledSteps = params.steps.replaceAll("\\s", "").split(',')
+
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
     (isJdkEnabled(axis['jdk'])) && // skip disabled jdks
@@ -108,32 +110,7 @@ pipeline {
     string(name: 'branch', defaultValue: scm.branches[0].name, description: 'Branch')
     choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
     choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
-    booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
-    booleanParam(name: 'stage_lint', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_debian', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_redhat', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_fqltool-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_cqlsh-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-cdc', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-trie', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-compression', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_stress-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-burn', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_long-test', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-oa', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_jvm-dtest-upgrade', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-novnode', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-offheap', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-large', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-large-novnode', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-upgrade', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-upgrade-novnode', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-upgrade-large', defaultValue: false) // return default to true
-    booleanParam(name: 'stage_dtest-upgrade-novnode-large', defaultValue: false) // return default to true
+    string(name: 'steps', defaultValue: stepsMap.keySet().join(','), description: 'List of enabled stages')
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
@@ -219,7 +196,7 @@ def isCanonical() {
 }
 
 def isStageEnabled(stage) {
-  return params."stage_${stage}" || "jar" == stage
+  return enabledSteps.containsKey(stage) || "jar" == stage
 }
 
 def isArchEnabled(arch) {
