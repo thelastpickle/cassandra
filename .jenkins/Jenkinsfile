@@ -23,7 +23,7 @@
 
 def jdksSupported = ["11", "17"] 
 def archsSupported = ["amd64", "arm64"]
-def pythonsSupported = ["3.7", "3.8", "3.11"] 
+def pythonsSupported = ["3.8", "3.11"] 
 def jdkDefault = "11"
 def pythonDefault = "3.8"
 def stageResults = [:]
