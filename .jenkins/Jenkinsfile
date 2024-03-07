@@ -110,7 +110,7 @@ pipeline {
     string(name: 'branch', defaultValue: scm.branches[0].name, description: 'Branch')
     choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
     choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
-    string(name: 'steps', defaultValue: stepsMap.keySet().findAll { it != 'jar' }.join(','), description: 'List of enabled stages')
+    string(name: 'steps', defaultValue: stepsMap.keySet().join(','), description: 'List of enabled stages')
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
