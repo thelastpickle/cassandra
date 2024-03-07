@@ -15,14 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-#
 # A wrapper script to run-tests.sh (or dtest-python.sh) in docker.
 #  Can split (or grep) the test list into multiple docker runs, collecting results.
-#
-# Each split chunk may be further parallelised over docker containers based on the host's available cpu and memory (and the test type).
-#  Define env variable DISABLE_INNER_SPLITS to disable inner splitting.
-#
+
+[ $DEBUG ] && set -x
 
 # help
 if [ "$#" -lt 1 ] || [ "$#" -gt 3 ] || [ "$1" == "-h" ]; then
@@ -38,7 +34,9 @@ fi
 [ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"
 [ "x${cassandra_dtest_dir}" != "x" ] || cassandra_dtest_dir="${cassandra_dir}/../cassandra-dtest"
 [ "x${build_dir}" != "x" ] || build_dir="${cassandra_dir}/build"
+[ "x${m2_dir}" != "x" ] || m2_dir="${cassandra_dir}/build/m2"
 [ -d "${build_dir}" ] || { mkdir -p "${build_dir}" ; }
+[ -d "${m2_dir}" ] || { mkdir -p "${m2_dir}" ; }
 
 # pre-conditions
 command -v docker >/dev/null 2>&1 || { echo >&2 "docker needs to be installed"; exit 1; }
@@ -84,21 +82,30 @@ pushd ${cassandra_dir}/.build >/dev/null
 dockerfile="ubuntu2004_test.docker"
 image_tag="$(md5sum docker/${dockerfile} | cut -d' ' -f1)"
 image_name="apache/cassandra-${dockerfile/.docker/}:${image_tag}"
-docker_mounts="-v ${cassandra_dir}:/home/cassandra/cassandra -v "${build_dir}":/home/cassandra/cassandra/build -v ${HOME}/.m2/repository:/home/cassandra/.m2/repository"
+docker_mounts="-v ${cassandra_dir}:/home/cassandra/cassandra -v "${build_dir}":/home/cassandra/cassandra/build -v ${m2_dir}:/home/cassandra/.m2/repository"
 # HACK hardlinks in overlay are buggy, the following mount prevents hardlinks from being used. ref $TMP_DIR in .build/run-tests.sh
 docker_mounts="${docker_mounts} -v "${build_dir}/tmp":/home/cassandra/cassandra/build/tmp"
 
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
+  echo "Build image not found locally"
   # try docker login to increase dockerhub rate limits
+  echo "Attempting 'docker login' to increase dockerhub rate limits"
   timeout -k 5 5 docker login >/dev/null 2>/dev/null
+  echo "Pulling build image..."
   if ! ( docker pull -q ${image_name} >/dev/null 2>/dev/null ) ; then
     # Create build images containing the build tool-chain, Java and an Apache Cassandra git working directory, with retry
+    echo "Building docker image ${image_name}..."
     until docker build -t ${image_name} -f docker/${dockerfile} .  ; do
-        echo "docker build failed… trying again in 10s… "
-        sleep 10
+      echo "docker build failed… trying again in 10s… "
+      sleep 10
     done
-  fi
+    echo "Docker image ${image_name} has been built"
+  else
+    echo "Successfully pulled build image."
+  fi  
+else
+    echo "Found build image locally."
 fi
 
 pushd ${cassandra_dir} >/dev/null
@@ -112,13 +119,19 @@ if [[ ! -z ${JENKINS_URL+x} ]] && [[ ! -z ${NODE_NAME+x} ]] ; then
 fi
 
 # find host's available cores and mem
-cores=1
-command -v nproc >/dev/null 2>&1 && cores=$(nproc --all)
-mem=1
-# linux
-command -v free >/dev/null 2>&1 && mem=$(free -b | grep Mem: | awk '{print $2}')
-# macos
-sysctl -n hw.memsize >/dev/null 2>&1 && mem=$(sysctl -n hw.memsize)
+cores=$(docker run --rm alpine nproc --all) || { echo >&2 "Unable to check available CPU cores"; exit 1; }
+
+case $(uname) in
+    "Linux")
+        mem=$(docker run --rm alpine free -b | grep Mem: | awk '{print $2}') || { echo >&2 "Unable to check available memory"; exit 1; }
+        ;;
+    "Darwin")
+        mem=$(sysctl -n hw.memsize) || { echo >&2 "Unable to check available memory"; exit 1; }
+        ;;
+    *)
+        echo >&2 "Unsupported operating system, expected Linux or Darwin"
+        exit 1
+esac
 
 # figure out resource limits, scripts, and mounts for the test type
 case ${target} in
@@ -224,9 +237,11 @@ echo "Running container ${container_name} ${docker_id}"
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh cassandra $(id -u) $(id -g)" | tee -a ${logfile}
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
-# capture logs and pid for container
+# capture logs and status
+set -o pipefail
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
+set +o pipefail
 
 if [ "$status" -ne 0 ] ; then
     echo "${docker_id} failed (${status}), debug…"
