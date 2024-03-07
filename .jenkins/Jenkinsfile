@@ -105,8 +105,8 @@ pipeline {
     // retry(3) // Do we need it?
   }
   parameters {
-    string(name: 'repository', defaultValue: 'https://github.com/HadesArchitect/cassandra', description: 'Cassandra Repository')
-    string(name: 'branch', defaultValue: '*/aleks-cassius', description: 'Branch')
+    string(name: 'repository', defaultValue: scm.userRemoteConfigs[0].url, description: 'Cassandra Repository')
+    string(name: 'branch', defaultValue: env.BRANCH_NAME, description: 'Branch')
     choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
     choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
     booleanParam(name: 'stage_artifacts', defaultValue: false, description: 'Disable to exlude stage') // return default to true
