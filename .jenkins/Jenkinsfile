@@ -71,7 +71,7 @@ def Map matrix_axes = [
 ]
 
 def availableSteps = stepsMap.keySet().findAll { it != 'jar' }.join(',')
-def List enabledSteps = params.enabledSteps.replaceAll("\\s", "").split(',')
+def List enabledSteps = params.enabledSteps != null ? params.enabledSteps.replaceAll("\\s", "").split(',') : ""
 
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
