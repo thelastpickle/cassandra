@@ -242,7 +242,7 @@ echo "Running container ${container_name} ${docker_id}"
 docker exec --user root ${container_name} bash -c "\${CASSANDRA_DIR}/.build/docker/_create_user.sh cassandra $(id -u) $(id -g)" | tee -a ${logfile}
 docker exec --user root ${container_name} update-alternatives --set python /usr/bin/python${python_version} | tee -a ${logfile}
 
-# capture logs and pid for container
+# capture logs and status
 set -o pipefail
 docker exec --user cassandra ${container_name} bash -c "${docker_command}" | tee -a ${logfile}
 status=$?
