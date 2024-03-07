@@ -15,16 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-#
 # A wrapper script to run-tests.sh (or dtest-python.sh) in docker.
 #  Can split (or grep) the test list into multiple docker runs, collecting results.
-#
-# Each split chunk may be further parallelised over docker containers based on the host's available cpu and memory (and the test type).
-#  Define env variable DISABLE_INNER_SPLITS to disable inner splitting.
-#
 
-set -x
+if [ "$DEBUG" = "true" ]; then
+    set -x
+fi
 
 # help
 if [ "$#" -lt 1 ] || [ "$#" -gt 3 ] || [ "$1" == "-h" ]; then
