@@ -82,7 +82,6 @@ public class MonotonicBlockPackedReader implements LongArray.Factory
     }
 
     @Override
-    @SuppressWarnings({"resource", "RedundantSuppression"})
     public LongArray open()
     {
         final IndexInput indexInput = IndexFileUtils.instance.openInput(file);
@@ -104,6 +103,12 @@ public class MonotonicBlockPackedReader implements LongArray.Factory
             protected long blockOffsetAt(int block)
             {
                 return blockOffsets.get(block);
+            }
+
+            @Override
+            public long indexOf(long value)
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }

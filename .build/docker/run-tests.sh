@@ -3,7 +3,7 @@
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
 # regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
+7# to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
 #
@@ -147,7 +147,7 @@ case ${target} in
         # check that ${cassandra_dtest_dir} is valid
         [ -f "${cassandra_dtest_dir}/dtest.py" ] || { echo >&2 "${cassandra_dtest_dir}/dtest.py not found. please specify 'cassandra_dtest_dir' to point to the local cassandra-dtest source"; exit 1; }
     ;;
-    "test"| "test-cdc" | "test-compression" | "test-oa" | "test-system-keyspace-directory" | "test-trie" | "jvm-dtest" | "jvm-dtest-upgrade")
+    "test"| "test-cdc" | "test-compression" | "test-oa" | "test-system-keyspace-directory" | "test-trie" | "jvm-dtest" | "jvm-dtest-upgrade" | "jvm-dtest-novnode" | "jvm-dtest-upgrade-novnode" | "simulator-dtest")
         [[ ${mem} -gt $((5 * 1024 * 1024 * 1024 * ${jenkins_executors})) ]] || { echo >&2 "tests require minimum docker memory 6g (per jenkins executor (${jenkins_executors})), found ${mem}"; exit 1; }
         max_docker_runs_by_cores=$( echo "sqrt( ${cores} / ${jenkins_executors} )" | bc )
         max_docker_runs_by_mem=$(( ${mem} / ( 5 * 1024 * 1024 * 1024 * ${jenkins_executors} ) ))
@@ -159,6 +159,11 @@ case ${target} in
 esac
 
 docker_cpus=$(echo "scale=2; ${cores} / ( ${jenkins_executors} )" | bc)
+docker_cpus_limit=$(docker info | grep CPUs | cut -d" " -f3)
+if (( $(echo "${docker_cpus} > ${docker_cpus_limit}" |bc -l) )) ; then
+    echo "WARNING: requested more cpus (${docker_cpus}) than docker cpu limit (${docker_cpus_limit}), reducing cpus…"
+    docker_cpus=${docker_cpus_limit}
+fi
 
 # hack: long-test does not handle limited CPUs
 if [ "${target}" == "long-test" ] ; then
@@ -169,7 +174,7 @@ else
     docker_flags="--cpus=${docker_cpus} -m 5g --memory-swap 5g"
 fi
 
-docker_flags="${docker_flags} --env-file build/env.list -d --rm"
+docker_flags="${docker_flags} -d --rm"
 
 # make sure build_dir is good
 mkdir -p ${build_dir}/tmp || true
@@ -179,8 +184,11 @@ chmod -R ag+rwx ${build_dir}
 
 # define testtag.extra so tests can be aggregated together. (jdk is already appended in build.xml)
 case ${target} in
-    "cqlsh-test" | "dtest" | "dtest-novnode" | "dtest-offheap" | "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-large" )
+    "cqlsh-test" | "dtest" | "dtest-novnode" | "dtest-offheap" | "dtest-large" | "dtest-large-novnode" | "dtest-upgrade" | "dtest-upgrade-large" | "dtest-upgrade-novnode" | "dtest-upgrade-novnode-large" )
         ANT_OPTS="-Dtesttag.extra=_$(arch)_python${python_version/./-}"
+    ;;
+    "jvm-dtest-novnode" | "jvm-dtest-upgrade-novnode" )
+        ANT_OPTS="-Dtesttag.extra=_$(arch)_novnode"
     ;;
     *)
         ANT_OPTS="-Dtesttag.extra=_$(arch)"
@@ -196,14 +204,7 @@ else
 fi
 
 # the docker container's env
-touch build/env.list
-cat > build/env.list <<EOF
-TEST_SCRIPT=${test_script}
-JAVA_VERSION=${java_version}
-PYTHON_VERSION=${python_version}
-cython=${cython}
-ANT_OPTS="-Dtesttag.extra=.arch=$(arch).python${python_version}"
-EOF
+docker_envs="--env TEST_SCRIPT=${test_script} --env JAVA_VERSION=${java_version} --env PYTHON_VERSION=${python_version} --env cython=${cython} --env ANT_OPTS=\"${ANT_OPTS}\""
 
 split_str="0_0"
 if [[ "${split_chunk}" =~ ^[0-9]+/[0-9]+$ ]]; then
@@ -229,7 +230,7 @@ docker_command="source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_versi
             \${CASSANDRA_DIR}/.build/docker/_docker_init_tests.sh ${target} ${split_chunk} ; exit \$?"
 
 # start the container, timeout after 4 hours
-docker_id=$(docker run --name ${container_name} ${docker_flags} ${docker_mounts} ${docker_volume_opt} ${image_name} sleep 4h)
+docker_id=$(docker run --name ${container_name} ${docker_flags} ${docker_envs} ${docker_mounts} ${docker_volume_opt} ${image_name} sleep 4h)
 
 echo "Running container ${container_name} ${docker_id}"
 

@@ -264,6 +264,9 @@ public enum CassandraRelevantProperties
     @Deprecated(since = "4.1")
     IGNORE_DC("cassandra.ignore_dc"),
     IGNORE_DYNAMIC_SNITCH_SEVERITY("cassandra.ignore_dynamic_snitch_severity"),
+
+    IGNORE_KERNEL_BUG_1057843_CHECK("cassandra.ignore_kernel_bug_1057843_check"),
+
     IGNORE_MISSING_NATIVE_FILE_HINTS("cassandra.require_native_file_hints"),
     /** @deprecated should be removed in favor of enable flag of relevant startup check (checkRack) */
     /** @deprecated See CASSANDRA-17797 */
@@ -401,7 +404,6 @@ public enum CassandraRelevantProperties
     PRINT_HEAP_HISTOGRAM_ON_OUT_OF_MEMORY_ERROR("cassandra.printHeapHistogramOnOutOfMemoryError"),
     READS_THRESHOLDS_COORDINATOR_DEFENSIVE_CHECKS_ENABLED("cassandra.reads.thresholds.coordinator.defensive_checks_enabled"),
     RELEASE_VERSION("cassandra.releaseVersion"),
-    RELOCATED_SHADED_IO_NETTY_TRANSPORT_NONATIVE("relocated.shaded.io.netty.transport.noNative"),
     REPAIR_CLEANUP_INTERVAL_SECONDS("cassandra.repair_cleanup_interval_seconds", convertToString(Ints.checkedCast(TimeUnit.MINUTES.toSeconds(10)))),
     REPAIR_DELETE_TIMEOUT_SECONDS("cassandra.repair_delete_timeout_seconds", convertToString(Ints.checkedCast(TimeUnit.DAYS.toSeconds(1)))),
     REPAIR_FAIL_TIMEOUT_SECONDS("cassandra.repair_fail_timeout_seconds", convertToString(Ints.checkedCast(TimeUnit.DAYS.toSeconds(1)))),
@@ -454,7 +456,7 @@ public enum CassandraRelevantProperties
     SAI_SORTED_TERMS_PARTITION_BLOCK_SHIFT("cassandra.sai.sorted_terms_partition_block_shift", "4"),
 
     SAI_TEST_BALANCED_TREE_DEBUG_ENABLED("cassandra.sai.test.balanced_tree_debug_enabled", "false"),
-    SAI_TEST_DISABLE_TIMEOUT("cassandra.sai.test.disable.timeout", "false"),
+    SAI_TEST_DISABLE_TIMEOUT("cassandra.sai.test.timeout_disabled", "false"),
 
     /** Whether to allow the user to specify custom options to the hnsw index */
     SAI_VECTOR_ALLOW_CUSTOM_PARAMETERS("cassandra.sai.vector.allow_custom_parameters", "false"),
@@ -575,8 +577,10 @@ public enum CassandraRelevantProperties
     TYPE_UDT_CONFLICT_BEHAVIOR("cassandra.type.udt.conflict_behavior"),
     // See org.apache.cassandra.db.compaction.unified.Controller for the definition of the UCS parameters
     UCS_BASE_SHARD_COUNT("unified_compaction.base_shard_count", "4"),
+    UCS_MIN_SSTABLE_SIZE("unified_compaction.min_sstable_size", "100MiB"),
     UCS_OVERLAP_INCLUSION_METHOD("unified_compaction.overlap_inclusion_method"),
     UCS_SCALING_PARAMETER("unified_compaction.scaling_parameters", "T4"),
+    UCS_SSTABLE_GROWTH("unified_compaction.sstable_growth", "0.333"),
     UCS_SURVIVAL_FACTOR("unified_compaction.survival_factor", "1"),
     UCS_TARGET_SSTABLE_SIZE("unified_compaction.target_sstable_size", "1GiB"),
     UDF_EXECUTOR_THREAD_KEEPALIVE_MS("cassandra.udf_executor_thread_keepalive_ms", "30000"),

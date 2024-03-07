@@ -976,6 +976,10 @@
             <artifactId>slf4j-api</artifactId>
             <groupId>org.slf4j</groupId>
           </exclusion>
+          <exclusion>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -1222,6 +1226,11 @@
         <groupId>ch.obermuhlner</groupId>
         <artifactId>big-math</artifactId>
         <version>2.3.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.vdurmont</groupId>
+        <artifactId>semver4j</artifactId>
+        <version>3.1.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

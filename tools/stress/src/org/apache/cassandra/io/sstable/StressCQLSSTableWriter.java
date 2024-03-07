@@ -567,7 +567,6 @@ public class StressCQLSSTableWriter implements Closeable
             return this;
         }
 
-        @SuppressWarnings("resource")
         public StressCQLSSTableWriter build()
         {
             if (directoryList.isEmpty() && cfs == null)
@@ -587,7 +586,7 @@ public class StressCQLSSTableWriter implements Closeable
 
                 UpdateStatement preparedInsert = prepareInsert();
                 AbstractSSTableSimpleWriter writer = sorted
-                                                     ? new SSTableSimpleWriter(cfs.getDirectories().getDirectoryForNewSSTables(), cfs.metadata, preparedInsert.updatedColumns())
+                                                     ? new SSTableSimpleWriter(cfs.getDirectories().getDirectoryForNewSSTables(), cfs.metadata, preparedInsert.updatedColumns(), -1)
                                                      : new SSTableSimpleUnsortedWriter(cfs.getDirectories().getDirectoryForNewSSTables(), cfs.metadata, preparedInsert.updatedColumns(), bufferSizeInMiB);
 
                 if (format != null)
