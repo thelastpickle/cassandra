@@ -34,42 +34,58 @@
 
 def jdksSupported = ["11", "17"] 
 def archsSupported = ["amd64", "arm64"]
-def pythonsSupported = ["3.7", "3.8", "3.11"] 
+def pythonsSupported = ["3.8", "3.11"] 
 def jdkDefault = "11"
 def pythonDefault = "3.8"
 def stageResults = [:]
-def splits = 10
 
 // Steps config
-def stepsMap = [
-  'jar': [type: 'build', script: 'build-jars.sh', toCopy: null],
-  'artifacts': [type: 'build', script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
-  'lint': [type: 'build', script: 'check-code.sh', toCopy: null],
-  'debian': [type: 'build', script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
-  'redhat': [type: 'build', script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
-  'cqlsh-test': [type: 'test', splits: false],
-  'fqltool-test': [type: 'test', splits: false],
-  'test-cdc': [type: 'test', splits: splits],
-  'test': [type: 'test', splits: splits],
-  'test-trie': [type: 'test', splits: splits],
-  'test-compression': [type: 'test', splits: splits],
-  'stress-test': [type: 'test', splits: splits],
-  'test-burn': [type: 'test', splits: splits],
-  'long-test': [type: 'test', splits: splits],
-  'test-oa': [type: 'test', splits: splits],
-  'test-system-keyspace-directory': [type: 'test', splits: splits],
-  'jvm-dtest': [type: 'test', splits: splits, dtest: true],
-  'jvm-dtest-upgrade': [type: 'test', splits: splits, dtest: true],
-  'dtest': [type: 'test', splits: splits, dtest: true],
-  'dtest-novnode': [type: 'test', splits: splits, dtest: true],
-  'dtest-offheap': [type: 'test', splits: splits, dtest: true],
-  'dtest-large': [type: 'test', splits: splits, dtest: true],
-  'dtest-large-novnode': [type: 'test', splits: splits, dtest: true],
-  'dtest-upgrade': [type: 'test', splits: splits, dtest: true],
-  'dtest-upgrade-novnode': [type: 'test', splits: splits, dtest: true],
-  'dtest-upgrade-large': [type: 'test', splits: splits, dtest: true],
-  'dtest-upgrade-novnode-large': [type: 'test', splits: splits, dtest: true],
+def buildSteps = [
+  'jar': [script: 'build-jars.sh', toCopy: null],
+  'artifacts': [script: 'build-artifacts.sh', toCopy: 'apache-cassandra-*.tar.gz,apache-cassandra-*.jar,apache-cassandra-*.pom'],
+  'lint': [script: 'check-code.sh', toCopy: null],
+  'debian': [script: 'build-debian.sh', toCopy: 'cassandra_*,cassandra-tools_*'],
+  'redhat': [script: 'build-redhat.sh rpm', toCopy: '*.rpm'],
 ]
+buildSteps.each() {
+    it.value.put('type', 'build')
+    it.value.put('splits', 1)
+}
+
+def testSteps = [
+  'cqlsh-test': [splits: 1],
+  'fqltool-test': [splits: 1],
+  'test-cdc': [splits: 8],
+  'test': [splits: 8],
+  'test-trie': [splits: 8],
+  'test-compression': [splits: 8],
+  'stress-test': [splits: 1],
+  'test-burn': [splits: 8],
+  'long-test': [splits: 8],
+  'test-oa': [splits: 8],
+  'test-system-keyspace-directory': [splits: 8],
+  'jvm-dtest': [splits: 8],
+  'jvm-dtest-upgrade': [splits: 8],
+  'simulator-dtest': [splits: 1],
+  'dtest': [splits: 64],
+  'dtest-novnode': [splits: 64],
+  'dtest-offheap': [splits: 64],
+  'dtest-large': [splits: 8],
+  'dtest-large-novnode': [splits: 8],
+  'dtest-upgrade': [splits: 64],
+  'dtest-upgrade-novnode': [splits: 64],
+  'dtest-upgrade-large': [splits: 64],
+  'dtest-upgrade-novnode-large': [splits: 64],
+]
+testSteps.each() {
+    it.value.put('type', 'test')
+    it.value.put('script', '.build/docker/run-tests.sh')
+    if (it.key.startsWith('dtest')) {
+        it.value.put('python-dtest', true)
+    }
+}
+
+def stepsMap = buildSteps + testSteps
 
 // define matrix axes
 def Map matrix_axes = [
@@ -78,27 +94,26 @@ def Map matrix_axes = [
     python: pythonsSupported,
     cython: ['yes', 'no'],
     step: stepsMap.keySet(),
-    split: (1..splits).toList()
+    split: (1..64).toList() // needs to be max splits can be ??
 ]
 
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
     (isJdkEnabled(axis['jdk'])) && // skip disabled jdks
     (isStageEnabled(axis['step'])) && // skip disabled steps
-    !(axis['python'] != pythonDefault && axis['step'] != 'cqlsh-test') && // Use only python 3.7 for all tests but cqlsh-test
-    !(axis['cython'] != 'no' && axis['step'] != 'cqlsh-test') && // cython only for cqlsh-test, disable for others
-    !(axis['arch'] != 'amd64' && axis['step'] == 'cqlsh-test') && // run cqlsh-test only on amd64
-    !(axis['jdk'] != jdkDefault && axis['step'] == 'cqlsh-test') && // run cqlsh-test only with jdk11
+    !(axis['python'] != pythonDefault && 'cqlsh-test' != axis['step']) && // Use only python 3.8 for all tests but cqlsh-test
+    !(axis['cython'] != 'no' && 'cqlsh-test' != axis['step']) && // cython only for cqlsh-test, disable for others
+    !(axis['jdk'] != jdkDefault && 'cqlsh-test' == axis['step']) && // run cqlsh-test only with jdk11
     // Disable splits for all but proper stages
-    !(axis['split'] != 1 && !stepsMap.findAll { entry -> entry.value.containsKey('splits') && entry.value.splits }.keySet().contains(axis['step'])) &&
-    // run dtests only on amd64
-    !(axis['arch'] != 'amd64' && stepsMap.findAll { entry -> entry.value.containsKey('dtest') && entry.value.dtest }.keySet().contains(axis['step']))
+    !(axis['split'] > 1 && !stepsMap.findAll { entry -> entry.value.splits >= axis['split'] }.keySet().contains(axis['step'])) &&
+    // run only the build types on non-amd64
+    !(axis['arch'] != 'amd64' && stepsMap.findAll { entry -> 'build' == entry.value.type }.keySet().contains(axis['step']))
 }
 
 // Prepare tasks
 def Map tasks = [
-  jars: [failFast: false],
-  tests: [failFast: false],
+  jars: [failFast: !isPostCommit()],
+  tests: [failFast: !isPostCommit()],
 ]
 for (def axis in _axes) {
   def cell = axis
@@ -112,7 +127,9 @@ pipeline {
   agent none
   options {
     skipDefaultCheckout()
-    // retry(3) // Do we need it?
+
+    // FIXME problem with this retry approach is it retries the whole pipeline.  what we want is just cell retry
+    //retry(2)
   }
   parameters {
     string(name: 'repository', defaultValue: scm.userRemoteConfigs[0].url, description: 'Cassandra Repository')
@@ -136,6 +153,7 @@ pipeline {
     booleanParam(name: 'stage_test-system-keyspace-directory', defaultValue: false) // return default to true
     booleanParam(name: 'stage_jvm-dtest', defaultValue: false) // return default to true
     booleanParam(name: 'stage_jvm-dtest-upgrade', defaultValue: false) // return default to true
+    booleanParam(name: 'stage_simulator-dtest', defaultValue: false) // return default to true
     booleanParam(name: 'stage_dtest', defaultValue: false) // return default to true
     booleanParam(name: 'stage_dtest-novnode', defaultValue: false) // return default to true
     booleanParam(name: 'stage_dtest-offheap', defaultValue: false) // return default to true
@@ -171,9 +189,12 @@ pipeline {
     stage('Summary') {
       steps {
         script {
-          if(stageResults.find { it.value  == "FAILURE" }) {
+          if(stageResults.find { "FAILURE" == it.value }) {
             currentBuild.result='FAILURE'
             error("Build failed due to failed stages")
+          } else if(stageResults.find { "UNSTABLE" == it.value || "ABORTED" == it.value }) {
+            if ("ABORTED" != currentBuild.result) { currentBuild.result='UNSTABLE' }
+            echo("Build unstable due to unstable or aborted stages")
           }
         }
       }
@@ -195,8 +216,7 @@ def getStepName(cell, command) {
   arch = "amd64" == cell.arch ? "" : " ${cell.arch}"
   python = "cqlsh-test" != cell.step ? "" : " python${cell.python}"
   cython = "no" == cell.cython ? "" : " cython"
-  split = command.containsKey('splits') && command.splits ? " ${cell.split}/${command.splits}" : ""
-
+  split = command.splits > 1 ? " ${cell.split}/${command.splits}" : ""
   return "${cell.step}${arch} jdk${cell.jdk}${python}${cython}${split}"
 }
 
@@ -219,7 +239,7 @@ def javaVersionsSupported() {
  **/
 def isPostCommit() {
   // any build of a branch found on github.com/apache/cassandra is considered a post-commit (post-merge) CI run
-  return "${GIT_URL}".contains("apache/cassandra")
+  return params.repository && params.repository.contains("apache/cassandra") // no params exist first build
 }
 
 /**
@@ -251,18 +271,23 @@ def build(command, cell) {
       ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}") {
           cleanWs(disableDeferredWipeout: true)
           fetchSource(cell.step, cell.arch, cell.jdk)
-          def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_${cell.arch}.log"
+          def logfile = "build/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_${cell.arch}.log"
 
           catchError(buildResult: null, message: 'Build task failed', stageResult: 'FAILURE') {
-              sh label: 'RUNNING BUILD TASK...', script: "#!/usr/bin/bash \nset -o pipefail; build_dir='${WORKSPACE}/build' DEBUG=true ${build_script} ${cell.jdk} 2>&1 | tee ${logfile}"
+              // pipe to tee needs pipefail
+              sh label: 'RUNNING ${cell.step}...', script: "#!/bin/bash \n set -o pipefail ; ${build_script} ${cell.jdk} 2>&1 | tee ${logfile}"
               if ("jar" == step) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
                   stash name: "${cell.arch}_${cell.jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
               }
-              copyToNightlies("${command.toCopy}", "${STAGE_NAME}/jdk${cell.jdk}/${cell.arch}/")
+              dir("build") {
+                copyToNightlies("${command.toCopy}", "${STAGE_NAME}/jdk${cell.jdk}/${cell.arch}/")
+              }
           }
-          sh "xz -f *.log"
-          archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
-          copyToNightlies("**/*.log.xz", "${cell.step}/jdk${cell.jdk}/${cell.arch}/")
+          dir("build") {
+            sh "xz -f *.log"
+            archiveArtifacts artifacts: "**/*.log.xz", fingerprint: true
+            copyToNightlies("**/*.log.xz", "${cell.step}/jdk${cell.jdk}/${cell.arch}/")
+          }
           cleanAgent(build_script)
       }
     }
@@ -278,43 +303,37 @@ def test(command, cell) {
       ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}/python-${cell.python}") {
         cleanWs(disableDeferredWipeout: true)
         fetchSource(cell.step, cell.arch, cell.jdk)
-        def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_python_${cell.python}_${cell.cython}_${cell.arch}.log"
+        def logfile = "build/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_python_${cell.python}_${cell.cython}_${cell.arch}.log"
 
-        def cassandra_dtest_dir = "${WORKSPACE}/build/cassandra-dtest"
-        if (command.containsKey('dtest') && command['dtest']) {
+        // pipe to tee needs pipefail
+        def script_vars = "#!/bin/bash \n set -o pipefail ; "
+        script_vars = "${script_vars} python_version=\'${cell.python}\'"
+        if ("cqlsh-test" == cell.step) {
+            script_vars = "${script_vars} cython=\'${cell.cython}\'"
+        }
+        if (command.containsKey('python-dtest')) {
+          // TODO – introduce parameters for cassandra-dtest repo
           checkout changelog: false, poll: false, scm: scmGit(branches: [[name: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${WORKSPACE}/build/cassandra-dtest"]], userRemoteConfigs: [[url: 'https://github.com/apache/cassandra-dtest']])
+          script_vars = "${script_vars} cassandra_dtest_dir='${WORKSPACE}/build/cassandra-dtest'"
         }
 
-  // sh "mkdir -p build"
-  // def build_dir = sh( returnStdout: true, script:"mktemp -d ${WORKSPACE}/build/build_docker_run.XXXXXXXXXX" ).trim()
-  // def build_dir_rel = build_dir - "${WORKSPACE}/"
-
-  // dir("${build_dir}") {
-    // fetchSource(cell.step, arch, jdk)
-  // }
         def stageError = true
         catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail;  DEBUG=true python_version='${cell.python}' cython='${cell.cython}' build_dir='${WORKSPACE}/build' cassandra_dtest_dir='${cassandra_dtest_dir}' .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee ${logfile}"
+          sh label: "RUNNING TESTS ${cell.step}...", script: "${script_vars} .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee ${logfile}"
           dir("build") {
-            // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
-            // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
-            //sh "ls -la test/output/"
-            junit testResults: "test/output/**/TEST*.xml", allowEmptyResults: true
-            sh "xz -f test/output/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
-            // junit testResults: "test/output/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-            // junit testResults: "build/test/output/**/TEST*.xml,build/test/output/cqlshlib.xml,build/test/output/nosetests.xml"//, testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
-            // sh "xz -f build/test/output/**/TEST*.xml || true ; xz -f build/test/output/cqlshlib.xml build/test/output/nosetests.xml || true"
+            junit testResults: "test/**/TEST*.xml,test/output/cqlshlib.xml,test/output/nosetests.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
+            sh "xz -f test/**/TEST*.xml || true ; xz -f test/output/cqlshlib.xml test/output/nosetests.xml || true"
           }
           stageError = false
         }
         if (stageError) {
           stageResults[getStepName(cell, command)] = "FAILURE"
         }
-        sh "xz -f *.log"
-        archiveArtifacts artifacts: "*.log.xz,build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
-        // archiveArtifacts artifacts: "build/**/*.log.xz,build/test/logs/**,build/test/output/**/TEST*.xml.xz,build/test/output/cqlshlib.xml.xz,build/test/output/nosetests.xml.xz", fingerprint: true
-        copyToNightlies("*.log.xz,build/test/logs/**", "${cell.step}/${cell.arch}/jdk${cell.jdk}/python${cell.python}/cython_${cell.cython}/" + "split_${cell.split}_${splits}".replace("/", "_"))
-        
+        dir("build") {
+            sh "xz -f *.log"
+            archiveArtifacts artifacts: "**/*.log.xz,test/logs/**,test/**/TEST*.xml.xz,test/output/cqlshlib.xml.xz,test/output/nosetests.xml.xz", fingerprint: true
+            copyToNightlies("*.log.xz,test/logs/**", "${cell.step}/${cell.arch}/jdk${cell.jdk}/python${cell.python}/cython_${cell.cython}/" + "split_${cell.split}_${splits}".replace("/", "_"))
+        }
         cleanAgent(".build/docker/run-tests.sh")
       }
     }
@@ -324,6 +343,7 @@ def test(command, cell) {
 def fetchSource(stage, arch, jdk) {
     if ("jar" == stage) {
         checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+        sh "mkdir build"
     } else {
         unstash name: "${arch}_${jdk}"
     }
@@ -398,14 +418,16 @@ def saveAgentReport() {
 
 def generateUnifiedTestReport() {
   node(getNodeArch('amd64')) {
-    checkout scm
-    copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
-    sh 'xz -d build/test/output/**/*.xml.xz || true ; xz -d test/output/cqlshlib.xml test/output/nosetests.xml || true'
-    sh "ANT_OPTS='-Xmx15g' ant generate-test-report"
-    dir('build/') {
-      sh "xz -f TESTS-TestSuites.xml"
-      archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,test/html/**/*", fingerprint: true
-      copyToNightlies('TESTS-TestSuites.xml.xz')
+    checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+    copyArtifacts filter: 'test/**/TEST*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/", optional: true
+    if (fileExists('build/test/output')) {
+      sh ".build/docker/_docker_run.sh bullseye-build.docker generate-test-report.sh"
+      dir('build/') {
+        sh "xz -f TESTS-TestSuites.xml"
+        sh "tar -cf TESTS-html.tar test/html && xz -f TESTS-html.tar"
+        archiveArtifacts artifacts: "TESTS-TestSuites.xml.xz,TESTS-html.tar.xz", fingerprint: true
+        copyToNightlies('TESTS-TestSuites.xml.xz,TESTS-html.tar.xz')
+      }
     }
   }
 }
