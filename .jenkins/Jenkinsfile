@@ -244,7 +244,7 @@ def build(command, cell) {
           def logfile = "${JOB_NAME}_${BUILD_NUMBER}_${cell.step}_jdk${cell.jdk}_${cell.arch}.log"
 
           catchError(buildResult: null, message: 'Build task failed', stageResult: 'FAILURE') {
-              sh label: 'RUNNING BUILD TASK...', script: "#!/usr/bin/bash \nset -o pipefail; build_dir='${WORKSPACE}/build' ${build_script} ${cell.jdk} 2>&1 | tee ${logfile}"
+              sh label: 'RUNNING BUILD TASK...', script: "#!/usr/bin/bash \nset -o pipefail; build_dir='${WORKSPACE}/build' DEBUG=true ${build_script} ${cell.jdk} 2>&1 | tee ${logfile}"
               if ("jar" == step) { // only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
                   stash name: "${cell.arch}_${cell.jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
               }
@@ -284,7 +284,7 @@ def test(command, cell) {
   // }
         def stageError = true
         catchError(buildResult: null, message: 'Tests failed', stageResult: 'FAILURE') {
-          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail; python_version='${cell.python}' cython='${cell.cython}' build_dir='${WORKSPACE}/build' cassandra_dtest_dir='${cassandra_dtest_dir}' .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee ${logfile}"
+          sh label: "RUNNING TESTS...", script: "#!/usr/bin/bash \nset -o pipefail;  DEBUG=true python_version='${cell.python}' cython='${cell.cython}' build_dir='${WORKSPACE}/build' cassandra_dtest_dir='${cassandra_dtest_dir}' .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee ${logfile}"
           dir("build") {
             // junit testResults: "test/output/nosetests.xml", allowEmptyResults: true
             // junit testResults: "test/output/cqlshlib.xml", allowEmptyResults: true
