@@ -22,7 +22,7 @@
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
 
 def jdksSupported = ["11", "17"] 
-def archsSupported = ["amd64", "arm64"]
+def archsSupported = ["amd64"] // , "arm64" // return "arm64" back when available
 def pythonsSupported = ["3.8", "3.11"] 
 def jdkDefault = "11"
 def pythonDefault = "3.8"
