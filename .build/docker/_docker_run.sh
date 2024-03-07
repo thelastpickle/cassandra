@@ -26,9 +26,7 @@
 #
 ################################
 
-if [ "$DEBUG" = "true" ]; then
-    set -x
-fi
+[ $DEBUG ] && set -x
 
 # variables, with defaults
 [ "x${cassandra_dir}" != "x" ] || cassandra_dir="$(readlink -f $(dirname "$0")/../..)"

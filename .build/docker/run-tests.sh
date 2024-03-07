@@ -18,9 +18,7 @@
 # A wrapper script to run-tests.sh (or dtest-python.sh) in docker.
 #  Can split (or grep) the test list into multiple docker runs, collecting results.
 
-if [ "$DEBUG" = "true" ]; then
-    set -x
-fi
+[ $DEBUG ] && set -x
 
 # help
 if [ "$#" -lt 1 ] || [ "$#" -gt 3 ] || [ "$1" == "-h" ]; then
