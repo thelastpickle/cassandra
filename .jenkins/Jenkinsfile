@@ -373,8 +373,7 @@ def saveAgentReport() {
 /////////////////////////////////////////
 
 def generateUnifiedTestReport() {
-  assert "Summary".equals(STAGE_NAME)
-  node('cassandra') {
+  node(getNodeArch('amd64')) {
     copyArtifacts filter: 'test/output/**/*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/"
     sh 'xz -d build/test/output/**/*.xml.xz || true ; xz -d test/output/cqlshlib.xml test/output/nosetests.xml || true'
     sh ".build/docker/_docker_run.sh bullseye-build.docker generate-test-report.sh"
