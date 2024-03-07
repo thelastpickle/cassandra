@@ -70,7 +70,7 @@ def Map matrix_axes = [
     split: (1..splits).toList()
 ]
 
-def List enabledSteps = params.steps.replaceAll("\\s", "").split(',')
+def List enabledSteps = params.enabledSteps.replaceAll("\\s", "").split(',')
 
 def List _axes = getMatrixAxes(matrix_axes).findAll { axis ->
     (isArchEnabled(axis['arch'])) && // skip disabled archs
@@ -110,7 +110,7 @@ pipeline {
     string(name: 'branch', defaultValue: scm.branches[0].name, description: 'Branch')
     choice(name: 'architecture', choices: archsSupported + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
     choice(name: 'jdk', choices: jdksSupported + "all", description: 'Pick JDK versions.')
-    string(name: 'steps', defaultValue: stepsMap.keySet().join(','), description: 'List of enabled stages')
+    string(name: 'enabledSteps', defaultValue: "${stepsMap.keySet().findAll { it != 'jar' }.join(',')}", description: 'List of enabled stages')
   }
   environment {
     javaVersionsSupported = jdksSupported.join(',')
