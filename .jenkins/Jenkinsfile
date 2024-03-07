@@ -148,7 +148,9 @@ pipeline {
   }
   post { 
     always { 
-      generateUnifiedTestReport()
+      if (tasks['tests'].size() > 1) { 
+        generateUnifiedTestReport()
+      }
       sendNotifications()
     }
   }
