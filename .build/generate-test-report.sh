@@ -18,7 +18,7 @@
 [ $DEBUG ] && set -x
 
 # variables, with defaults
-[ "x${CASSANDRA_DIR}" != "x" ] || { CASSANDRA_DIR="$(dirname "$0")/.."; }
+[ "x${CASSANDRA_DIR}" != "x" ] || CASSANDRA_DIR="$(readlink -f $(dirname "$0")/..)"
 
 # pre-conditions
 command -v ant >/dev/null 2>&1 || { echo >&2 "ant needs to be installed"; exit 1; }
@@ -26,5 +26,5 @@ command -v ant >/dev/null 2>&1 || { echo >&2 "ant needs to be installed"; exit 1
 [ -f "${CASSANDRA_DIR}/build.xml" ] || { echo >&2 "${CASSANDRA_DIR}/build.xml must exist"; exit 1; }
 
 # execute
-ant -f "${CASSANDRA_DIR}/build.xml" check # dependency-check # Enable back when fixed
+ANT_OPTS='-Xmx15g' ant -f "${CASSANDRA_DIR}/build.xml" generate-test-report
 exit $?

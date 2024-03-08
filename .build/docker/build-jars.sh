@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,16 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[ $DEBUG ] && set -x
+#
+# Build the jars
 
-# variables, with defaults
-[ "x${CASSANDRA_DIR}" != "x" ] || { CASSANDRA_DIR="$(dirname "$0")/.."; }
-
-# pre-conditions
-command -v ant >/dev/null 2>&1 || { echo >&2 "ant needs to be installed"; exit 1; }
-[ -d "${CASSANDRA_DIR}" ] || { echo >&2 "Directory ${CASSANDRA_DIR} must exist"; exit 1; }
-[ -f "${CASSANDRA_DIR}/build.xml" ] || { echo >&2 "${CASSANDRA_DIR}/build.xml must exist"; exit 1; }
-
-# execute
-ant -f "${CASSANDRA_DIR}/build.xml" check # dependency-check # Enable back when fixed
+$(dirname "$0")/_docker_run.sh bullseye-build.docker build-jars.sh $1
 exit $?
