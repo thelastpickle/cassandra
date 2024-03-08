@@ -25,7 +25,6 @@
 #
 ################################
 
-
 # help
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || [ "$1" == "-h" ]; then
     echo ""
@@ -34,6 +33,8 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || [ "$1" == "-h" ]; then
     echo "        default split_chunk is 1/1"
     exit 1
 fi
+
+[ $DEBUG ] && set -x
 
 # Pass in target to run, defaults to dtest
 DTEST_TARGET="${1:-dtest}"

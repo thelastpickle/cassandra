@@ -17,6 +17,8 @@
 
 # temporary between CASSANDRA-18133 and CASSANDRA-18594
 
+[ $DEBUG ] && set -x
+
 # variables, with defaults
 [ "x${CASSANDRA_DIR}" != "x" ] || CASSANDRA_DIR="$(readlink -f $(dirname "$0")/..)"
 
