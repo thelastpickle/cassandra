@@ -462,7 +462,8 @@ def cleanAgent(job_name) {
 
 def generateTestReports() {
   // built-in on ci-cassandra will be much faster (local transfer for copyArtifacts and archiveArtifacts)
-  def nodeName = isCanonical() ? "built-in" : "cassandra-medium"
+  //def nodeName = isCanonical() ? "built-in" : "cassandra-medium"
+  def nodeName = "controller"
   node(nodeName) {
     cleanWs()
     checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
