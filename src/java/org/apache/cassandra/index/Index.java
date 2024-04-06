@@ -984,10 +984,8 @@ public interface Index
          * The function takes a PartitionIterator of the results from the replicas which has already been collated
          * and reconciled, along with the command being executed. It returns another PartitionIterator containing the results
          * of the transformation (which may be the same as the input if the transformation is a no-op).
-         *
-         * @param command the read command being executed
          */
-        default Function<PartitionIterator, PartitionIterator> postProcessor(ReadCommand command)
+        default Function<PartitionIterator, PartitionIterator> postProcessor()
         {
             return partitions -> partitions;
         }
