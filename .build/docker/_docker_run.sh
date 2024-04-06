@@ -93,17 +93,25 @@ pushd ${cassandra_dir}/.build >/dev/null
 image_tag="$(md5sum docker/${dockerfile} | cut -d' ' -f1)"
 image_name="apache/cassandra-${dockerfile/.docker/}:${image_tag}"
 
+# try docker login to increase dockerhub rate limits
+echo "Attempting 'docker login' to increase dockerhub rate limits"
+timeout -k 5 5 docker login >/dev/null
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
-  # try docker login to increase dockerhub rate limits
-  timeout -k 5 5 docker login >/dev/null
+  echo "Build image not found locally, pulling image ${image_name}..."
   if ! ( docker pull -q ${image_name} >/dev/null 2>/dev/null ) ; then
     # Create build images containing the build tool-chain, Java and an Apache Cassandra git working directory, with retry
+    echo "Building docker image..."
     until docker build -t ${image_name} -f docker/${dockerfile} .  ; do
         echo "docker build failed… trying again in 10s… "
         sleep 10
     done
+    echo "Docker image ${image_name} has been built"
+  else
+    echo "Successfully pulled build image."
   fi
+else
+    echo "Found build image locally."
 fi
 
 # Run build script through docker

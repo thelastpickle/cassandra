@@ -56,18 +56,22 @@
 
 pipeline {
   agent { label 'cassandra-small' }
+  options {
+    // must have: avoids agents waste in idle time on controller bottleneck
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+  }
   parameters {
-    string(name: 'repository', defaultValue: scm.userRemoteConfigs[0].url, description: 'Cassandra Repository')
-    string(name: 'branch', defaultValue: env.BRANCH_NAME, description: 'Branch')
+    string(name: 'repository', defaultValue: params.repository ?: scm.userRemoteConfigs[0].url, description: 'Cassandra Repository')
+    string(name: 'branch', defaultValue: params.branch ?: scm.userRemoteConfigs[0].refspec, description: 'Branch')
 
-    choice(name: 'profile', choices: pipelineProfiles().keySet() as List, description: 'Pick a pipeline profile.')
-    string(name: 'profile_custom_regexp', defaultValue: '', description: 'Regexp for stages when using custom profile. See `testSteps` in Jenkinsfile for list of stages. Example: stress.*|jvm-dtest.*')
+    choice(name: 'profile', choices: pipelineProfileNames(params.profile ?: ''), description: 'Pick a pipeline profile.')
+    string(name: 'profile_custom_regexp', defaultValue: params.profile_custom_regexp ?: '', description: 'Regexp for stages when using custom profile. See `testSteps` in Jenkinsfile for list of stages. Example: stress.*|jvm-dtest.*')
 
     choice(name: 'architecture', choices: archsSupported() + "all", description: 'Pick architecture. The ARM64 is disabled by default at the moment.')
-    string(name: 'jdk', defaultValue: "", description: 'Restrict JDK versions. (e.g. "11", "17", etc)')
+    string(name: 'jdk', defaultValue: params.jdk ?: '', description: 'Restrict JDK versions. (e.g. "11", "17", etc)')
 
-    string(name: 'dtest_repository', defaultValue: 'https://github.com/apache/cassandra-dtest' ,description: 'Cassandra DTest Repository')
-    string(name: 'dtest_branch', defaultValue: 'trunk', description: 'DTest Branch')
+    string(name: 'dtest_repository', defaultValue: params.dtest_repository ?: 'https://github.com/apache/cassandra-dtest', description: 'Cassandra DTest Repository')
+    string(name: 'dtest_branch', defaultValue: params.dtest_branch ?: 'trunk', description: 'DTest Branch')
   }
   stages {
     stage('jar') {
@@ -125,6 +129,13 @@ def pipelineProfiles() {
   ]
 }
 
+def pipelineProfileNames(putFirst) {
+    set = pipelineProfiles().keySet() as List
+    set = set - putFirst
+    set.add(0, putFirst)
+    return set
+}
+
 def tasks() {
   // Steps config
   def buildSteps = [
@@ -152,9 +163,9 @@ def tasks() {
     'long-test': [splits: 8],
     'test-oa': [splits: 8],
     'test-system-keyspace-directory': [splits: 8],
-    'jvm-dtest': [splits: 8],
+    'jvm-dtest': [splits: 12],
     'jvm-dtest-upgrade': [splits: 8],
-    'simulator-dtest': [splits: 1],
+    'simulator-dtest': [splits: 1, size: 'large'],
     'dtest': [splits: 64, size: 'large'],
     'dtest-novnode': [splits: 64, size: 'large'],
     'dtest-latest': [splits: 64, size: 'large'],
@@ -221,7 +232,7 @@ def tasks() {
 
 @NonCPS
 def List getMatrixAxes(Map matrix_axes) {
-  List axes = []
+  def List axes = []
   matrix_axes.each { axis, values ->
     List axisList = []
     values.each { value ->
@@ -233,10 +244,10 @@ def List getMatrixAxes(Map matrix_axes) {
 }
 
 def getStepName(cell, command) {
-  arch = "amd64" == cell.arch ? "" : " ${cell.arch}"
-  python = "cqlsh-test" != cell.step ? "" : " python${cell.python}"
-  cython = "no" == cell.cython ? "" : " cython"
-  split = command.splits > 1 ? " ${cell.split}/${command.splits}" : ""
+  def arch = "amd64" == cell.arch ? "" : " ${cell.arch}"
+  def python = "cqlsh-test" != cell.step ? "" : " python${cell.python}"
+  def cython = "no" == cell.cython ? "" : " cython"
+  def split = command.splits > 1 ? " ${cell.split}/${command.splits}" : ""
   return "${cell.step}${arch} jdk${cell.jdk}${python}${cython}${split}"
 }
 
@@ -322,7 +333,7 @@ def build(command, cell) {
           def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}${cell_suffix}_attempt${attempt}.log"
           def script_vars = "#!/bin/bash \n set -o pipefail ; " // pipe to tee needs pipefail
           script_vars = "${script_vars} m2_dir=\'${WORKSPACE}/build/m2\'"
-          status = sh label: "RUNNING ${cell.step}...", script: "${script_vars} ${build_script} ${cell.jdk} 2>&1 | tee build/${logfile}", returnStatus: true
+          def status = sh label: "RUNNING ${cell.step}...", script: "${script_vars} ${build_script} ${cell.jdk} 2>&1 | tee build/${logfile}", returnStatus: true
           dir("build") {
             sh "xz -f *${logfile}"
             archiveArtifacts artifacts: "${logfile}.xz", fingerprint: true
@@ -367,7 +378,7 @@ def test(command, cell) {
           }
           script_vars = fetchDTestsSource(command, script_vars)
           buildJVMDTestJars(cell, script_vars, logfile)
-          status = sh label: "RUNNING TESTS ${cell.step}...", script: "${script_vars} .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee -a build/${logfile}", returnStatus: true
+          def status = sh label: "RUNNING TESTS ${cell.step}...", script: "${script_vars} .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee -a build/${logfile}", returnStatus: true
           dir("build") {
             sh "xz -f ${logfile}"
             archiveArtifacts artifacts: "${logfile}.xz", fingerprint: true
@@ -463,12 +474,19 @@ def cleanAgent(job_name) {
 /////////////////////////////////////////
 
 def generateTestReports() {
-  // built-in on ci-cassandra will be much faster (local transfer for copyArtifacts and archiveArtifacts)
-  def nodeName = isCanonical() ? "built-in" : "cassandra-medium"
-  node(nodeName) {
+  node("cassandra-medium") {
     cleanWs()
     checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
-    copyArtifacts filter: 'test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/", optional: true
+    if (isCanonical()) {
+      // copyArtifacts takes >4hrs, hack with manual download
+      sh """
+          mkdir -p build/test
+          wget -q ${BUILD_URL}/artifact/test/output/*zip*/output.zip
+          unzip -x -d build/test -q output.zip
+         """
+    } else {
+      copyArtifacts filter: 'test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/", optional: true
+    }
     if (fileExists('build/test/output')) {
       // merge splits for each target's test report, other axes are kept separate
       //   TODO parallelised for loop
@@ -488,12 +506,12 @@ def generateTestReports() {
 
           .build/docker/_docker_run.sh bullseye-build.docker ci/generate-ci-summary.sh || echo "failed generate-ci-summary.sh"
 
-          tar -cf build/results_details.tar -C build/test/ reports && xz -9f build/results_details.tar
+          tar -cf build/results_details.tar -C build/test/ reports && xz -8f build/results_details.tar
           """
 
       dir('build/') {
         archiveArtifacts artifacts: "ci_summary.html,results_details.tar.xz", fingerprint: true
-        copyToNightlies('results_details.tar.xz')
+        copyToNightlies('ci_summary.html,results_details.tar.xz')
       }
     }
   }
@@ -502,6 +520,7 @@ def generateTestReports() {
 def sendNotifications() {
   if (isPostCommit() && isCanonical()) {
     // the following is expected only to work on ci-cassandra.apache.org
+    def changes = '?'
     try {
       script {
         changes = formatChangeLogChanges(currentBuild.changeSets)
