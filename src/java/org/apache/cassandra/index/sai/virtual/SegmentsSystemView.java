@@ -123,7 +123,7 @@ public class SegmentsSystemView extends AbstractVirtualTable
 
     private void forEachIndex(Consumer<ColumnContext> process)
     {
-        for (String ks : Schema.instance.getUserKeyspaces().names())
+        for (String ks : Schema.instance.getUserKeyspaces())
         {
             Keyspace keyspace = Schema.instance.getKeyspaceInstance(ks);
             if (keyspace == null)
