@@ -280,17 +280,6 @@ public interface Index
     public void register(IndexRegistry registry);
 
     /**
-     * Unregister current index when it's removed from system
-     *
-     * @param registry the index registry to register the instance with
-     */
-    default void unregister(IndexRegistry registry)
-    {
-        // for singleton index, the group key is the index itself
-        registry.unregisterIndex(this, new Index.Group.Key(this));
-    }
-
-    /**
      * If the index implementation uses a local table to store its index data, this method should return a
      * handle to it. If not, an empty {@link Optional} should be returned. This exists to support legacy
      * implementations, and should always be empty for indexes not belonging to a {@link SingletonIndexGroup}.
