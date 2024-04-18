@@ -93,9 +93,6 @@ pushd ${cassandra_dir}/.build >/dev/null
 image_tag="$(md5sum docker/${dockerfile} | cut -d' ' -f1)"
 image_name="apache/cassandra-${dockerfile/.docker/}:${image_tag}"
 
-# try docker login to increase dockerhub rate limits
-echo "Attempting 'docker login' to increase dockerhub rate limits"
-timeout -k 5 5 docker login >/dev/null
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
   echo "Build image not found locally, pulling image ${image_name}..."
@@ -111,7 +108,7 @@ if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
     echo "Successfully pulled build image."
   fi
 else
-    echo "Found build image locally."
+  echo "Found build image locally."
 fi
 
 # Run build script through docker
