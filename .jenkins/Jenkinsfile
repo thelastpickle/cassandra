@@ -48,6 +48,8 @@
 //  will be ignored when run on other environments.
 // Note there are also differences when CI is being run pre- or post-commit.
 //
+// When running CI with changes in this file, ensure the "Pipeline script from SCM" scm details match
+//  the brances being tested. These details don't honour the per-build repository and branch parameterisation.
 //
 // Validate/lint this file using the following command
 // `curl -X POST  -F "jenkinsfile=<.jenkins/Jenkinsfile" https://ci-cassandra.apache.org/pipeline-model-converter/validate`
@@ -297,7 +299,7 @@ def isCanonical() {
 }
 
 def isStageEnabled(stage) {
-  return "jar" == stage || pipelineProfiles()[params.profile].contains(stage) || ("custom" == params.profile && stage ==~ params.profile_custom_regexp)
+  return "jar" == stage || pipelineProfiles()[params.profile]?.contains(stage) || ("custom" == params.profile && stage ==~ params.profile_custom_regexp)
 }
 
 def isArchEnabled(arch) {
@@ -322,22 +324,20 @@ def build(command, cell) {
       nodeExclusion = "&&!${NODE_NAME}"
       withEnv(cell.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}") {
-          cleanAgent(cell.step)
-          cleanWs()
           fetchSource(cell.step, cell.arch, cell.jdk)
           sh """
               test -f .jenkins/Jenkinsfile || { echo "Invalid git fork/branch"; exit 1; }
               grep -q "Jenkins CI declaration" .jenkins/Jenkinsfile || { echo "Only Cassandra 5.0+ supported"; exit 1; }
-              """
+             """
+          fetchDockerImages(['almalinux-build', 'bullseye-build', 'centos7-build'])
           def cell_suffix = "_jdk${cell.jdk}_${cell.arch}"
-          def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}${cell_suffix}_attempt${attempt}.log"
+          def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}${cell_suffix}_attempt${attempt}.log.xz"
           def script_vars = "#!/bin/bash \n set -o pipefail ; " // pipe to tee needs pipefail
           script_vars = "${script_vars} m2_dir=\'${WORKSPACE}/build/m2\'"
-          def status = sh label: "RUNNING ${cell.step}...", script: "${script_vars} ${build_script} ${cell.jdk} 2>&1 | tee build/${logfile}", returnStatus: true
+          def status = sh label: "RUNNING ${cell.step}...", script: "${script_vars} ${build_script} ${cell.jdk} 2>&1 | tee >( xz -c > build/${logfile} )", returnStatus: true
           dir("build") {
-            sh "xz -f *${logfile}"
-            archiveArtifacts artifacts: "${logfile}.xz", fingerprint: true
-            copyToNightlies("${logfile}.xz", "${cell.step}/jdk${cell.jdk}/${cell.arch}/")
+            archiveArtifacts artifacts: "${logfile}", fingerprint: true
+            copyToNightlies("${logfile}", "${cell.step}/jdk${cell.jdk}/${cell.arch}/")
           }
           if (0 != status) { error("Stage ${cell.step}${cell_suffix} failed with exit status ${status}") }
           if ("jar" == cell.step) { // TODO only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
@@ -364,11 +364,10 @@ def test(command, cell) {
       nodeExclusion = "&&!${NODE_NAME}"
       withEnv(cell.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}/python-${cell.python}") {
-          cleanAgent(cell.step)
-          cleanWs()
           fetchSource(cell.step, cell.arch, cell.jdk)
+          fetchDockerImages(['ubuntu2004_test'])
           def cell_suffix = "_jdk${cell.jdk}_python_${cell.python}_${cell.cython}_${cell.arch}_${cell.split}_${splits}"
-          def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}${cell_suffix}_attempt${attempt}.log"
+          def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}${cell_suffix}_attempt${attempt}.log.xz"
           // pipe to tee needs pipefail
           def script_vars = "#!/bin/bash \n set -o pipefail ; "
           script_vars = "${script_vars} python_version=\'${cell.python}\'"
@@ -378,11 +377,10 @@ def test(command, cell) {
           }
           script_vars = fetchDTestsSource(command, script_vars)
           buildJVMDTestJars(cell, script_vars, logfile)
-          def status = sh label: "RUNNING TESTS ${cell.step}...", script: "${script_vars} .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee -a build/${logfile}", returnStatus: true
+          def status = sh label: "RUNNING TESTS ${cell.step}...", script: "${script_vars} .build/docker/run-tests.sh ${cell.step} '${cell.split}/${splits}' ${cell.jdk} 2>&1 | tee >( xz -c > build/${logfile} )", returnStatus: true
           dir("build") {
-            sh "xz -f ${logfile}"
-            archiveArtifacts artifacts: "${logfile}.xz", fingerprint: true
-            copyToNightlies("${logfile}.xz", "${cell.step}/${cell.arch}/jdk${cell.jdk}/python${cell.python}/cython_${cell.cython}/" + "split_${cell.split}_${splits}".replace("/", "_"))
+            archiveArtifacts artifacts: "${logfile}", fingerprint: true
+            copyToNightlies("${logfile}", "${cell.step}/${cell.arch}/jdk${cell.jdk}/python${cell.python}/cython_${cell.cython}/" + "split_${cell.split}_${splits}".replace("/", "_"))
           }
           if (0 != status) { error("Stage ${cell.step}${cell_suffix} failed with exit status ${status}") }
           dir("build") {
@@ -405,12 +403,13 @@ def test(command, cell) {
 }
 
 def fetchSource(stage, arch, jdk) {
-    if ("jar" == stage) {
-      checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
-      sh "mkdir -p build/stage-logs"
-    } else {
-      unstash name: "${arch}_${jdk}"
-    }
+  cleanAgent(stage)
+  if ("jar" == stage) {
+    checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+    sh "mkdir -p build/stage-logs"
+  } else {
+    unstash name: "${arch}_${jdk}"
+  }
 }
 
 def fetchDTestsSource(command, script_vars) {
@@ -427,9 +426,23 @@ def buildJVMDTestJars(cell, script_vars, logfile) {
     try {
       unstash name: "jvm_dtests_${cell.arch}_${cell.jdk}"
     } catch (error) {
-      sh label: "RUNNING build_dtest_jars...", script: "${script_vars} .build/docker/run-tests.sh build_dtest_jars ${cell.jdk} 2>&1 | tee build/${logfile}"
+      sh label: "RUNNING build_dtest_jars...", script: "${script_vars} .build/docker/run-tests.sh build_dtest_jars ${cell.jdk} 2>&1 | tee >( xz -c > build/${logfile} )"
       stash name: "jvm_dtests_${cell.arch}_${cell.jdk}", includes: '**/dtest*.jar'
     }
+  }
+}
+
+def fetchDockerImages(dockerfiles) {
+  // prefetch, from apache jfrog, reduces risking dockerhub pull rate limits
+  for (dockerfile in dockerfiles) {
+    sh """#!/bin/bash
+        image_tag="\$(md5sum .build/docker/${dockerfile}.docker | cut -d' ' -f1)"
+        image_name="apache/cassandra-${dockerfile}:\${image_tag}"
+        if ! ( [[ "" != "\$(docker images -q \${image_name} 2>/dev/null)" ]] ) ; then
+          docker pull -q apache.jfrog.io/cassan-docker/\${image_name} &
+        fi
+        wait
+       """
   }
 }
 
@@ -445,13 +458,13 @@ def copyToNightlies(sourceFiles, remoteDirectory='') {
     retry(9) {
       if (attempt > 1) { sleep(60 * attempt) }
       sshPublisher(
-      continueOnError: true, failOnError: false,
-      publishers: [
-        sshPublisherDesc(
-        configName: "Nightlies",
-        transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
-        )
-      ])
+        continueOnError: true, failOnError: false,
+        publishers: [
+          sshPublisherDesc(
+          configName: "Nightlies",
+          transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
+          )
+        ])
     }
     echo "archived to https://nightlies.apache.org/${remotePath}"
   }
@@ -459,14 +472,34 @@ def copyToNightlies(sourceFiles, remoteDirectory='') {
 
 def cleanAgent(job_name) {
   sh "hostname"
+  sh "test -f build.xml && git clean -qxdff -e build/test/jmh-result.json || true"
   if (isCanonical()) {
-    def maxJobHours = 12
-    echo "Cleaning project, and pruning docker for '${job_name}' on ${NODE_NAME}…" ;
-    sh """
-        git clean -qxdff -e build/test/jmh-result.json || true;
-        if pgrep -xa docker || pgrep -af "build/docker" || pgrep -af "cassandra-builds/build-scripts" ; then docker system prune --all --force --filter "until=${maxJobHours}h" || true ; else  docker system prune --force --volumes || true ;  fi;
-      """
+    def agentScriptsUrl = "https://raw.githubusercontent.com/apache/cassandra-builds/trunk/jenkins-dsl/agent_scripts/"
+    cleanAgentDocker(job_name, agentScriptsUrl)
+    logAgentInfo(job_name, agentScriptsUrl)
+    sh 'rm docker_agent_cleaner.sh docker_image_pruner.py agent_report.sh *-disk-usage-stats.txt'
   }
+}
+
+def cleanAgentDocker(job_name, agentScriptsUrl) {
+  // we don't expect any build to have been running for longer than maxBuildHours
+  def maxBuildHours = 12
+  echo "Pruning docker for '${job_name}' on ${NODE_NAME}…" ;
+  sh """#!/bin/bash
+      set +e
+      wget -q ${agentScriptsUrl}/docker_image_pruner.py
+      wget -q ${agentScriptsUrl}//docker_agent_cleaner.sh
+      bash docker_agent_cleaner.sh ${maxBuildHours}
+    """
+}
+
+def logAgentInfo(job_name, agentScriptsUrl) {
+  sh """#!/bin/bash
+      set +e -o pipefail
+      wget -q ${agentScriptsUrl}/agent_report.sh
+      bash -x agent_report.sh | tee -a \$(date +"%Y%m%d%H%M")-disk-usage-stats.txt
+     """
+  copyToNightlies("*-disk-usage-stats.txt", "cassandra/ci-cassandra.apache.org/agents/${NODE_NAME}/disk-usage/")
 }
 
 /////////////////////////////////////////
@@ -475,14 +508,18 @@ def cleanAgent(job_name) {
 
 def generateTestReports() {
   node("cassandra-medium") {
-    cleanWs()
+    cleanAgent("generateTestReports")
     checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+    def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_generateTestReports.log.xz"
+    sh "mkdir -p build/stage-logs"
+    def teeSuffix = "2>&1 | tee >( xz -c > build/${logfile} )"
+    def script_vars = "#!/bin/bash -x \n "
     if (isCanonical()) {
       // copyArtifacts takes >4hrs, hack with manual download
-      sh """
-          mkdir -p build/test
+      sh """${script_vars}
+          ( mkdir -p build/test
           wget -q ${BUILD_URL}/artifact/test/output/*zip*/output.zip
-          unzip -x -d build/test -q output.zip
+          unzip -x -d build/test -q output.zip ) ${teeSuffix}
          """
     } else {
       copyArtifacts filter: 'test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/", optional: true
@@ -491,8 +528,8 @@ def generateTestReports() {
       // merge splits for each target's test report, other axes are kept separate
       //   TODO parallelised for loop
       //   TODO results_details.tar.xz needs to include all logs for failed tests
-      sh """
-          find build/test/output -name *.xml.xz -exec sh -c 'xz -f --decompress {} &' ';' ; wait
+      sh """${script_vars} (
+          find build/test/output -name *.xml.xz -exec sh -c 'xz -f --decompress {} &' ';'  ; wait
 
           for target in \$(ls build/test/output/) ; do
             if test -d build/test/output/\${target} ; then
@@ -506,12 +543,13 @@ def generateTestReports() {
 
           .build/docker/_docker_run.sh bullseye-build.docker ci/generate-ci-summary.sh || echo "failed generate-ci-summary.sh"
 
-          tar -cf build/results_details.tar -C build/test/ reports && xz -8f build/results_details.tar
+          tar -cf build/results_details.tar -C build/test/ reports
+          xz -8f build/results_details.tar ) ${teeSuffix}
           """
 
       dir('build/') {
-        archiveArtifacts artifacts: "ci_summary.html,results_details.tar.xz", fingerprint: true
-        copyToNightlies('ci_summary.html,results_details.tar.xz')
+        archiveArtifacts artifacts: "ci_summary.html,results_details.tar.xz,${logfile}", fingerprint: true
+        copyToNightlies('ci_summary.html,results_details.tar.xz,${logfile}')
       }
     }
   }

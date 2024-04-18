@@ -91,9 +91,6 @@ docker_mounts="-v ${cassandra_dir}:/home/cassandra/cassandra -v "${build_dir}":/
 # HACK hardlinks in overlay are buggy, the following mount prevents hardlinks from being used. ref $TMP_DIR in .build/run-tests.sh
 docker_mounts="${docker_mounts} -v "${build_dir}/tmp":/home/cassandra/cassandra/build/tmp"
 
-# try docker login to increase dockerhub rate limits
-echo "Attempting 'docker login' to increase dockerhub rate limits"
-timeout -k 5 5 docker login >/dev/null 2>/dev/null
 # Look for existing docker image, otherwise build
 if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
   echo "Build image not found locally, pulling image ${image_name}..."
@@ -109,7 +106,7 @@ if ! ( [[ "$(docker images -q ${image_name} 2>/dev/null)" != "" ]] ) ; then
     echo "Successfully pulled build image."
   fi
 else
-    echo "Found build image locally."
+  echo "Found build image locally."
 fi
 
 pushd ${cassandra_dir} >/dev/null
