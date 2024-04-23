@@ -299,7 +299,7 @@ def isCanonical() {
 }
 
 def isStageEnabled(stage) {
-  return "jar" == stage || pipelineProfiles()[params.profile].contains(stage) || ("custom" == params.profile && stage ==~ params.profile_custom_regexp)
+  return "jar" == stage || pipelineProfiles()[params.profile]?.contains(stage) || ("custom" == params.profile && stage ==~ params.profile_custom_regexp)
 }
 
 def isArchEnabled(arch) {
@@ -438,9 +438,10 @@ def fetchDockerImages(dockerfiles) {
     sh """#!/bin/bash
         image_tag="\$(md5sum .build/docker/${dockerfile}.docker | cut -d' ' -f1)"
         image_name="apache/cassandra-${dockerfile}:\${image_tag}"
-        if ! ( [[ "" != \$(docker images -q \${image_name} 2>/dev/null)" ]] ) ; then
-          docker pull -q apache.jfrog.io/cassan-docker/\${image_name} || true
+        if ! ( [[ "" != "\$(docker images -q \${image_name} 2>/dev/null)" ]] ) ; then
+          docker pull -q apache.jfrog.io/cassan-docker/\${image_name} &
         fi
+        wait
        """
   }
 }
@@ -457,13 +458,13 @@ def copyToNightlies(sourceFiles, remoteDirectory='') {
     retry(9) {
       if (attempt > 1) { sleep(60 * attempt) }
       sshPublisher(
-      continueOnError: true, failOnError: false,
-      publishers: [
-        sshPublisherDesc(
-        configName: "Nightlies",
-        transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
-        )
-      ])
+        continueOnError: true, failOnError: false,
+        publishers: [
+          sshPublisherDesc(
+          configName: "Nightlies",
+          transfers: [ sshTransfer( sourceFiles: sourceFiles, remoteDirectory: remotePath) ]
+          )
+        ])
     }
     echo "archived to https://nightlies.apache.org/${remotePath}"
   }
@@ -471,25 +472,34 @@ def copyToNightlies(sourceFiles, remoteDirectory='') {
 
 def cleanAgent(job_name) {
   sh "hostname"
-  sh "git clean -qxdff -e build/test/jmh-result.json || true"
+  sh "test -f build.xml && git clean -qxdff -e build/test/jmh-result.json || true"
   if (isCanonical()) {
-    // we don't expect any build to have been running for longer than maxBuildHours
-    def maxBuildHours = 12
     def agentScriptsUrl = "https://raw.githubusercontent.com/thelastpickle/cassandra-builds/mck/19558/jenkins-dsl/agent_scripts/"
-    echo "Pruning docker for '${job_name}' on ${NODE_NAME}…" ;
-    sh """#!/bin/bash +e
-        wget -q ${agentScriptsUrl}/docker_image_pruner.py
-        wget -q ${agentScriptsUrl}//docker_agent_cleaner.sh
-        bash docker_agent_cleaner.sh ${maxBuildHours}
-      """
-    // also log agent info
-    sh """#!/bin/bash +e -o pipefail
-        wget -q ${agentScriptsUrl}/agent_report.sh
-        bash agent_report.sh | tee -a \$(date +"%Y%m%d%H%M")-disk-usage-stats.txt
-       """
-    copyToNightlies("*-disk-usage-stats.txt", "cassandra/ci-cassandra.apache.org/agents/${NODE_NAME}/disk-usage/")
+    cleanAgentDocker(job_name, agentScriptsUrl)
+    logAgentInfo(job_name, agentScriptsUrl)
     sh 'rm docker_agent_cleaner.sh docker_image_pruner.py agent_report.sh *-disk-usage-stats.txt'
   }
+}
+
+def cleanAgentDocker(job_name, agentScriptsUrl) {
+  // we don't expect any build to have been running for longer than maxBuildHours
+  def maxBuildHours = 12
+  echo "Pruning docker for '${job_name}' on ${NODE_NAME}…" ;
+  sh """#!/bin/bash
+      set +e
+      wget -q ${agentScriptsUrl}/docker_image_pruner.py
+      wget -q ${agentScriptsUrl}//docker_agent_cleaner.sh
+      bash docker_agent_cleaner.sh ${maxBuildHours}
+    """
+}
+
+def logAgentInfo(job_name, agentScriptsUrl) {
+  sh """#!/bin/bash
+      set +e -o pipefail
+      wget -q ${agentScriptsUrl}/agent_report.sh
+      bash -x agent_report.sh | tee -a \$(date +"%Y%m%d%H%M")-disk-usage-stats.txt
+     """
+  copyToNightlies("*-disk-usage-stats.txt", "cassandra/ci-cassandra.apache.org/agents/${NODE_NAME}/disk-usage/")
 }
 
 /////////////////////////////////////////
@@ -498,7 +508,7 @@ def cleanAgent(job_name) {
 
 def generateTestReports() {
   node("cassandra-medium") {
-    cleanAgent()
+    cleanAgent("generateTestReports")
     checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
     def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_generateTestReports.log.xz"
     sh "mkdir -p build/stage-logs"
