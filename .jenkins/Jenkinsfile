@@ -475,7 +475,7 @@ def cleanAgent(job_name) {
   if (isCanonical()) {
     // we don't expect any build to have been running for longer than maxBuildHours
     def maxBuildHours = 12
-    def agentScriptsUrl = "https://raw.githubusercontent.com/apache/cassandra-builds/trunk/jenkins-dsl/agent_scripts/"
+    def agentScriptsUrl = "https://raw.githubusercontent.com/thelastpickle/cassandra-builds/mck/19558/jenkins-dsl/agent_scripts/"
     echo "Pruning docker for '${job_name}' on ${NODE_NAME}…" ;
     sh """#!/bin/bash +e
         wget -q ${agentScriptsUrl}/docker_image_pruner.py
