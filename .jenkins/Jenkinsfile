@@ -405,7 +405,7 @@ def test(command, cell) {
 def fetchSource(stage, arch, jdk) {
   cleanAgent(stage)
   if ("jar" == stage) {
-    checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
+    checkout changelog: false, scm: scmGit(branches: [[name: params.branch ?: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
     sh "mkdir -p build/stage-logs"
   } else {
     unstash name: "${arch}_${jdk}"
@@ -414,7 +414,7 @@ def fetchSource(stage, arch, jdk) {
 
 def fetchDTestsSource(command, script_vars) {
   if (command.containsKey('python-dtest')) {
-    checkout changelog: false, poll: false, scm: scmGit(branches: [[name: params.dtest_branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${WORKSPACE}/build/cassandra-dtest"]], userRemoteConfigs: [[url: params.dtest_repository]])
+    checkout changelog: false, poll: false, scm: scmGit(branches: [[name: params.dtest_branch ?: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true), [$class: 'RelativeTargetDirectory', relativeTargetDir: "${WORKSPACE}/build/cassandra-dtest"]], userRemoteConfigs: [[url: params.dtest_repository]])
     sh "test -f build/cassandra-dtest/requirements.txt || { echo 'Invalid cassandra-dtest fork/branch'; exit 1; }"
     return "${script_vars} cassandra_dtest_dir='${WORKSPACE}/build/cassandra-dtest'"
   }
@@ -434,16 +434,19 @@ def buildJVMDTestJars(cell, script_vars, logfile) {
 
 def fetchDockerImages(dockerfiles) {
   // prefetch, from apache jfrog, reduces risking dockerhub pull rate limits
-  for (dockerfile in dockerfiles) {
-    sh """#!/bin/bash
-        image_tag="\$(md5sum .build/docker/${dockerfile}.docker | cut -d' ' -f1)"
-        image_name="apache/cassandra-${dockerfile}:\${image_tag}"
+  // also prefetch alpine:latest as its used as a utility in the scripts
+  def dockerfilesVar = dockerfiles.join(' ')
+  sh """#!/bin/bash
+      for dockerfile in ${dockerfilesVar} ; do
+        image_tag="\$(md5sum .build/docker/\${dockerfile}.docker | cut -d' ' -f1)"
+        image_name="apache/cassandra-\${dockerfile}:\${image_tag}"
         if ! ( [[ "" != "\$(docker images -q \${image_name} 2>/dev/null)" ]] ) ; then
           docker pull -q apache.jfrog.io/cassan-docker/\${image_name} &
         fi
-        wait
-       """
-  }
+      done
+      docker pull -q apache.jfrog.io/cassan-docker/alpine:3.19.1 &
+      wait
+     """
 }
 
 def getNodeLabel(command, cell) {
