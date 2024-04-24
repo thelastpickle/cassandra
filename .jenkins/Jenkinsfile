@@ -341,7 +341,7 @@ def build(command, cell) {
           }
           if (0 != status) { error("Stage ${cell.step}${cell_suffix} failed with exit status ${status}") }
           if ("jar" == cell.step) { // TODO only stash the project built files. all dependency libraries are restored from the local maven repo using `ant resolver-dist-lib`
-            stash name: "${cell.arch}_${cell.jdk}", useDefaultExcludes: false //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
+            stash name: "${cell.arch}_${cell.jdk}" //, includes: '**/*.jar' //, includes: "*.jar,classes/**,test/classes/**,tools/**"
           }
           dir("build") {
             copyToNightlies("${command.toCopy}", "${cell.step}/jdk${cell.jdk}/${cell.arch}/")
@@ -475,13 +475,12 @@ def copyToNightlies(sourceFiles, remoteDirectory='') {
 
 def cleanAgent(job_name) {
   sh "hostname"
-  sh "test -f build.xml && git clean -qxdff -e build/test/jmh-result.json || true"
   if (isCanonical()) {
     def agentScriptsUrl = "https://raw.githubusercontent.com/apache/cassandra-builds/trunk/jenkins-dsl/agent_scripts/"
     cleanAgentDocker(job_name, agentScriptsUrl)
     logAgentInfo(job_name, agentScriptsUrl)
-    sh 'rm docker_agent_cleaner.sh docker_image_pruner.py agent_report.sh *-disk-usage-stats.txt'
   }
+  cleanWs()
 }
 
 def cleanAgentDocker(job_name, agentScriptsUrl) {
