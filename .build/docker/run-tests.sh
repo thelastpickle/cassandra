@@ -120,11 +120,11 @@ if [[ ! -z ${JENKINS_URL+x} ]] && [[ ! -z ${NODE_NAME+x} ]] ; then
 fi
 
 # find host's available cores and mem
-cores=$(docker run --rm alpine nproc --all) || { error 1 "Unable to check available CPU cores"; }
+cores=$(docker run --rm alpine:3.19.1 nproc --all) || { error 1 "Unable to check available CPU cores"; }
 
 case $(uname) in
     "Linux")
-        mem=$(docker run --rm alpine free -b | grep Mem: | awk '{print $2}') || { error 1 "Unable to check available memory"; }
+        mem=$(docker run --rm alpine:3.19.1 free -b | grep Mem: | awk '{print $2}') || { error 1 "Unable to check available memory"; }
         ;;
     "Darwin")
         mem=$(sysctl -n hw.memsize) || { error 1 "Unable to check available memory"; }
