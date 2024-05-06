@@ -40,18 +40,19 @@ public class RandomAccessReader extends RebufferingInputStream implements FileDa
     private long markedPointer;
 
     final Rebufferer rebufferer;
-    private BufferHolder bufferHolder = Rebufferer.EMPTY;
     private final ByteOrder order;
     private ByteBuffer temporaryBuffer;
+    private BufferHolder bufferHolder;
 
     /**
      * Only created through Builder
      *
      * @param rebufferer Rebufferer to use
      */
-    RandomAccessReader(Rebufferer rebufferer, ByteOrder order)
+    RandomAccessReader(Rebufferer rebufferer, ByteOrder order, BufferHolder bufferHolder)
     {
-        super(Rebufferer.EMPTY.buffer(), false);
+        super(bufferHolder.buffer(), false);
+        this.bufferHolder = bufferHolder;
         this.rebufferer = rebufferer;
         this.order = order;
     }
@@ -70,11 +71,19 @@ public class RandomAccessReader extends RebufferingInputStream implements FileDa
     private void reBufferAt(long position)
     {
         bufferHolder.release();
-        bufferHolder = Rebufferer.EMPTY; // prevents double release if the call below fails
-        bufferHolder = rebufferer.rebuffer(position);
-        buffer = bufferHolder.buffer();
-        buffer.position(Ints.checkedCast(position - bufferHolder.offset()));
-        buffer.order(order);
+        if (position == length())
+        {
+            bufferHolder = Rebufferer.emptyBufferHolderAt(position);
+            buffer = bufferHolder.buffer();
+        }
+        else
+        {
+            bufferHolder = Rebufferer.EMPTY; // prevents double release if the call below fails
+            bufferHolder = rebufferer.rebuffer(position);
+            buffer = bufferHolder.buffer();
+            buffer.position(Ints.checkedCast(position - bufferHolder.offset()));
+            buffer.order(order);
+        }
     }
 
     public ByteOrder order()
@@ -439,7 +448,7 @@ public class RandomAccessReader extends RebufferingInputStream implements FileDa
     {
         RandomAccessReaderWithOwnChannel(Rebufferer rebufferer)
         {
-            super(rebufferer, ByteOrder.BIG_ENDIAN);
+            super(rebufferer, ByteOrder.BIG_ENDIAN, Rebufferer.EMPTY);
         }
 
         @Override
