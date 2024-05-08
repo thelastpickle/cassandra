@@ -31,21 +31,21 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import org.apache.cassandra.cql3.UntypedResultSet;
-import org.apache.cassandra.db.ColumnFamilyStore;
-import org.apache.cassandra.db.compaction.CompactionManager;
-import org.apache.cassandra.utils.FBUtilities;
 
-import static org.apache.cassandra.db.compaction.CompactionManager.getDefaultGcBefore;
 import static org.junit.Assert.assertTrue;
 
 public class VectorSiftSmallTest extends VectorTester
 {
     private static final String DATASET = "siftsmall"; // change to "sift" for larger dataset. requires manual download
+
+    @Override
+    public void setup() throws Throwable
+    {
+        super.setup();
+    }
 
     @Test
     public void testSiftSmall() throws Throwable
@@ -55,8 +55,8 @@ public class VectorSiftSmallTest extends VectorTester
         var groundTruth = readIvecs(String.format("test/data/%s/%s_groundtruth.ivecs", DATASET, DATASET));
 
         // Create table and index
-        createTable(KEYSPACE, "CREATE TABLE %s (pk int, val vector<float, 128>, PRIMARY KEY(pk))", "sift_vanilla_test");
-        createIndex("CREATE CUSTOM INDEX ON %s(val) USING 'StorageAttachedIndex'");
+        createTable(KEYSPACE, "CREATE TABLE %s (pk int, val vector<float, 128>, PRIMARY KEY(pk))");
+        createIndex("CREATE CUSTOM INDEX ON %s(val) USING 'StorageAttachedIndex' WITH OPTIONS = {'similarity_function' : 'euclidean'}");
         waitForIndexQueryable();
 
         insertVectors(baseVectors, 0);
@@ -76,8 +76,8 @@ public class VectorSiftSmallTest extends VectorTester
         var groundTruth = readIvecs(String.format("test/data/%s/%s_groundtruth.ivecs", DATASET, DATASET));
 
         // Create table and index
-        createTable(KEYSPACE, "CREATE TABLE %s (pk int, val vector<float, 128>, PRIMARY KEY(pk))", "compaction_test");
-        createIndex("CREATE CUSTOM INDEX ON %s(val) USING 'StorageAttachedIndex'");
+        createTable(KEYSPACE, "CREATE TABLE %s (pk int, val vector<float, 128>, PRIMARY KEY(pk))");
+        createIndex("CREATE CUSTOM INDEX ON %s(val) USING 'StorageAttachedIndex' WITH OPTIONS = {'similarity_function' : 'euclidean'}");
         waitForIndexQueryable();
 
         // we're going to compact manually, so disable background compactions to avoid interference
