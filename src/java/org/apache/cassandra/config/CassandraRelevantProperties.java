@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.metrics.TableMetrics;
+import org.apache.cassandra.service.reads.range.EndpointGroupingRangeCommandIterator;
 
 /** A class that extracts system properties for the cassandra node it runs within. */
 public enum CassandraRelevantProperties
@@ -307,6 +308,9 @@ public enum CassandraRelevantProperties
     /** Set this property to true in order to switch to micrometer metrics */
     USE_MICROMETER("cassandra.use_micrometer_metrics", "false"),
 
+    /** Set this property to true in order to use DSE-like histogram bucket boundaries and behaviour */
+    USE_DSE_COMPATIBLE_HISTOGRAM_BOUNDARIES("cassandra.use_dse_compatible_histogram_boundaries", "false"),
+
     /** Which class to use for coordinator client request metrics */
     CUSTOM_CLIENT_REQUEST_METRICS_PROVIDER_PROPERTY("cassandra.custom_client_request_metrics_provider_class"),
 
@@ -420,8 +424,16 @@ public enum CassandraRelevantProperties
      * {@link org.apache.cassandra.net.Verb#FAILURE_RSP}.
      */
     CUSTOM_RESPONSE_VERB_HANDLER_PROVIDER("cassandra.custom_response_verb_handler_provider_class"),
+    VALIDATE_MAX_TERM_SIZE_AT_COORDINATOR("cassandra.sai.validate_max_term_size_at_coordinator"),
     CUSTOM_KEYSPACES_FILTER_PROVIDER("cassandra.custom_keyspaces_filter_provider_class"),
-    CUSTOM_READ_OBSERVER_FACTORY("cassandra.custom_read_observer_factory_class");
+
+    LWT_LOCKS_PER_THREAD("cassandra.lwt_locks_per_thread", "1024"),
+
+    CUSTOM_READ_OBSERVER_FACTORY("cassandra.custom_read_observer_factory_class"),
+    /**
+     * Whether to enable the use of {@link EndpointGroupingRangeCommandIterator}
+     */
+    RANGE_READ_ENDPOINT_GROUPING_ENABLED("cassandra.range_read_endpoint_grouping_enabled", "true");
 
     CassandraRelevantProperties(String key, String defaultVal)
     {

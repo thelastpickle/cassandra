@@ -33,6 +33,7 @@ import org.apache.cassandra.index.sai.disk.format.IndexComponent;
 import org.apache.cassandra.index.sai.disk.format.IndexDescriptor;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
+import org.apache.cassandra.io.sstable.metadata.ZeroCopyMetadata;
 import org.apache.cassandra.io.util.File;
 import org.apache.cassandra.io.util.FileHandle;
 import org.apache.cassandra.io.util.PathUtils;
@@ -40,7 +41,6 @@ import org.apache.cassandra.schema.KeyspaceMetadata;
 import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.INativeLibrary;
-import org.apache.cassandra.utils.NativeLibrary;
 
 import static org.apache.cassandra.config.CassandraRelevantProperties.CUSTOM_STORAGE_PROVIDER;
 
@@ -138,6 +138,20 @@ public interface StorageProvider
      *   configured as appropriate.
      */
     FileHandle.Builder fileHandleBuilderFor(Descriptor descriptor, Component component);
+
+    /**
+     * Creates a new {@link FileHandle.Builder} for the given sstable component.
+     * <p>
+     * The returned builder will be configured with the appropriate "access mode" (mmap or not), and the "chunk cache"
+     * will have been set if appropriate.
+     *
+     * @param descriptor descriptor for the sstable whose handler is built.
+     * @param component sstable component for which to build the handler.
+     * @param zeroCopyMetadata zero copy metadata for the sstable
+     * @return a new {@link FileHandle.Builder} for the provided sstable component with access mode and chunk cache
+     *   configured as appropriate.
+     */
+    FileHandle.Builder fileHandleBuilderFor(Descriptor descriptor, Component component, ZeroCopyMetadata zeroCopyMetadata);
 
     /**
      * Creates a new {@link FileHandle.Builder} for the given SAI component (for index with per-sstable files).
@@ -243,6 +257,16 @@ public interface StorageProvider
             return new FileHandle.Builder(descriptor.fileFor(component))
                    .mmapped(accessMode(component) == Config.DiskAccessMode.mmap)
                    .withChunkCache(ChunkCache.instance);
+        }
+
+        @Override
+        @SuppressWarnings("resource")
+        public FileHandle.Builder fileHandleBuilderFor(Descriptor descriptor, Component component, ZeroCopyMetadata zeroCopyMetadata)
+        {
+            return new FileHandle.Builder(descriptor.fileFor(Component.DATA))
+                   .mmapped(DatabaseDescriptor.getDiskAccessMode() == Config.DiskAccessMode.mmap)
+                   .withChunkCache(ChunkCache.instance)
+                   .slice(zeroCopyMetadata);
         }
 
         @Override
