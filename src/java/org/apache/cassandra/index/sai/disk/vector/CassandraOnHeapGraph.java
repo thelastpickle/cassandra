@@ -21,6 +21,7 @@ package org.apache.cassandra.index.sai.disk.vector;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -357,8 +358,10 @@ public class CassandraOnHeapGraph<T> implements Accountable
         long termsOffset = SAICodecUtils.headerSize();
         if (indexFile.exists())
             termsOffset += indexFile.length();
-        try (var pqOutput = IndexFileUtils.instance.openOutput(descriptor.fileFor(IndexComponent.PQ, context), true);
-             var postingsOutput = IndexFileUtils.instance.openOutput(descriptor.fileFor(IndexComponent.POSTING_LISTS, context), true);
+        var pqOrder = descriptor.getVersion(context).onDiskFormat().byteOrderFor(IndexComponent.PQ, context);
+        var postingsOrder = descriptor.getVersion(context).onDiskFormat().byteOrderFor(IndexComponent.POSTING_LISTS, context);
+        try (var pqOutput = IndexFileUtils.instance.openOutput(descriptor.fileFor(IndexComponent.PQ, context), pqOrder, true);
+             var postingsOutput = IndexFileUtils.instance.openOutput(descriptor.fileFor(IndexComponent.POSTING_LISTS, context), postingsOrder, true);
              var indexWriter = new OnDiskGraphIndexWriter.Builder(builder.getGraph(), indexFile.toPath())
                                .withVersion(JVECTOR_2_VERSION) // always write old-version format since we're not using the new features
                                .withMap(finalOrdinalMap)

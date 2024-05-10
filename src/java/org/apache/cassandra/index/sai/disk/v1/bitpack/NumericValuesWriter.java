@@ -19,12 +19,13 @@ package org.apache.cassandra.index.sai.disk.v1.bitpack;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteOrder;
 
 import org.apache.cassandra.index.sai.disk.format.IndexComponent;
 import org.apache.cassandra.index.sai.disk.format.IndexDescriptor;
+import org.apache.cassandra.index.sai.disk.io.IndexOutput;
 import org.apache.cassandra.index.sai.disk.v1.MetadataWriter;
 import org.apache.cassandra.index.sai.utils.SAICodecUtils;
-import org.apache.lucene.store.IndexOutput;
 
 
 public class NumericValuesWriter implements Closeable
