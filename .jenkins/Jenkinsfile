@@ -255,8 +255,18 @@ def getStepName(cell, command) {
 
 def getJarTasks() {
     Map jars = tasks()['jars']
+    assertConfiguration()
     assertJarTasks(jars)
     return jars
+}
+
+def assertConfiguration() {
+  if ("custom" == params.profile && !params.profile_custom_regexp?.trim()) {
+    error("Custom profile specified but no custom profile regexp provided: profile ${params.profile}, profile_custom_regexp ${params.profile_custom_regexp}")
+  }
+  if (params.profile_custom_regexp?.trim() && "custom" != params.profile) {
+    error("Custom profile regexp specified but custom profile not chosen: profile ${params.profile}, profile_custom_regexp ${params.profile_custom_regexp}")
+  }
 }
 
 def assertJarTasks(jars) {
@@ -325,10 +335,6 @@ def build(command, cell) {
       withEnv(cell.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}") {
           fetchSource(cell.step, cell.arch, cell.jdk)
-          sh """
-              test -f .jenkins/Jenkinsfile || { echo "Invalid git fork/branch"; exit 1; }
-              grep -q "Jenkins CI declaration" .jenkins/Jenkinsfile || { echo "Only Cassandra 5.0+ supported"; exit 1; }
-             """
           fetchDockerImages(['almalinux-build', 'bullseye-build', 'centos7-build'])
           def cell_suffix = "_jdk${cell.jdk}_${cell.arch}"
           def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_${cell.step}${cell_suffix}_attempt${attempt}.log.xz"
@@ -406,7 +412,11 @@ def fetchSource(stage, arch, jdk) {
   cleanAgent(stage)
   if ("jar" == stage) {
     checkout changelog: false, scm: scmGit(branches: [[name: params.branch ?: 'trunk']], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
-    sh "mkdir -p build/stage-logs"
+    sh """
+        test -f .jenkins/Jenkinsfile || { echo "Invalid git fork/branch"; exit 1; }
+        grep -q "Jenkins CI declaration" .jenkins/Jenkinsfile || { echo "Only Cassandra 5.0+ supported"; exit 1; }
+        mkdir -p build/stage-logs
+       """
   } else {
     unstash name: "${arch}_${jdk}"
   }
