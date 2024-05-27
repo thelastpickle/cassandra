@@ -418,6 +418,26 @@ public enum CassandraRelevantProperties
     USE_PARALLEL_INDEX_READ("cassandra.index_read.parallel", "true"),
     PARALLEL_INDEX_READ_NUM_THREADS("cassandra.index_read.parallel_thread_num"),
 
+    // bloom filter lazy loading
+    /**
+     * true if non-local table's bloom filter should be deserialized on read instead of when opening sstable
+     */
+    BLOOM_FILTER_LAZY_LOADING("cassandra.bloom_filter_lazy_loading", "false"),
+
+    /**
+     * sstable primary index hits per second to determine if a sstable is hot. 0 means BF should be loaded immediately on read.
+     *
+     * Note that when WINDOW <= 0, this is used as absolute primary index access count.
+     */
+    BLOOM_FILTER_LAZY_LOADING_THRESHOLD("cassandra.bloom_filter_lazy_loading.threshold", "0"),
+
+    /**
+     * Window of time by minute, available: 1 (default), 5, 15, 120.
+     *
+     * Note that if <= 0 then we use threshold as the absolute count
+     */
+    BLOOM_FILTER_LAZY_LOADING_WINDOW("cassandra.bloom_filter_lazy_loading.window", "1"),
+
     // Allows skipping advising the OS to free cached pages associated commitlog flushing
     COMMITLOG_SKIP_FILE_ADVICE("cassandra.commitlog.skip_file_advice"),
 

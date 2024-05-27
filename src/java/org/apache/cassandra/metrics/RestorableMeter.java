@@ -19,6 +19,7 @@
 package org.apache.cassandra.metrics;
 
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -26,7 +27,7 @@ import static java.lang.Math.exp;
 import com.codahale.metrics.Clock;
 
 /**
- * A meter metric which measures mean throughput as well as fifteen-minute and two-hour
+ * A meter metric which measures mean throughput as well as one-minute, five-minute, fifteen-minute and two-hour
  * exponentially-weighted moving average throughputs.
  *
  * This is based heavily on the Meter and EWMA classes from codahale/yammer metrics.
@@ -35,9 +36,13 @@ import com.codahale.metrics.Clock;
  */
 public class RestorableMeter
 {
-    private static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);
+    public static final Set<Integer> AVAILABLE_WINDOWS = Set.of(1, 5, 15, 120);
+
+    public static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);
     private static final double NANOS_PER_SECOND = TimeUnit.SECONDS.toNanos(1);
 
+    private final RestorableEWMA m1Rate;
+    private final RestorableEWMA m5Rate;
     private final RestorableEWMA m15Rate;
     private final RestorableEWMA m120Rate;
 
@@ -51,6 +56,8 @@ public class RestorableMeter
      */
     public RestorableMeter()
     {
+        this.m1Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(1));
+        this.m5Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(5));
         this.m15Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(15));
         this.m120Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(120));
         this.startTime = this.clock.getTick();
@@ -59,11 +66,16 @@ public class RestorableMeter
 
     /**
      * Restores a RestorableMeter from the last seen 15m and 2h rates.
+     *
      * @param lastM15Rate the last-seen 15m rate, in terms of events per second
      * @param lastM120Rate the last seen 2h rate, in terms of events per second
      */
     public RestorableMeter(double lastM15Rate, double lastM120Rate)
     {
+        // note: CNDB always restart from clean state without system table data
+        this.m1Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(1));
+        this.m5Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(5));
+
         this.m15Rate = new RestorableEWMA(lastM15Rate, TimeUnit.MINUTES.toSeconds(15));
         this.m120Rate = new RestorableEWMA(lastM120Rate, TimeUnit.MINUTES.toSeconds(120));
         this.startTime = this.clock.getTick();
@@ -86,6 +98,8 @@ public class RestorableMeter
                 final long requiredTicks = age / TICK_INTERVAL;
                 for (long i = 0; i < requiredTicks; i++)
                 {
+                    m1Rate.tick();
+                    m5Rate.tick();
                     m15Rate.tick();
                     m120Rate.tick();
                 }
@@ -110,8 +124,28 @@ public class RestorableMeter
     {
         tickIfNecessary();
         count.addAndGet(n);
+        m1Rate.update(n);
+        m5Rate.update(n);
         m15Rate.update(n);
         m120Rate.update(n);
+    }
+
+    /**
+     * Returns the 1-minute rate in terms of events per second.  This DOES NOT carry the previous rate when restored.
+     */
+    public double oneMinuteRate()
+    {
+        tickIfNecessary();
+        return m1Rate.rate();
+    }
+
+    /**
+     * Returns the 5-minute rate in terms of events per second.  This DOES NOT carry the previous rate when restored.
+     */
+    public double fiveMinuteRate()
+    {
+        tickIfNecessary();
+        return m5Rate.rate();
     }
 
     /**
@@ -130,6 +164,22 @@ public class RestorableMeter
     {
         tickIfNecessary();
         return m120Rate.rate();
+    }
+
+    /**
+     * @param window window of time in minutes
+     * @return rate in terms of events per second with given window.
+     */
+    public double rate(int window)
+    {
+        switch (window)
+        {
+            case 1   : return oneMinuteRate();
+            case 5   : return fiveMinuteRate();
+            case 15  : return fifteenMinuteRate();
+            case 120 : return twoHourRate();
+            default  : throw new IllegalArgumentException(String.format("Found invalid window=%s, available windows: %s", window, AVAILABLE_WINDOWS));
+        }
     }
 
     /**
