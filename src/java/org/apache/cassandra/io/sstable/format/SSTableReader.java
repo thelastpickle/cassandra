@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -268,7 +269,9 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     // the case where the sstable does not contain the partition the query was looking for.
     // we use a restorable meter to gain access to the moving averages, we don't
     // really restore it from disk
-    private final RestorableMeter partitionIndexReadMeter = new RestorableMeter();
+    private final Optional<RestorableMeter> partitionIndexReadMeter = BloomFilter.lazyLoading()
+                                                                      ? Optional.of(new RestorableMeter())
+                                                                      : Optional.empty();
 
     protected volatile IFilter bf;
     private final AtomicBoolean bfDeserializationStarted = new AtomicBoolean(false);
@@ -1163,9 +1166,10 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     }
 
     @VisibleForTesting
+    @Nullable
     public RestorableMeter getPartitionIndexReadMeter()
     {
-        return partitionIndexReadMeter;
+        return partitionIndexReadMeter.orElse(null);
     }
 
     /**
@@ -1548,7 +1552,7 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
         if (!bloomFilterLazyLoading || bf != FilterFactory.AlwaysPresentForLazyLoading)
             return false;
 
-        Preconditions.checkNotNull(partitionIndexReadMeter, "Read index meter should have been available");
+        Preconditions.checkState(partitionIndexReadMeter.isPresent(), "Read index meter should have been available");
 
         boolean loadBloomFilter = false;
 
@@ -1556,10 +1560,10 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
         if (bloomFilterLazyLoadingThreshold == 0)
             loadBloomFilter = true;
             // otherwise, if window is <= 0 we use the threshold as an absolute count
-        else if (bloomFilterLazyLoadingWindow <= 0 && partitionIndexReadMeter.count() >= bloomFilterLazyLoadingThreshold)
+        else if (bloomFilterLazyLoadingWindow <= 0 && partitionIndexReadMeter.get().count() >= bloomFilterLazyLoadingThreshold)
             loadBloomFilter = true;
             // otherwise we look at the count in the specified window
-        else if (bloomFilterLazyLoadingWindow > 0 && partitionIndexReadMeter.rate(bloomFilterLazyLoadingWindow) >= bloomFilterLazyLoadingThreshold)
+        else if (bloomFilterLazyLoadingWindow > 0 && partitionIndexReadMeter.get().rate(bloomFilterLazyLoadingWindow) >= bloomFilterLazyLoadingThreshold)
             loadBloomFilter = true;
 
         if (!loadBloomFilter)
@@ -2259,8 +2263,7 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
      */
     public void incrementIndexReadCount()
     {
-        if (partitionIndexReadMeter != null)
-            partitionIndexReadMeter.mark();
+        partitionIndexReadMeter.ifPresent(RestorableMeter::mark);
     }
 
     public EncodingStats stats()
