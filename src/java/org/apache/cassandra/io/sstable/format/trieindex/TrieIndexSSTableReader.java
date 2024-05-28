@@ -345,7 +345,7 @@ public class TrieIndexSSTableReader extends SSTableReader
             return null;
         }
 
-        listener.onSSTableIndexAccessed(this);
+        listener.onSSTablePartitionIndexAccessed(this);
 
         try (PartitionIndex.Reader reader = partitionIndex.openReader())
         {

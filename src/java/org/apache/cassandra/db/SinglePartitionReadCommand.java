@@ -1227,7 +1227,7 @@ public class SinglePartitionReadCommand extends ReadCommand implements SinglePar
         private int mergedSSTables;
 
         @Override
-        public void onSSTableIndexAccessed(SSTableReader sstable)
+        public void onSSTablePartitionIndexAccessed(SSTableReader sstable)
         {
             sstable.incrementIndexReadCount();
         }

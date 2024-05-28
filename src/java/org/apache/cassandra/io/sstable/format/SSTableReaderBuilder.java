@@ -225,7 +225,7 @@ public abstract class SSTableReaderBuilder
     {
         if (BloomFilter.lazyLoading() && !SchemaConstants.isLocalSystemKeyspace(metadata.keyspace))
         {
-            logger.debug("postpone bloom filter deserialization for {}", file);
+            logger.debug("postponing bloom filter deserialization for {}", file);
             return FilterFactory.AlwaysPresentForLazyLoading;
         }
 

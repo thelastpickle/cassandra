@@ -214,9 +214,9 @@ public class LazyBloomFilterTest
                 break;
         }
 
-        assertThat(sstable.getReadIndexMeter().count()).isGreaterThan(0);
+        assertThat(sstable.getPartitionIndexReadMeter().count()).isGreaterThan(0);
         if (window > 0)
-            assertThat(sstable.getReadIndexMeter().rate(window)).isGreaterThan(threshold);
+            assertThat(sstable.getPartitionIndexReadMeter().rate(window)).isGreaterThan(threshold);
 
         assertThat(sstable.getBloomFilter()).isNotInstanceOf(AlwaysPresentFilter.class);
         assertThat(sstable.getBloomFilter().offHeapSize()).isGreaterThan(0);

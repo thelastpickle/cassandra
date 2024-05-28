@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -64,7 +63,6 @@ import org.apache.cassandra.concurrent.DebuggableThreadPoolExecutor;
 import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.apache.cassandra.concurrent.ScheduledExecutors;
 import org.apache.cassandra.concurrent.Stage;
-import org.apache.cassandra.config.CassandraRelevantProperties;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.Clustering;
 import org.apache.cassandra.db.ClusteringBoundOrBoundary;
@@ -152,7 +150,6 @@ import org.apache.cassandra.utils.concurrent.RefCounted;
 import org.apache.cassandra.utils.concurrent.SelfRefCounted;
 
 import static org.apache.cassandra.db.Directories.SECONDARY_INDEX_NAME_SEPARATOR;
-import static org.apache.cassandra.metrics.RestorableMeter.AVAILABLE_WINDOWS;
 
 /**
  * An SSTableReader can be constructed in a number of places, but typically is either
@@ -271,13 +268,13 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     // the case where the sstable does not contain the partition the query was looking for.
     // we use a restorable meter to gain access to the moving averages, we don't
     // really restore it from disk
-    private final RestorableMeter readIndexMeter = new RestorableMeter();
+    private final RestorableMeter partitionIndexReadMeter = new RestorableMeter();
 
     protected volatile IFilter bf;
     private final AtomicBoolean bfDeserializationStarted = new AtomicBoolean(false);
-    private final boolean bloomFilterLazyLoading;
-    private final int bloomFilterLazyLoadingWindow;
-    private final long bloomFilterLazyLoadingThreshold;
+    private final boolean bloomFilterLazyLoading = BloomFilter.lazyLoading();
+    private final int bloomFilterLazyLoadingWindow = BloomFilter.lazyLoadingWindow();
+    private final long bloomFilterLazyLoadingThreshold = BloomFilter.lazyLoadingThreshold();
 
     public final IndexSummary indexSummary;
 
@@ -797,10 +794,6 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
         this.openReason = openReason;
         tidy = new InstanceTidier(descriptor, metadata.id);
         selfRef = new Ref<>(this, tidy);
-
-        this.bloomFilterLazyLoading = BloomFilter.lazyLoading();
-        this.bloomFilterLazyLoadingWindow = BloomFilter.lazyLoadingWindow();
-        this.bloomFilterLazyLoadingThreshold = BloomFilter.lazyLoadingThreshold();
     }
 
     public SliceDescriptor getDataFileSliceDescriptor()
@@ -1170,9 +1163,9 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     }
 
     @VisibleForTesting
-    public RestorableMeter getReadIndexMeter()
+    public RestorableMeter getPartitionIndexReadMeter()
     {
-        return readIndexMeter;
+        return partitionIndexReadMeter;
     }
 
     /**
@@ -1545,7 +1538,7 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     }
 
     /**
-     * Defer BF deserialization to reduce memory pressure for CNDB, as most sstables are not accessed frequently.
+     * Defer BF deserialization when enabled to reduce memory pressure in use case where many sstables are not accessed frequently
      *
      * @return true if BF deserialization is attempted; false otherwise.
      */
@@ -1555,18 +1548,18 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
         if (!bloomFilterLazyLoading || bf != FilterFactory.AlwaysPresentForLazyLoading)
             return false;
 
-        Preconditions.checkNotNull(readIndexMeter, "Read index meter should have been available");
+        Preconditions.checkNotNull(partitionIndexReadMeter, "Read index meter should have been available");
 
         boolean loadBloomFilter = false;
 
         // If the threshold was set to zero we always want to deserialize
         if (bloomFilterLazyLoadingThreshold == 0)
             loadBloomFilter = true;
-            // otherwise, if window is <= 0 we use the threshold as an absolute count (this is for dedicated tenants)
-        else if (bloomFilterLazyLoadingWindow <= 0 && readIndexMeter.count() >= bloomFilterLazyLoadingThreshold)
+            // otherwise, if window is <= 0 we use the threshold as an absolute count
+        else if (bloomFilterLazyLoadingWindow <= 0 && partitionIndexReadMeter.count() >= bloomFilterLazyLoadingThreshold)
             loadBloomFilter = true;
-            // otherwise we look at the count in the specified window (this is for shared tenants)
-        else if (bloomFilterLazyLoadingWindow > 0 && readIndexMeter.rate(bloomFilterLazyLoadingWindow) >= bloomFilterLazyLoadingThreshold)
+            // otherwise we look at the count in the specified window
+        else if (bloomFilterLazyLoadingWindow > 0 && partitionIndexReadMeter.rate(bloomFilterLazyLoadingWindow) >= bloomFilterLazyLoadingThreshold)
             loadBloomFilter = true;
 
         if (!loadBloomFilter)
@@ -2265,8 +2258,8 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
      */
     public void incrementIndexReadCount()
     {
-        if (readIndexMeter != null)
-            readIndexMeter.mark();
+        if (partitionIndexReadMeter != null)
+            partitionIndexReadMeter.mark();
     }
 
     public EncodingStats stats()

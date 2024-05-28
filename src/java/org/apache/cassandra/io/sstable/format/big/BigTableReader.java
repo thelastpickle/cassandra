@@ -252,7 +252,7 @@ public class BigTableReader extends SSTableReader
         // next index position because the searched key can be greater the last key of the index interval checked if it
         // is lesser than the first key of next interval (and in that case we must return the position of the first key
         // of the next interval).
-        listener.onSSTableIndexAccessed(this);
+        listener.onSSTablePartitionIndexAccessed(this);
 
         int i = 0;
         File path = null;
