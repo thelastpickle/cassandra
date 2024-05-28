@@ -1571,8 +1571,7 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
 
         Stage.IO.execute(() ->
                          {
-                             if (logger.isTraceEnabled())
-                                 logger.trace("Deserialize lazy loading bloom filter for {}", descriptor.baseFileURI());
+                             logger.debug("Deserializing lazy bloom filter for {}", descriptor.baseFileURI());
 
                              // hold sstable reference to prevent sstable being released before bloom filter deserialization completes
                              Ref<SSTableReader> ref = tryRef();
@@ -1595,6 +1594,8 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
                                      }
                                      else
                                      {
+                                         logger.debug("Successfuly loaded lazy bloom filter for {}", descriptor.baseFileURI());
+
                                          bf = loaded;
                                          tidy.addCloseable(loaded); // close newly created bloom filter on sstable close
                                      }
