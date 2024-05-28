@@ -24,7 +24,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -202,7 +201,11 @@ public class TrieIndexSSTableReader extends SSTableReader
     @Override
     public void setup(boolean trackHotness)
     {
-        tidy.setup(this, trackHotness, Arrays.asList(bf, dfile, partitionIndex, rowIndexFile));
+        tidy.setup(this, trackHotness);
+        tidy.addCloseable(bf);
+        tidy.addCloseable(dfile);
+        tidy.addCloseable(partitionIndex);
+        tidy.addCloseable(rowIndexFile);
         super.setup(trackHotness);
     }
 
@@ -324,7 +327,7 @@ public class TrieIndexSSTableReader extends SSTableReader
                                           SSTableReadsListener listener,
                                           boolean updateStats)
     {
-        if (!bf.isPresent(dk))
+        if (!inBloomFilter(dk))
         {
             listener.onSSTableSkipped(this, SkippingReason.BLOOM_FILTER);
             if (Tracing.traceSinglePartitions())
@@ -341,6 +344,8 @@ public class TrieIndexSSTableReader extends SSTableReader
             listener.onSSTableSkipped(this, SkippingReason.MIN_MAX_KEYS);
             return null;
         }
+
+        listener.onSSTablePartitionIndexAccessed(this);
 
         try (PartitionIndex.Reader reader = partitionIndex.openReader())
         {
@@ -956,7 +961,7 @@ public class TrieIndexSSTableReader extends SSTableReader
 
         IFilter bf = null;
         if (SSTableReader.shouldLoadBloomFilter(descriptor, components, currentFPChance, desiredFPChance))
-            bf = SSTableReaderBuilder.loadBloomFilter(descriptor.fileFor(Component.FILTER), descriptor.version.hasOldBfFormat());
+            bf = SSTableReaderBuilder.loadBloomFilter(metadata, descriptor.fileFor(Component.FILTER), descriptor.version.hasOldBfFormat());
 
         boolean recreateBloomFilter = bf == null && SSTableReader.mayRecreateBloomFilter(descriptor, components, currentFPChance, isOffline, desiredFPChance);
         if (recreateBloomFilter)
