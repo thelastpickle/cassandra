@@ -23,6 +23,11 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+
 import static java.lang.Math.exp;
 import com.codahale.metrics.Clock;
 
@@ -41,9 +46,16 @@ public class RestorableMeter
     public static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);
     private static final double NANOS_PER_SECOND = TimeUnit.SECONDS.toNanos(1);
 
+    @Nullable
     private final RestorableEWMA m1Rate;
+
+    @Nullable
     private final RestorableEWMA m5Rate;
+
+    @Nullable
     private final RestorableEWMA m15Rate;
+
+    @Nullable
     private final RestorableEWMA m120Rate;
 
     private final AtomicLong count = new AtomicLong();
@@ -52,34 +64,123 @@ public class RestorableMeter
     private final Clock clock = Clock.defaultClock();
 
     /**
-     * Creates a new, uninitialized RestorableMeter.
+     * Creates a new RestorableMeter with given ewmas.
      */
-    public RestorableMeter()
+    private RestorableMeter(@Nullable RestorableEWMA m1Rate, @Nullable RestorableEWMA m5Rate, @Nullable RestorableEWMA m15Rate, @Nullable RestorableEWMA m120Rate)
     {
-        this.m1Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(1));
-        this.m5Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(5));
-        this.m15Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(15));
-        this.m120Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(120));
+        this.m1Rate = m1Rate;
+        this.m5Rate = m5Rate;
+        this.m15Rate = m15Rate;
+        this.m120Rate = m120Rate;
         this.startTime = this.clock.getTick();
         this.lastTick = new AtomicLong(startTime);
     }
 
     /**
-     * Restores a RestorableMeter from the last seen 15m and 2h rates.
+     * Restores a RestorableMeter from the last seen 15m and 2h rates. 1m and 5m rates are not initialized.
      *
      * @param lastM15Rate the last-seen 15m rate, in terms of events per second
      * @param lastM120Rate the last seen 2h rate, in terms of events per second
      */
+    @VisibleForTesting
     public RestorableMeter(double lastM15Rate, double lastM120Rate)
     {
-        // note: CNDB always restart from clean state without system table data
-        this.m1Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(1));
-        this.m5Rate = new RestorableEWMA(TimeUnit.MINUTES.toSeconds(5));
-
-        this.m15Rate = new RestorableEWMA(lastM15Rate, TimeUnit.MINUTES.toSeconds(15));
-        this.m120Rate = new RestorableEWMA(lastM120Rate, TimeUnit.MINUTES.toSeconds(120));
+        this.m1Rate = null;
+        this.m5Rate = null;
+        this.m15Rate = ewma(15, lastM15Rate);
+        this.m120Rate = ewma(120, lastM120Rate);
         this.startTime = this.clock.getTick();
         this.lastTick = new AtomicLong(startTime);
+    }
+
+    public static Builder builder()
+    {
+        return new Builder();
+    }
+
+    /**
+     * Create a restorable meter with default rates (15m and 120m)
+     */
+    public static RestorableMeter createWithDefaultRates()
+    {
+        return new Builder().withM15Rate().withM120Rate().build();
+    }
+
+    public static class Builder
+    {
+        private RestorableEWMA m1Rate;
+        private RestorableEWMA m5Rate;
+        private RestorableEWMA m15Rate;
+        private RestorableEWMA m120Rate;
+
+        public Builder withWindow(int window)
+        {
+            switch (window)
+            {
+                case 1   : return withM1Rate();
+                case 5   : return withM5Rate();
+                case 15  : return withM15Rate();
+                case 120 : return withM120Rate();
+                default  : throw new IllegalArgumentException(String.format("Found invalid window=%s, available windows: %s", window, AVAILABLE_WINDOWS));
+            }
+        }
+
+        public Builder withM1Rate()
+        {
+            Preconditions.checkState(m1Rate == null);
+            this.m1Rate = ewma(1);
+            return this;
+        }
+
+        public Builder withM5Rate()
+        {
+            Preconditions.checkState(m5Rate == null);
+            this.m5Rate = ewma(5);
+            return this;
+        }
+
+        public Builder withM15Rate()
+        {
+            Preconditions.checkState(m15Rate == null);
+            this.m15Rate = ewma(15);
+            return this;
+        }
+
+        public Builder withM15Rate(double lastM15Rate)
+        {
+            Preconditions.checkState(m15Rate == null);
+            this.m15Rate = ewma(15, lastM15Rate);
+            return this;
+        }
+
+        public Builder withM120Rate()
+        {
+            Preconditions.checkState(m120Rate == null);
+            this.m120Rate = ewma(120);
+            return this;
+        }
+
+        public Builder withM120Rate(double lastM120Rate)
+        {
+            Preconditions.checkState(m120Rate == null);
+            this.m120Rate = ewma(120, lastM120Rate);
+            return this;
+        }
+
+        public RestorableMeter build()
+        {
+            return new RestorableMeter(m1Rate, m5Rate, m15Rate, m120Rate);
+        }
+    }
+
+    private static RestorableEWMA ewma(int minute, double lastRate)
+    {
+        return new RestorableEWMA(lastRate, TimeUnit.MINUTES.toSeconds(minute));
+    }
+
+    private static RestorableEWMA ewma(int minute)
+    {
+        return new RestorableEWMA(TimeUnit.MINUTES.toSeconds(minute));
     }
 
     /**
@@ -98,10 +199,10 @@ public class RestorableMeter
                 final long requiredTicks = age / TICK_INTERVAL;
                 for (long i = 0; i < requiredTicks; i++)
                 {
-                    m1Rate.tick();
-                    m5Rate.tick();
-                    m15Rate.tick();
-                    m120Rate.tick();
+                    if (m1Rate != null) m1Rate.tick();
+                    if (m5Rate != null) m5Rate.tick();
+                    if (m15Rate != null) m15Rate.tick();
+                    if (m120Rate != null) m120Rate.tick();
                 }
             }
         }
@@ -124,10 +225,10 @@ public class RestorableMeter
     {
         tickIfNecessary();
         count.addAndGet(n);
-        m1Rate.update(n);
-        m5Rate.update(n);
-        m15Rate.update(n);
-        m120Rate.update(n);
+        if (m1Rate != null) m1Rate.update(n);
+        if (m5Rate != null) m5Rate.update(n);
+        if (m15Rate != null) m15Rate.update(n);
+        if (m120Rate != null) m120Rate.update(n);
     }
 
     /**
@@ -135,6 +236,7 @@ public class RestorableMeter
      */
     public double oneMinuteRate()
     {
+        Preconditions.checkNotNull(m1Rate);
         tickIfNecessary();
         return m1Rate.rate();
     }
@@ -144,6 +246,7 @@ public class RestorableMeter
      */
     public double fiveMinuteRate()
     {
+        Preconditions.checkNotNull(m5Rate);
         tickIfNecessary();
         return m5Rate.rate();
     }
@@ -153,6 +256,7 @@ public class RestorableMeter
      */
     public double fifteenMinuteRate()
     {
+        Preconditions.checkNotNull(m15Rate);
         tickIfNecessary();
         return m15Rate.rate();
     }
@@ -162,6 +266,7 @@ public class RestorableMeter
      */
     public double twoHourRate()
     {
+        Preconditions.checkNotNull(m120Rate);
         tickIfNecessary();
         return m120Rate.rate();
     }

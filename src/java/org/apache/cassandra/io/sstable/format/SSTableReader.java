@@ -270,7 +270,11 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
     // we use a restorable meter to gain access to the moving averages, we don't
     // really restore it from disk
     private final Optional<RestorableMeter> partitionIndexReadMeter = BloomFilter.lazyLoading()
-                                                                      ? Optional.of(new RestorableMeter())
+                                                                      ? Optional.of(BloomFilter.lazyLoadingWindow() > 0
+                                                                                    // when window > 0, use rate at given window
+                                                                                    ? RestorableMeter.builder().withWindow(BloomFilter.lazyLoadingWindow()).build()
+                                                                                    // when window <= 0, it only cares about absolute count
+                                                                                    : RestorableMeter.builder().build())
                                                                       : Optional.empty();
 
     protected volatile IFilter bf;
@@ -2499,7 +2503,7 @@ public abstract class SSTableReader extends SSTable implements SelfRefCounted<SS
 
             if (!DatabaseDescriptor.supportsSSTableReadMeter())
             {
-                readMeter = new RestorableMeter();
+                readMeter = RestorableMeter.createWithDefaultRates();
                 readMeterSyncFuture = NULL;
                 return;
             }
