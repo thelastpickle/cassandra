@@ -94,7 +94,8 @@ public class BloomFilter extends WrappedSharedCloseable implements IFilter
     }
 
     /**
-     * @return true if non-local table's bloom filter should be deserialized on read instead of when opening sstable
+     * @return true if sstable's bloom filter should be deserialized on read instead of when opening sstable. This
+     *         doesn't affect flushed sstable because there is bloom filter deserialization
      */
     public static boolean lazyLoading()
     {
