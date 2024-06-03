@@ -1,4 +1,4 @@
-/*
+    /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -191,7 +191,7 @@ public class TermsReader implements Closeable
 
         public long lookupTermDictionary(ByteComparable term)
         {
-            try (TrieTermsDictionaryReader reader = new TrieTermsDictionaryReader(termDictionaryFile.instantiateRebufferer(), termDictionaryRoot))
+            try (TrieTermsDictionaryReader reader = new TrieTermsDictionaryReader(termDictionaryFile.instantiateRebufferer(), termDictionaryRoot, ByteComparable.Version.OSS41))
             {
                 final long offset = reader.exactMatch(term);
 
@@ -238,7 +238,8 @@ public class TermsReader implements Closeable
                                                                                   termDictionaryRoot,
                                                                                   lower,
                                                                                   upper,
-                                                                                  true))
+                                                                                  true,
+                                                                                  ByteComparable.Version.OSS41))
             {
                 if (!reader.hasNext())
                     return PostingList.EMPTY;
@@ -311,7 +312,7 @@ public class TermsReader implements Closeable
 
         private TermsScanner(long segmentOffset)
         {
-            this.termsDictionaryReader = new TrieTermsDictionaryReader(termDictionaryFile.instantiateRebufferer(), termDictionaryRoot);
+            this.termsDictionaryReader = new TrieTermsDictionaryReader(termDictionaryFile.instantiateRebufferer(), termDictionaryRoot, ByteComparable.Version.OSS41);
             this.minTerm = ByteBuffer.wrap(ByteSourceInverse.readBytes(termsDictionaryReader.getMinTerm().asComparableBytes(ByteComparable.Version.OSS41)));
             this.maxTerm = ByteBuffer.wrap(ByteSourceInverse.readBytes(termsDictionaryReader.getMaxTerm().asComparableBytes(ByteComparable.Version.OSS41)));
             this.segmentOffset = segmentOffset;
