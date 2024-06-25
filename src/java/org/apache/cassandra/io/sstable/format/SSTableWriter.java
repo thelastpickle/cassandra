@@ -113,7 +113,7 @@ public abstract class SSTableWriter extends SSTable implements Transactional
         Set<Component> components = new HashSet<>();
         for (Index.Group group : indexGroups)
         {
-            components.addAll(group.getComponents());
+            components.addAll(group.componentsForNewSSTable());
         }
 
         return components;
