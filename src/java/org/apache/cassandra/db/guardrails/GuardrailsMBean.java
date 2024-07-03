@@ -873,4 +873,22 @@ public interface GuardrailsMBean
      * @param enabled {@code true} if a query without partition key is enabled or not
      */
     void setNonPartitionRestrictedQueryEnabled(boolean enabled);
+
+    /**
+     * @return the warning threshold for the offset rows used in SELECT queries
+     * -1 means disabled.
+     */
+    int getOffsetRowsWarnThreshold();
+
+    /**
+     * @return the failure threshold for the offset rows used in SELECT queries
+     * -1 means disabled.
+     */
+    int getOffsetRowsFailThreshold();
+
+    /**
+     * @param warn the warning threshold for the offset rows used in SELECT queries. -1 means disabled.
+     * @param fail the failure threshold for the offset rows used in SELECT queries. -1 means disabled.
+     */
+    void setOffsetRowsThreshold(int warn, int fail);
 }

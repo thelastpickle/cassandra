@@ -1141,6 +1141,31 @@ public class GuardrailsOptions implements GuardrailsConfig
         return -1;
     }
 
+    @Override
+    public int getOffsetRowsWarnThreshold()
+    {
+        return config.offset_rows_warn_threshold;
+    }
+
+    @Override
+    public int getOffsetRowsFailThreshold()
+    {
+        return config.offset_rows_fail_threshold;
+    }
+
+    public void setOffsetRowsThreshold(int warn, int fail)
+    {
+        validateMaxIntThreshold(warn, fail, "offset_rows", false);
+        updatePropertyWithLogging("offset_rows_warn_threshold",
+                                  warn,
+                                  () -> config.offset_rows_warn_threshold,
+                                  x -> config.offset_rows_warn_threshold = x);
+        updatePropertyWithLogging("offset_rows_fail_threshold",
+                                  fail,
+                                  () -> config.offset_rows_fail_threshold,
+                                  x -> config.offset_rows_fail_threshold = x);
+    }
+
     private static <T> void updatePropertyWithLogging(String propertyName, T newValue, Supplier<T> getter, Consumer<T> setter)
     {
         T oldValue = getter.get();
