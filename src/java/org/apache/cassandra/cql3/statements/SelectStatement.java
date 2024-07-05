@@ -170,6 +170,8 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement
                                                                 "Downgrading the consistency level to %s.";
     public static final String TOPK_OFFSET_ERROR = "Top-K queries cannot be run with an offset. Offset was set to %d.";
 
+    private static final int NO_OFFSET = -1; // sentinel value meaning no offset has been explicitly requested
+
     private final String rawCQLStatement;
     public final VariableSpecifications bindVariables;
     public final TableMetadata table;
@@ -523,7 +525,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement
             }
 
             // We don't support offset for top-k queries.
-            checkFalse(userOffset > 0, String.format(TOPK_OFFSET_ERROR, userOffset));
+            checkFalse(userOffset != NO_OFFSET, String.format(TOPK_OFFSET_ERROR, userOffset));
         }
 
         return query;
@@ -674,11 +676,12 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement
         // If the query has an offset we silently ignore user-facing paging and return all the rows specified by the
         // limit/offset constraints in one go, since regular key-based paging is not supported when using limit/offest
         // paging. However, we still use the query fetch size to internally page the rows. We do that to avoid loading
-        // in memory all the rows that will be discarded by the offset.
+        // in memory all the rows that will be discarded by the offset. Key-based paging is also disabled if the offset
+        // is explicitly set to zero.
         ResultMessage.Rows msg;
-        try (PartitionIterator partitions = userOffset > 0
-                                          ? pager.readAll(pageSize, queryStartNanoTime)
-                                          : pager.fetchPage(pageSize, queryStartNanoTime))
+        try (PartitionIterator partitions = userOffset == NO_OFFSET
+                                          ? pager.fetchPage(pageSize, queryStartNanoTime)
+                                          : pager.readAll(pageSize, queryStartNanoTime))
         {
             msg = processResults(partitions, options, selectors, nowInSec, userLimit, userOffset, aggregationSpec, unmask);
         }
@@ -1029,12 +1032,12 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement
                                      int userOffset,
                                      AggregationSpecification aggregationSpec)
     {
-        assert userOffset == 0 || userLimit != NO_LIMIT : "Cannot use OFFSET without LIMIT";
+        assert userOffset == NO_OFFSET || userLimit != NO_LIMIT : "Cannot use OFFSET without LIMIT";
 
-        if (userOffset > 0)
+        if (userOffset != NO_OFFSET)
             Guardrails.offsetRows.guard(userOffset, "Select query", false, clientState);
 
-        int fetchLimit = userLimit == NO_LIMIT ? userLimit : userLimit + userOffset;
+        int fetchLimit = userLimit == NO_LIMIT || userOffset == NO_OFFSET ? userLimit : userLimit + userOffset;
         int cqlRowLimit = NO_LIMIT;
         int cqlPerPartitionLimit = NO_LIMIT;
 
@@ -1138,7 +1141,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement
 
     private int getOffset(QueryOptions options)
     {
-        int userOffset = 0;
+        int userOffset = NO_OFFSET;
 
         if (offset != null)
         {
@@ -1188,7 +1191,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement
                               boolean unmask) throws InvalidRequestException
     {
         GroupMaker groupMaker = aggregationSpec == null ? null : aggregationSpec.newGroupMaker();
-        SortedRowsBuilder rows = sortedRowsBuilder(userLimit, userOffset, options);
+        SortedRowsBuilder rows = sortedRowsBuilder(userLimit, userOffset == NO_OFFSET ? 0 : userOffset, options);
         ResultSetBuilder result = new ResultSetBuilder(getResultMetadata(), selectors, unmask, groupMaker, rows);
 
         while (partitions.hasNext())
