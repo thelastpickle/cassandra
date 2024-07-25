@@ -125,10 +125,10 @@ public class TermsReader implements Closeable
         }
     }
 
-    public TermsIterator allTerms(long segmentOffset)
+    public TermsIterator allTerms()
     {
         // blocking, since we use it only for segment merging for now
-        return new TermsScanner(segmentOffset, version, this.indexContext.getValidator());
+        return new TermsScanner(version, this.indexContext.getValidator());
     }
 
     public PostingList exactMatch(ByteComparable term, QueryEventListener.TrieIndexEventListener perQueryEventListener, QueryContext context)
@@ -364,12 +364,11 @@ public class TermsReader implements Closeable
     // currently only used for testing
     private class TermsScanner implements TermsIterator
     {
-        private final long segmentOffset;
         private final TrieTermsDictionaryReader termsDictionaryReader;
         private final ByteBuffer minTerm, maxTerm;
         private Pair<ByteComparable, Long> entry;
 
-        private TermsScanner(long segmentOffset, Version version, AbstractType<?> type)
+        private TermsScanner(Version version, AbstractType<?> type)
         {
             this.termsDictionaryReader = new TrieTermsDictionaryReader(termDictionaryFile.instantiateRebufferer(), termDictionaryRoot, termDictionaryFileEncodingVersion);
             // We decode based on the logic used to encode the min and max terms in the trie.
@@ -383,7 +382,6 @@ public class TermsReader implements Closeable
                 this.minTerm = ByteBuffer.wrap(ByteSourceInverse.readBytes(termsDictionaryReader.getMinTerm().asComparableBytes(termDictionaryFileEncodingVersion)));
                 this.maxTerm = ByteBuffer.wrap(ByteSourceInverse.readBytes(termsDictionaryReader.getMaxTerm().asComparableBytes(termDictionaryFileEncodingVersion)));
             }
-            this.segmentOffset = segmentOffset;
         }
 
         @Override
@@ -392,7 +390,7 @@ public class TermsReader implements Closeable
         {
             assert entry != null;
             final IndexInput input = IndexFileUtils.instance.openInput(postingsFile);
-            return new OffsetPostingList(segmentOffset, new ScanningPostingsReader(input, new PostingsReader.BlocksSummary(input, entry.right)));
+            return new ScanningPostingsReader(input, new PostingsReader.BlocksSummary(input, entry.right));
         }
 
         @Override
@@ -428,42 +426,6 @@ public class TermsReader implements Closeable
         public boolean hasNext()
         {
             return termsDictionaryReader.hasNext();
-        }
-    }
-
-    private class OffsetPostingList implements PostingList
-    {
-        private final long offset;
-        private final PostingList wrapped;
-
-        OffsetPostingList(long offset, PostingList postingList)
-        {
-            this.offset = offset;
-            this.wrapped = postingList;
-        }
-
-        @Override
-        public long nextPosting() throws IOException
-        {
-            long next = wrapped.nextPosting();
-            if (next == PostingList.END_OF_STREAM)
-                return next;
-            return next + offset;
-        }
-
-        @Override
-        public long size()
-        {
-            return wrapped.size();
-        }
-
-        @Override
-        public long advance(long targetRowID) throws IOException
-        {
-            long next = wrapped.advance(targetRowID);
-            if (next == PostingList.END_OF_STREAM)
-                return next;
-            return next + offset;
         }
     }
 }
