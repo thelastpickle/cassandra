@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -e -x
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -24,7 +24,8 @@
 # variables, with defaults
 [ "x${CASSANDRA_DIR}" != "x" ] || { CASSANDRA_DIR="$(pwd)"; }
 [ -d "${CASSANDRA_DIR}" ] || { echo >&2 "Directory ${CASSANDRA_DIR} must exist"; exit 1; }
-
+echo "$CASSANDRA_DIR from _set_java"
+echo $(pwd)
 # pre-conditions
 [ -f "${CASSANDRA_DIR}/build.xml" ] || { echo >&2 "${CASSANDRA_DIR}/build.xml must exist"; exit 1; }
 

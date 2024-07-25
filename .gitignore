@@ -87,3 +87,4 @@ cassandra-builds/
 cassandra-dtest/
 
 conf/triggers/trigger-example.jar
+/pylib/.ropeproject/

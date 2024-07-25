@@ -1,0 +1,323 @@
+# https://github.com/jenkinsci/helm-charts/tree/main/charts/jenkins
+persistence:
+  enabled: true
+  size: "500Gi"
+controller:
+  # To get URL run `kubectl describe svc cassius-jenkins | grep 'LoadBalancer Ingress'` and use port 8080
+  serviceType: LoadBalancer
+  ingress:
+    enabled: "true"
+  customJenkinsLabels:
+    - controller
+  resources:
+    requests:
+      cpu: 4
+      memory: 16G
+    limits:
+      cpu: 8
+      memory: 20G
+  javaOpts: -server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ExplicitGCInvokesConcurrent -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=40 -Xms8G -Xmx8G
+  installPlugins:
+    - job-dsl:1.87
+    - configuration-as-code:1775.v810dc950b_514
+    - kubernetes:4203.v1dd44f5b_1cf9
+    - git:5.2.1
+    - workflow-job:1400.v7fd111b_ec82f
+    - workflow-cps
+    - junit:1265.v65b_14fa_f12f0
+    - workflow-aggregator:596.v8c21c963d92d
+    - blueocean:1.27.11
+    - ws-cleanup:0.45
+    - pipeline-build-step:540.vb_e8849e1a_b_d8
+    - test-stability:2.3
+    - copyartifact:722.v0662a_9b_e22a_c
+  node-selector:
+    cassandra.jenkins.controller: true
+  scriptApproval:
+    - "staticMethod java.lang.System setProperty java.lang.String java.lang.String"
+    - "staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods combinations java.util.Collection"
+    - "staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods inspect java.lang.Object"
+    - "staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods max java.util.Collection"
+    - "staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods putAt java.util.List java.util.List java.lang.Object"  
+  JCasC:
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: Welcome to Apache Cassandra
+      test-job: |
+        jobs:
+          - script: >
+              pipelineJob('cassandra') {
+                definition {
+                  cpsScm {
+                    scm {
+                      git {
+                        remote {
+                          url('https://github.com/apache/cassandra')
+                        }
+                        branch('cassandra-5.0')
+                        scriptPath('.jenkins/Jenkinsfile')
+                      }
+                    }
+                    lightweight()
+                  }
+                }
+              }
+    globalDefaultFlowDurabilityLevel:
+      durabilityHint: "PERFORMANCE_OPTIMIZED"
+    securityRealm: |-
+      local:
+        allowsSignup: false
+        enableCaptcha: false
+        users:
+        - id: "admin"
+          name: "Jenkins Admin"
+          password: "${chart-admin-password}"
+    authorizationStrategy: |-
+      loggedInUsersCanDoAnything:
+        allowAnonymousRead: false
+    googlePodMonitor:
+        enabled: true
+agent:
+  disableDefaultAgent: true
+  maxRequestsPerHostStr: "3200"
+  containerCap: 300
+  node-selector:
+    cassandra.jenkins.agent: true
+  waitForPodSec: "180"
+  podTemplates:
+    agent-dind-small: |
+      - name: agent-dind-small
+        label: agent-dind cassandra-small cassandra-amd64-small
+        nodeSelector: 'cassandra.jenkins.agent.small=true'
+        activeDeadlineSeconds: '0'
+        idleMinutes: 1
+        instanceCap: 50
+        instanceCapStr: "50"
+        nodeUsageMode: "NORMAL"
+        showRawYaml: 'true'
+        slaveConnectTimeout: '30'
+        yamlMergeStrategy: override
+        containers:
+          - name: jnlp
+            # https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
+            alwaysPullImage: true
+            envVars:
+              - envVar:
+                  key: DOCKER_TLS_CERTDIR
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_CERT_PATH
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_TLS_VERIFY
+                  value: 'true'
+              - envVar:
+                  key: DOCKER_HOST
+                  value: tcp://localhost:2376
+              - envVar:
+                  key: JENKINS_JAVA_OPTS
+                  value: '-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.USE_BINARY_WRAPPER=true -Xlog:gc+heap+exit -XX:+HeapDumpOnOutOfMemoryError'
+            # there's a lot of docker pulls,
+            # TODO implement option for docker registry caches :: https://medium.com/@elementtech.dev/kubernetes-image-proxy-cache-from-minutes-to-milliseconds-fd14173e831f
+            image: apache.jfrog.io/cassan-docker/apache/cassandra-jenkins-k8s
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 1
+            resourceLimitCpu: 2
+            resourceRequestMemory: 1G
+            resourceLimitMemory: 1G
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+          - name: dind
+            alwaysPullImage: 'false'
+            envVars:
+            - envVar:
+                key: DOCKER_TLS_CERTDIR
+                value: /certs
+            - envVar:
+                key: "DOCKER_IPTABLES_LEGACY"
+                value: "1"
+            image: docker:dind
+            args: "--default-address-pool base=192.168.96.0/20,size=24"  # overwrite docker subnet in case of overlapping 
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 2
+            resourceLimitCpu: 4
+            resourceRequestMemory: 1G
+            resourceLimitMemory: 2400M
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+        volumes:
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /var/lib/docker
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /certs
+    agent-dind-medium: |
+      - name: agent-dind-medium
+        label: agent-dind cassandra-medium cassandra-amd64-medium
+        nodeSelector: 'cassandra.jenkins.agent.medium=true'
+        activeDeadlineSeconds: '0'
+        idleMinutes: 1
+        instanceCap: 100
+        instanceCapStr: "100"
+        nodeUsageMode: "NORMAL"
+        showRawYaml: 'true'
+        slaveConnectTimeout: '30'
+        yamlMergeStrategy: override
+        containers:
+          - name: jnlp
+            # https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
+            alwaysPullImage: true
+            envVars:
+              - envVar:
+                  key: DOCKER_TLS_CERTDIR
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_CERT_PATH
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_TLS_VERIFY
+                  value: 'true'
+              - envVar:
+                  key: DOCKER_HOST
+                  value: tcp://localhost:2376
+              - envVar:
+                  key: JENKINS_JAVA_OPTS
+                  value: '-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.USE_BINARY_WRAPPER=true'
+            image: apache.jfrog.io/cassan-docker/apache/cassandra-jenkins-k8s
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 1
+            resourceLimitCpu: 3
+            resourceRequestMemory: 1G
+            resourceLimitMemory: 2400M
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+          - name: dind
+            alwaysPullImage: 'false'
+            envVars:
+            - envVar:
+                key: DOCKER_TLS_CERTDIR
+                value: /certs
+            - envVar:
+                key: "DOCKER_IPTABLES_LEGACY"
+                value: "1"
+            image: docker:dind
+            args: "--default-address-pool base=192.168.96.0/20,size=24"  # overwrite docker subnet in case of overlapping
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 2
+            resourceLimitCpu: 4
+            resourceRequestMemory: 3400M
+            resourceLimitMemory: 5G
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+        volumes:
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /var/lib/docker
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /certs
+    agent-dind-large: |
+      - name: agent-dind-large
+        label: agent-dind cassandra-amd64-large
+        nodeSelector: 'cassandra.jenkins.agent.large=true'
+        activeDeadlineSeconds: '0'
+        idleMinutes: 1
+        instanceCap: 200
+        instanceCapStr: "200"
+        nodeUsageMode: "NORMAL"
+        showRawYaml: 'true'
+        slaveConnectTimeout: '30'
+        yamlMergeStrategy: override
+        containers:
+          - name: jnlp
+            # https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
+            alwaysPullImage: true
+            envVars:
+              - envVar:
+                  key: DOCKER_TLS_CERTDIR
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_CERT_PATH
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_TLS_VERIFY
+                  value: 'true'
+              - envVar:
+                  key: DOCKER_HOST
+                  value: tcp://localhost:2376
+              - envVar:
+                  key: JENKINS_JAVA_OPTS
+                  value: '-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.USE_BINARY_WRAPPER=true'
+            image: apache.jfrog.io/cassan-docker/apache/cassandra-jenkins-k8s
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 1
+            resourceLimitCpu: 3
+            resourceRequestMemory: 1G
+            resourceLimitMemory: 2G
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+          - name: dind
+            alwaysPullImage: 'false'
+            envVars:
+            - envVar:
+                key: DOCKER_TLS_CERTDIR
+                value: /certs
+            - envVar:
+                key: "DOCKER_IPTABLES_LEGACY"
+                value: "1"
+            image: docker:dind
+            args: "--default-address-pool base=192.168.96.0/20,size=24"  # overwrite docker subnet in case of overlapping
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 6
+            resourceLimitCpu: 7
+            resourceRequestMemory: 13G
+            resourceLimitMemory: 16G
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+        volumes:
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /var/lib/docker
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /certs
+
+
