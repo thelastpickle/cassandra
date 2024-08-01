@@ -268,7 +268,7 @@ public class WriteResponseHandlerTest
     {
         long queryStartedNanos = System.nanoTime();
         AbstractWriteResponseHandler<?> awr = createWriteResponseHandler(ConsistencyLevel.LOCAL_QUORUM, ConsistencyLevel.EACH_QUORUM, queryStartedNanos);
-        assertThat(awr.replicaPlan().blockFor()).isEqualTo(2);
+        assertThat(awr.replicaPlan().writeQuorum()).isEqualTo(2);
         assertThat(awr.writeType()).isEqualTo(WriteType.SIMPLE);
         assertThat(awr.queryStartNanoTime()).isEqualTo(queryStartedNanos);
 
@@ -292,7 +292,7 @@ public class WriteResponseHandlerTest
     {
         long queryStartedNanos = System.nanoTime();
         AbstractWriteResponseHandler<?> awr = createWriteResponseHandler(ConsistencyLevel.LOCAL_QUORUM, ConsistencyLevel.EACH_QUORUM, queryStartedNanos);
-        assertThat(awr.replicaPlan().blockFor()).isEqualTo(2);
+        assertThat(awr.replicaPlan().writeQuorum()).isEqualTo(2);
         assertThat(awr.writeType()).isEqualTo(WriteType.SIMPLE);
         assertThat(awr.queryStartNanoTime()).isEqualTo(queryStartedNanos);
 
