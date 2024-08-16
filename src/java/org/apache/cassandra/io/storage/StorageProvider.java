@@ -18,7 +18,10 @@
 
 package org.apache.cassandra.io.storage;
 
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -171,6 +174,18 @@ public interface StorageProvider
      *   configured as appropriate.
      */
     FileHandle.Builder fileHandleBuilderFor(IndexComponent.ForRead component);
+
+    /**
+     * Creates a new {@link FileChannel} to read the given file, that is suitable for reading the file "at write time",
+     * that is typcally for when we need to access the partially written file to complete checksum.
+     *
+     * @param file the file to be read
+     * @return a new {@link FileChannel} for the provided file
+     */
+    default FileChannel writeTimeReadFileChannelFor(File file) throws IOException
+    {
+        return FileChannel.open(file.toPath(), StandardOpenOption.READ);
+    }
 
     /**
      * Creates a new {@link FileHandle.Builder} for the given SAI component and context (for index with per-index files),
