@@ -47,7 +47,6 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.ParameterizedClass;
 import org.apache.cassandra.db.commitlog.CommitLog;
 import org.apache.cassandra.db.commitlog.CommitLogArchiver;
-import org.apache.cassandra.db.commitlog.CommitLogDescriptor;
 import org.apache.cassandra.db.commitlog.CommitLogReplayer;
 import org.apache.cassandra.db.context.CounterContext;
 import org.apache.cassandra.db.rows.*;
@@ -348,14 +347,14 @@ public class RecoveryManagerTest
 
         @Override
         protected org.apache.cassandra.utils.concurrent.Future<Integer> initiateMutation(final Mutation mutation,
-                                                                                         final CommitLogDescriptor desc,
+                                                                                         final long segmentId,
                                                                                          final int serializedSize,
                                                                                          final int entryLocation,
                                                                                          final CommitLogReplayer clr)
         {
             final org.apache.cassandra.utils.concurrent.Future<Integer> toWrap =
                 super.initiateMutation(mutation,
-                                       desc,
+                                       segmentId,
                                        serializedSize,
                                        entryLocation,
                                        clr);
