@@ -36,8 +36,9 @@ import org.apache.cassandra.utils.NoSpamLogger;
 public abstract class AbstractMutationVerbHandler<T extends IMutation> implements IVerbHandler<T>
 {
     private static final Logger logger = LoggerFactory.getLogger(AbstractMutationVerbHandler.class);
-    private static final String logMessageTemplate = "Received mutation from {} for token {} outside valid range for keyspace {}";
+    private static final String logMessageTemplate = "Receiving mutation(s) for token(s) neither owned nor pending. Example: from {} for token {} in keyspace {}";
 
+    @Override
     public void doVerb(Message<T> message) throws IOException
     {
         processMessage(message, message.from());
@@ -49,15 +50,15 @@ public abstract class AbstractMutationVerbHandler<T extends IMutation> implement
         boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
 
         DecoratedKey key = message.payload.key();
-        if ((outOfRangeTokenLogging || outOfRangeTokenRejection)
-            && isOutOfRangeMutation(message.payload.getKeyspaceName(), key))
+        if ((outOfRangeTokenLogging || outOfRangeTokenRejection) && isOutOfRangeMutation(message.payload.getKeyspaceName(), key))
         {
             StorageService.instance.incOutOfRangeOperationCount();
             Keyspace.open(message.payload.getKeyspaceName()).metric.outOfRangeTokenWrites.inc();
 
             // Log at most 1 message per second
             if (outOfRangeTokenLogging)
-                NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, respondTo, key.getToken(), message.payload.getKeyspaceName());
+                NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, 
+                                 respondTo, key.getToken(), message.payload.getKeyspaceName());
 
             if (outOfRangeTokenRejection)
                 sendFailureResponse(message, respondTo);
@@ -80,6 +81,6 @@ public abstract class AbstractMutationVerbHandler<T extends IMutation> implement
 
     private static boolean isOutOfRangeMutation(String keyspace, DecoratedKey key)
     {
-        return ! StorageService.instance.isEndpointValidForWrite(keyspace, key.getToken());
+        return !StorageService.instance.isEndpointValidForWrite(keyspace, key.getToken());
     }
 }

@@ -79,7 +79,7 @@ import static org.apache.cassandra.net.MessagingService.current_version;
 public class CassandraStreamReader implements IStreamReader
 {
     private static final Logger logger = LoggerFactory.getLogger(CassandraStreamReader.class);
-    private static final String logMessageTemplate = "[Stream #{}] Received streamed SSTable {} from {} containing key outside valid ranges {}";
+    private static final String logMessageTemplate = "[Stream #{}] Received streamed SSTable {} from {} containing key(s) outside valid ranges {}. Example: {}";
     protected final TableId tableId;
     protected final long estimatedKeys;
     protected final Collection<SSTableReader.PartitionPositionBounds> sections;
@@ -389,7 +389,7 @@ public class CassandraStreamReader implements IStreamReader
             StorageMetrics.totalOpsForInvalidToken.inc();
 
             if (outOfRangeTokenLogging)
-                NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, session.planId(), writer.getFilename(), session.peer, ownedRanges);
+                NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, session.planId(), writer.getFilename(), session.peer, ownedRanges, key);
 
             if (outOfRangeTokenRejection)
                 throw new StreamReceivedOutOfTokenRangeException(ownedRanges, key, writer.getFilename());

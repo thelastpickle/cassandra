@@ -27,6 +27,7 @@ public class ReadRepairVerbHandler extends AbstractMutationVerbHandler<Mutation>
 {
     public static final ReadRepairVerbHandler instance = new ReadRepairVerbHandler();
 
+    @Override
     public void doVerb(Message<Mutation> message) throws IOException
     {
         // This method exists as python dtest relies on byte-code rewriting via Byteman, so requires this

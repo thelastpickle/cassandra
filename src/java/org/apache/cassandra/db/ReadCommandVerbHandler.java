@@ -41,7 +41,7 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
     public static final ReadCommandVerbHandler instance = new ReadCommandVerbHandler();
 
     private static final Logger logger = LoggerFactory.getLogger(ReadCommandVerbHandler.class);
-    private static final String logMessageTemplate = "Received read request from {} for token {} outside valid range for keyspace {}";
+    private static final String logMessageTemplate = "Receiving read(s) for token(s) neither owned nor pending. Example: from {} for token {} in {}.{}";
     private static final String exceptionMessageTemplate = "Exception thrown checking if token {} outside valid range for keyspace {} - permitting";
 
     public void doVerb(Message<ReadCommand> message)
@@ -67,7 +67,8 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
 
                 // Log at most 1 message per second
                 if (outOfRangeTokenLogging)
-                    NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, message.from(), key.getToken(), command.metadata().keyspace);
+                    NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate,
+                                     message.from(), key.getToken(), command.metadata().keyspace,  command.metadata().name);
 
                 if (outOfRangeTokenRejection)
                     // no need to respond, just drop the request

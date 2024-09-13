@@ -37,7 +37,7 @@ import org.apache.cassandra.utils.NoSpamLogger;
 
 /**
  * Verb handler used both for hint dispatch and streaming.
- *
+ * <p>
  * With the non-sstable format, we cannot just stream hint sstables on node decommission. So sometimes, at decommission
  * time, we might have to stream hints to a non-owning host (say, if the owning host B is down during decommission of host A).
  * In that case the handler just stores the received hint in its local hint store.
@@ -101,9 +101,11 @@ public final class HintVerbHandler implements IVerbHandler<HintMessage>
                                  NoSpamLogger.Level.WARN,
                                  1,
                                  TimeUnit.SECONDS,
-                                 "Received hint containing mutation from {} for token {} outside valid range",
+                                 "Receiving hint(s) for token(s) neither owned nor pending. Example: from {} for token {} in {}.{}",
                                  message.from(),
-                                 hint.mutation.key().getToken());
+                                 hint.mutation.key().getToken(),
+                                 hint.mutation.getKeyspaceName(),
+                                 hint.mutation.getPartitionUpdates().iterator().next().metadata().name);
             }
 
             respond(message);
