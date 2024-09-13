@@ -26,9 +26,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.partitions.UnfilteredPartitionIterator;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.InvalidRequestException;
-import org.apache.cassandra.locator.EndpointsForRange;
 import org.apache.cassandra.locator.Replica;
-import org.apache.cassandra.metrics.StorageMetrics;
 import org.apache.cassandra.net.IVerbHandler;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessagingService;
@@ -58,8 +56,8 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
         // no out of token range checking for partition range reads yet
         if (command.isSinglePartitionRead())
         {
-            boolean outOfRangeTokenLogging = StorageService.instance.isOutOfTokenRangeRequestLoggingEnabled();
-            boolean outOfRangeTokenRejection = StorageService.instance.isOutOfTokenRangeRequestRejectionEnabled();
+            boolean outOfRangeTokenLogging = DatabaseDescriptor.getLogOutOfTokenRangeRequests();
+            boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
 
             DecoratedKey key = ((SinglePartitionReadCommand)command).partitionKey();
             if ((outOfRangeTokenLogging || outOfRangeTokenRejection) && !command.metadata().isVirtual() && isOutOfRangeRead(command.metadata().keyspace, key))

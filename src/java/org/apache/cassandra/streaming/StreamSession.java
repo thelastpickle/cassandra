@@ -806,8 +806,8 @@ public class StreamSession implements IEndpointStateChangeSubscriber
 
     private void processStreamRequests(Collection<StreamRequest> requests)
     {
-        boolean outOfRangeTokenLogging = StorageService.instance.isOutOfTokenRangeRequestLoggingEnabled();
-        boolean outOfRangeTokenRejection = StorageService.instance.isOutOfTokenRangeRequestRejectionEnabled();
+        boolean outOfRangeTokenLogging = DatabaseDescriptor.getLogOutOfTokenRangeRequests();
+        boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
 
         if (!outOfRangeTokenLogging && !outOfRangeTokenRejection)
         {

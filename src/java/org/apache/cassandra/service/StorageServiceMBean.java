@@ -873,11 +873,11 @@ public interface StorageServiceMBean extends NotificationEmitter
      * Toggles to turn on the logging or rejection of operations for token ranges that the node does not own,
      * or is not about to acquire.
      */
-    public boolean isOutOfTokenRangeRequestLoggingEnabled();
-    public void setOutOfTokenRangeRequestLoggingEnabled(boolean enabled);
+    boolean isOutOfTokenRangeRequestLoggingEnabled();
+    void setOutOfTokenRangeRequestLoggingEnabled(boolean enabled);
 
-    public boolean isOutOfTokenRangeRequestRejectionEnabled();
-    public void setOutOfTokenRangeRequestRejectionEnabled(boolean enabled);
+    boolean isOutOfTokenRangeRequestRejectionEnabled();
+    void setOutOfTokenRangeRequestRejectionEnabled(boolean enabled);
 
     /**
      * Get the per-keyspace counts of operations that the node has received for tokens outside of

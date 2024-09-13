@@ -31,6 +31,7 @@ public class PrepareVerbHandler extends AbstractPaxosVerbHandler
         return PaxosState.prepare(toPrepare);
     }
 
+    @Override
     public void processMessage(Message<Commit> message)
     {
         Message<PrepareResponse> reply = message.responseWith(doPrepare(message.payload));

@@ -34,6 +34,7 @@ public class ReadRepairVerbHandler extends AbstractMutationVerbHandler<Mutation>
         super.doVerb(message);
     }
 
+    @Override
     void applyMutation(Message<Mutation> message, InetAddressAndPort respondToAddress)
     {
         message.payload.apply();

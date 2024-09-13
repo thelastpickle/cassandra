@@ -150,7 +150,7 @@ public abstract class ReadCommand extends AbstractReadQuery
     public abstract boolean isLimitedToOnePartition();
 
     /**
-     * Whether this is command is a single partition read
+     * Whether this command is a single partition read
      *
      * @return true if the command is a single partition read, false otherwise
      */

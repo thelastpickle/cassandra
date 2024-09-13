@@ -28,6 +28,7 @@ public class CommitVerbHandler extends AbstractPaxosVerbHandler
 {
     public static final CommitVerbHandler instance = new CommitVerbHandler();
 
+    @Override
     void processMessage(Message<Commit> message)
     {
         PaxosState.commit(message.payload);

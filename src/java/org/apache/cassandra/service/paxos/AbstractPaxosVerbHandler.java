@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.exceptions.RequestFailureReason;
 import org.apache.cassandra.db.Keyspace;
@@ -37,10 +38,11 @@ public abstract class AbstractPaxosVerbHandler implements IVerbHandler<Commit>
     private static final Logger logger = LoggerFactory.getLogger(AbstractPaxosVerbHandler.class);
     private static final String logMessageTemplate = "Received paxos request from {} for token {} outside valid range for keyspace {}";
 
+    @Override
     public void doVerb(Message<Commit> message)
     {
-        boolean outOfRangeTokenLogging = StorageService.instance.isOutOfTokenRangeRequestLoggingEnabled();
-        boolean outOfRangeTokenRejection = StorageService.instance.isOutOfTokenRangeRequestRejectionEnabled();
+        boolean outOfRangeTokenLogging = DatabaseDescriptor.getLogOutOfTokenRangeRequests();
+        boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
 
         Commit commit = message.payload;
         DecoratedKey key = commit.update.partitionKey();
@@ -68,7 +70,7 @@ public abstract class AbstractPaxosVerbHandler implements IVerbHandler<Commit>
 
     private static void sendFailureResponse(Message<?> respondTo)
     {
-        Message reply = respondTo.failureResponse(RequestFailureReason.UNKNOWN);
+        Message<?> reply = respondTo.failureResponse(RequestFailureReason.UNKNOWN);
         MessagingService.instance().send(reply, respondTo.from());
     }
 
