@@ -50,25 +50,20 @@ public abstract class AbstractMutationVerbHandler<T extends IMutation> implement
         boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
 
         DecoratedKey key = message.payload.key();
-        if ((outOfRangeTokenLogging || outOfRangeTokenRejection) && isOutOfRangeMutation(message.payload.getKeyspaceName(), key))
+        boolean isOutOfRangeMutation = isOutOfRangeMutation(message.payload.getKeyspaceName(), key);
+        if (isOutOfRangeMutation)
         {
             StorageService.instance.incOutOfRangeOperationCount();
             Keyspace.open(message.payload.getKeyspaceName()).metric.outOfRangeTokenWrites.inc();
 
-            // Log at most 1 message per second
             if (outOfRangeTokenLogging)
                 NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate, 
                                  respondTo, key.getToken(), message.payload.getKeyspaceName());
-
-            if (outOfRangeTokenRejection)
-                sendFailureResponse(message, respondTo);
-            else
-                applyMutation(message, respondTo);
         }
+        if (outOfRangeTokenRejection && isOutOfRangeMutation)
+            sendFailureResponse(message, respondTo);
         else
-        {
             applyMutation(message, respondTo);
-        }
     }
 
     abstract void applyMutation(Message<T> message, InetAddressAndPort respondToAddress);

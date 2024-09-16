@@ -252,14 +252,12 @@ public class CassandraStreamReader implements IStreamReader
         protected void readKey() throws IOException
         {
             key = metadata.partitioner.decorateKey(ByteBufferUtil.readWithShortLength(in));
-            if (outOfRangeTokenLogging || outOfRangeTokenRejection)
-            {
-                lastCheckedRangeIndex = verifyKeyInOwnedRanges(key,
-                                                               ownedRanges,
-                                                               lastCheckedRangeIndex,
-                                                               outOfRangeTokenLogging,
-                                                               outOfRangeTokenRejection);
-            }
+
+            lastCheckedRangeIndex = verifyKeyInOwnedRanges(key,
+                                                           ownedRanges,
+                                                           lastCheckedRangeIndex,
+                                                           outOfRangeTokenLogging,
+                                                           outOfRangeTokenRejection);
         }
 
         protected void readPartition() throws IOException

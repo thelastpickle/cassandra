@@ -806,20 +806,6 @@ public class StreamSession implements IEndpointStateChangeSubscriber
 
     private void processStreamRequests(Collection<StreamRequest> requests)
     {
-        boolean outOfRangeTokenLogging = DatabaseDescriptor.getLogOutOfTokenRangeRequests();
-        boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
-
-        if (!outOfRangeTokenLogging && !outOfRangeTokenRejection)
-        {
-            requests.forEach(request ->
-            {
-                // always flush on stream request
-                addTransferRanges(request.keyspace, RangesAtEndpoint.concat(request.full, request.transientReplicas), request.columnFamilies, true);
-            });
-
-            return;
-        }
-
         List<StreamRequest> rejectedRequests = new ArrayList<>();
 
         // group requests by keyspace

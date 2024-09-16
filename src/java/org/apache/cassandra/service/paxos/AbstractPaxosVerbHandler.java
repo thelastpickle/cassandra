@@ -46,7 +46,8 @@ public abstract class AbstractPaxosVerbHandler implements IVerbHandler<Commit>
 
         Commit commit = message.payload;
         DecoratedKey key = commit.update.partitionKey();
-        if ((outOfRangeTokenLogging || outOfRangeTokenRejection) && isOutOfRangeCommit(commit.update.metadata().keyspace, key))
+        boolean isOutOfRangeCommit = isOutOfRangeCommit(commit.update.metadata().keyspace, key);
+        if (isOutOfRangeCommit)
         {
             StorageService.instance.incOutOfRangeOperationCount();
             Keyspace.open(commit.update.metadata().keyspace).metric.outOfRangeTokenPaxosRequests.inc();
@@ -56,15 +57,11 @@ public abstract class AbstractPaxosVerbHandler implements IVerbHandler<Commit>
                 NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 1, TimeUnit.SECONDS, logMessageTemplate,
                                  message.from(), key.getToken(), commit.update.metadata().keyspace, commit.update.metadata().name);
 
-            if (outOfRangeTokenRejection)
-                sendFailureResponse(message);
-            else
-                processMessage(message);
         }
+        if (outOfRangeTokenRejection && isOutOfRangeCommit)
+            sendFailureResponse(message);
         else
-        {
             processMessage(message);
-        }
     }
 
     abstract void processMessage(Message<Commit> message);
