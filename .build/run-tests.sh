@@ -251,29 +251,35 @@ _run_testlist() {
       fi
     fi
 
-    local -r _results_uuid="$(command -v uuidgen && uuidgen || cat /proc/sys/kernel/random/uuid)"
+    local -r _results_uuid="$(command -v uuidgen >/dev/null 2>&1 && uuidgen || cat /proc/sys/kernel/random/uuid)"
+    local failures=0
     for ((i=0; i < _test_iterations; i++)); do
-      ant "$_testlist_target" -Dtest.classlistprefix="${_target_prefix}" -Dtest.classlistfile=<(echo "${testlist}") -Dtest.timeout="${_test_timeout}" "${ANT_TEST_OPTS}"
+      [ "${_test_iterations}" -eq 1 ] || printf "–––– run ${i}\n"
+      set +o errexit
+      ant "$_testlist_target" -Dtest.classlistprefix="${_target_prefix}" -Dtest.classlistfile=<(echo "${testlist}") -Dtest.timeout="${_test_timeout}" ${ANT_TEST_OPTS}
       ant_status=$?
+      set -o errexit
       if [[ $ant_status -ne 0 ]]; then
-        echo "failed ${_target_prefix} ${_testlist_target}  ${split_chunk}"
+        echo "failed ${_target_prefix} ${_testlist_target} ${split_chunk} ${_test_name_regexp}"
 
         # Only store logs for failed tests on repeats to save up space
         if [ "${_test_iterations}" -gt 1 ]; then
           # Get this test results and rename file with iteration and 'fail'
-          find "${DIST_DIR}"/test/output/ -type f -not -name "*fail.xml" -print0 | while read -r -d $'\0' file; do
+          find "${DIST_DIR}"/test/output/ -type f -name "*.xml" -not -name "*fail.xml" -print0 | while read -r -d $'\0' file; do
             mv "${file}" "${file%.xml}-${_results_uuid}-${i}-fail.xml"
           done
-          find "${DIST_DIR}"/test/logs/ -type f -not -name "*fail.log" -print0 | while read -r -d $'\0' file; do
+          find "${DIST_DIR}"/test/logs/ -type f -name "*.log" -not -name "*fail.log" -print0 | while read -r -d $'\0' file; do
             mv "${file}" "${file%.log}-${_results_uuid}-${i}-fail.log"
           done
 
           if [ "$(_get_env_var 'REPEATED_TESTS_STOP_ON_FAILURE')" == true ]; then
-            error 1 "fail fast"
+            error 0 "fail fast, after ${i} successful runs"
           fi
+          let failures+=1
         fi
       fi
     done
+    [ "${_test_iterations}" -eq 1 ] || printf "––––\nfailure rate: ${failures}/${_test_iterations}\n"
 }
 
 _main() {
@@ -297,8 +303,6 @@ _main() {
     [[ "${split_chunk}" =~ ^[0-9]+/[0-9]+$ ]] && { error 1 "Repeated tests not valid with splits"; }
     if [[ -z "${test_name_regexp}" ]] ; then
       test_name_regexp="$(_get_env_var 'REPEATED_TESTS')"
-    else
-      test_name_regexp="${test_name_regexp}"
     fi
     local -r repeat_count="$(_get_env_var 'REPEATED_TESTS_COUNT')"
   else

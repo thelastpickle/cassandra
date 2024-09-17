@@ -55,7 +55,7 @@ case ${1} in
     exit $?
 esac
 
-
+env_vars=""
 while getopts ":a:t:c:e:hj:" opt; do
   # shellcheck disable=SC2220
   # Invalid flags check disabled as we'll pass them to other scripts
@@ -67,6 +67,8 @@ while getopts ":a:t:c:e:hj:" opt; do
     c ) chunk="$OPTARG"
         ;;
     j ) java_version="$OPTARG"
+        ;;
+    e ) env_vars="${env_vars} -e $OPTARG"
         ;;
     h ) print_help
         exit 0
@@ -177,7 +179,7 @@ esac
 
 # figure out resource limits, scripts, and mounts for the test type
 docker_flags="-m 5g --memory-swap 5g"
-case ${target} in
+case ${test_target/-repeat/} in
     "build_dtest_jars")
     ;;
     "stress-test" | "fqltool-test" )
@@ -278,8 +280,10 @@ logfile="${build_dir}/test/logs/docker_attach_${container_name}.log"
 # Docker commands:
 #  set java to java_version
 #  execute the run_script
+[ -n "${test_name_regexp}" ] && test_name_regexp_arg="-t ${test_name_regexp}" || split_chunk_arg="-c ${split_chunk}"
+
 docker_command="source \${CASSANDRA_DIR}/.build/docker/_set_java.sh ${java_version} ; \
-            \${CASSANDRA_DIR}/.build/docker/_docker_init_tests.sh ${target} ${split_chunk} ; exit \$?"
+            \${CASSANDRA_DIR}/.build/docker/_docker_init_tests.sh -a ${target} ${split_chunk_arg} ${test_name_regexp_arg} ${env_vars} ; exit \$?"
 
 # start the container, timeout after 4 hours
 docker_id=$(docker run --name ${container_name} ${docker_flags} ${docker_envs} ${docker_mounts} ${docker_volume_opt} ${image_name} sleep 4h)
