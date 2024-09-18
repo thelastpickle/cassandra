@@ -19,16 +19,17 @@ controller:
   javaOpts: -server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ExplicitGCInvokesConcurrent -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=40 -Xms8G -Xmx8G
   installPlugins:
     - job-dsl:1.87
-    - configuration-as-code:1775.v810dc950b_514
+    - configuration-as-code:1810.v9b_c30a_249a_4c
     - kubernetes:4203.v1dd44f5b_1cf9
     - git:5.2.1
-    - workflow-job:1400.v7fd111b_ec82f
+    - workflow-job:1436.vfa_244484591f
     - workflow-cps
     - junit:1265.v65b_14fa_f12f0
     - workflow-aggregator:596.v8c21c963d92d
     - blueocean:1.27.11
     - ws-cleanup:0.45
     - pipeline-build-step:540.vb_e8849e1a_b_d8
+    - pipeline-rest-api:2.34
     - test-stability:2.3
     - copyartifact:722.v0662a_9b_e22a_c
   node-selector:

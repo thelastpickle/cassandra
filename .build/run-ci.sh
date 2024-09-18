@@ -121,11 +121,17 @@ fi
 
 kubectl get namespace ${KUBE_NS} >/dev/null 2>/dev/null || kubectl create namespace ${KUBE_NS}
 
-if [ -n "$REPO_URL" ]; then echo "REPO_URL is: $REPO_URL"
-else REPO_URL="https://github.com/apache/cassandra.git" ; echo "REPO_URL defaults to: $REPO_URL" ; fi
+# FIXME check git dirty state
 
-if [ -n "$REPO_BRANCH" ]; echo "REPO_BRANCH is: $REPO_BRANCH"
-else REPO_BRANCH="trunk" ; echo "REPO_BRANCH defaults to: $REPO_BRANCH" ; fi
+echo "–––––––––––––––––––––––––––––––––––"
+if [ -n "$REPO_URL" ]; then echo "REPO_URL is: $REPO_URL"
+else
+  REPO_URL="$(git remote get-url $(git branch -r --contains HEAD | awk -F"/" '{print $1}') | sed 's|git@github.com:|https://github.com/|')"
+  echo "REPO_URL defaults to: $REPO_URL"
+fi
+
+if [ -n "$REPO_BRANCH" ]; then echo "REPO_BRANCH is: $REPO_BRANCH"
+else REPO_BRANCH="$(git branch -r --contains HEAD | sed 's:^[^/]*/::')" ; echo "REPO_BRANCH defaults to: $REPO_BRANCH" ; fi
 
 if ! [ -z "$PROFILE" ]; then echo "PROFILE is: $PROFILE"
 else PROFILE="skinny" ; echo "PROFILE defaults to: $STAGES" ; fi
@@ -140,9 +146,10 @@ else DTEST_REPO="https://github.com/apache/cassandra-dtest.git" ; echo "DTEST_RE
 if ! [ -z "$DTEST_BRANCH" ]; then echo "DTEST_BRANCH is: $DTEST_BRANCH"
 else DTEST_BRANCH="trunk" ; echo "DTEST_BRANCH defaults to: $DTEST_BRANCH" ; fi
 
-if [ -n "$TEAR_DOWN" ]; echo "TEAR_DOWN is: $TEAR_DOWN"
+if [ -n "$TEAR_DOWN" ]; then echo "TEAR_DOWN is: $TEAR_DOWN"
 else TEAR_DOWN=false ; echo "TEAR_DOWN defaults to: $TEAR_DOWN" ; fi
 
+echo "–––––––––––––––––––––––––––––––––––"
 
 # Add Helm Jenkins Operator repository
 echo "Adding Helm repository for Jenkins Operator..."
@@ -151,7 +158,8 @@ helm repo update
 
 # Install Jenkins Operator using Helm
 echo -n "Installing Jenkins Operator..."
-helm upgrade --install --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml cassius jenkins/jenkins --wait
+helm upgrade --install --namespace ${KUBE_NS} -f ${CASSANDRA_DIR}/.jenkins/k8s/jenkins-deployment.yaml cassius jenkins/jenkins --wait 1>/dev/null
+echo " complete"
 
 spin='-\|/'
 spinner=0
@@ -161,16 +169,16 @@ node_cleaner() {
   while true ; do 
     for n in $(kubectl get nodes --no-headers -o "jsonpath={.items[*].metadata.name}" ) ; do 
       if echo $n | grep -q "agent" ; then
-        bash ${CASSANDRA_DIR}/.jenkins/k8s/check_node.sh $n & 
+        ( bash ${CASSANDRA_DIR}/.jenkins/k8s/check_node.sh $n  >/dev/null 2>/dev/null ) &
       fi
     done
     wait
   done
 }
+#export -f node_cleaner
 
-echo "Backgrounding aggressive nodes cleaner task…"
-export -f node_cleaner
-node_cleaner &
+echo "Backgrounding aggressive nodes cleaner task."
+( node_cleaner >/dev/null 2>/dev/null ) &
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 
@@ -178,21 +186,69 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 kubectl exec --namespace ${KUBE_NS} ${POD_NAME} -- curl -sS https://svn.apache.org/repos/asf/comdev/project-logos/originals/cassandra-6.svg -o /var/jenkins_cache/war/images/svgs/logo.svg
 
 # variables
-ip="$(kubectl describe svc --namespace ${KUBE_NS} cassius-jenkins -c jenkins | grep 'LoadBalancer Ingress' | awk '{print $NF}')"
+ip="$(kubectl describe svc --namespace ${KUBE_NS} cassius-jenkins | grep 'LoadBalancer Ingress' | awk '{print $NF}')"
 user="admin"
 password="$(kubectl exec --namespace ${KUBE_NS} svc/cassius-jenkins -c jenkins -- /bin/cat /run/secrets/additional/chart-admin-password && echo)"
 cookie_file=$(mktemp)
 crumb="$(curl -sL --user ${user}:${password} --cookie-jar ${cookie_file} http://${ip}:8080/crumbIssuer/api/json | jq -r '.crumb')"
-token="$(curl -sX POST --user ${user}:${password} --cookie-jar ${cookie_file} -H \"Jenkins-Crumb:${crumb}\" http://${ip}:8080/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken --data 'newTokenName=run-ci-script' | jq -r '.data.tokenValue')"
-password=""
+token="$(curl -sX POST --user ${user}:${password} -b ${cookie_file} -H "Jenkins-Crumb:${crumb}" http://${ip}:8080/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken --data 'newTokenName=run-ci-script' | jq -r '.data.tokenValue')"
+unset password
 
 # FIXME
 # - variables in check_node.sh
 
-def wait_for_build_number() {
+wait_for_build_number() {
   # Wait for the build number to become available (querying the API)
-  queue_url=$(echo "${response_headers}" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')
-  queue_item_number=$(basename "${queue_url}")
+  queue_url="$(echo "${response_headers}" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')"
+  queue_item_number="$(basename "${queue_url}")"
+  # Construct the complete URL to retrieve build information
+  queue_json_url="http://${ip}:8080/queue/item/${queue_item_number}/api/json"
+  build_number=""
+  while [ -z "${build_number}" ] || [ "${build_number}" == "null" ]; do
+      build_info=$(curl  -sL --user ${user}:${token} "${queue_json_url}")
+      build_number=$(echo "${build_info}" | jq -r '.executable.number')
+      if [ -z "${build_number}" ] || [ "$build_number" == "null" ]; then
+          spinner=$(( (spinner+1) %4 ))
+          [ "x$1" = "x" ] && echo -ne "\rBuild number not available yet ${spin:${spinner}:1}"
+          sleep 1
+      fi
+  done
+  if [ -n $1 ] ; then
+    echo "${build_number}"
+  else
+    echo -e "\rBuild number ${build_number}                  "
+  fi
+}
+#export -f wait_for_build_number
+
+# Try a non-parameter build – required initially and after helm updates
+response_headers="$(curl -siLX POST --user ${user}:${token} http://${ip}:8080/job/${JOB_NAME}/build 2>&1)"
+
+# FIXME
+#if echo "${response_headers}" | grep -q "201 Created" ; then
+#  echo -n "Initialied job with : \`curl -siLX POST --user ${user}:<token> http://${ip}:8080/job/${JOB_NAME}/build\`   "
+#  wait_for_build_number
+#fi
+
+
+# Trigger a new build and capture the response headers
+post_args="--data-urlencode repository=${REPO_URL} --data-urlencode branch=${REPO_BRANCH}  --data-urlencode profile=${PROFILE} --data-urlencode profile_custom_regexp=${PROFILE_CUSTOM_REGEXP} --data-urlencode architecture=amd64 --data-urlencode jdk=${JDK} --data-urlencode dtest_repository=${DTEST_REPO} --data-urlencode dtest_branch=${DTEST_BRANCH}"
+echo -n "Starting build with: curl -LX POST --user ${user}:<token> http://${ip}:8080/job/${JOB_NAME}/buildWithParameters ${post_args}   "
+while :
+do
+    spinner=$(( (spinner+1) %4 ))
+    echo -ne "\b${spin:${spinner}:1}"
+    response_headers="$(curl -siLX POST --user ${user}:${token} http://${ip}:8080/job/${JOB_NAME}/buildWithParameters ${post_args} 2>&1)"
+    if echo "${response_headers}" | grep -q "201 Created" ; then break ; fi
+    sleep 1
+done
+echo -e "\b\b"
+#wait_for_build_number
+
+
+  # Wait for the build number to become available (querying the API)
+  queue_url="$(echo "${response_headers}" | grep -i "Location" | awk -F ": " '{print $2}' | tr -d '\r')"
+  queue_item_number="$(basename "${queue_url}")"
   # Construct the complete URL to retrieve build information
   queue_json_url="http://${ip}:8080/queue/item/${queue_item_number}/api/json"
   build_number=""
@@ -206,31 +262,16 @@ def wait_for_build_number() {
       fi
   done
   echo -e "\rBuild number ${build_number}                  "
-  return ${build_number}
-}
 
-# Try a non-parameter build – required initially and after helm updates
-response_headers=$(curl -siLX POST --user ${user}:${token} http://${ip}:8080/job/${JOB_NAME}/build 2>&1)
-if echo "${response_headers}" | grep -q "201 Created" ; then
-  echo -n "Initialising job with : \`curl -siLX POST --user ${user}:<token> http://${ip}:8080/job/${JOB_NAME}/build\`   "
-  wait_for_build_number()
-fi
-
-
-# Trigger a new build and capture the response headers
-post_args="--data-urlencode \"repository=${REPO_URL}\ --data-urlencode \"branch=${REPO_BRANCH}\"  --data-urlencode \"profile=${PROFILE}\" --data-urlencode \"profile_custom_regexp=${PROFILE_CUSTOM_REGEXP}\" --data-urlencode \"architecture=amd64\" --data-urlencode \"jdk=${JDK}\"  --data-urlencode \"dtest_repository=${DTEST_REPO}\" --data-urlencode \"dtest_branch=${DTEST_BRANCH}\""
-echo -n "Trigger build with: curl -LX POST --user ${user}:<token> http://${ip}:8080/job/${JOB_NAME}/buildWithParameters ${post_args}   "
-while 
-    spinner=$(( (spinner+1) %4 ))
-    echo -ne "\b${spin:${spinner}:1}"
-    response_headers=$(curl -siLX POST --user ${user}:${token} http://${ip}:8080/job/${JOB_NAME}/buildWithParameters ${post_args} 2>&1)
-    ! ( echo "${response_headers}" | grep -q "201 Created" )
-do sleep 1 ; done
-echo -e "\b\b"
-build_number=wait_for_build_number()                "
+#FIXME
+#build_number="$(wait_for_build_number quiet)"
 
 
 # Running build…
+
+echo "Jenkins UI    at http://${ip}:8080/job/${JOB_NAME}/${build_number}"
+echo "Blue Ocean UI at http://${ip}:8080/blue/organizations/jenkins/${JOB_NAME}/detail/${JOB_NAME}/${build_number}/pipeline"
+
 
 # pod's WORKDIR is '\' so strip leading slash to avoid tar warnings
 BUILD_DIR="var/jenkins_home/jobs/${JOB_NAME}/builds"
@@ -243,15 +284,17 @@ check_finished() {
 }
 
 # Continuously check for "FINISHED"
+startime=$( date +%s )
 while ( ! ( check_finished ) ) ; do
     spinner=$(( (spinner+1) %4 ))
-    echo -ne "\rBuild in progress ${spin:${spinner}:1}"
+    sw=$(( $( date +%s ) - $startime ))
+    printf "\rBuild in progress… %02d:%02d   %s  " $((sw / 60)) $((sw % 60)) "${spin:spinner:1}"
     sleep 1
 done
 echo -e "\rBuild finished        "
 
 # Download the results and logs
-LOCAL_RESULTS_DIR="${LOCAL_RESULTS_BASEDIR}/${ip/./-}/${build_number}"
+LOCAL_RESULTS_DIR="${LOCAL_RESULTS_BASEDIR}${ip/./-}/${build_number}"
 
 # clean remote individual junit xml files
 echo "Downloading build artefacts…"
