@@ -61,6 +61,9 @@ import static org.apache.cassandra.nodes.virtual.NodeConstants.LOCAL;
 
 /**
  * Upgrade code to migrate from {@code system.local} and {@code system.peers} to {@link Nodes}.
+ * This migration exists to enable the upgrade path from older DSE versions that store the local and peers data in
+ * sstables to flat files that are used within CC.
+ * Without it the node isn't able (among others) to read its host id after upgrade.
  */
 public final class LegacySystemKeyspaceToNodes
 {
