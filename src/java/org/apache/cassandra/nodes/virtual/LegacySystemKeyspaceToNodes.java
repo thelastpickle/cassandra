@@ -69,6 +69,9 @@ public final class LegacySystemKeyspaceToNodes
 {
     private static final Logger logger = LoggerFactory.getLogger(LegacySystemKeyspaceToNodes.class);
 
+    @VisibleForTesting
+    static final AtomicBoolean initialized = new AtomicBoolean(false);
+
     public int peersMigrated;
     public boolean localMigrated;
     private final Nodes nodes;
@@ -98,11 +101,15 @@ public final class LegacySystemKeyspaceToNodes
         this.nodes = nodes;
     }
 
+    public boolean isInitialized()
+    {
+        return initialized.get();
+    }
+
     @VisibleForTesting
     boolean convertToNodesFiles() throws Exception
     {
-        Schema.unmapSystemTable(LOCAL);
-        Schema.unmapSystemTable(LEGACY_PEERS);
+        initialized.set(false);
         boolean upgradeExecuted = false;
         try
         {
@@ -149,8 +156,7 @@ public final class LegacySystemKeyspaceToNodes
         }
         finally
         {
-            Schema.mapSystemTable(LOCAL);
-            Schema.mapSystemTable(LEGACY_PEERS);
+            initialized.set(true);
         }
     }
 

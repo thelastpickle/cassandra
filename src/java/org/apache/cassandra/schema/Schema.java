@@ -93,8 +93,6 @@ public class Schema implements SchemaProvider
     public static final String FORCE_LOAD_LOCAL_KEYSPACES_PROP = "cassandra.schema.force_load_local_keyspaces";
     private static final boolean FORCE_LOAD_LOCAL_KEYSPACES = Boolean.getBoolean(FORCE_LOAD_LOCAL_KEYSPACES_PROP);
 
-    private static final Set<String> TEMPORARILY_UNMAPPED_SYSTEM_TABLE = Sets.newConcurrentHashSet();
-
     public static final Schema instance = new Schema();
 
     private volatile Keyspaces distributedKeyspaces = Keyspaces.none();
@@ -469,7 +467,7 @@ public class Schema implements SchemaProvider
         if (tableName.isEmpty())
             throw new InvalidRequestException("non-empty table is required");
 
-        if (NodeConstants.canBeMapped(keyspaceName, tableName) && isMapped(keyspaceName, tableName))
+        if (NodeConstants.canBeMapped(keyspaceName, tableName) && isMapped(keyspaceName))
         {
             KeyspaceMetadata systemViews = VirtualKeyspaceRegistry.instance.getKeyspaceMetadataNullable(SchemaConstants.SYSTEM_VIEWS_KEYSPACE_NAME);
             if (systemViews == null)
@@ -488,14 +486,10 @@ public class Schema implements SchemaProvider
         return metadata;
     }
 
-    private static boolean isMapped(String keyspaceName, String tableName)
+    private static boolean isMapped(String keyspaceName)
     {
-        if (SchemaConstants.SYSTEM_KEYSPACE_NAME.equals(keyspaceName))
-        {
-            return !TEMPORARILY_UNMAPPED_SYSTEM_TABLE.contains(tableName);
-        }
-
-        return true;
+        return !SchemaConstants.SYSTEM_KEYSPACE_NAME.equals(keyspaceName)
+                || LegacySystemKeyspaceToNodes.isInitialized();
     }
 
     public TableMetadata getTableMetadata(Descriptor descriptor)
@@ -858,13 +852,4 @@ public class Schema implements SchemaProvider
         return SchemaConstants.isLocalSystemKeyspace(keyspace.name) || keyspace.params.replication.klass.equals(LocalStrategy.class);
     }
 
-    public static void unmapSystemTable(String table)
-    {
-        TEMPORARILY_UNMAPPED_SYSTEM_TABLE.add(table);
-    }
-
-    public static void mapSystemTable(String table)
-    {
-        TEMPORARILY_UNMAPPED_SYSTEM_TABLE.remove(table);
-    }
 }
