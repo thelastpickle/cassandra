@@ -102,7 +102,6 @@ import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.apache.cassandra.streaming.StreamState;
 import org.apache.cassandra.streaming.management.StreamStateCompositeData;
-import org.apache.cassandra.utils.Pair;
 
 import com.codahale.metrics.JmxReporter;
 import com.google.common.base.Function;
@@ -1584,7 +1583,7 @@ public class NodeProbe implements AutoCloseable
     {
         return ssProxy.getOutOfRangeOperationCounts();
     }
-    public Map<String,Pair<String,String>> compareGossipAndTokenMetadata()
+    public Map<String,List<String>> compareGossipAndTokenMetadata()
     {
         return gossProxy.compareGossipAndTokenMetadata();
     }
