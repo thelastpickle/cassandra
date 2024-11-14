@@ -256,12 +256,6 @@ public class RepairMessageVerbHandler implements IVerbHandler<RepairMessage>
 
     private static boolean acceptMessage(final ValidationRequest validationRequest, final InetAddressAndPort from)
     {
-        boolean outOfRangeTokenLogging = DatabaseDescriptor.getLogOutOfTokenRangeRequests();
-        boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();
-
-        if (!outOfRangeTokenLogging && !outOfRangeTokenRejection)
-            return true;
-
         return StorageService.instance.getNormalizedLocalRanges(validationRequest.desc.keyspace)
                                       .validateRangeRequest(validationRequest.desc.ranges,
                                                             "RepairSession #" + validationRequest.desc.parentSessionId,

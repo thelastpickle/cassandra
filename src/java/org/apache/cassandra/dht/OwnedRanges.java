@@ -76,10 +76,8 @@ public final class OwnedRanges
             StorageMetrics.totalOpsForInvalidToken.inc();
 
             if (outOfRangeTokenLogging)
-            {
                 logger.warn("[{}] Received {} from {} containing ranges {} outside valid ranges {}",
                             requestId, requestType, from, unownedRanges, ownedRanges);
-            }
         }
 
         return !outOfRangeTokenRejection || unownedRanges.isEmpty();

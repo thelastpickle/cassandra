@@ -54,7 +54,7 @@ public class ReadCommandVerbHandler implements IVerbHandler<ReadCommand>
         ReadCommand command = message.payload;
 
         // no out of token range checking for partition range reads yet
-        if (command.isSinglePartitionRead())
+        if (command.isLimitedToOnePartition())
         {
             boolean outOfRangeTokenLogging = DatabaseDescriptor.getLogOutOfTokenRangeRequests();
             boolean outOfRangeTokenRejection = DatabaseDescriptor.getRejectOutOfTokenRangeRequests();

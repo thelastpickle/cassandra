@@ -47,8 +47,10 @@ import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.TokenRangeTestUtil;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.apache.cassandra.net.Verb.RANGE_REQ;
 import static org.apache.cassandra.net.Verb.READ_REQ;
 import static org.apache.cassandra.utils.TokenRangeTestUtil.broadcastAddress;
 import static org.apache.cassandra.utils.TokenRangeTestUtil.bytesToken;
@@ -58,11 +60,11 @@ import static org.apache.cassandra.utils.TokenRangeTestUtil.registerOutgoingMess
 
 public class ReadCommandVerbHandlerOutOfRangeTest
 {
-    private static ReadCommandVerbHandler handler;
     private static TableMetadata metadata_nonreplicated;
     private ColumnFamilyStore cfs;
     private long startingTotalMetricCount;
     private long startingKeyspaceMetricCount;
+    private ReadCommandVerbHandler handler;
 
     private static final String TEST_NAME = "read_command_vh_test_";
     private static final String KEYSPACE_NONREPLICATED = TEST_NAME + "cql_keyspace";
@@ -144,15 +146,12 @@ public class ReadCommandVerbHandlerOutOfRangeTest
         // checking is only currently done for single partition reads, range reads will continue to
         // accept any range they are given. So for a range wholly outside the node's ownership we
         // expect the metric to remain unchanged and read command to be executed.
-        // This test is added for 3.0 because the single partition & range  commands are now processed
-        // by the same verb handler.
-        // rdar://problem/33535104 is to extend checking to range reads
         ListenableFuture<TokenRangeTestUtil.MessageDelivery> messageSink = registerOutgoingMessageSink();
         int messageId = randomInt();
         Range<Token> range = new Range<>(key(metadata_nonreplicated, 150).getToken(),
                                          key(metadata_nonreplicated, 160).getToken());
         ReadCommand command = new StubRangeReadCommand(range, metadata_nonreplicated);
-        handler.doVerb(Message.builder(READ_REQ, command).from(node1).withId(messageId).build());
+        handler.doVerb(Message.builder(RANGE_REQ, command).from(node1).withId(messageId).build());
         getAndVerifyResponse(messageSink, messageId, false, false);
     }
 
@@ -181,7 +180,7 @@ public class ReadCommandVerbHandlerOutOfRangeTest
         else
         {
             TokenRangeTestUtil.MessageDelivery response = messageSink.get(10, TimeUnit.MILLISECONDS);
-            assertEquals(Verb.READ_RSP, response.message.verb());
+            assertTrue(Verb.READ_RSP == response.message.verb() || Verb.RANGE_RSP == response.message.verb());
             assertEquals(broadcastAddress, response.message.from());
             assertEquals(messageId, response.message.id());
             assertEquals(node1, response.to);
