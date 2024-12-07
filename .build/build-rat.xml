@@ -42,6 +42,8 @@
             <fileset dir="." includesfile="${build.dir}/.ratinclude">
                  <!-- Config files with not much creativity -->
                  <exclude name=".asf.yaml"/>
+                 <exclude name=".java-version"/>
+                 <exclude name=".python-version"/>
                  <exclude name="**/cassandra*.yaml"/>
                  <exclude name="conf/metrics-reporter-config-sample.yaml"/>
                  <exclude NAME="doc/antora.yml"/>
@@ -49,17 +51,17 @@
                  <exclude name="pylib/cqlshlib/test/config/sslhandling*.config"/>
                  <exclude NAME="src/resources/org/apache/cassandra/cql3/reserved_keywords.txt"/>
                  <exclude NAME="src/resources/org/apache/cassandra/index/sasi/analyzer/filter/*.txt"/>
-                 <exclude name="test/conf/cdc.yaml"/>
-                 <exclude name="test/conf/commitlog*.yaml"/>
-                 <exclude name="test/conf/system_keyspaces_directory.yaml"/>
-                 <exclude name="test/conf/sstableloader_with_encryption.yaml"/>
-                 <exclude name="test/conf/unit-test-conf/test-native-port.yaml"/>
                  <exclude name="tools/cqlstress-*.yaml"/>
                  <!-- test data -->
                  <exclude name="test/**/cassandra*.conf"/>
                  <exclude name="test/**/*.csv"/>
                  <exclude name="test/**/*.json"/>
                  <exclude name="test/**/*.txt"/>
+                 <exclude name="test/conf/cdc.yaml"/>
+                 <exclude name="test/conf/commitlog*.yaml"/>
+                 <exclude name="test/conf/system_keyspaces_directory.yaml"/>
+                 <exclude name="test/conf/sstableloader_with_encryption.yaml"/>
+                 <exclude name="test/conf/unit-test-conf/test-native-port.yaml"/>
                  <exclude name="test/data/**/*.adler32"/>
                  <exclude name="test/data/**/*.crc32"/>
                  <exclude name="test/data/**/CommitLog-*.log"/>
