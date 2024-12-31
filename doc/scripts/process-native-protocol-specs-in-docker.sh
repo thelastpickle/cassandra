@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[ -f "../build.xml" ] || { echo "build.xml must exist (current directory needs to be cassandra repo"; exit 1; }
+[ -f "../build.xml" ] || { echo "build.xml must exist (current directory needs to be doc/ in cassandra repo"; exit 1; }
+[ -f "antora.yml" ] || { echo "antora.yml must exist (current directory needs to be doc/ in cassandra repo"; exit 1; }
 
 # Variables
 GO_VERSION="1.23.1"
@@ -55,6 +56,27 @@ cd "${DIR}"
 output_dir="modules/cassandra/assets/attachments"
 mkdir -p "${output_dir}"
 "$TMPDIR"/cqlprotodoc . "${output_dir}"
+
+# Step 4: Generate summary file
+summary_file="modules/cassandra/pages/reference/native-protocol.adoc"
+
+# Write the header
+echo "= Native Protocol Versions" > "$summary_file"
+echo ":page-layout: native-protocol" >> "$summary_file"
+echo ":toc:" >> "$summary_file"
+echo >> "$summary_file"
+
+# Loop through the files from step 2 in reverse version order
+for file in $(ls ${output_dir}/native_protocol_v*.html | sort -r | awk -F/ '{print $NF}'); do
+  version=$(echo "$file" | sed -E 's/native_protocol_v([0-9]+)\.html/\1/')
+  echo "== Native Protocol Version $version" >> "$summary_file"
+  echo >> "$summary_file"
+  echo "[source, html]" >> "$summary_file"
+  echo "++++" >> "$summary_file"
+  echo "include::attachment\$$file[Version $version]" >> "$summary_file"
+  echo "++++" >> "$summary_file"
+  echo >> "$summary_file"
+done
 
 # Step 3: Cleanup - Remove the Cassandra and parser directories
 echo "Cleaning up..."
