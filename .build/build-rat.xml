@@ -41,6 +41,7 @@
         <rat:report reportFile="${build.dir}/rat.txt">
             <fileset dir="." includesfile="${build.dir}/.ratinclude">
                  <!-- Config files with not much creativity -->
+                 <exclude name=".asf.yaml"/>
                  <exclude name="**/cassandra*.yaml"/>
                  <exclude NAME="doc/antora.yml"/>
                  <exclude name="ide/**/*"/>
@@ -58,7 +59,6 @@
                  <!-- test data -->
                  <exclude name="pylib/cqlshlib/test/test_authproviderhandling_config/*"/>
                  <exclude name="test/**/cassandra*.conf"/>
-                 <exclude name="test/**/.keep"/>
                  <exclude name="test/**/*.csv"/>
                  <exclude name="test/**/*.txt"/>
                  <exclude name="test/data/**/*.adler32"/>

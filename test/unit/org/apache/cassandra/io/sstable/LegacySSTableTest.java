@@ -170,9 +170,7 @@ public class LegacySSTableTest
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException(String.format("No files for verion=%s and table=%s", legacyVersion, table)));
 
-        // FIXME remove
-        // ignore intentionally empty directory .keep files
-        return ".keep".equals(file.toFile().getName()) ? null : Descriptor.fromFile(new File(file));
+        return Descriptor.fromFile(new File(file));
     }
 
     @Test
@@ -385,13 +383,12 @@ public class LegacySSTableTest
                 try
                 {
                     alterTableAddColumn(legacyVersion, String.format("val3 frozen<legacy_%s_tuple_udt>", legacyVersion));
-                    if (legacyVersion.startsWith("m") || legacyVersion.startsWith("n") || legacyVersion.startsWith("d"))
-                        throw new AssertionError(String.format("Against legacyVersion %s expected InvalidRequestException: Cannot re-add previously dropped column 'val3' of type frozen<legacy_da_tuple_udt>, incompatible with previous type frozen<tuple<frozen<tuple<text, text>>>>", legacyVersion));
+                    throw new AssertionError(String.format("Against legacyVersion %s expected InvalidRequestException: Cannot re-add previously dropped column 'val3' of type frozen<legacy_da_tuple_udt>, incompatible with previous type frozen<tuple<frozen<tuple<text, text>>>>", legacyVersion));
                 }
                 catch (InvalidRequestException ex)
                 {
-                    if (!legacyVersion.startsWith("m") && !legacyVersion.startsWith("n") && !legacyVersion.startsWith("d"))
-                        throw new AssertionError(String.format("Against legacyVersion %s unexpected", legacyVersion), ex);
+                    // expected
+                    // InvalidRequestException: Cannot re-add previously dropped column 'val3' of type frozen<legacy_da_tuple_udt>, incompatible with previous type frozen<tuple<frozen<tuple<text, text>>>>
                 }
                 // dropping non-frozen UDTs disabled, see AlterTableStatement.DropColumns.dropColumn(..)
                 //alterTableAddColumn(legacyVersion, String.format("val4 legacy_%s_tuple_udt", legacyVersion));
@@ -691,12 +688,6 @@ public class LegacySSTableTest
     private static void loadLegacyTable(String legacyVersion, String tableSuffix) throws IOException
     {
         String table = String.format("legacy_%s_%s", legacyVersion, tableSuffix);
-
-        // FIXME remove
-        // ignore if no sstables are in this legacyVersion directory
-        if (0 == getTableDir(legacyVersion, table).tryList(f -> f.name().endsWith(".db")).length)
-            return;
-
         logger.info("Loading legacy table {}", table);
 
         ColumnFamilyStore cfs = Keyspace.open(LEGACY_TABLES_KEYSPACE).getColumnFamilyStore(table);
@@ -706,7 +697,6 @@ public class LegacySSTableTest
             copySstablesToTestData(legacyVersion, table, cfDir);
         }
 
-        int s0 = cfs.getLiveSSTables().size();
         cfs.loadNewSSTables();
     }
 
