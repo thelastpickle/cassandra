@@ -54,6 +54,7 @@ import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.io.sstable.format.SSTableFormat;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.io.sstable.format.Version;
@@ -104,6 +105,8 @@ public class LegacySSTableTest
      *     me-31111-big-* sstables are generated from 3.11.11
      * Both exist because of differences introduced in 3.6 (and 3.11) in how frozen multi-cell headers are serialised
      *  without the sstable format `me` being bumped, ref CASSANDRA-15035
+     *
+     * Sequence numbers represent the C* version used when creating the SSTable, i.e. with #testGenerateSstables()
      */
     public static String[] legacyVersions = null;
 
@@ -167,6 +170,7 @@ public class LegacySSTableTest
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException(String.format("No files for verion=%s and table=%s", legacyVersion, table)));
 
+        // FIXME remove
         // ignore intentionally empty directory .keep files
         return ".keep".equals(file.toFile().getName()) ? null : Descriptor.fromFile(new File(file));
     }
@@ -378,21 +382,26 @@ public class LegacySSTableTest
             {
                 alterTableAddColumn(legacyVersion, "val frozen<tuple<set<int>,set<text>>>");
                 alterTableAddColumn(legacyVersion, "val2 tuple<set<int>,set<text>>");
-                alterTableAddColumn(legacyVersion, String.format("val3 frozen<legacy_%s_tuple_udt>", legacyVersion));
+                try
+                {
+                    alterTableAddColumn(legacyVersion, String.format("val3 frozen<legacy_%s_tuple_udt>", legacyVersion));
+                    if (legacyVersion.startsWith("m") || legacyVersion.startsWith("n") || legacyVersion.startsWith("d"))
+                        throw new AssertionError(String.format("Against legacyVersion %s expected InvalidRequestException: Cannot re-add previously dropped column 'val3' of type frozen<legacy_da_tuple_udt>, incompatible with previous type frozen<tuple<frozen<tuple<text, text>>>>", legacyVersion));
+                }
+                catch (InvalidRequestException ex)
+                {
+                    if (!legacyVersion.startsWith("m") && !legacyVersion.startsWith("n") && !legacyVersion.startsWith("d"))
+                        throw new AssertionError(String.format("Against legacyVersion %s unexpected", legacyVersion), ex);
+                }
                 // dropping non-frozen UDTs disabled, see AlterTableStatement.DropColumns.dropColumn(..)
                 //alterTableAddColumn(legacyVersion, String.format("val4 legacy_%s_tuple_udt", legacyVersion));
             }
         }
     }
 
-    private static void alterTableAddColumn(String legacyVersion, String column_definition) {
-        // main-5.0 can use "IF NOT EXISTS" (and can also do all columns in one ALTER TABLE…
-        //QueryProcessor.executeInternal(String.format("ALTER TABLE legacy_tables.legacy_%s_tuple ADD IF NOT EXISTS %s", legacyVersion, column_definition));
-        try
-        {
-            QueryProcessor.executeInternal(String.format("ALTER TABLE legacy_tables.legacy_%s_tuple ADD %s", legacyVersion, column_definition));
-        }
-        catch (Throwable e) {}
+    private static void alterTableAddColumn(String legacyVersion, String column_definition)
+    {
+        QueryProcessor.executeInternal(String.format("ALTER TABLE legacy_tables.legacy_%s_tuple ADD IF NOT EXISTS %s", legacyVersion, column_definition));
     }
 
     private void verifyOldSSTables(String tableSuffix) throws IOException
@@ -643,7 +652,7 @@ public class LegacySSTableTest
 
         QueryProcessor.executeInternal(String.format("CREATE TYPE legacy_tables.legacy_%s_tuple_udt (name tuple<text,text>)", legacyVersion));
 
-        if (legacyVersion.startsWith("m") && legacyVersion.compareTo("me") <= 0)
+        if (legacyVersion.startsWith("m"))
         {
             // sstable formats possibly from 3.0.x would have had a schema with everything frozen
             QueryProcessor.executeInternal(String.format("CREATE TABLE legacy_tables.legacy_%1$s_tuple (pk text PRIMARY KEY, " +
@@ -683,6 +692,7 @@ public class LegacySSTableTest
     {
         String table = String.format("legacy_%s_%s", legacyVersion, tableSuffix);
 
+        // FIXME remove
         // ignore if no sstables are in this legacyVersion directory
         if (0 == getTableDir(legacyVersion, table).tryList(f -> f.name().endsWith(".db")).length)
             return;
@@ -701,9 +711,11 @@ public class LegacySSTableTest
     }
 
     /**
-     * Generates sstables for 8 CQL tables (see {@link #createTables(String)}) in <i>current</i>
+     * Generates sstables for CQL tables (see {@link #createTables(String)}) in <i>current</i>
      * sstable format (version) into {@code test/data/legacy-sstables/VERSION}, where
      * {@code VERSION} matches {@link Version#version BigFormat.latestVersion.getVersion()}.
+     *
+     * Sequence numbers are changed to represent the C* version used when creating the SSTable.
      * <p>
      * Run this test alone (e.g. from your IDE) when a new version is introduced or format changed
      * during development. I.e. remove the {@code @Ignore} annotation temporarily.
@@ -752,20 +764,21 @@ public class LegacySSTableTest
 
         File ksDir = new File(LEGACY_SSTABLE_ROOT, String.format("%s/legacy_tables", format.getLatestVersion()));
         ksDir.tryCreateDirectories();
-        copySstablesFromTestData(String.format("legacy_%s_simple", format.getLatestVersion()), ksDir);
-        copySstablesFromTestData(String.format("legacy_%s_simple_counter", format.getLatestVersion()), ksDir);
-        copySstablesFromTestData(String.format("legacy_%s_clust", format.getLatestVersion()), ksDir);
-        copySstablesFromTestData(String.format("legacy_%s_clust_counter", format.getLatestVersion()), ksDir);
-        copySstablesFromTestData(String.format("legacy_%s_tuple", format.getLatestVersion()), ksDir);
+        copySstablesFromTestData(format.getLatestVersion(), "legacy_%s_simple", ksDir);
+        copySstablesFromTestData(format.getLatestVersion(), "legacy_%s_simple_counter", ksDir);
+        copySstablesFromTestData(format.getLatestVersion(), "legacy_%s_clust", ksDir);
+        copySstablesFromTestData(format.getLatestVersion(), "legacy_%s_clust_counter", ksDir);
+        copySstablesFromTestData(format.getLatestVersion(), "legacy_%s_tuple", ksDir);
     }
 
-    public static void copySstablesFromTestData(String table, File ksDir) throws IOException
+    public static void copySstablesFromTestData(Version legacyVersion, String tablePattern, File ksDir) throws IOException
     {
-        copySstablesFromTestData(table, ksDir, LEGACY_TABLES_KEYSPACE);
+        copySstablesFromTestData(legacyVersion, tablePattern, ksDir, LEGACY_TABLES_KEYSPACE);
     }
 
-    public static void copySstablesFromTestData(String table, File ksDir, String ks) throws IOException
+    public static void copySstablesFromTestData(Version legacyVersion, String tablePattern, File ksDir, String ks) throws IOException
     {
+        String table = String.format(tablePattern, legacyVersion);
         File cfDir = new File(ksDir, table);
         cfDir.tryCreateDirectory();
 
@@ -773,7 +786,10 @@ public class LegacySSTableTest
         {
             for (File file : srcDir.tryList())
             {
-                copyFile(cfDir, file);
+                // Sequence IDs represent the C* version used when creating the SSTable, i.e. with #testGenerateSstables() (if not uuid based)
+                String newSeqId = FBUtilities.getReleaseVersionString().split("-")[0].replaceAll("[^0-9]", "");
+                File target = new File(cfDir, file.name().replace(legacyVersion + "-1-", legacyVersion + "-" + newSeqId + "-"));
+                copyFile(cfDir, file, target);
             }
         }
     }
@@ -783,9 +799,7 @@ public class LegacySSTableTest
         File tableDir = getTableDir(legacyVersion, table);
         Assert.assertTrue("The table directory " + tableDir + " was not found", tableDir.isDirectory());
         for (File file : tableDir.tryList())
-        {
             copyFile(cfDir, file);
-        }
     }
 
     private static File getTableDir(String legacyVersion, String table)
@@ -795,10 +809,14 @@ public class LegacySSTableTest
 
     public static void copyFile(File cfDir, File file) throws IOException
     {
+        copyFile(cfDir, file,  new File(cfDir, file.name()));
+    }
+
+    public static void copyFile(File cfDir, File file, File target) throws IOException
+    {
         byte[] buf = new byte[65536];
         if (file.isFile())
         {
-            File target = new File(cfDir, file.name());
             int rd;
             try (FileInputStreamPlus is = new FileInputStreamPlus(file);
                  FileOutputStreamPlus os = new FileOutputStreamPlus(target);)
