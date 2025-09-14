@@ -22,7 +22,7 @@ futures
 six
 -e git+https://github.com/datastax/python-driver.git@cassandra-test#egg=cassandra-driver
 # Used ccm version is tracked by cassandra-test branch in ccm repo. Please create a PR there for fixes or upgrades to new releases.
--e git+https://github.com/riptano/ccm.git@439ab5e1380affc3c9187761f357b10ca35a9a28#egg=ccm
+-e git+https://github.com/riptano/ccm.git@9242976dea1a3990b01562f8094376b2cc6aef52#egg=ccm
 cql
 decorator
 docopt
