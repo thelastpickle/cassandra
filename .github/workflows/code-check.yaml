@@ -1,0 +1,17 @@
+name: Ant Check
+
+on:
+    push:
+        branches:
+            - '**'
+
+jobs:
+    ant-check:
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v3
+
+          - name: Run Code Checks
+            run: .build/docker/check-code.sh
