@@ -40,7 +40,10 @@
 // When running builds parameterised to other architectures the corresponding labels are expected.
 //  For example 'arm64' requires the labels: cassandra-arm64-small, cassandra-arm64-medium, cassandra-arm64-large.
 //
-// The built-in node must has the "controller" label.  There must be more than two agents for each label.
+// Nodes running on spot instances have to have labels with `-spot` suffixes.
+//  For example: cassandra-amd64-large-spot
+//
+// The built-in node must has the "controller" label.  There must be more than two agents for all "cassandra-*" labels.
 //
 // Plugins required are:
 //  git, workflow-job, workflow-cps, junit, workflow-aggregator, ws-cleanup, pipeline-build-step, test-stability, copyartifact.
@@ -333,7 +336,7 @@ def build(command, cell) {
   def nodeExclusion = ""
   retry(maxAttempts) {
     attempt++
-    node(getNodeLabel(command, cell) + nodeExclusion) {
+    node(getNodeLabel(command, cell, attempt != maxAttempts) + nodeExclusion) {
       nodeExclusion = "&&!${NODE_NAME}"
       withEnv(cell.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}") {
@@ -376,7 +379,7 @@ def test(command, cell) {
   def nodeExclusion = ""
   retry(maxAttempts) {
     attempt++
-    node(getNodeLabel(command, cell) + nodeExclusion) {
+    node(getNodeLabel(command, cell, attempt != maxAttempts) + nodeExclusion) {
       nodeExclusion = "&&!${NODE_NAME}"
       withEnv(cell.collect { k, v -> "${k}=${v}" }) {
         ws("workspace/${JOB_NAME}/${BUILD_NUMBER}/${cell.step}/${cell.arch}/jdk-${cell.jdk}/python-${cell.python}") {
@@ -482,9 +485,10 @@ def fetchDockerImages(dockerfiles) {
      """
 }
 
-def getNodeLabel(command, cell) {
-  echo "using node label: cassandra-${cell.arch}-${command.size}"
-  return "cassandra-${cell.arch}-${command.size}"
+def getNodeLabel(command, cell, canSpot) {
+  def label = "cassandra-${cell.arch}-${command.size}" (+ "-spot" if canSpot else "")
+  echo "using node label: ${label}"
+  return label
 }
 
 def copyToNightlies(sourceFiles, remoteDirectory='') {

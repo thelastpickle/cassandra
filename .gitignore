@@ -2,6 +2,7 @@
 
 # C*
 .build/.run-ci.env
+.jenkins/k8s/jenkins-deployment.yaml
 build
 build/
 src/gen-java/
