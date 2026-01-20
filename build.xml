@@ -44,7 +44,8 @@
         When building, javac's source and target flags are set to the jdk used, so lower JDKs are not supported at runtime.
     -->
     <property name="java.default" value="11" />
-    <property name="java.supported" value="11,17,22" />
+<!-- CC5 only needs to build with 11 -->
+    <property name="java.supported" value="11,22" />
 
     <!-- directory details -->
     <property name="basedir" value="."/>

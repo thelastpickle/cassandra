@@ -17,6 +17,6 @@
 
 #
 # Build the jars
-
-$(dirname "$0")/_docker_run.sh debian-build.docker build-jars.sh $1
+[ "11" != "$1" ] && echo "forcing build to java 11"
+$(dirname "$0")/_docker_run.sh debian-build.docker build-jars.sh "11"
 exit $?
