@@ -153,8 +153,7 @@ from cqlshlib.formatting import (DEFAULT_DATE_FORMAT, DEFAULT_NANOTIME_FORMAT,
                                  DEFAULT_TIMESTAMP_FORMAT, CqlType, DateTimeFormat,
                                  format_by_type)
 from cqlshlib.tracing import print_trace, print_trace_session
-from cqlshlib.util import get_file_encoding_bomsize
-from cqlshlib.util import is_file_secure
+from cqlshlib.util import get_file_encoding_bomsize, is_file_secure
 from cqlshlib.serverversion import version as build_version
 try:
     from cqlshlib.serverversion import version as build_version
@@ -289,6 +288,7 @@ if os.path.exists(OLD_CONFIG_FILE):
 OLD_HISTORY = os.path.expanduser(os.path.join('~', '.cqlsh_history'))
 if os.path.exists(OLD_HISTORY):
     os.rename(OLD_HISTORY, HISTORY)
+
 # END history/config definition
 
 CQL_ERRORS = (
@@ -546,10 +546,6 @@ class Shell(cmd.Cmd):
         self.check_build_versions()
 
         if tty:
-            self.reset_prompt()
-            self.report_connection()
-            print('Use HELP for help.')
-            
             # Inform users about history logging if not disabled
             if not disable_history and readline is not None:
                 print()
@@ -558,6 +554,10 @@ class Shell(cmd.Cmd):
                 print("To disable history, use --disable-history or set 'disabled = true' in the [history] section of cqlshrc.")
                 print("See https://cassandra.apache.org/doc/latest/tools/cqlsh.html for more information.")
                 print()
+            self.reset_prompt()
+            self.report_connection()
+            print('Use HELP for help.')
+
         else:
             self.show_line_nums = True
         self.stdin = stdin
