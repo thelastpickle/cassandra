@@ -164,7 +164,7 @@ from cqlshlib.formatting import (DEFAULT_DATE_FORMAT, DEFAULT_NANOTIME_FORMAT,
                                  DEFAULT_TIMESTAMP_FORMAT, CqlType, DateTimeFormat,
                                  format_by_type, formatter_for)
 from cqlshlib.tracing import print_trace, print_trace_session
-from cqlshlib.util import get_file_encoding_bomsize, trim_if_present
+from cqlshlib.util import get_file_encoding_bomsize, trim_if_present, is_file_secure
 try:
     from cqlshlib.serverversion import version as build_version
 except ImportError:
@@ -290,6 +290,8 @@ if os.path.exists(OLD_CONFIG_FILE):
 OLD_HISTORY = os.path.expanduser(os.path.join('~', '.cqlsh_history'))
 if os.path.exists(OLD_HISTORY):
     os.rename(OLD_HISTORY, HISTORY)
+
+
 # END history/config definition
 
 CQL_ERRORS = (
@@ -543,12 +545,7 @@ class Shell(cmd.Cmd):
         self.check_build_versions()
 
         if tty:
-            self.reset_prompt()
-            self.maybe_warn_py2()
-            self.report_connection()
-            print('Use HELP for help.')
-            
-            # Warn users about history logging if not disabled
+            # Inform users about history logging if not disabled
             if not disable_history and readline is not None:
                 print()
                 print("ATTENTION: All commands will be saved to history file: %s" % HISTORY)
@@ -556,6 +553,11 @@ class Shell(cmd.Cmd):
                 print("To disable history, use --disable-history or set 'disabled = true' in the [history] section of cqlshrc.")
                 print("See https://cassandra.apache.org/doc/latest/tools/cqlsh.html for more information.")
                 print()
+            self.reset_prompt()
+            self.maybe_warn_py2()
+            self.report_connection()
+            print('Use HELP for help.')
+
         else:
             self.show_line_nums = True
         self.stdin = stdin
@@ -2144,6 +2146,13 @@ def read_options(cmdlineargs, environment):
 
     rawconfigs = configparser.RawConfigParser()
     rawconfigs.read(CONFIG_FILE)
+
+    username_from_cqlshrc = option_with_default(configs.get, 'authentication', 'username')
+    password_from_cqlshrc = option_with_default(rawconfigs.get, 'authentication', 'password')
+    if username_from_cqlshrc or password_from_cqlshrc:
+        if password_from_cqlshrc and not is_file_secure(os.path.expanduser(CONFIG_FILE)):
+            print("\nWarning: Password is found in an insecure cqlshrc file. The file is owned or readable by other users on the system.",
+                  end='', file=sys.stderr)
 
     argvalues = argparse.Namespace()
 
