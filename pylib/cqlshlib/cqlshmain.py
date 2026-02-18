@@ -94,6 +94,7 @@ else:
 
 # BEGIN history config
 
+
 def mkdirp(path):
     """Creates all parent directories up to path parameter or fails when path exists, but it is not a directory."""
 
@@ -124,10 +125,10 @@ OLD_HISTORY = os.path.expanduser(os.path.join('~', '.cqlsh_history'))
 if os.path.exists(OLD_HISTORY):
     if os.path.exists(HISTORY):
         print('\nWarning: .cqlsh_history files were found at both the old location ({0})'
-            + ' and the new location ({1}), the old file will not be migrated to the new'
-            + ' location, and the new location will be used for now.  You should manually'
-            + ' consolidate these files at the new location, and remove the old file.'
-            .format(OLD_HISTORY, HISTORY))
+              + ' and the new location ({1}), the old file will not be migrated to the new'
+              + ' location, and the new location will be used for now.  You should manually'
+              + ' consolidate these files at the new location, and remove the old file.'
+              .format(OLD_HISTORY, HISTORY))
     else:
         os.rename(OLD_HISTORY, HISTORY)
 
@@ -365,9 +366,6 @@ class Shell(cmd.Cmd):
         self.check_build_versions()
 
         if tty:
-            self.reset_prompt()
-            self.report_connection()
-            print('Use HELP for help.')
             # Inform users about history logging if not disabled
             if not disable_history and readline is not None:
                 print()
@@ -376,6 +374,9 @@ class Shell(cmd.Cmd):
                 print("To disable history, use --disable-history or set 'disabled = true' in the [history] section of cqlshrc.")
                 print("See https://cassandra.apache.org/doc/latest/tools/cqlsh.html for more information.")
                 print()
+            self.reset_prompt()
+            self.report_connection()
+            print('Use HELP for help.')
         else:
             self.show_line_nums = True
         self.stdin = stdin
@@ -2259,10 +2260,10 @@ def main(cmdline, pkgpath):
     if os.path.exists(old_config_file):
         if os.path.exists(config_file):
             print('\nWarning: cqlshrc config files were found at both the old location ({0})'
-                + ' and the new location ({1}), the old config file will not be migrated to the new'
-                + ' location, and the new location will be used for now.  You should manually'
-                + ' consolidate the config files at the new location and remove the old file.'
-                .format(old_config_file, config_file))
+                  + ' and the new location ({1}), the old config file will not be migrated to the new'
+                  + ' location, and the new location will be used for now.  You should manually'
+                  + ' consolidate the config files at the new location and remove the old file.'
+                  .format(old_config_file, config_file))
         else:
             os.rename(old_config_file, config_file)
 
