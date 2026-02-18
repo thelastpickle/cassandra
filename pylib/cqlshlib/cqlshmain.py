@@ -151,7 +151,7 @@ parser.add_argument("--request-timeout", default=DEFAULT_REQUEST_TIMEOUT_SECONDS
 parser.add_argument("-t", "--tty", action='store_true', dest='tty',
                     help='Force tty mode (command prompt).')
 parser.add_argument('--disable-history', default=False, action='store_true',
-                    help='Disable saving of history (existing history will still be loaded)')                    
+                    help='Disable saving of history (existing history will still be loaded)')
 
 # This is a hidden option to suppress the warning when the -p/--password command line option is used.
 # Power users may use this option if they know no other people has access to the system where cqlsh is run or don't care about security.
@@ -193,7 +193,6 @@ try:
 except OSError:
     print('\nWarning: Cannot create directory at `%s`. Command history will not be saved. Please check what was the environment property CQL_HISTORY set to.\n' % HISTORY_DIR)
 
-
 # END history config
 
 DEFAULT_CQLSHRC = os.path.expanduser(os.path.join('~', '.cassandra', 'cqlshrc'))
@@ -221,6 +220,7 @@ if os.path.exists(OLD_CONFIG_FILE):
 OLD_HISTORY = os.path.expanduser(os.path.join('~', '.cqlsh_history'))
 if os.path.exists(OLD_HISTORY):
     os.rename(OLD_HISTORY, HISTORY)
+
 # END history/config definition
 
 CQL_ERRORS = (
@@ -459,9 +459,6 @@ class Shell(cmd.Cmd):
         self.check_build_versions()
 
         if tty:
-            self.reset_prompt()
-            self.report_connection()
-            print('Use HELP for help.')
             # Inform users about history logging if not disabled
             if not disable_history and readline is not None:
                 print()
@@ -470,6 +467,9 @@ class Shell(cmd.Cmd):
                 print("To disable history, use --disable-history or set 'disabled = true' in the [history] section of cqlshrc.")
                 print("See https://cassandra.apache.org/doc/latest/tools/cqlsh.html for more information.")
                 print()
+            self.reset_prompt()
+            self.report_connection()
+            print('Use HELP for help.')
         else:
             self.show_line_nums = True
         self.stdin = stdin
