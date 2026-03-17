@@ -268,7 +268,7 @@ except OSError:
 DEFAULT_CQLSHRC = os.path.expanduser(os.path.join('~', '.cassandra', 'cqlshrc'))
 
 if cfarguments.cqlshrc is not None:
-    CONFIG_FILE = cfarguments.cqlshrc
+    CONFIG_FILE = os.path.expanduser(cfarguments.cqlshrc)
     if not os.path.exists(CONFIG_FILE):
         print('\nWarning: Specified cqlshrc location `%s` does not exist.  Using `%s` instead.\n' % (CONFIG_FILE, DEFAULT_CQLSHRC))
         CONFIG_FILE = DEFAULT_CQLSHRC
