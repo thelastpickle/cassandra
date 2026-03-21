@@ -1244,7 +1244,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                 request.table.id.serialize(out);
                 DecoratedKey.serializer.serialize(request.partitionKey, out, version);
             }
-            if (version >= MessagingService.VERSION_51)
+            if (version >= MessagingService.VERSION_60)
                 out.writeBoolean(request.isForRecovery);
         }
 
@@ -1257,7 +1257,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
             {
                 SinglePartitionReadCommand readCommand = (SinglePartitionReadCommand) ReadCommand.serializer.deserialize(in, version);
                 boolean isForRecovery = false;
-                if (version >= MessagingService.VERSION_51)
+                if (version >= MessagingService.VERSION_60)
                     isForRecovery = in.readBoolean();
                 return construct(param, ballot, electorate, readCommand, (flag & 2) == 0, isForRecovery);
             }
@@ -1266,7 +1266,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                 TableMetadata table = Schema.instance.getExistingTableMetadata(TableId.deserialize(in));
                 DecoratedKey partitionKey = (DecoratedKey) DecoratedKey.serializer.deserialize(in, table.partitioner, version);
                 boolean isForRecovery = false;
-                if (version >= MessagingService.VERSION_51)
+                if (version >= MessagingService.VERSION_60)
                     isForRecovery = in.readBoolean();
                 return construct(param, ballot, electorate, partitionKey, table, (flag & 2) != 0, isForRecovery);
             }
@@ -1281,7 +1281,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                         ? ReadCommand.serializer.serializedSize(request.read, version)
                         : request.table.id.serializedSize()
                             + DecoratedKey.serializer.serializedSize(request.partitionKey, version));
-            if (version >= MessagingService.VERSION_51)
+            if (version >= MessagingService.VERSION_60)
                 size += TypeSizes.sizeof(request.isForRecovery);
             return size;
         }
@@ -1331,7 +1331,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                 if (promised.readResponse != null)
                     ReadResponse.serializer.serialize(promised.readResponse, out, version);
                 serializeMap(promised.gossipInfo, out, version, inetAddressAndPortSerializer, EndpointState.nullableSerializer);
-                if (version >= MessagingService.VERSION_51)
+                if (version >= MessagingService.VERSION_60)
                     Epoch.messageSerializer.serialize(promised.electorateEpoch, out, version);
                 if (promised.outcome == PERMIT_READ)
                     promised.supersededBy.serialize(out);
@@ -1353,7 +1353,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                 Committed committed = Committed.serializer.deserialize(in, version);
                 ReadResponse readResponse = (flags & 4) != 0 ? ReadResponse.serializer.deserialize(in, version) : null;
                 Map<InetAddressAndPort, EndpointState> gossipInfo = deserializeMap(in, version, inetAddressAndPortSerializer, EndpointState.nullableSerializer);
-                Epoch electorateEpoch = version >= MessagingService.VERSION_51 ? Epoch.messageSerializer.deserialize(in, version) : Epoch.EMPTY;
+                Epoch electorateEpoch = version >= MessagingService.VERSION_60 ? Epoch.messageSerializer.deserialize(in, version) : Epoch.EMPTY;
                 MaybePromise.Outcome outcome = (flags & 16) != 0 ? PERMIT_READ : PROMISE;
                 boolean hasProposalStability = (flags & 8) != 0;
                 Ballot supersededBy = null;
@@ -1378,7 +1378,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                         + Committed.serializer.serializedSize(permitted.latestCommitted, version)
                         + (permitted.readResponse == null ? 0 : ReadResponse.serializer.serializedSize(permitted.readResponse, version))
                         + serializedMapSize(permitted.gossipInfo, version, inetAddressAndPortSerializer, EndpointState.nullableSerializer)
-                        + (version >= MessagingService.VERSION_51 ? Epoch.messageSerializer.serializedSize(permitted.electorateEpoch, version) : 0)
+                        + (version >= MessagingService.VERSION_60 ? Epoch.messageSerializer.serializedSize(permitted.electorateEpoch, version) : 0)
                         + (permitted.outcome == PERMIT_READ ? Ballot.sizeInBytes() : 0);
             }
 

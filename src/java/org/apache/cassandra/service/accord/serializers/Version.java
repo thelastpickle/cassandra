@@ -34,7 +34,7 @@ public enum Version implements MessageVersionProvider
 {
     // If MessagingService version bumps, this mapping does not need to be updated; only updates needed are those that
     // include accord serializer changes.
-    V1(1, MessagingService.Version.VERSION_51);
+    V1(1, MessagingService.Version.VERSION_60);
 
     public static final Version LATEST = Version.V1;
     /**

@@ -145,7 +145,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
         {
             request.tableId.serialize(out);
             // Post-5.1 topology is not driven by gossip state
-            if (version < MessagingService.VERSION_51)
+            if (version < MessagingService.VERSION_60)
                 EndpointState.serializer.serialize(request.epState, out, version);
             out.writeInt(request.ranges.size());
             for (Range<Token> rt : request.ranges)
@@ -155,7 +155,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
         public Request deserialize(DataInputPlus in, int version) throws IOException
         {
             TableId tableId = TableId.deserialize(in);
-            EndpointState epState = version < MessagingService.VERSION_51
+            EndpointState epState = version < MessagingService.VERSION_60
                                     ? EndpointState.serializer.deserialize(in, version)
                                     : new EndpointState(HeartBeatState.empty());
 
@@ -174,7 +174,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
         public long serializedSize(Request request, int version)
         {
             long size = request.tableId.serializedSize();
-            if (version < MessagingService.VERSION_51)
+            if (version < MessagingService.VERSION_60)
                 size += EndpointState.serializer.serializedSize(request.epState, version);
             size += TypeSizes.sizeof(request.ranges.size());
             for (Range<Token> range : request.ranges)
