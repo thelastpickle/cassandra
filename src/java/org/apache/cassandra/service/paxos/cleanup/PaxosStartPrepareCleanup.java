@@ -83,7 +83,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
     }
 
     /**
-     * We run paxos repair as part of topology changes, so prior to 5.1 we would include the local endpoint state in
+     * We run paxos repair as part of topology changes, so prior to 6.0 we would include the local endpoint state in
      * the paxos repair prepare message to prevent racing with gossip dissemination and guarantee that every repair
      * participant is aware of the pending ring change during repair. This is now deprecated as topology changes are no
      * longer driven by gossip state. We continue to include the state in internode messages temporarily for
@@ -127,7 +127,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
     public static class Request
     {
         final TableId tableId;
-        @Deprecated(since = "5.1")
+        @Deprecated(since = "6.0")
         final EndpointState epState;
         final Collection<Range<Token>> ranges;
 
@@ -144,7 +144,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
         public void serialize(Request request, DataOutputPlus out, int version) throws IOException
         {
             request.tableId.serialize(out);
-            // Post-5.1 topology is not driven by gossip state
+            // Post-6.0 topology is not driven by gossip state
             if (version < MessagingService.VERSION_60)
                 EndpointState.serializer.serialize(request.epState, out, version);
             out.writeInt(request.ranges.size());
@@ -189,7 +189,7 @@ public class PaxosStartPrepareCleanup extends AsyncFuture<PaxosCleanupHistory> i
             if (DatabaseDescriptor.getAccordTransactionsEnabled())
                 ClusterMetadataService.instance().fetchLogFromPeerOrCMS(in.from(), in.epoch());
             ColumnFamilyStore table = Schema.instance.getColumnFamilyStoreInstance(in.payload.tableId);
-            // Note: pre-5.1 we would use gossip state included in the request payload to update topology
+            // Note: pre-6.0 we would use gossip state included in the request payload to update topology
             // prior to cleanup. Topology is no longer derived from gossip state, so this has been removed.
             Ballot highBound = newBallot(ballotTracker().getHighBound(), ConsistencyLevel.SERIAL);
             PaxosRepairHistory history = table.getPaxosRepairHistoryForRanges(in.payload.ranges);

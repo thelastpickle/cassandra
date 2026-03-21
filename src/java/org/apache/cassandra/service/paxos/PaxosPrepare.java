@@ -505,15 +505,15 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
         Permitted permitted = response.permitted();
 
         // If the peer's local electorate disagreed with ours it will be signalled in the permitted response.
-        // Pre 5.1 this used gossip state to assess the relative currency of either peer's view of the ring/placements
-        // from which the electorate is derived. Post 5.1, this is driven by cluster metadata rather than gossip but we
+        // Pre 6.0 this used gossip state to assess the relative currency of either peer's view of the ring/placements
+        // from which the electorate is derived. Post 6.0, this is driven by cluster metadata rather than gossip but we
         // preserve the signalling via gossip state for continuity during upgrades
         Epoch remoteElectorateEpoch = permitted.electorateEpoch;
 
         if (remoteElectorateEpoch.is(Epoch.EMPTY) && permitted.gossipInfo.isEmpty())
         {
             // we agree about the electorate, so can simply accept the promise/permission
-            // TODO: once 5.1 is the minimum supported version, we can stop sending and checking gossipInfo and just
+            // TODO: once 6.0 is the minimum supported version, we can stop sending and checking gossipInfo and just
             //       use the electorateEpoch
             permitted(permitted, from);
         }
@@ -527,8 +527,8 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
         }
         else
         {
-            // The remote peer indicated a mismatch, but is either still running a pre-5.1 version or we have not yet
-            // initialized the CMS following upgrade to 5.1. Topology changes while in this state are not supported,
+            // The remote peer indicated a mismatch, but is either still running a pre-6.0 version or we have not yet
+            // initialized the CMS following upgrade to 6.0. Topology changes while in this state are not supported,
             // failed nodes must be DOWN during upgrade and should be replaced after the CMS has been initialized.
             if (needsGossipUpdate(permitted.gossipInfo))
             {
@@ -1163,7 +1163,7 @@ public class PaxosPrepare extends PaxosRequestCallback<PaxosPrepare.Response> im
                                                                       request.partitionKey,
                                                                       consistency(request.ballot));
                     Map<InetAddressAndPort, EndpointState> gossipInfo = verifyElectorate(request.electorate, localElectorate);
-                    // TODO when 5.1 is the minimum supported version we can modify verifyElectorate to just return this epoch
+                    // TODO when 6.0 is the minimum supported version we can modify verifyElectorate to just return this epoch
                     Epoch electorateEpoch = gossipInfo.isEmpty() ? Epoch.EMPTY : localElectorate.createdAt;
                     ReadResponse readResponse = null;
 
