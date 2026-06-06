@@ -33,10 +33,12 @@ test with:
 
 import argparse
 import fcntl
+import functools
 import getpass
 import gzip
 import itertools
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -64,28 +66,32 @@ except OSError as import_jenkins_error:
     else:
         raise
 
-def base_job_name(args) -> str:
+@functools.cache
+def _base_job_name(repository: str, branch: str) -> str:
     """
     Determines the default Jenkins job name based on the Cassandra version.
     Separate jobs are required because Jenkinsfiles are baked into the job configuration.
     ref: .jenkins/k8s/jenkins-deployment.yaml JCasC.configScripts.test-job
     """
-    if not hasattr(base_job_name, "_cached_result"):
-        raw_url = args.repository.replace("https://github.com/", "https://raw.githubusercontent.com/").removesuffix(".git") + f"/{args.branch}/build.xml"
-        if 200 != requests.head(raw_url).status_code:
-            raise ValueError(f"GitHub unavailable, or this branch has not been pushed yet: {args.repository} @ {args.branch} (or remote tracking not setup up: `git config --get branch.{args.branch}.remote` and `git config --get branch.{args.branch}.merge`)")
-        response = requests.get(raw_url)
-        response.raise_for_status()
-        for line in response.text.splitlines():
-            if 'property' in line and 'name="base.version"' in line:
-                version = line.split('value="')[1].split('"')[0]
-                # TODO: add new version each release branching
-                if version.startswith("5.0."):
-                    base_job_name._cached_result = "cassandra-5.0"
-                else:
-                    base_job_name._cached_result = "cassandra"
-                break
-    return base_job_name._cached_result
+    repo_url = repository.replace("https://github.com/", "https://raw.githubusercontent.com/")
+    if repo_url.endswith(".git"):
+        repo_url = repo_url[:-4]
+    raw_url = repo_url + f"/{branch}/build.xml"
+    if 200 != requests.head(raw_url, timeout=30).status_code:
+        raise ValueError(f"GitHub unavailable, or this branch has not been pushed yet: {repository} @ {branch} (or remote tracking not setup up: `git config --get branch.{branch}.remote` and `git config --get branch.{branch}.merge`)")
+    response = requests.get(raw_url, timeout=30)
+    response.raise_for_status()
+    for line in response.text.splitlines():
+        if 'property' in line and 'name="base.version"' in line:
+            # look for "digit.digit" in name, e.g. "*5.0*" -> "cassandra-5.0"
+            version_match = re.search(r"(\d+)\.(\d+)", line.split('value="')[1].split('"')[0])
+            if version_match:
+                return f"cassandra-{version_match.group(1)}.{version_match.group(2)}"
+            return "cassandra"
+    raise ValueError(f"Unable to determine base.version from {raw_url}")
+
+def base_job_name(args) -> str:
+    return _base_job_name(args.repository, args.branch)
 
 def get_current_branch() -> str:
     """Returns the current branch."""
@@ -97,7 +103,7 @@ def is_local_git_dirty(args) -> bool:
     # use base_job_name to verify the remote branch exists
     base_job_name(args)
     # check if the working directory is clean
-    clean = subprocess.run(["git", "-C", str(CASSANDRA_DIR), "diff-index", "--quiet", "HEAD", "--"]).returncode
+    clean = subprocess.run(["git", "-C", str(CASSANDRA_DIR), "diff-index", "--quiet", "HEAD", "--"], check=False).returncode
     # check if there are unpushed committed changes
     unpushed_commits = bool(subprocess.run(["git", "-C", str(CASSANDRA_DIR), "log", "@{u}..HEAD", "--name-only"],
                                            capture_output=True, text=True, check=False).stdout.strip())
@@ -203,9 +209,9 @@ def parse_arguments() -> argparse.Namespace:
     """
     args = argument_parser().parse_args()
 
-    assert args.repository.startswith("https://github.com/") and args.repository.removesuffix(".git").endswith("cassandra"),\
+    assert args.repository.startswith("https://github.com/") and (args.repository[:-4] if args.repository.endswith(".git") else args.repository).endswith("cassandra"),\
         f"Only github apache/cassandra (forked) repository supported, got: {args.repository}"
-    assert args.dtest_repository.startswith("https://github.com/") and args.dtest_repository.removesuffix(".git").endswith("cassandra-dtest"),\
+    assert args.dtest_repository.startswith("https://github.com/") and (args.dtest_repository[:-4] if args.dtest_repository.endswith(".git") else args.dtest_repository).endswith("cassandra-dtest"),\
         f"Only github apache/cassandra-dtest (forked) repository supported, got: {args.dtest_repository}"
     assert not (args.setup and args.only_setup), "Both --setup or --only-setup cannot be specified."
     assert not (args.tear_down and args.only_tear_down), "Both --tear-down or --only-tear-down cannot be specified."
@@ -310,11 +316,19 @@ def ensure_job_parameters_visible(server: jenkins.Jenkins, job_name: str):
     If necessary, triggers a non-parameter build to make parameterised builds visible.
     """
     job_info = server.get_job_info(job_name)
-    if any(param.get("parameterDefinitions") for param in job_info.get("property", [])):
-        return
+    for param in job_info.get("property", []):
+        if param_defs := param.get("parameterDefinitions"):
+            # Needs more than just the branch+profile params
+            if len(param_defs) > 2 or not all(p.get("name") in {"branch", "profile"} for p in param_defs):
+                return
 
-    print(f"Parameters are not visible for job {job_name}; initiating non-parameter build.")
-    queue_item = server.build_job(job_name)
+    print(f"Parameters are not visible for job {job_name}; initiating build with default parameters.")
+    # re-use branch+profile params if present
+    params = {p.get("name"): p.get("defaultParameterValue", {}).get("value", "")
+              for param in job_info.get("property", [])
+              for p in param.get("parameterDefinitions", [])}
+
+    queue_item = server.build_job(job_name, parameters=params) if params else server.build_job(job_name)
     build_number = wait_for_build_number(server, queue_item)
     time.sleep(6)
     try:
@@ -615,9 +629,9 @@ def node_cleaner(k8s_client: client.CoreV1Api, kubeconfig: Optional[str], kubeco
         time.sleep(10)
 
 
-def delete_remote_junit_files(k8s_client, pod_name: str, kube_ns: str, base_job_name: str, build_number: int):
+def delete_remote_junit_files(k8s_client, pod_name: str, kube_ns: str, job_name: str, build_number: int):
     debug("Cleaning remote individual JUnit XML files...")
-    exec_command = ['rm', '-rf', f'/var/jenkins_home/jobs/{base_job_name}/builds/{build_number}/archive/test/output']
+    exec_command = ['rm', '-rf', f'/var/jenkins_home/jobs/{job_name}/builds/{build_number}/archive/test/output']
     stream.stream(k8s_client.connect_get_namespaced_pod_exec,
         pod_name, kube_ns, container=DEFAULT_CONTAINER_NAME, command=exec_command, stderr=True, stdin=False, stdout=True, tty=False, _preload_content=False)
     debug("Remote JUnit XML files cleaned.")

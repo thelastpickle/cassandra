@@ -37,13 +37,15 @@ controller:
     - controller
   resources:
     # increase cpu/memory as agent pool sizes get bigger (pre-ci.c.a.o uses 8 and 20g)
+    # to find currently deployed resources: `kubectl get statefulset cassius-jenkins -o jsonpath='{.spec.template.spec.containers[0].resources}'`
     requests:
       cpu: 4
       memory: 16G
     limits:
       cpu: 8
-      memory: 20G
-  javaOpts: -server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ExplicitGCInvokesConcurrent -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=40 -Xms8G -Xmx8G
+      memory: 16G
+  # to find currently deployed javaOpts: `kubectl get statefulset cassius-jenkins -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="JAVA_OPTS")].value}'`
+  javaOpts: -server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ExplicitGCInvokesConcurrent -XX:+ParallelRefProcEnabled -XX:+UseStringDeduplication -XX:SoftRefLRUPolicyMSPerMB=250 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=40 -Xms8G -Xmx8G 
   installPlugins:
     - job-dsl
     - configuration-as-code
@@ -83,6 +85,10 @@ controller:
         jobs:
           - script: >
               pipelineJob('cassandra') {
+                parameters {
+                  stringParam('branch', 'trunk', 'Branch')
+                  choiceParam('profile', ['skinny'], 'Profile')
+                }
                 definition {
                   cpsScm {
                     scm {
@@ -100,6 +106,10 @@ controller:
               }
           - script: >
               pipelineJob('cassandra-6.0') {
+                parameters {
+                  stringParam('branch', 'cassandra-6.0', 'Branch')
+                  choiceParam('profile', ['skinny'], 'Profile')
+                }
                 definition {
                   cpsScm {
                     scm {
@@ -117,6 +127,10 @@ controller:
               }
           - script: >
               pipelineJob('cassandra-5.0') {
+                parameters {
+                  stringParam('branch', 'cassandra-5.0', 'Branch')
+                  choiceParam('profile', ['skinny'], 'Profile')
+                }
                 definition {
                   cpsScm {
                     scm {
@@ -154,12 +168,18 @@ agent:
   node-selector:
     cassandra.jenkins.agent: true
   waitForPodSec: "180"
+  garbageCollection:
+    # Enable the kubernetes-plugin orphan-pod garbage collector
+    # Deletes agent pods the controller no longer tracks after `timeout` seconds
+    enabled: true
+    timeout: 360
   podTemplates:
     agent-dind-small: |
       - name: agent-dind-small
         label: agent-dind cassandra-small cassandra-amd64-small
         nodeSelector: 'cassandra.jenkins.agent.small=true'
-        activeDeadlineSeconds: '0'
+        # this has to be bigger than the highest 'timeout_hours' value in .jenkins/Jenkinsfile
+        activeDeadlineSeconds: '23400'
         idleMinutes: 1
         instanceCap: 50
         instanceCapStr: "50"
@@ -251,7 +271,8 @@ agent:
       - name: agent-dind-medium
         label: agent-dind cassandra-medium cassandra-amd64-medium
         nodeSelector: 'cassandra.jenkins.agent.medium=true'
-        activeDeadlineSeconds: '0'
+        # this has to be bigger than the highest 'timeout_hours' value in .jenkins/Jenkinsfile
+        activeDeadlineSeconds: '23400'
         idleMinutes: 1
         instanceCap: 100
         instanceCapStr: "100"
@@ -341,7 +362,8 @@ agent:
       - name: agent-dind-large
         label: agent-dind cassandra-large cassandra-amd64-large cassandra-amd64-large-dedicated
         nodeSelector: 'cassandra.jenkins.agent.large=true'
-        activeDeadlineSeconds: '0'
+        # this has to be bigger than the highest 'timeout_hours' value in .jenkins/Jenkinsfile
+        activeDeadlineSeconds: '23400'
         idleMinutes: 1
         instanceCap: 200
         instanceCapStr: "200"
