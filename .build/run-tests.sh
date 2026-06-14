@@ -356,13 +356,13 @@ with open('${jmh_result}','w') as f:
 _main() {
   # parameters
   local -r target="${test_target/-repeat/}"
-  local -r split_chunk="${chunk:-'1/1'}" # Chunks formatted as "K/N" for the Kth chunk of N chunks
+  local -r split_chunk="${chunk:-1/1}" # Chunks formatted as "K/N" for the Kth chunk of N chunks
 
   # check split_chunk is compatible with target (if not a regexp)
   if [[ "${_split_chunk}" =~ ^\d+/\d+$ ]] && [[ "1/1" != "${split_chunk}" ]] ; then
     case ${target} in
       "stress-test" | "fqltool-test" | "cqlsh-test" | "sstableloader-test")
-          echo "Target ${target} does not suport splits."
+          echo "Target ${target} does not support splits."
           exit 1
           ;;
         *)

@@ -614,7 +614,7 @@ def generateTestReports() {
 
       dir('build/') {
         archiveArtifacts artifacts: "ci_summary.html,results_details.tar.xz,${logfile}", fingerprint: true
-        copyToNightlies('ci_summary.html,results_details.tar.xz,${logfile},test/jmh-result.json')
+        copyToNightlies('ci_summary.html,results_details.tar.xz,${logfile}')
       }
     }
     processJmhReports()
@@ -638,6 +638,7 @@ print(f'combined {len(m)} results')
     jmhReport('build/test/output/combined-result.json')
     dir('build/') {
       archiveArtifacts artifacts: "test/output/combined-result.json", fingerprint: true
+      copyToNightlies('test/output/combined-result.json')
     }
   }
 }
