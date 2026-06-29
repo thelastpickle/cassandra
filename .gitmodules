@@ -1,4 +1,4 @@
 [submodule "modules/accord"]
 	path = modules/accord
-	url = https://github.com/apache/cassandra-accord.git
-	branch = trunk
+	url = https://github.com/thelastpickle/cassandra-accord.git
+	branch = mck/21261/6.0
