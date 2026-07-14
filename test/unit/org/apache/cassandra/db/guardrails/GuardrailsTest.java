@@ -128,6 +128,28 @@ public class GuardrailsTest extends GuardrailTester
     }
 
     @Test
+    public void testNegativeMaxThresholdMeansUnlimited() throws Throwable
+    {
+        // -1 means "unlimited": warnValue/failValue must map to Long.MAX_VALUE 
+        MaxThreshold guard = new MaxThreshold("x", REASON,
+                                              state -> -1, state -> -1,
+                                              (isWarn, featureName, v, t) -> "");
+        assertEquals(Long.MAX_VALUE, guard.warnValue(userClientState));
+        assertEquals(Long.MAX_VALUE, guard.failValue(userClientState));
+    }
+
+    @Test
+    public void testZeroMaxThresholdIsZeroNotUnlimited() throws Throwable
+    {
+        // 0 means "zero", not unlimited
+        MaxThreshold guard = new MaxThreshold("x", REASON,
+                                              state -> 0, state -> 0,
+                                              (isWarn, featureName, v, t) -> "");
+        assertEquals(0, guard.warnValue(userClientState));
+        assertEquals(0, guard.failValue(userClientState));
+    }
+
+    @Test
     public void testMaxThresholdUsers() throws Throwable
     {
         MaxThreshold guard = new MaxThreshold("x",
@@ -227,6 +249,28 @@ public class GuardrailsTest extends GuardrailTester
 
         assertValid(() -> guard.guard(11, "Z", true, userClientState));
         assertFails(() -> guard.guard(5, "A", true, userClientState), "Aborting: for A, 5 < 10", "Aborting: for <redacted>, 5 < 10");
+    }
+
+    @Test
+    public void testNegativeMinThresholdMeansUnlimited() throws Throwable
+    {
+        // -1 means "unlimited": warnValue/failValue must map to Long.MIN_VALUE
+        MinThreshold guard = new MinThreshold("x", REASON,
+                                              state -> -1, state -> -1,
+                                              (isWarn, what, v, t) -> "");
+        assertEquals(Long.MIN_VALUE, guard.warnValue(userClientState));
+        assertEquals(Long.MIN_VALUE, guard.failValue(userClientState));
+    }
+
+    @Test
+    public void testZeroMinThresholdIsZeroNotUnlimited() throws Throwable
+    {
+        // 0 means "zero", not unlimited
+        MinThreshold guard = new MinThreshold("x", REASON,
+                                              state -> 0, state -> 0,
+                                              (isWarn, what, v, t) -> "");
+        assertEquals(0, guard.warnValue(userClientState));
+        assertEquals(0, guard.failValue(userClientState));
     }
 
     @Test
