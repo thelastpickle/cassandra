@@ -1418,13 +1418,29 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean, Memtable.Owner
      * param @ columnFamily - columnFamily changes
      */
     public void apply(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup, CommitLogPosition commitLogPosition)
+    {
+        apply(update, indexer, opGroup, commitLogPosition, true);
+    }
+
+    /**
+     * CASSANDRA-21019: for the nested index-table write performed from within an
+     * enclosing mutation (CassandraIndex via TableWriteHandler.writeNested); it must not
+     * wait for memtable pool room -- putNested() skips write back-pressure.
+     */
+    public void applyNested(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup, CommitLogPosition commitLogPosition)
+    {
+        apply(update, indexer, opGroup, commitLogPosition, false);
+    }
+
+    private void apply(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup, CommitLogPosition commitLogPosition, boolean topLevel)
 
     {
         long start = nanoTime();
         try
         {
             Memtable mt = data.getMemtableFor(opGroup, commitLogPosition);
-            long timeDelta = mt.put(update, indexer, opGroup);
+            long timeDelta = topLevel ? mt.put(update, indexer, opGroup)
+                                      : mt.putNested(update, indexer, opGroup);
             DecoratedKey key = update.partitionKey();
             invalidateCachedPartition(key);
             metric.topWritePartitionFrequency.addSample(key.getKey(), 1);
