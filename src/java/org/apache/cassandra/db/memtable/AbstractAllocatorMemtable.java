@@ -18,6 +18,8 @@
 
 package org.apache.cassandra.db.memtable;
 
+import org.apache.cassandra.index.transactions.UpdateTransaction;
+import org.apache.cassandra.db.partitions.PartitionUpdate;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -126,6 +128,31 @@ public abstract class AbstractAllocatorMemtable extends AbstractMemtableWithComm
     {
         return allocator;
     }
+
+    /**
+     * The memory limit is enforced once here, before a mutation starts
+     * and before any memtable-internal locks are taken; once started, a mutation runs to
+     * completion and individual allocations only track usage.
+     */
+    @Override
+    public final long put(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup)
+    {
+        allocator.awaitRoomToStart(opGroup);
+        return performPut(update, indexer, opGroup);
+    }
+
+    /**
+     * CASSANDRA-21019: nested writes skip the room gate -- the enclosing mutation was
+     * gated when it started, and waiting here would run under its memtable-internal
+     * locks, where Barrier.markBlocking() cannot release a queued pre-barrier writer.
+     */
+    @Override
+    public final long putNested(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup)
+    {
+        return performPut(update, indexer, opGroup);
+    }
+
+    protected abstract long performPut(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup);
 
     @Override
     public boolean shouldSwitch(ColumnFamilyStore.FlushReason reason)

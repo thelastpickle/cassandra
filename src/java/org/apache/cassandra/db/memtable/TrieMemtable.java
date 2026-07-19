@@ -181,7 +181,7 @@ public class TrieMemtable extends AbstractShardedMemtable
      * commitLogSegmentPosition should only be null if this is a secondary index, in which case it is *expected* to be null
      */
     @Override
-    public long put(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup)
+    protected long performPut(PartitionUpdate update, UpdateTransaction indexer, OpOrder.Group opGroup)
     {
         try
         {
