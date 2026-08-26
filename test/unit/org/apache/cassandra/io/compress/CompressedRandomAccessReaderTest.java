@@ -21,6 +21,7 @@ package org.apache.cassandra.io.compress;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -298,6 +299,9 @@ public class CompressedRandomAccessReaderTest
                     assertNotNull(exception);
                     assertSame(exception.getClass(), CorruptSSTableException.class);
                     assertSame(exception.getCause().getClass(), CorruptBlockException.class);
+                    // the message must name both checksums, so that a stored zero is distinguishable
+                    // from a genuine mismatch
+                    assertThat(exception.getCause().getMessage()).contains("stored " + ByteBuffer.wrap(corruptChecksum).getInt());
                 }
 
                 // lets write original checksum and check if we can read data
