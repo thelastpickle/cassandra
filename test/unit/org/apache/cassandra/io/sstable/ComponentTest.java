@@ -31,6 +31,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.io.sstable.Component.Type;
 import org.apache.cassandra.io.sstable.SSTableFormatTest.Format1;
 import org.apache.cassandra.io.sstable.SSTableFormatTest.Format2;
+import org.apache.cassandra.io.sstable.format.SSTableFormat;
 import org.apache.cassandra.io.sstable.format.SSTableFormat.Components;
 import org.apache.cassandra.io.sstable.format.big.BigFormat;
 
@@ -127,5 +128,16 @@ public class ComponentTest
 
         assertThat(Sets.newHashSet(Component.getSingletonsFor(DatabaseDescriptor.getSSTableFormats().get(FIRST)))).isEqualTo(s1);
         assertThat(Sets.newHashSet(Component.getSingletonsFor(DatabaseDescriptor.getSSTableFormats().get("second")))).isEqualTo(s2);
+    }
+
+    @Test
+    public void testSingletonsParseFromTheirOwnName()
+    {
+        for (String formatName : new String[]{ FIRST, SECOND })
+        {
+            SSTableFormat<?, ?> format = DatabaseDescriptor.getSSTableFormats().get(formatName);
+            for (Component component : Component.getSingletonsFor(format))
+                assertThat(Component.parse(component.name, format)).isSameAs(component);
+        }
     }
 }

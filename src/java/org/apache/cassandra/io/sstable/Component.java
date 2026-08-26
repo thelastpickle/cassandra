@@ -55,6 +55,9 @@ public class Component
         public final boolean streamable;
         private final Component singleton;
 
+        /** {@link #repr} compiled once, or {@code null} when this type has no representation */
+        private final Pattern pattern;
+
         @SuppressWarnings("rawtypes")
         public final Class<? extends SSTableFormat> formatClass;
 
@@ -92,6 +95,7 @@ public class Component
             this.id = typesCollector.size();
             this.formatClass = formatClass == null ? SSTableFormat.class : formatClass;
             this.singleton = isSingleton ? new Component(this) : null;
+            this.pattern = repr == null ? null : Pattern.compile(repr);
 
             registerType(this);
         }
@@ -122,7 +126,7 @@ public class Component
         {
             for (Type type : Type.all)
             {
-                if (type.repr != null && Pattern.matches(type.repr, repr) && type.formatClass.isAssignableFrom(format.getClass()))
+                if (type.pattern != null && type.pattern.matcher(repr).matches() && type.formatClass.isAssignableFrom(format.getClass()))
                     return type;
             }
             return Types.CUSTOM;
