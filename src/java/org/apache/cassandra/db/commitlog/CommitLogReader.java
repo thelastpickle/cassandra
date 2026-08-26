@@ -18,6 +18,7 @@
 package org.apache.cassandra.db.commitlog;
 
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.io.*;
 import java.util.*;
@@ -111,6 +112,16 @@ public class CommitLogReader
             {
                 // let recover deal with it
                 filtered.add(file);
+            }
+            catch (IOError e)
+            {
+                // FSReadError extends IOError, so it is not caught above. A file that disappears
+                // between the listing and the read is left to recover; any other IOError may mean
+                // corruption or a serious I/O fault, so it propagates and fails the replay.
+                if (e.getCause() instanceof NoSuchFileException)
+                    filtered.add(file);
+                else
+                    throw e;
             }
         }
 
