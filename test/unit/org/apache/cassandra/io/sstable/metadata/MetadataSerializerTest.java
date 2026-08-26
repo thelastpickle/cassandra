@@ -45,6 +45,7 @@ import org.apache.cassandra.io.sstable.SequenceBasedSSTableId;
 import org.apache.cassandra.io.sstable.format.SSTableFormat;
 import org.apache.cassandra.io.sstable.format.SSTableFormat.Components;
 import org.apache.cassandra.io.sstable.format.Version;
+import org.apache.cassandra.io.util.DataOutputBuffer;
 import org.apache.cassandra.io.util.DataOutputStreamPlus;
 import org.apache.cassandra.io.util.File;
 import org.apache.cassandra.io.util.FileOutputStreamPlus;
@@ -117,6 +118,31 @@ public class MetadataSerializerTest
             StatsMetadata deserializedStats = (StatsMetadata) deserialized.get(MetadataType.STATS);
             assertFalse(deserializedStats.estimatedCellPerPartitionCount.isOverflowed());
             assertFalse(deserializedStats.estimatedPartitionSize.isOverflowed());
+        }
+    }
+
+    @Test
+    public void testStatsSerializedSizeMatchesTheBytesWritten() throws IOException
+    {
+        StatsMetadata stats = (StatsMetadata) constructMetadata(true).get(MetadataType.STATS);
+        StatsMetadata.StatsMetadataSerializer serializer = new StatsMetadata.StatsMetadataSerializer();
+
+        for (char major = 'a'; major <= 'z'; major++)
+        {
+            for (char minor = 'a'; minor <= 'z'; minor++)
+            {
+                Version version = format.getVersion(String.format("%s%s", major, minor));
+                if (!version.isCompatible())
+                    continue;
+
+                try (DataOutputBuffer out = new DataOutputBuffer())
+                {
+                    serializer.serialize(version, stats, out);
+                    assertEquals("Version " + version.version,
+                                 out.getLength(),
+                                 serializer.serializedSize(version, stats));
+                }
+            }
         }
     }
 
