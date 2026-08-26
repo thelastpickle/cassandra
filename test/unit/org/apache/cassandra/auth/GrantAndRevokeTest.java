@@ -382,6 +382,56 @@ public class GrantAndRevokeTest extends CQLTester
                                 "DROP INDEX " + index);
     }
 
+    /**
+     * A modification of a base table that has a materialized view requires only MODIFY on the base table. It requires
+     * neither SELECT on the base table nor MODIFY on the view.
+     */
+    @Test
+    public void testModifyBaseTableWithMaterializedView() throws Throwable
+    {
+        useSuperUser();
+
+        executeNet(String.format("CREATE ROLE %s WITH LOGIN = TRUE AND password='%s'", user, pass));
+        String table = KEYSPACE_PER_TEST + '.' + createTable(KEYSPACE_PER_TEST, "CREATE TABLE %s (pk int, ck int, val int, PRIMARY KEY (pk, ck))");
+        String mv = KEYSPACE_PER_TEST + ".mv_base_modify";
+        executeNet("CREATE MATERIALIZED VIEW " + mv + " AS SELECT * FROM " + table + " WHERE val IS NOT NULL AND pk IS NOT NULL AND ck IS NOT NULL PRIMARY KEY (val, pk, ck)");
+        executeNet("GRANT MODIFY ON TABLE " + table + " TO " + user);
+
+        useUser(user, pass);
+
+        // MODIFY on the base table is sufficient. Spin assert for effective auth changes.
+        Util.spinAssertEquals(false, () -> {
+            try
+            {
+                executeNet("INSERT INTO " + table + " (pk, ck, val) VALUES (1, 1, 1)");
+            }
+            catch (Throwable e)
+            {
+                return true;
+            }
+            return false;
+        }, 10);
+        executeNet("UPDATE " + table + " SET val = 2 WHERE pk = 1 AND ck = 1");
+        executeNet("DELETE FROM " + table + " WHERE pk = 1 AND ck = 1");
+        executeNet("INSERT INTO " + table + " (pk, ck, val) VALUES (1, 1, 1)");
+
+        // Reading the base table, or the view, still requires SELECT on the base table.
+        assertUnauthorizedQuery("User user has no SELECT permission on <table " + table + "> or any of its parents",
+                                "SELECT * FROM " + table + " WHERE pk = 1 AND ck = 1");
+        assertUnauthorizedQuery("User user has no SELECT permission on <table " + table + "> or any of its parents",
+                                "SELECT * FROM " + mv + " WHERE val = 1 AND pk = 1 AND ck = 1");
+
+        useSuperUser();
+        executeNet("GRANT SELECT ON TABLE " + table + " TO " + user);
+
+        useUser(user, pass);
+        assertRowsNet(executeNet("SELECT * FROM " + table + " WHERE pk = 1 AND ck = 1"), row(1, 1, 1));
+        assertRowsNet(executeNet("SELECT * FROM " + mv + " WHERE val = 1 AND pk = 1 AND ck = 1"), row(1, 1, 1));
+
+        useSuperUser();
+        executeNet("DROP MATERIALIZED VIEW " + mv);
+    }
+
     @Test
     public void testWarnings() throws Throwable
     {

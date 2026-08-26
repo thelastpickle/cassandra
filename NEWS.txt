@@ -65,6 +65,17 @@ restore snapshots created with the previous major version using the
 'sstableloader' tool. You can upgrade the file format of your snapshots
 using the provided 'sstableupgrade' tool.
 
+5.0.10
+======
+
+Upgrading
+---------
+    - A modification of a base table that has materialized views now requires only MODIFY permission on the base
+      table. Previously it also required SELECT permission on the base table and MODIFY permission on every view.
+      The read of the current base row, and the write to each view, are internal operations of the base table
+      update, so they are no longer separately authorized. Roles that were granted SELECT on a base table, or
+      MODIFY on a view, solely to permit base table writes can have those grants revoked. See CASSANDRA-20628.
+
 5.0.8
 ======
 
