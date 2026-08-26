@@ -449,6 +449,19 @@ public enum CassandraRelevantProperties
     SAI_POSTINGS_SKIP("cassandra.sai.postings_skip", "3"),
 
     /**
+     * Whether to enable SAI per-query metrics for different kinds of query, such as filter-only queries, top-k-only
+     * queries, hybrid queries, single-partition queries, and multipartition queries. These metrics are histograms and
+     * timers.
+     */
+    SAI_QUERY_KIND_PER_QUERY_METRICS_ENABLED("cassandra.sai.metrics.query_kind.per_query.enabled", "false"),
+
+    /**
+     * Whether to enable SAI per-table metrics for different kinds of query, such as filter-only queries, top-k-only
+     * queries, hybrid queries, single-partition queries, and multipartition queries. These metrics are always counters.
+     */
+    SAI_QUERY_KIND_PER_TABLE_METRICS_ENABLED("cassandra.sai.metrics.query_kind.per_table.enabled", "false"),
+
+    /**
      * Used to determine the block size and block mask for the clustering sorted terms.
      */
     SAI_SORTED_TERMS_CLUSTERING_BLOCK_SHIFT("cassandra.sai.sorted_terms_clustering_block_shift", "4"),

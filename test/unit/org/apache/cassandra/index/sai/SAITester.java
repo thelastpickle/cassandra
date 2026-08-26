@@ -42,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
 import javax.management.ObjectName;
 
 import com.google.common.collect.Sets;
@@ -111,6 +112,7 @@ import static org.apache.cassandra.config.CassandraRelevantProperties.TEST_RANDO
 import static org.apache.cassandra.inject.ActionBuilder.newActionBuilder;
 import static org.apache.cassandra.inject.Expression.quote;
 import static org.apache.cassandra.inject.InvokePointBuilder.newInvokePoint;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -411,6 +413,11 @@ public abstract class SAITester extends CQLTester
             throw new RuntimeException(e);
         }
         return metricValue;
+    }
+
+    protected void assertMetricDoesNotExist(ObjectName name)
+    {
+        assertThatThrownBy(() -> getMetricValue(name)).hasRootCauseInstanceOf(InstanceNotFoundException.class);
     }
 
     public void waitForCompactions()

@@ -281,6 +281,21 @@ public class DataRange
         return new DataRange(range, clusteringIndexFilter);
     }
 
+    /**
+     * Whether this range selects a single partition. Single partition queries that use an index are internally mapped
+     * to range commands whose start and end key are the same inclusive partition key.
+     *
+     * @return {@code true} if this range selects exactly one partition, {@code false} otherwise
+     */
+    public boolean isSinglePartition()
+    {
+        return keyRange.isStartInclusive() &&
+               keyRange.isEndInclusive() &&
+               keyRange.left instanceof DecoratedKey &&
+               keyRange.right instanceof DecoratedKey &&
+               keyRange.left.equals(keyRange.right);
+    }
+
     public String toString(TableMetadata metadata)
     {
         return String.format("range=%s pfilter=%s", keyRange.getString(metadata.partitionKeyType), clusteringIndexFilter.toString(metadata));

@@ -124,6 +124,32 @@ The table query metrics for the given keyspace and table:
 * `TotalQueriesCompleted` -- Total number of successfully completed queries since the node started.
 * `TotalQueryTimeouts` -- Total number of timeouts from queries since the node started.
 * `TotalRowsFiltered` -- Total number of rows post-filtered by all queries since the node started.
+* `PostFilteringReadLatency` -- Latency percentiles (in microseconds) of the reads that post-filter the rows selected by the indexes.
+
+[[saiQueryKindMetrics]]
+== Query kind metrics
+
+The per query metrics and the table query metrics above cover all SAI queries.
+The same metrics are also available for each of the following kinds of query:
+
+* `SinglePartitionFilterOnly` -- Single-partition queries that only filter, without a top-k ordering.
+* `MultiPartitionFilterOnly` -- Multi-partition queries that only filter, without a top-k ordering.
+* `SinglePartitionTopKOnly` -- Single-partition queries that only order by top-k, without filtering.
+* `MultiPartitionTopKOnly` -- Multi-partition queries that only order by top-k, without filtering.
+* `SinglePartitionHybrid` -- Single-partition queries that both filter and order by top-k.
+* `MultiPartitionHybrid` -- Multi-partition queries that both filter and order by top-k.
+
+The six kinds are disjoint, so any sum of them is meaningful.
+The name of the kind precedes `Query` in the scope of the `ObjectName`, as in:
+
+----
+ObjectName: org.apache.cassandra.metrics:type=StorageAttachedIndex,keyspace=<keyspace>,table=<table>,scope=PerMultiPartitionHybridQuery,name=<metric>
+ObjectName: org.apache.cassandra.metrics:type=StorageAttachedIndex,keyspace=<keyspace>,table=<table>,scope=TableMultiPartitionHybridQueryMetrics,name=<metric>
+----
+
+These metrics are disabled by default.
+To enable the table query metrics of each kind, set the system property `cassandra.sai.metrics.query_kind.per_table.enabled` to `true`.
+To enable the per query metrics of each kind, set the system property `cassandra.sai.metrics.query_kind.per_query.enabled` to `true`.
 
 [[saiTableStateMetrics]]
 == Table state metrics

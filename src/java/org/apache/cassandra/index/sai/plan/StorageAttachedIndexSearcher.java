@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -509,7 +508,7 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
 
                 // Note that we record the duration of the read after post-filtering, which actually
                 // materializes the rows from disk.
-                tableQueryMetrics.postFilteringReadLatency.update(Clock.Global.nanoTime() - startTimeNanos, TimeUnit.NANOSECONDS);
+                queryContext.addPostFilteringReadLatency(Clock.Global.nanoTime() - startTimeNanos);
 
                 return filtered != null
                        ? new SinglePartitionIterator(partition, partition.staticRow(), filtered.iterator())
@@ -521,7 +520,7 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
         public void close()
         {
             FileUtils.closeQuietly(resultKeyIterator);
-            if (tableQueryMetrics != null) tableQueryMetrics.record(queryContext);
+            if (tableQueryMetrics != null) tableQueryMetrics.record(queryContext, command);
         }
     }
 
@@ -828,6 +827,7 @@ public class StorageAttachedIndexSearcher implements Index.Searcher
         public void close()
         {
             FileUtils.closeQuietly(scoredPrimaryKeyIterator);
+            if (tableQueryMetrics != null) tableQueryMetrics.record(queryContext, command);
         }
     }
 

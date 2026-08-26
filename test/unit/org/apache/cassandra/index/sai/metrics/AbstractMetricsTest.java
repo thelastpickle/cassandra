@@ -37,6 +37,6 @@ public abstract class AbstractMetricsTest extends SAITester
 
     protected long getTableQueryMetrics(String keyspace, String table, String metricsName)
     {
-        return (long) getMetricValue(objectNameNoIndex(metricsName, keyspace, table, TableQueryMetrics.TABLE_QUERY_METRIC_TYPE));
+        return (long) getMetricValue(objectNameNoIndex(metricsName, keyspace, table, TableQueryMetrics.PerTable.METRIC_TYPE));
     }
 }

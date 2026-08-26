@@ -70,6 +70,9 @@ public class QueryContext
      * */
     public boolean hasUnrepairedMatches = false;
 
+    /** The cumulative time spent reading and post-filtering the partitions selected by the indexes. */
+    private long postFilteringReadLatency = 0;
+
     public QueryContext(ReadCommand readCommand, long executionQuotaMs)
     {
         this.readCommand = readCommand;
@@ -89,6 +92,16 @@ public class QueryContext
             queryTimedOut = true;
             throw new QueryCancelledException(readCommand);
         }
+    }
+
+    public void addPostFilteringReadLatency(long nanos)
+    {
+        postFilteringReadLatency += nanos;
+    }
+
+    public long getPostFilteringReadLatency()
+    {
+        return postFilteringReadLatency;
     }
 
     public int limit()

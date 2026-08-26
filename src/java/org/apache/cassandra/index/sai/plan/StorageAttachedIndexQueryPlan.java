@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.cql3.Operator;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.filter.RowFilter;
@@ -47,6 +48,7 @@ public class StorageAttachedIndexQueryPlan implements Index.QueryPlan
     private final RowFilter indexFilter;
     private final Set<Index> indexes;
     private final boolean isTopK;
+    private final boolean usesIndexFiltering;
 
     private StorageAttachedIndexQueryPlan(ColumnFamilyStore cfs,
                                           TableQueryMetrics queryMetrics,
@@ -60,6 +62,7 @@ public class StorageAttachedIndexQueryPlan implements Index.QueryPlan
         this.indexFilter = indexFilter;
         this.indexes = indexes;
         this.isTopK = indexes.stream().anyMatch(i -> i instanceof StorageAttachedIndex && ((StorageAttachedIndex) i).termType().isVector());
+        this.usesIndexFiltering = hasIndexFilters(indexFilter, indexes);
     }
 
     @Nullable
@@ -168,5 +171,33 @@ public class StorageAttachedIndexQueryPlan implements Index.QueryPlan
     public boolean isTopK()
     {
         return isTopK;
+    }
+
+    @Override
+    public boolean usesIndexFiltering()
+    {
+        return usesIndexFiltering;
+    }
+
+    /**
+     * @param filter the filter that the selected indexes are able to answer
+     * @param indexes the indexes selected by this plan
+     * @return {@code true} if any expression of {@code filter} other than the top-k ordering is answered by an index
+     */
+    public static boolean hasIndexFilters(RowFilter filter, Set<Index> indexes)
+    {
+        for (RowFilter.Expression expression : filter.getExpressions())
+        {
+            // The ANN expression carries the top-k ordering, not a filter.
+            if (expression.operator() == Operator.ANN)
+                continue;
+
+            for (Index index : indexes)
+            {
+                if (index.supportsExpression(expression.column(), expression.operator()))
+                    return true;
+            }
+        }
+        return false;
     }
 }
