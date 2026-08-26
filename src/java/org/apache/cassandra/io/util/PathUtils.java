@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
@@ -93,6 +94,8 @@ public final class PathUtils
     private static final Set<StandardOpenOption> WRITE_APPEND_OPTIONS = unmodifiableSet(EnumSet.of(WRITE, CREATE, APPEND));
     private static final Set<StandardOpenOption> READ_WRITE_OPTIONS = unmodifiableSet(EnumSet.of(READ, WRITE, CREATE));
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+    private static final CopyOption[] ATOMIC_MOVE_OPTIONS = { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE };
+    private static final CopyOption[] REPLACE_EXISTING_OPTIONS = { StandardCopyOption.REPLACE_EXISTING };
 
     private static final Logger logger = LoggerFactory.getLogger(PathUtils.class);
     private static final NoSpamLogger nospam1m = NoSpamLogger.getLogger(logger, 1, TimeUnit.MINUTES);
@@ -516,12 +519,12 @@ public final class PathUtils
     {
         try
         {
-            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(from, to, ATOMIC_MOVE_OPTIONS);
         }
         catch (AtomicMoveNotSupportedException e)
         {
             logger.trace("Could not do an atomic move", e);
-            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(from, to, REPLACE_EXISTING_OPTIONS);
         }
     }
 
