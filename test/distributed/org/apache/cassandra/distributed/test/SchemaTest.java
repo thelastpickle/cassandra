@@ -153,7 +153,7 @@ public class SchemaTest extends TestBaseImpl
             Throwable cause = e;
             while (cause != null)
             {
-                if (cause.getMessage() != null && cause.getMessage().contains("Unknown column " + name + " during deserialization"))
+                if (cause.getMessage() != null && cause.getMessage().contains("Unknown column " + name + " in table " + KEYSPACE + ".tbl during deserialization"))
                     causeIsUnknownColumn = true;
                 cause = cause.getCause();
             }

@@ -715,7 +715,8 @@ public class RowFilter implements Iterable<RowFilter.Expression>
                 // Compact storage tables, when used with thrift, used to allow falling through this withouot throwing an
                 // exception. However, since thrift was removed in 4.0, this behaviour was not restored in CASSANDRA-16217
                 if (column == null)
-                    throw new RuntimeException("Unknown (or dropped) column " + UTF8Type.instance.getString(name) + " during deserialization");
+                    throw new RuntimeException(String.format("Unknown (or dropped) column %s in table %s.%s during deserialization",
+                                                            UTF8Type.instance.getString(name), metadata.keyspace, metadata.name));
 
                 switch (kind)
                 {

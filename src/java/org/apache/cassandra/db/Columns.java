@@ -510,7 +510,8 @@ public class Columns extends AbstractCollection<ColumnMetadata> implements Colle
                         column = metadata.getDroppedColumn(name);
 
                         if (column == null)
-                            throw new RuntimeException("Unknown column " + UTF8Type.instance.getString(name) + " during deserialization");
+                            throw new RuntimeException(String.format("Unknown column %s in table %s.%s during deserialization",
+                                                                    UTF8Type.instance.getString(name), metadata.keyspace, metadata.name));
                     }
                     builder.add(column);
                 }

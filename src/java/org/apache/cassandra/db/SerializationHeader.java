@@ -376,7 +376,8 @@ public class SerializationHeader
                         // deserialization. The column will be ignore later on anyway.
                         column = metadata.getDroppedColumn(name, isStatic);
                         if (column == null)
-                            throw new UnknownColumnException("Unknown column " + UTF8Type.instance.getString(name) + " during deserialization");
+                            throw new UnknownColumnException(String.format("Unknown column %s in table %s.%s during deserialization",
+                                                                          UTF8Type.instance.getString(name), metadata.keyspace, metadata.name));
                     }
                     if (!diskType.equals(column.type))
                         hasTypeMismatch = true;

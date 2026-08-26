@@ -85,6 +85,27 @@ public class ColumnsTest
         }
     }
 
+    @Test
+    public void testDeserializeUnknownColumnNamesTheTable() throws IOException
+    {
+        ColumnMetadata unknown = ColumnMetadata.regularColumn(TABLE_METADATA, bytes("unknown_column"), UTF8Type.instance, ColumnMetadata.NO_UNIQUE_ID);
+        try (DataOutputBuffer out = new DataOutputBuffer())
+        {
+            Columns.serializer.serialize(Columns.of(unknown), out);
+            try (DataInputBuffer in = new DataInputBuffer(out.toByteArray()))
+            {
+                Columns.serializer.deserialize(in, TABLE_METADATA);
+                Assert.fail("Deserializing an unknown column must fail");
+            }
+            catch (RuntimeException e)
+            {
+                Assert.assertEquals(String.format("Unknown column unknown_column in table %s.%s during deserialization",
+                                                  TABLE_METADATA.keyspace, TABLE_METADATA.name),
+                                    e.getMessage());
+            }
+        }
+    }
+
     // this tests most of our functionality, since each subset we perform
     // reasonably comprehensive tests of basic functionality against
     @Test
