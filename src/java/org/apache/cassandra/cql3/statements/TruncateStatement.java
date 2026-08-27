@@ -68,6 +68,9 @@ public class TruncateStatement extends QualifiedStatement implements CQLStatemen
         try
         {
             TableMetadata metaData = Schema.instance.getTableMetadata(keyspace(), name());
+            if (metaData == null)
+                throw new InvalidRequestException(String.format("Unknown keyspace/table %s.%s", keyspace(), name()));
+
             if (metaData.isView())
                 throw new InvalidRequestException("Cannot TRUNCATE materialized view directly; must truncate base table instead");
 
@@ -92,6 +95,9 @@ public class TruncateStatement extends QualifiedStatement implements CQLStatemen
         try
         {
             TableMetadata metaData = Schema.instance.getTableMetadata(keyspace(), name());
+            if (metaData == null)
+                throw new InvalidRequestException(String.format("Unknown keyspace/table %s.%s", keyspace(), name()));
+
             if (metaData.isView())
                 throw new InvalidRequestException("Cannot TRUNCATE materialized view directly; must truncate base table instead");
 

@@ -20,6 +20,15 @@ package org.apache.cassandra.cql3.validation.operations;
 import org.junit.Test;
 
 import org.apache.cassandra.cql3.CQLTester;
+import org.apache.cassandra.cql3.QualifiedName;
+import org.apache.cassandra.cql3.QueryOptions;
+import org.apache.cassandra.cql3.statements.TruncateStatement;
+import org.apache.cassandra.exceptions.InvalidRequestException;
+import org.apache.cassandra.exceptions.TruncateException;
+import org.apache.cassandra.service.QueryState;
+import org.apache.cassandra.transport.Dispatcher;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TruncateTest extends CQLTester
 {
@@ -44,5 +53,26 @@ public class TruncateTest extends CQLTester
 
             assertEmpty(execute("SELECT * FROM %s"));
         }
+    }
+
+    /**
+     * A table dropped between validation and execution leaves no metadata to read, so each execution path must
+     * report the unknown table rather than dereference null.
+     */
+    @Test
+    public void testTruncateUnknownTable()
+    {
+        TruncateStatement statement = new TruncateStatement(new QualifiedName(KEYSPACE, "no_such_table"));
+        String expected = String.format("Unknown keyspace/table %s.no_such_table", KEYSPACE);
+
+        assertThatThrownBy(() -> statement.execute(QueryState.forInternalCalls(),
+                                                  QueryOptions.DEFAULT,
+                                                  Dispatcher.RequestTime.forImmediateExecution()))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage(expected);
+
+        assertThatThrownBy(() -> statement.executeLocally(QueryState.forInternalCalls(), QueryOptions.DEFAULT))
+        .isInstanceOf(TruncateException.class)
+        .hasRootCauseMessage(expected);
     }
 }
