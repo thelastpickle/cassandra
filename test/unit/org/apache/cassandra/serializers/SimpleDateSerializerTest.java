@@ -26,6 +26,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class SimpleDateSerializerTest
 {
@@ -151,5 +152,27 @@ public class SimpleDateSerializerTest
     public void testBadDayToMonth()
     {
         Integer days = SimpleDateSerializer.dateStringToDays("1000-09-31");
+    }
+
+    @Test (expected=MarshalException.class)
+    public void testOutOfBoundsHighMillis()
+    {
+        SimpleDateSerializer.timeInMillisToDay(TimeUnit.DAYS.toMillis(Integer.MAX_VALUE) + 1);
+    }
+
+    @Test (expected=MarshalException.class)
+    public void testOutOfBoundsLowMillis()
+    {
+        SimpleDateSerializer.timeInMillisToDay(TimeUnit.DAYS.toMillis(Integer.MIN_VALUE) - 1);
+    }
+
+    @Test
+    public void testSupportedBoundsMillis()
+    {
+        // the day count is shifted by Integer.MIN_VALUE, so the two bounds sit at 0 and at -1
+        int min = SimpleDateSerializer.timeInMillisToDay(TimeUnit.DAYS.toMillis(Integer.MIN_VALUE));
+        int max = SimpleDateSerializer.timeInMillisToDay(TimeUnit.DAYS.toMillis(Integer.MAX_VALUE));
+        assert min == 0 : "Expected 0 for the min supported date, got " + min;
+        assert max == -1 : "Expected -1 for the max supported date, got " + max;
     }
 }

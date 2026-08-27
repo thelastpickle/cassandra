@@ -70,14 +70,7 @@ public class SimpleDateSerializer extends TypeSerializer<Integer>
         {
             LocalDate parsed = formatter.parse(source, LocalDate::from);
             long millis = parsed.atStartOfDay(UTC).toInstant().toEpochMilli();
-            if (millis < minSupportedDateMillis)
-                throw new MarshalException(String.format("Input date %s is less than min supported date %s", source,
-                        ZonedDateTime.ofInstant(Instant.ofEpochMilli(minSupportedDateMillis), UTC).toString()));
-            if (millis > maxSupportedDateMillis)
-                throw new MarshalException(String.format("Input date %s is greater than max supported date %s", source,
-                        ZonedDateTime.ofInstant(Instant.ofEpochMilli(maxSupportedDateMillis), UTC).toString()));
-
-            return timeInMillisToDay(millis);
+            return timeInMillisToDay(source, millis);
         }
         catch (DateTimeParseException| ArithmeticException e1)
         {
@@ -107,6 +100,28 @@ public class SimpleDateSerializer extends TypeSerializer<Integer>
 
     public static int timeInMillisToDay(long millis)
     {
+        return timeInMillisToDay(null, millis);
+    }
+
+    /**
+     * Converts a timestamp to a day, and rejects a timestamp the date type cannot hold.  The day count is a signed
+     * 32-bit value shifted by {@code Integer.MIN_VALUE}, so a timestamp further from the epoch than 2^31 days
+     * silently wraps without this range test.
+     *
+     * @param source the date string the timestamp came from, or {@code null} when the caller supplied a timestamp
+     * @param millis the timestamp, in milliseconds since the epoch
+     */
+    private static int timeInMillisToDay(String source, long millis)
+    {
+        if (millis < minSupportedDateMillis)
+            throw new MarshalException(String.format("Input date %s is less than min supported date %s",
+                                                     source == null ? Instant.ofEpochMilli(millis) : source,
+                                                     ZonedDateTime.ofInstant(Instant.ofEpochMilli(minSupportedDateMillis), UTC).toString()));
+        if (millis > maxSupportedDateMillis)
+            throw new MarshalException(String.format("Input date %s is greater than max supported date %s",
+                                                     source == null ? Instant.ofEpochMilli(millis) : source,
+                                                     ZonedDateTime.ofInstant(Instant.ofEpochMilli(maxSupportedDateMillis), UTC).toString()));
+
         return (int) (Duration.ofMillis(millis).toDays() - Integer.MIN_VALUE);
     }
 

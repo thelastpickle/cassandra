@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
@@ -110,7 +111,7 @@ public abstract class MaskingFunctionTester extends CQLTester
                 case DATE:
                     testMaskingOnAllColumns(type,
                                             SimpleDateSerializer.timeInMillisToDay(2),
-                                            SimpleDateSerializer.timeInMillisToDay(Long.MAX_VALUE));
+                                            SimpleDateSerializer.timeInMillisToDay(TimeUnit.DAYS.toMillis(Integer.MAX_VALUE)));
                     break;
                 case DURATION:
                     testMaskingOnNotKeyColumns(type, Duration.newInstance(1, 2, 3), Duration.newInstance(3, 2, 1));
