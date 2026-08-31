@@ -35,6 +35,11 @@
 //  - cassandra-small + cassandra-${arch}-small       : 1 cpu, 1GB ram (alias for above but for any arch)
 //  - cassandra-medium + cassandra-${arch}-medium     : 3 cpu, 5GB ram
 //  - cassandra-large + cassandra-${arch}-large       : 7 cpu, 16GB ram
+//  - cassandra-report + cassandra-${arch}-report     : 3 cpu, 5GB ram
+//
+// cassandra-report is the medium capability on nodes the test fan-out cannot take.  generateTestReports is
+// its only user and runs last, so on cassandra-medium it queued behind all 460 splits: 109 minutes measured
+// on k8s for ~3 minutes of work.  A site with no spare nodes can put this label on its medium agents.
 //
 // Performance targets required a `cassandra-${arch}-large-dedicated` labelled nodes.
 //
@@ -61,6 +66,39 @@ import groovy.transform.Field
 @Field List<String> archsSupported   = ["amd64", "arm64"]
 @Field List<String> pythonsSupported = ["3.8", "3.11", "3.12", "3.13"]
 @Field String       pythonDefault    = "3.8"
+// Shell defining cpus(), to prepend to any `sh` script fanning out with `xargs -P` or `xz -T`.  `nproc`
+// answers for the node, not the container's cgroup quota: measured on k8s at 8 against a 2 cpu limit, so
+// every fan-out here ran eight ways under a quota of two.
+//
+// cgroup v2 holds the quota in cpu.max as "<quota> <period>", or "max" for none.  Which cpu.max is the
+// container's depends on its cgroup namespace, and both cases occur: a private namespace mounts the
+// container's own cgroup at /sys/fs/cgroup, a host namespace mounts the host's root, whose cgroup has no
+// cpu.max at all.  So the container's own path has to come from /proc/self/cgroup.
+//
+// nproc stays the answer, correctly, for a cgroup with no cpu limit (bare metal) and for cgroup v1.
+@Field String       cpusShell        = '''
+cpus() {
+  cpus_n=
+  # The v2 line of /proc/self/cgroup is "0::<path>", this cgroup relative to the host's root.
+  cpus_own="$(sed -n 's/^0:://p' /proc/self/cgroup 2>/dev/null | head -1)"
+  for cpus_file in "/sys/fs/cgroup${cpus_own}/cpu.max" /sys/fs/cgroup/cpu.max ; do
+    cpus_quota= cpus_period=
+    # 2>/dev/null before the read: redirections apply left to right, so a later one cannot silence the
+    # shell's own report of a missing cpu.max.
+    read -r cpus_quota cpus_period 2>/dev/null < "${cpus_file}" || continue
+    # "max <period>" is a cgroup with no cpu limit, where nproc is right.
+    case "${cpus_quota}${cpus_period}" in
+      ""|*[!0-9]*) continue ;;
+    esac
+    cpus_n=$(( cpus_quota / cpus_period ))
+    break
+  done
+  [ -n "${cpus_n}" ] || cpus_n="$(nproc 2>/dev/null || echo 1)"
+  # Never empty and never zero: an empty `xargs -P` or `xz -T` is unbounded, and a sub-cpu quota floors to 0.
+  [ "${cpus_n}" -ge 1 ] 2>/dev/null || cpus_n=1
+  echo "${cpus_n}"
+}
+'''
 /** CONSTANTS end **********************************/
 
 pipeline {
@@ -199,7 +237,17 @@ def tasks() {
     'test-latest': [splits: 20],
     'test-compression': [splits: 20],
     'stress-test': [splits: 1, size: 'small'],
-    'test-burn': [splits: 4],
+    // 5 is arithmetic, not a guess.  `split -n r/K/N` puts class i in chunk ((i-1) mod N) + 1, and
+    // test/burn's eleven classes include three long ones: BigVolumeDifferentialCompactionTest 22 min at 3rd,
+    // DriverBurnTest 20.7 at 7th, SimpleClientPerfTest 24.1 at 9th.  Two collide when N divides their
+    // difference, and 4 divides 7-3, putting the first two in one chunk with LongBufferPoolTest: 46.7 min
+    // against a 60 min deadline.  Measured on builds cassandra-eks-k8s #14 to #19: split 3 of 4 was the
+    // build's worst cell every time, 47.1 to 58.2 min and 2.0 to 2.6 times its target's median.
+    //
+    // 5 divides none of 4, 6 or 2, so it separates all three; its worst chunk is 24.1 min.  8 separates them
+    // too, but at 26.0 min in 24 cells against 15, each paying its own setup.  Read the split balance table
+    // in the build's summary after changing this.
+    'test-burn': [splits: 5],
     'long-test': [splits: 4],
     'test-oa': [splits: 20],
     'test-system-keyspace-directory': [splits: 20],
@@ -423,8 +471,10 @@ def test(command, cell) {
               script_vars = "${script_vars} cython=\'${cell.cython}\'"
             }
             script_vars = fetchDTestsSource(command, script_vars)
+            // Outside the timeout, so the duration is still in scope below it where the balance record is
+            // written.  The few milliseconds added are not measurable against a cell.
+            def timer = System.currentTimeMillis()
             timeout(time: command.timeout_hours, unit: 'HOURS') { // best throughput with each cell at ~10 minutes
-              def timer = System.currentTimeMillis()
               try {
                 buildJVMDTestJars(cell, script_vars, logfile)
                 script_vars = "${script_vars} docker_timeout_hours=\"${command.timeout_hours}\""
@@ -453,13 +503,14 @@ def test(command, cell) {
               }
             }
             dir("build") {
+              recordCellTime(cell, cell_suffix, splits, command.timeout_hours, System.currentTimeMillis() - timer)
               organiseTestResultFiles(cell, cell_suffix)
               if (!cell.step.startsWith("microbench")) {
                 junit testResults: "test/**/TEST-*.xml,test/**/cqlshlib*.xml,test/**/nosetests*.xml", testDataPublishers: [[$class: 'StabilityTestDataPublisher']]
               }
               debugOomKiller()
               compressTestResultFiles()
-              archiveArtifacts artifacts: "test/logs/**,test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz,test/**/jmh-result.json", fingerprint: true
+              archiveArtifacts artifacts: "test/cell-times/**,test/logs/**,test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz,test/**/jmh-result.json", fingerprint: true
               copyToNightlies("${logfile},test/logs/**,test/**/jmh-result.json", "${cell.step}/${cell.arch}/jdk${cell.jdk}/python${cell.python}/cython_${cell.cython}/" + "split_${cell.split}_${splits}".replace("/", "_"))
             }
           } finally {
@@ -616,6 +667,58 @@ def _stash(cell) {
   stash name: "${cell.arch}_${cell.jdk}"
 }
 
+// One line per cell, for the split balance table .build/ci/cell_balance.py puts in ci_summary.html.
+//
+// The duration is the cell's own, not the sum of its tests: the cell deadline covers the setup before the
+// first test too.  Measured on build cassandra-eks-k8s #11, a cell spent 10.5 minutes on tests and 17.9 on
+// the image pulls, the compile and the virtualenv, so test time alone calls that cell comfortable.
+//
+// Not in the timeout's finally block, because an interrupted cell cannot run another `sh`.  A cell that times
+// out on both attempts therefore records nothing, and the table says so rather than averaging it away.
+def recordCellTime(cell, cell_suffix, splits, timeout_hours, duration_ms) {
+  // Both files are written before organiseTestResultFiles: here test/output/ holds only this cell's results,
+  // and one step later they are merged with the split gone from every path, so no report can say which cell
+  // ran which test again.
+  //
+  // Aggregated by a testcase's classname, the one granularity both xml shapes share.  ant writes a file per
+  // class, so its <testsuite name> is already the class; pytest writes one <testsuite> per cell named after
+  // --junit-prefix, so its suite name is useless.  Both write <testcase classname="..." time="...">.
+  //
+  // The cell's whole test time is recorded too, over every class and not only the twelve listed, so
+  // cell_balance.py can subtract it from the duration and state the setup exactly.
+  sh label: "recording cell time...", script: """
+      mkdir -p test/cell-times
+      suites='test/cell-times/${cell.step}${cell_suffix}.suites'
+
+      # <seconds>\\t<classname>, longest first, with the total on stderr.  grep -o rather than a line-oriented
+      # read, because pytest puts many testcase elements on one line.  A parser would be tidier; this runs
+      # once per cell, of which a build has over a thousand.
+      find test/output -type f -name '*.xml' -print0 2>/dev/null \\
+        | xargs -0 -r grep -ho '<testcase [^>]*>' 2>/dev/null \\
+        | awk '
+            {
+              cls = ""; secs = ""
+              # time=" is anchored on a space because name=" is a substring of classname=".  Anchoring both
+              # costs nothing and records the trap.
+              if (match(\$0, /classname="[^"]*"/)) { cls  = substr(\$0, RSTART + 11, RLENGTH - 12) }
+              if (match(\$0, /[ \\t]time="[^"]*"/)) { secs = substr(\$0, RSTART + 7,  RLENGTH - 8)  }
+              if (cls != "" && secs != "")          { total[cls] += secs; grand += secs }
+            }
+            END {
+              for (c in total) { printf "%.3f\\t%s\\n", total[c], c }
+              printf "%.3f\\n", grand > "/dev/stderr"
+            }' 2>test/cell-times/grand \\
+        | sort -rn | head -12 > "\${suites}" || true
+      test_seconds="\$(cat test/cell-times/grand 2>/dev/null || echo 0)"
+      rm -f test/cell-times/grand
+
+      printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \\
+          '${cell.step}' '${cell.arch}' '${cell.jdk}' '${cell.split}' '${splits}' \\
+          '${timeout_hours}' '${duration_ms}' "\${test_seconds}" \\
+          > 'test/cell-times/${cell.step}${cell_suffix}.tsv'
+    """
+}
+
 def organiseTestResultFiles(cell, cell_suffix) {
   sh label: "organise test result files...", script: """
       mkdir -p test/output/${cell.step}
@@ -634,9 +737,11 @@ def debugOomKiller() {
 }
 
 def compressTestResultFiles() {
-  sh label: "compress test result files...", script: """
+  sh label: "compress test result files...", script: """${cpusShell}
       { set +x; } 2>/dev/null
-      find test/output -type f -name "*.xml" -print0 | xargs -0 -r -n1 -P"\$(nproc)" xz -f
+      # -n64, not -n1: one xz per file is a fork and an exec for a few kilobytes, and 64 per process still
+      # leaves more batches than parallel slots. cpus(), not nproc: see cpusShell.
+      find test/output -type f -name "*.xml" -print0 | xargs -0 -r -n64 -P"\$(cpus)" xz -f
       echo "\$(find test/output -type f -name "*.xml.xz" | wc -l) test result files compressed"
     """
 }
@@ -646,7 +751,9 @@ def compressTestResultFiles() {
 /////////////////////////////////////////
 
 def generateTestReports() {
-  node("cassandra-medium") {
+  // cassandra-report, not cassandra-medium: medium is also the fan-out's label and this task runs last, so
+  // it queued behind every split. See the label list at the top of this file.
+  node("cassandra-report") {
     cleanAgent("generateTestReports")
     checkout changelog: false, scm: scmGit(branches: [[name: params.branch]], extensions: [cloneOption(depth: 1, noTags: true, reference: '', shallow: true)], userRemoteConfigs: [[url: params.repository]])
     def logfile = "stage-logs/${JOB_NAME}_${BUILD_NUMBER}_generateTestReports.log.xz"
@@ -661,31 +768,52 @@ def generateTestReports() {
           unzip -x -d build/test -q output.zip ) ${teeSuffix}
          """
     } else {
-      copyArtifacts filter: 'test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz,test/**/jmh-result.json', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/", optional: true
+      copyArtifacts filter: 'test/cell-times/**,test/**/TEST-*.xml.xz,test/**/cqlshlib*.xml.xz,test/**/nosetests*.xml.xz,test/**/jmh-result.json', fingerprintArtifacts: true, projectName: env.JOB_NAME, selector: specific(env.BUILD_NUMBER), target: "build/", optional: true
     }
     // merge and summarise test reports
     if (fileExists('build/test/output') && sh(script: 'test -n "$(find build/test/output -type f -name "*.xml.xz" -print -quit)"', returnStatus: true) == 0) {
       // merge splits for each target's test report, other axes are kept separate
-      //   TODO parallelised for loop
       //   TODO results_details.tar.xz needs to include all logs for failed tests
-      sh label: "merging splits test reports...", script: """${script_vars} (
+      sh label: "merging splits test reports...", script: """${script_vars}${cpusShell} (
           echo "test result files to decompress"; find build/test/output -type f -name "*.xml.xz" | wc -l
-          find build/test/output -type f -name "*.xml.xz" -print0 | xargs -0 -r -n1 -P"\$(nproc)" xz -f --decompress
+          # See compressTestResultFiles. Measured on k8s: 6,518 files, so 6,518 xz processes, eight at a
+          # time against a 3 cpu limit.
+          find build/test/output -type f -name "*.xml.xz" -print0 | xargs -0 -r -n64 -P"\$(cpus)" xz -f --decompress
 
-          for target in \$(ls build/test/output/) ; do
-            if test -d build/test/output/\${target} ; then
-              mkdir -p build/test/reports/\${target}
-              echo "Report for \${target} (\$(find build/test/output/\${target} -name '*.xml' | wc -l) test files)"
-              CASSANDRA_DOCKER_ANT_OPTS="-Dbuild.test.output.dir=build/test/output/\${target} -Dbuild.test.report.dir=build/test/reports/\${target}"
+          # One ant junitreport per test target, three at a time.  Bounded by memory and not cpu: each
+          # target is an ant jvm in a container of the dind daemon, so report_jobs and the -Xmx below go with
+          # dind's resourceLimitMemory in .jenkins/k8s/jenkins-deployment.yaml, and move together.  Three is
+          # most of the win: five targets, one of them holding most of the files.
+          report_jobs=\$(cpus) ; [ "\${report_jobs}" -le 3 ] || report_jobs=3
+          report_target() {
+            target="\$1"
+            test -d "build/test/output/\${target}" || return 0
+            mkdir -p "build/test/reports/\${target}"
+            # Held and printed as one block per target: concurrent runs otherwise interleave line by line,
+            # and the [Test Summary] line is read per target.
+            report_log="\$(mktemp)"
+            {
+              echo "Report for \${target} (\$(find "build/test/output/\${target}" -name '*.xml' | wc -l) test files)"
+              # -Xmx2g per concurrent ant jvm; unset, each takes a quarter of dind's limit. Exported inside
+              # the function, which xargs runs as its own process, so targets cannot see each other's value.
+              CASSANDRA_DOCKER_ANT_OPTS="-Xmx2g -Dbuild.test.output.dir=build/test/output/\${target} -Dbuild.test.report.dir=build/test/reports/\${target}"
               export CASSANDRA_DOCKER_ANT_OPTS
               .build/docker/_docker_run.sh debian-build.docker ci/generate-test-report.sh
-            fi
-          done
+            } > "\${report_log}" 2>&1
+            report_status=\$?
+            cat "\${report_log}" ; rm -f "\${report_log}"
+            return \${report_status}
+          }
+          export -f report_target
+          # A failing target is reported, not fatal, as under the serial loop: xargs returns 123 and nothing
+          # here sets -e.
+          ls build/test/output/ | xargs -r -n1 -P"\${report_jobs}" bash -xc 'report_target "\$0"'
 
           .build/docker/_docker_run.sh debian-build.docker ci/generate-ci-summary.sh || echo "failed generate-ci-summary.sh"
 
           tar -cf build/results_details.tar -C build/test/ reports
-          xz -8f build/results_details.tar ) ${teeSuffix}
+          # -T with a count: xz's own -T0 reads nproc and would thread for the node, not this container.
+          xz -8f -T"\$(cpus)" build/results_details.tar ) ${teeSuffix}
           """
 
       dir('build/') {

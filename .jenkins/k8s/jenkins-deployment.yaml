@@ -170,11 +170,30 @@ controller:
         enabled: true
 agent:
   disableDefaultAgent: true
-  maxRequestsPerHostStr: "3200"
-  containerCap: 300
+  # Concurrent requests the plugin's client may hold to one host, the API server being its only host.  The
+  # plugin's default of 32 is for a cloud of a few agents.
+  #
+  # Scales with agent.containerCap below, the cost being per agent and not per cloud: a provisioning agent is
+  # a create and a pod watch, and a connected one holds a watch for its lifetime.  Reaching this cap queues
+  # rather than fails, so a burst of pod creations reads as a shortage of nodes rather than of connections.
+  maxRequestsPerHostStr: "5120"
+  # The cap across every podTemplate below, and equal to the sum of their four instanceCaps, so on a cluster
+  # whose pools can each reach their own cap this never binds.  Deliberately: a lower shared cap does not
+  # divide the shortfall evenly, it hands it to whichever pool holds its agents longest, which is large.
+  # Measured at a shared ceiling of 47: large took all 47, medium got none.  The per-template caps are the
+  # shares; this only stops the total.  Change one instanceCap and change this by the same amount.
+  #
+  # A cluster fact, not a repository one; 480 is only the shared default.  A site whose account cannot hold
+  # 480 agent nodes must lower it in its own values override: this is what stands between the queue and a pod
+  # no node will satisfy.  With a vCPU quota it is the quota, not any pool's maximum, that sets it, and
+  # lowering it costs the even division above.
+  containerCap: 480
   node-selector:
     cassandra.jenkins.agent: true
-  waitForPodSec: "180"
+  # Raised from 180.  This and each podTemplate's slaveConnectTimeout are two deadlines on the same
+  # provisioning attempt and the shorter one ends it, so both had to move.  A pod waiting on a node the
+  # cloud has yet to create waits minutes; see slaveConnectTimeout on the first podTemplate below.
+  waitForPodSec: "900"
   # Reap agent pods the controller no longer tracks.  A restart of the controller JVM clears its in-memory 
   # agent registry, and because agent pods are bare pods with no ownerReference nothing else deletes them.
   # Preferred over a pod activeDeadlineSeconds, which cannot distinguish an orphan from a long (6h) build.
@@ -206,13 +225,31 @@ agent:
         nodeSelector: 'cassandra.jenkins.agent.small=true'
         # 0 = no pod lifetime cap: idleMinutes reuse means a pod's age is unrelated to any one build's timeout.  Orphans are reaped by agent.garbageCollection instead.
         activeDeadlineSeconds: '0'
-        idleMinutes: 1
-        # should match the small pool's 50 nodes (README's --max-nodes), i.e. one agent per node. must not be higher than max nodes possible.
-        instanceCap: 50
-        instanceCapStr: "50"
+        # Raised from 1.  One pod per node here (podAntiAffinity in `yaml:` below), so an idle pod holds a
+        # whole node: 1 minute started every short task cold, and a long window holds a node against a task
+        # that may not come.  5 returns it inside the autoscaler's 10 minute scale-down window.  Not measured.
+        idleMinutes: 5
+        # This pool's ceiling, not the cluster's; agent.containerCap above is that, and is the one to lower
+        # when the account cannot hold this many nodes.  Must not exceed the small pool's own maximum
+        # (README's --max-nodes), one agent per node.  No other template selects that pool.
+        #
+        # Lowered from 50, never approached: a pre-commit run used 19 small pods over the whole build and
+        # held at most 2 at once, only `jar` and the single-split steps landing here.  The 30 nodes released
+        # went to medium and large, both of which sat pinned on their own caps for the whole tests stage.
+        instanceCap: 20
+        instanceCapStr: "20"
         nodeUsageMode: "NORMAL"
         showRawYaml: 'true'
-        slaveConnectTimeout: '30'
+        # Deadline for the pod to become ready.  Raised from 30 seconds, which only a warm node meets: a cold
+        # one is an instance launch, a boot, a kubelet join and two image pulls, one with alwaysPullImage.
+        #
+        # Too short a deadline does not queue, it churns: the controller deletes the pod, the build asks
+        # again, the nodes are still not there.  Observed on EKS in 24 minutes: 1,110 pods created and
+        # deleted, 0 agents connected, and 483 `KubernetesProvisioningLimits ... went below zero` warnings,
+        # the plugin losing count of its own caps.  The cloud also provisions nodes for pods now gone.
+        #
+        # activeDeadlineSeconds is 0, so a long wait costs a queued task and nothing else.
+        slaveConnectTimeout: '600'
         yamlMergeStrategy: override
         containers:
           - name: jnlp
@@ -308,19 +345,149 @@ agent:
                 volumeMounts:
                   - name: docker-storage
                     mountPath: /var/lib/docker
+    agent-dind-report: |
+      - name: agent-dind-report
+        # generateTestReports in .jenkins/Jenkinsfile is this label's only user and the build's last task.  On
+        # cassandra-medium, the label of ~460 test splits, it began only once the fan-out had drained: 109
+        # minutes measured on EKS for ~3 minutes of work.  A label of its own cannot queue behind them.
+        label: agent-dind cassandra-report cassandra-amd64-report
+        # A pool of its own, so the label cannot queue behind another template's agents either.  Sharing the
+        # small pool would leave this task waiting under a saturated pool, the same failure again.
+        #
+        # A site adds this pool, or points the selector at one whose nodes hold the requests below: 32 GiB,
+        # for the concurrent ant jvms.  A few nodes suffice, one build merging its reports once.
+        nodeSelector: 'cassandra.jenkins.agent.report=true'
+        # 0 = no pod lifetime cap: idleMinutes reuse means a pod's age is unrelated to any one build's timeout.  Orphans are reaped by agent.garbageCollection instead.
+        activeDeadlineSeconds: '0'
+        # One pod per node (podAntiAffinity in `yaml:` below), so an idle pod holds a whole node.  5 returns
+        # it inside the autoscaler's 10 minute scale-down window, and serves the next build's report too.
+        idleMinutes: 5
+        # One pod per build, and concurrent builds each want one.  4 is the report pool's own node maximum,
+        # one agent per node; raise the pool and this together, or the extra pods wait for nothing.
+        instanceCap: 4
+        instanceCapStr: "4"
+        nodeUsageMode: "NORMAL"
+        showRawYaml: 'true'
+        # See the small template above: 30 seconds churns rather than queues.
+        slaveConnectTimeout: '600'
+        yamlMergeStrategy: override
+        containers:
+          - name: jnlp
+            # https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
+            alwaysPullImage: true
+            envVars:
+              - envVar:
+                  key: DOCKER_TLS_CERTDIR
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_CERT_PATH
+                  value: /certs/client/
+              - envVar:
+                  key: DOCKER_TLS_VERIFY
+                  value: 'true'
+              - envVar:
+                  key: DOCKER_HOST
+                  value: tcp://localhost:2376
+              - envVar:
+                  key: JENKINS_JAVA_OPTS
+                  value: '-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.USE_BINARY_WRAPPER=true'
+            image: apache.jfrog.io/cassan-docker/apache/cassandra-jenkins-k8s
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 1
+            resourceLimitCpu: 2
+            resourceRequestMemory: 1G
+            resourceLimitMemory: 2400M
+            # the workspace emptyDir: the downloaded output.zip, the decompressed test xml, and the tar
+            resourceRequestEphemeralStorage: 10Gi
+            resourceLimitEphemeralStorage: 20Gi
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+          - name: dind
+            alwaysPullImage: 'false'
+            envVars:
+            - envVar:
+                key: DOCKER_TLS_CERTDIR
+                value: /certs
+            - envVar:
+                key: "DOCKER_IPTABLES_LEGACY"
+                value: "1"
+            image: docker:dind
+            args: "--default-address-pool base=192.168.96.0/20,size=24"  # overwrite docker subnet in case of overlapping
+            livenessProbe:
+              failureThreshold: '0'
+              initialDelaySeconds: '0'
+              periodSeconds: '0'
+              successThreshold: '0'
+              timeoutSeconds: '0'
+            privileged: 'true'
+            resourceRequestCpu: 2
+            resourceLimitCpu: 5
+            resourceRequestMemory: 3400M
+            # 9G against the medium template's 5G: generateTestReports now runs several ant junitreport
+            # jvms at once, each in a container this daemon holds.  Moves with the Jenkinsfile's
+            # report_jobs and -Xmx.
+            resourceLimitMemory: 9G
+            # docker's images and containers, in the docker-storage emptyDir
+            resourceRequestEphemeralStorage: 40Gi
+            resourceLimitEphemeralStorage: 60Gi
+            ttyEnabled: 'true'
+            workingDir: /home/jenkins/agent
+        volumes:
+          # /var/lib/docker is not here but in `yaml:` below, the only place it can carry a sizeLimit
+          - emptyDirVolume:
+              memory: 'false'
+              mountPath: /certs
+        # limit one agent pod per node for simpler operations (like orphan cleanup)
+        yaml: |
+          spec:
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchExpressions:
+                        - key: jenkins/cassius-jenkins-agent
+                          operator: In
+                          values:
+                            - "true"
+                    topologyKey: kubernetes.io/hostname
+            # docker's storage, named and mounted here so that the sizeLimit survives the plugin's merge.
+            # 60Gi bounds the images and their containers alone, of the pod's 80Gi
+            # fetchDockerImages in Jenkinsfile warns as the node fills as our image sizes grow.
+            volumes:
+              - name: docker-storage
+                emptyDir:
+                  sizeLimit: 60Gi
+            containers:
+              - name: dind
+                volumeMounts:
+                  - name: docker-storage
+                    mountPath: /var/lib/docker
     agent-dind-medium: |
       - name: agent-dind-medium
         label: agent-dind cassandra-medium cassandra-amd64-medium
         nodeSelector: 'cassandra.jenkins.agent.medium=true'
         # 0 = no pod lifetime cap: idleMinutes reuse means a pod's age is unrelated to any one build's timeout.  Orphans are reaped by agent.garbageCollection instead.
         activeDeadlineSeconds: '0'
-        idleMinutes: 1
-        # should match the medium pools 100 nodes (README's --max-nodes), i.e. one agent per node. must not be higher than max nodes possible.
-        instanceCap: 100
-        instanceCapStr: "100"
+        # Raised from 1, and the pool that gains most: it runs the shortest tasks, lint under two minutes and
+        # cqlsh-test at seven.  See the small template above.
+        idleMinutes: 5
+        # The medium pool's own maximum; agent.containerCap is the cluster total.  See the small template.
+        #
+        # Raised from 100, which bound for a whole pre-commit tests stage: 100 agents held and 202 tasks
+        # queued behind them.  150 is that demand of 302 cut to what the account's quotas hold, in the ratio
+        # medium and large asked in.
+        instanceCap: 150
+        instanceCapStr: "150"
         nodeUsageMode: "NORMAL"
         showRawYaml: 'true'
-        slaveConnectTimeout: '30'
+        # Raised from 30 seconds.  See the small template above; this is the pool the churn was measured on.
+        slaveConnectTimeout: '600'
         yamlMergeStrategy: override
         containers:
           - name: jnlp
@@ -424,13 +591,22 @@ agent:
         # and idleMinutes reuse extends a pod's age past any one build, so age cannot stand in for
         # health here.  Orphans are reaped by agent.garbageCollection instead.
         activeDeadlineSeconds: '0'
-        idleMinutes: 1
-        # should match the large pools 160 nodes (README's --max-nodes), i.e. one agent per node. must not be higher than max nodes possible.
-        instanceCap: 160
-        instanceCapStr: "160"
+        # Raised from 1, and the pool needing it least: these tasks run for tens of minutes, so a warm node
+        # stays busy.  Kept level with the other two rather than tuned; nothing here is measured yet.
+        idleMinutes: 5
+        # The large node pool's own maximum; agent.containerCap is the cluster ceiling.  This pool reaches a
+        # shared ceiling first, its tasks being the longest, so a containerCap below the sum of the four caps
+        # hands large the larger share by simply holding what it has.
+        #
+        # Raised from 160, which bound for a whole pre-commit tests stage: 160 agents held and 467 tasks
+        # queued behind them.  306 is that demand of 627 cut to what the account's quotas hold.  The largest
+        # single claim on them, so the first number to lower when an account cannot hold the four together.
+        instanceCap: 306
+        instanceCapStr: "306"
         nodeUsageMode: "NORMAL"
         showRawYaml: 'true'
-        slaveConnectTimeout: '30'
+        # Raised from 30 seconds.  See the small template above.
+        slaveConnectTimeout: '600'
         yamlMergeStrategy: override
         containers:
           - name: jnlp
