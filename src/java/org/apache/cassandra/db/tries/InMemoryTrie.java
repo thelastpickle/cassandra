@@ -55,16 +55,18 @@ public class InMemoryTrie<T> extends InMemoryReadTrie<T>
      * This must be done to avoid tries growing beyond their hard 2GB size limit (due to the 32-bit pointers).
      */
     @VisibleForTesting
-    static final int ALLOCATED_SIZE_THRESHOLD;
-    static
+    static final int ALLOCATED_SIZE_THRESHOLD = allocatedSizeThreshold();
+
+    @VisibleForTesting
+    static int allocatedSizeThreshold()
     {
         // Default threshold + 10% == 2 GB. This should give the owner enough time to react to the
         // {@link #reachedAllocatedSizeThreshold()} signal and switch this trie out before it fills up.
-        int limitInMB = CassandraRelevantProperties.MEMTABLE_OVERHEAD_SIZE.getInt(2048 * 10 / 11);
+        int limitInMB = CassandraRelevantProperties.MEMTABLE_TRIE_SIZE_LIMIT.getInt(2048 * 10 / 11);
         if (limitInMB < 1 || limitInMB > 2047)
-            throw new AssertionError(CassandraRelevantProperties.MEMTABLE_OVERHEAD_SIZE.getKey() +
+            throw new AssertionError(CassandraRelevantProperties.MEMTABLE_TRIE_SIZE_LIMIT.getKey() +
                                      " must be within 1 and 2047");
-        ALLOCATED_SIZE_THRESHOLD = 1024 * 1024 * limitInMB;
+        return 1024 * 1024 * limitInMB;
     }
 
     private int allocatedPos = 0;
