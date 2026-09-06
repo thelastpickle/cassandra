@@ -321,6 +321,39 @@ public class CompactionIteratorTest extends CQLTester
         }
     }
 
+    /**
+     * The iterator refreshes its bytesRead field only once every UNFILTERED_TO_UPDATE_PROGRESS
+     * unfiltereds, so a caller that reads the count per partition, or once the iteration is over,
+     * must not be given that field. The repair_validations virtual table reports the count this way.
+     */
+    @Test
+    public void testBytesReadFollowsTheScannersOnEveryCall()
+    {
+        UnfilteredRowsGenerator generator = new UnfilteredRowsGenerator(metadata.comparator, false);
+        List<List<Unfiltered>> inputLists = parse(new String[] {"10[100] 11[100] 12[100]"}, generator);
+        Map<DecoratedKey, Iterable<UnfilteredRowIterator>> tombstoneSources = new TreeMap<>();
+        tombstoneSources.put(kk, ImmutableList.of());
+
+        CountingScanner scanner = new CountingScanner(ImmutableList.of(listToIterator(inputLists.get(0), kk)));
+        try (CompactionController controller = new Controller(Keyspace.openAndGetStore(metadata), tombstoneSources, GC_BEFORE);
+             CompactionIterator iter = new CompactionIterator(OperationType.COMPACTION,
+                                                              ImmutableList.of(scanner),
+                                                              controller, NOW, null))
+        {
+            while (iter.hasNext())
+            {
+                try (UnfilteredRowIterator partition = iter.next())
+                {
+                    while (partition.hasNext())
+                        partition.next();
+                }
+            }
+
+            assertTrue(scanner.getBytesScanned() > 0);
+            assertEquals(scanner.getBytesScanned(), iter.getBytesRead());
+        }
+    }
+
     @Test
     public void transformTest()
     {
@@ -397,6 +430,30 @@ public class CompactionIteratorTest extends CQLTester
         {
             assert tombstoneOnly;
             return tombstoneSources.get(key);
+        }
+    }
+
+    /** A scanner that reports ten bytes for every partition it hands out. */
+    class CountingScanner extends Scanner
+    {
+        private long bytesScanned = 0;
+
+        CountingScanner(Iterable<UnfilteredRowIterator> content)
+        {
+            super(content);
+        }
+
+        @Override
+        public UnfilteredRowIterator next()
+        {
+            bytesScanned += 10;
+            return super.next();
+        }
+
+        @Override
+        public long getBytesScanned()
+        {
+            return bytesScanned;
         }
     }
 
