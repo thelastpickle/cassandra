@@ -63,6 +63,9 @@ public class RequestCallbacks implements OutboundMessageCallbacks
     private final ScheduledExecutorPlus executor = executorFactory().scheduled("Callback-Map-Reaper", DISCARD);
     private final ConcurrentMap<CallbackKey, CallbackInfo> callbacks = new ConcurrentHashMap<>();
 
+    /** Set by either shutdown method, after which no callback is registered.  See {@link #isShutdown()}. */
+    private volatile boolean shutdown;
+
     RequestCallbacks(MessagingService messagingService)
     {
         this.messagingService = messagingService;
@@ -91,12 +94,26 @@ public class RequestCallbacks implements OutboundMessageCallbacks
     }
 
     /**
+     * @return true once either shutdown method has been called, after which no callback is registered.
+     */
+    @VisibleForTesting
+    boolean isShutdown()
+    {
+        return shutdown;
+    }
+
+    /**
      * Register the provided {@link RequestCallback}, inferring expiry and id from the provided {@link Message}.
      */
     public void addWithExpiration(RequestCallback<?> cb, Message<?> message, InetAddressAndPort to)
     {
         // mutations need to call the overload
         assert message.verb() != Verb.MUTATION_REQ && message.verb() != Verb.COUNTER_MUTATION_REQ;
+        if (shutdown)
+        {
+            logger.trace("Not registering a callback for {} to {}, the messaging service is shut down", message.id(), to);
+            return;
+        }
         CallbackInfo previous = callbacks.put(key(message.id(), to), new CallbackInfo(message, to, cb));
         assert previous == null : format("Callback already exists for id %d/%s! (%s)", message.id(), to, previous);
     }
@@ -104,6 +121,11 @@ public class RequestCallbacks implements OutboundMessageCallbacks
     public void addWithExpiration(AbstractWriteResponseHandler<?> cb, Message<?> message, Replica to)
     {
         assert message.verb() == Verb.MUTATION_REQ || message.verb() == Verb.COUNTER_MUTATION_REQ || message.verb() == Verb.PAXOS_COMMIT_REQ;
+        if (shutdown)
+        {
+            logger.trace("Not registering a callback for {} to {}, the messaging service is shut down", message.id(), to.endpoint());
+            return;
+        }
         CallbackInfo previous = callbacks.put(key(message.id(), to.endpoint()), new CallbackInfo(message, to.endpoint(), cb));
         assert previous == null : format("Callback already exists for id %d/%s! (%s)", message.id(), to.endpoint(), previous);
     }
@@ -159,6 +181,7 @@ public class RequestCallbacks implements OutboundMessageCallbacks
 
     void shutdownNow(boolean expireCallbacks)
     {
+        shutdown = true;
         executor.shutdownNow();
         if (expireCallbacks)
             forceExpire();
@@ -166,6 +189,7 @@ public class RequestCallbacks implements OutboundMessageCallbacks
 
     void shutdownGracefully()
     {
+        shutdown = true;
         expire();
         if (!callbacks.isEmpty())
             executor.schedule(this::shutdownGracefully, 100L, MILLISECONDS);
