@@ -1,0 +1,67 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.cassandra.db.tries;
+
+import org.junit.Test;
+
+import org.apache.cassandra.distributed.shared.WithProperties;
+
+import static org.apache.cassandra.config.CassandraRelevantProperties.MEMTABLE_OVERHEAD_SIZE;
+import static org.apache.cassandra.config.CassandraRelevantProperties.MEMTABLE_TRIE_SIZE_LIMIT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class InMemoryTrieSizeLimitTest
+{
+    /** The size limit the trie uses when the property is unset, in megabytes. */
+    private static final int DEFAULT_LIMIT_IN_MB = 2048 * 10 / 11;
+
+    @Test
+    public void testTheTrieSizeLimitPropertySetsTheThreshold()
+    {
+        try (WithProperties properties = new WithProperties().set(MEMTABLE_TRIE_SIZE_LIMIT, 100))
+        {
+            assertEquals(100 * 1024 * 1024, InMemoryTrie.allocatedSizeThreshold());
+        }
+    }
+
+    @Test
+    public void testTheRowOverheadPropertyLeavesTheThresholdAlone()
+    {
+        try (WithProperties properties = new WithProperties().set(MEMTABLE_OVERHEAD_SIZE, 100))
+        {
+            assertEquals(DEFAULT_LIMIT_IN_MB * 1024 * 1024, InMemoryTrie.allocatedSizeThreshold());
+        }
+    }
+
+    @Test
+    public void testALimitOutsideTheRangeNamesTheTrieSizeLimitProperty()
+    {
+        try (WithProperties properties = new WithProperties().set(MEMTABLE_TRIE_SIZE_LIMIT, 2048))
+        {
+            InMemoryTrie.allocatedSizeThreshold();
+            fail("A limit of 2048 megabytes exceeds the 2GB pointer range, so it must be rejected.");
+        }
+        catch (AssertionError e)
+        {
+            assertTrue(e.getMessage(), e.getMessage().startsWith(MEMTABLE_TRIE_SIZE_LIMIT.getKey()));
+        }
+    }
+}
