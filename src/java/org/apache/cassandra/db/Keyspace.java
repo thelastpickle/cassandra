@@ -67,6 +67,7 @@ import org.apache.cassandra.service.snapshot.TableSnapshot;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.JVMStabilityInspector;
+import org.apache.cassandra.utils.Throwables;
 import org.apache.cassandra.utils.concurrent.AsyncPromise;
 import org.apache.cassandra.utils.concurrent.Future;
 import org.apache.cassandra.utils.concurrent.OpOrder;
@@ -399,12 +400,18 @@ public class Keyspace
 
     /**
      * Unloads all column family stores and releases metrics.
+     *
+     * A failure on one table does not stop the remaining tables from being unloaded, and does not
+     * stop the metrics from being released. The first failure is rethrown once all of the work is
+     * done, so the caller still sees it.
      */
     public void unload(boolean dropData)
     {
+        Throwable accumulate = null;
         for (ColumnFamilyStore cfs : getColumnFamilyStores())
-            unloadCf(cfs, dropData);
-        metric.release();
+            accumulate = Throwables.perform(accumulate, () -> unloadCf(cfs, dropData));
+        accumulate = Throwables.perform(accumulate, metric::release);
+        Throwables.maybeFail(accumulate);
     }
 
     // disassociate a cfs from this keyspace instance.
