@@ -70,6 +70,7 @@ import static org.apache.cassandra.config.CassandraRelevantProperties.DIAGNOSTIC
 import static org.apache.cassandra.db.transform.DuplicateRowCheckerTest.assertCommandIssued;
 import static org.apache.cassandra.db.transform.DuplicateRowCheckerTest.makeRow;
 import static org.apache.cassandra.db.transform.DuplicateRowCheckerTest.partition;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -345,6 +346,39 @@ public class CompactionIteratorTest extends CQLTester
         }
     }
 
+    /**
+     * The iterator refreshes its bytesRead field only once every UNFILTERED_TO_UPDATE_PROGRESS
+     * unfiltereds, so a caller that reads the count per partition, or once the iteration is over,
+     * must not be given that field. The repair_validations virtual table reports the count this way.
+     */
+    @Test
+    public void testBytesReadFollowsTheScannersOnEveryCall()
+    {
+        UnfilteredRowsGenerator generator = new UnfilteredRowsGenerator(metadata.comparator, false);
+        List<List<Unfiltered>> inputLists = parse(new String[] {"10[100] 11[100] 12[100]"}, generator);
+        Map<DecoratedKey, Iterable<UnfilteredRowIterator>> tombstoneSources = new TreeMap<>();
+        tombstoneSources.put(kk, ImmutableList.of());
+
+        CountingScanner scanner = new CountingScanner(metadata, ImmutableList.of(listToIterator(inputLists.get(0), kk)));
+        try (CompactionController controller = new Controller(Keyspace.openAndGetStore(metadata), tombstoneSources, GC_BEFORE);
+             CompactionIterator iter = new CompactionIterator(OperationType.COMPACTION,
+                                                              ImmutableList.of(scanner),
+                                                              controller, NOW, null))
+        {
+            while (iter.hasNext())
+            {
+                try (UnfilteredRowIterator partition = iter.next())
+                {
+                    while (partition.hasNext())
+                        partition.next();
+                }
+            }
+
+            assertTrue(scanner.getBytesScanned() > 0);
+            assertEquals(scanner.getBytesScanned(), iter.getBytesRead());
+        }
+    }
+
     @Test
     public void transformTest()
     {
@@ -421,6 +455,30 @@ public class CompactionIteratorTest extends CQLTester
         {
             assert tombstoneOnly;
             return tombstoneSources.get(key);
+        }
+    }
+
+    /** A scanner that reports ten bytes for every partition it hands out. */
+    static class CountingScanner extends Scanner
+    {
+        private long bytesScanned = 0;
+
+        CountingScanner(TableMetadata metadata, Iterable<UnfilteredRowIterator> content)
+        {
+            super(metadata, content);
+        }
+
+        @Override
+        public UnfilteredRowIterator next()
+        {
+            bytesScanned += 10;
+            return super.next();
+        }
+
+        @Override
+        public long getBytesScanned()
+        {
+            return bytesScanned;
         }
     }
 
