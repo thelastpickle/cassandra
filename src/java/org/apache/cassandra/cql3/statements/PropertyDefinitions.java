@@ -26,11 +26,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.exceptions.SyntaxException;
+import org.apache.cassandra.utils.NoSpamLogger;
 
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PropertyDefinitions
 {
+    public static final String OBSOLETE_PROPERTY_WARNING = "Ignoring obsolete property {}";
+
+    /** One warning per obsolete property per interval, because a client can repeat the statement without limit. */
+    private static final long OBSOLETE_PROPERTY_WARN_INTERVAL_SECONDS = 30;
+
     private static final Pattern POSITIVE_PATTERN = Pattern.compile("(1|true|yes)");
     private static final Pattern NEGATIVE_PATTERN = Pattern.compile("(0|false|no)");
     
@@ -58,7 +65,9 @@ public class PropertyDefinitions
                 continue;
 
             if (obsolete.contains(name))
-                logger.warn("Ignoring obsolete property {}", name);
+                NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, name,
+                                 OBSOLETE_PROPERTY_WARN_INTERVAL_SECONDS, SECONDS,
+                                 OBSOLETE_PROPERTY_WARNING, name);
             else
                 throw new SyntaxException(format("Unknown property '%s'", name));
         }
