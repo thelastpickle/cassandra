@@ -415,15 +415,19 @@ public class CompactionIterator extends CompactionInfo.Holder implements Unfilte
 
     private void updateBytesRead()
     {
-        long n = 0;
-        for (ISSTableScanner scanner : scanners)
-            n += scanner.getBytesScanned();
-        bytesRead = n;
+        bytesRead = getBytesRead();
     }
 
     public long getBytesRead()
     {
-        return bytesRead;
+        // Sum the scanners on every call. The bytesRead field is refreshed only once every
+        // UNFILTERED_TO_UPDATE_PROGRESS unfiltereds, so it lags behind the scanners, and it is still
+        // short of the total once the iteration is over. The field remains for getCompactionInfo,
+        // which reports on a background thread and must not walk the scanners.
+        long n = 0;
+        for (ISSTableScanner scanner : scanners)
+            n += scanner.getBytesScanned();
+        return n;
     }
 
     public boolean hasNext()
