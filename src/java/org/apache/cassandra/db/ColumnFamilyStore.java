@@ -1475,12 +1475,12 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean, Memtable.Owner
             Memtable mt = data.getMemtableFor(opGroup, commitLogPosition);
             UpdateTransaction indexer = newUpdateTransaction(update, context, updateIndexes, mt);
             long timeDelta;
-            // Nesting is tracked on the context; updateIndexes cannot identify it, as index build and compaction cleanup also pass false. See Memtable#putNested.
+            // Nesting is tracked on the context; updateIndexes cannot identify it, as index build and compaction cleanup also pass false. See Memtable#checkSpaceAndPut.
             if (context.enterMemtableWrite())
             {
                 try
                 {
-                    timeDelta = mt.put(update, indexer, opGroup);
+                    timeDelta = mt.checkSpaceAndPut(update, indexer, opGroup);
                 }
                 finally
                 {
@@ -1489,7 +1489,7 @@ public class ColumnFamilyStore implements ColumnFamilyStoreMBean, Memtable.Owner
             }
             else
             {
-                timeDelta = mt.putNested(update, indexer, opGroup);
+                timeDelta = mt.put(update, indexer, opGroup);
             }
             DecoratedKey key = update.partitionKey();
             invalidateCachedPartition(key);
