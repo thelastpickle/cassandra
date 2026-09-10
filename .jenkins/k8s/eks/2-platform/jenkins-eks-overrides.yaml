@@ -1,0 +1,97 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Helm values applied over .jenkins/k8s/jenkins-deployment.yaml for a cluster built by ../1-cluster.
+#
+#   .build/run-ci --only-setup --values-override .jenkins/k8s/eks/2-platform/jenkins-eks-overrides.yaml
+#
+# `make platform` in .. does exactly that.  Nothing in this file belongs in jenkins-deployment.yaml: that
+# file is shared with GKE, and every key here is either AWS-specific or a site's own.
+#
+# A long-lived site has customisations of its own, and .jenkins/k8s/README.md keeps those in
+# `~/.cassandra-ci/<site>-overrides.yaml`.  run-ci takes one --values-override, so a site copies this
+# file to its own and adds to it, rather than passing both:
+#
+#   make jenkins VALUES_BASE=~/.cassandra-ci/<site>-overrides.yaml
+#
+# Helm merges maps key by key, and replaces lists and strings wholesale.  Every key below is a scalar in
+# a map, so each one overrides exactly itself.  Do not add an `agent.podTemplates.*` entry here: each
+# template is one multi-line string, so overriding one masks every later change to it in the repository.
+
+persistence:
+  # EKS creates one StorageClass, `gp2`, and marks it default.  jenkins-deployment.yaml carries the same
+  # value commented, with "aws needs gp2" against it.
+  #
+  # gp3 would be the better trade for a 500Gi volume, being cheaper per GiB with throughput that does not
+  # scale with size, but there is no gp3 StorageClass until somebody creates one and the EBS CSI add-on
+  # brings none.  It is a Kubernetes object, so ../1-cluster cannot create it either without a kubernetes
+  # provider in layer 1 authenticating to a cluster it is mid-way through creating.  See ../README.md.
+  storageClass: gp2
+
+controller:
+  # No `resources` and no `javaOpts` here.  Both are the controller's own sizing, they follow the agent count,
+  # and the agent count is one account's answer: `var.agent_pools` is scaled by whichever ceiling that account
+  # allows, so any figure written here is right for one cluster and wrong for the next.
+  #
+  # ../../jenkins-deployment.yaml's own values cover the pools this repository declares.  `make quota` runs
+  # ../controller-fit.py against the pools layer 1 actually created and refuses the deploy when they do not,
+  # naming the cpu, the memory and the instance type to raise.  Add the keys here when it says so, and raise
+  # `controller_pool.instance_types` in the same change: the container gets the lower of its own limit and the
+  # node's allocatable, so either one alone buys nothing.
+  #
+  # Here rather than in the shared file, when they are needed: that file is read by GKE too, and a limit
+  # raised there demands a bigger node at every site.
+
+  # The key that works.  jenkins-deployment.yaml sets `controller.node-selector`, which the chart does not
+  # read; its key is `nodeSelector`.  GKE gets away with it because the agent pools sit at zero and the
+  # controller has nowhere else to land.  Here they scale to zero between builds, so an unpinned controller
+  # can be placed on a node the autoscaler then drains, taking the queue and the volume attachment with it.
+  #
+  # Confirm with:
+  #   helm template cassius jenkins/jenkins -f .jenkins/k8s/jenkins-deployment.yaml | grep -c nodeSelector
+  # which returns 4, one per agent pod-template string, and 6 with this file as a second -f: the controller's
+  # StatefulSet and the chart's test Pod, both reading this key.
+  #
+  # Fixing the shared file is a separate change.  See ../README.md.
+  nodeSelector:
+    cassandra.jenkins.controller: "true"
+
+  # The `ingress` key is commented out, not only its value: a bare `ingress:` with only comments under it is
+  # `ingress: null`, which Helm coalesces over the chart's default map rather than under it, so the map is
+  # gone and the chart fails with `nil pointer evaluating interface {}.enabled`, naming the chart and not this
+  # file.  Uncomment both lines together.
+  #
+  # hostName, with a capital N.  `hostname` is a different key: the chart ignores it, the ingress gets no
+  # host, and the only symptom is a URL that does not resolve.  .jenkins/k8s/README.md flags the same trap.
+  #
+  # Set it to the name resolving to this cluster's load balancer.  Left commented, the ingress serves on any
+  # host, which is what a throwaway cluster wants.
+  #ingress:
+  #  hostName: ci-cassandra.<your-domain>
+
+  # `serviceType: LoadBalancer` in jenkins-deployment.yaml, with no other controller installed, gets the
+  # in-tree AWS load balancer: a Classic Load Balancer whose address AWS chooses and changes when the Service
+  # is recreated.
+  #
+  # The three annotations below need the AWS Load Balancer Controller, which ../1-cluster does not install and
+  # which is not an EKS add-on: a large IAM policy on its own release cadence, for one static address.
+  # Without it these annotations are inert and nothing reads the elastic IP.
+  #
+  # Uncomment all three together, and only after installing that controller.
+  #serviceAnnotations:
+  #  service.beta.kubernetes.io/aws-load-balancer-name: <name>
+  #  service.beta.kubernetes.io/aws-load-balancer-subnets: <public subnet identifier>
+  #  service.beta.kubernetes.io/aws-load-balancer-eip-allocations: <elastic IP allocation identifier>

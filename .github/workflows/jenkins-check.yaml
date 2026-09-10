@@ -59,3 +59,28 @@ jobs:
           # validate.sh runs groovy from docker when it is not on the PATH
           - name: Validate .jenkins/
             run: .jenkins/k8s/jenkins-test.sh
+
+    # The cloud directories under .jenkins/k8s check themselves, and `make test` is the whole offline half:
+    # tofu fmt, tofu validate, and the regression suites for every script in them. No credentials, no
+    # cluster, and no cloud API: each suite stubs the CLI it calls.
+    k8s-cloud-test:
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+          - name: Python 3
+            uses: actions/setup-python@v5
+            with:
+              python-version: '3.x'
+          - name: Install dependencies
+            run: pip install pyyaml
+          # Pinned to the floor in .jenkins/k8s/eks/1-cluster/versions.tf, not to the newest release, so that
+          # this job checks the version the configuration claims to support. A feature needing a later one
+          # then fails here, where the answer is to raise the floor, rather than on an operator's machine.
+          - name: OpenTofu
+            uses: opentofu/setup-opentofu@v1
+            with:
+              tofu_version: 1.10.0
+          - name: Test .jenkins/k8s/eks
+            run: make -C .jenkins/k8s/eks test

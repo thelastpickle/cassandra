@@ -1,0 +1,115 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $label := splitList "=" (requiredEnv "EKS_CONTROLLER_NODE_LABEL") }}
+
+cloudProvider: aws
+awsRegion: {{ requiredEnv "AWS_REGION" | quote }}
+
+# Auto-discovery, not a written list of node groups.  The chart turns this into
+# --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<name>,
+# which is the pair of tags ../1-cluster/node-groups.tf puts on every Auto Scaling group EKS created.  An
+# agent pool added in 1-cluster therefore needs no change here.
+autoDiscovery:
+  clusterName: {{ requiredEnv "EKS_CLUSTER_NAME" | quote }}
+
+image:
+  # Follows the control plane, not the chart's default: the autoscaler is versioned against the Kubernetes
+  # minor it simulates scheduling for.  ../Makefile resolves it; CLUSTER_AUTOSCALER_IMAGE_TAG overrides.
+  #
+  # A mismatch is quiet: an autoscaler a minor behind still starts and still discovers the node groups, and
+  # simply declines to act on pods whose constraints it does not understand.
+  tag: {{ requiredEnv "CLUSTER_AUTOSCALER_IMAGE_TAG" | quote }}
+
+rbac:
+  create: true
+  serviceAccount:
+    create: true
+    # Fixed, not the chart's `<release>-aws-cluster-autoscaler` fullname.  This literal is in the `sub`
+    # condition of the IRSA trust policy in ../1-cluster/iam-autoscaler.tf.
+    name: {{ requiredEnv "EKS_CLUSTER_AUTOSCALER_SERVICE_ACCOUNT" | quote }}
+    annotations:
+      eks.amazonaws.com/role-arn: {{ requiredEnv "EKS_CLUSTER_AUTOSCALER_ROLE_ARN" | quote }}
+
+# Pinned to the controller node: the autoscaler decides whether an agent node is still needed, so on an
+# agent node it is a candidate for its own scale-down, and losing it leaves nothing to scale back up.
+#
+# Quoted, because the chart renders this map through `toYaml` and an unquoted `true` reaches the pod spec as
+# a YAML boolean, which the API server rejects: label values are strings.  jenkins-deployment.yaml has the
+# unquoted form at `controller.node-selector`; see ../README.md.
+nodeSelector:
+  {{ index $label 0 }}: {{ index $label 1 | quote }}
+
+extraArgs:
+  # Helm merges maps key by key, so the chart's logtostderr, stderrthreshold and v survive this block.
+  #
+  # Both are already chart and autoscaler defaults, set here because `.build/run-ci` depends on them by name:
+  # check_agent_capacity reads each pool's ceiling from the `cluster-autoscaler-status` configmap in
+  # kube-system, and any other name leaves every instanceCap unchecked, which run-ci reports as "could not
+  # establish" rather than as a failure.
+  write-status-configmap: true
+  status-config-map-name: cluster-autoscaler-status
+
+  # Required by the layout, not a tuning choice.  ../1-cluster makes one node group per zone per pool, and
+  # without this the autoscaler fills one to max_size before considering the next.  A pool's max_size is
+  # split between its zones, so that is a pool stalling at a fraction of its ceiling, the others idle.
+  #
+  # The AWS cloud provider documents this for an ASG per zone.  The groups differ only in labels its
+  # comparator already ignores (eks.amazonaws.com/nodegroup, topology.ebs.csi.aws.com/zone,
+  # topology.k8s.aws/zone-id, and the zone and hostname labels), so no --balancing-ignore-label is needed.
+  # Worth knowing, because the chart renders extraArgs as a map and cannot repeat a flag.
+  balance-similar-node-groups: true
+
+  # The account's ceiling, not a policy.  ../vcpu-quota.py divides the on-demand standard vCPU quota by the
+  # largest instance type any node group runs, and ../Makefile exports the result; the controller's node is
+  # inside this count, because its Auto Scaling group carries the same discovery tags the agent groups do.
+  #
+  # Without it the autoscaler learns the ceiling by hitting it.  An Auto Scaling group told to grow past
+  # the quota fails with VcpuLimitExceeded, and the autoscaler answers that by disabling scale-up on the
+  # group for thirty minutes, which a build sees only as a pod that stays Pending.  With it, the same
+  # pod waits for a node that is coming rather than for a group that has been frozen.
+  #
+  # A limit across every discovered group, served in the order the pools ask.  Jenkins' agent.containerCap is
+  # what keeps the queue from asking for more than this.
+  #
+  # Fresh at deploy time and frozen afterwards, with nothing reporting the difference: during build
+  # cassandra-eks-k8s #8 the account held 4976 vCPU and ../.eks-vcpu-quota said 481, while the running
+  # autoscaler said 315, the 2520 the account held when `make platform` last ran.  Re-run `make autoscaler`
+  # after a quota grant, and read the live flag rather than the file; ../README.md gives the command.
+  max-nodes-total: {{ requiredEnv "EKS_MAX_NODES_TOTAL" }}
+
+  # Nothing else is tuned.  scale-down-unneeded-time, scale-down-utilization-threshold and the expander
+  # all have defaults that suit one-agent-per-node pools, and a value set here without having watched
+  # this cluster run is a guess with a version number on it.
+
+# Requests and no limits.  The chart sets neither, which puts this in the BestEffort QoS class, and BestEffort
+# is what the kubelet evicts first when the node it shares with the Jenkins controller comes under pressure.
+# A request is not a limit: it buys a QoS class and a place in the eviction order, and it cannot OOM-kill
+# anything, which is what a guessed limit on a process whose memory grows with the cluster would do.
+#
+# Floors for scheduling, not measurements: this has not been profiled at 480 nodes, and the figures are small
+# against the node's 8 vCPU precisely so that being wrong about them costs nothing.
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+# Left at the chart's defaults, deliberately:
+#
+#  - priorityClassName: system-cluster-critical, so it is not preempted to make room for the agent pods it
+#    exists to find nodes for.  Priority governs preemption and not the kubelet's eviction order, which is
+#    why the requests above are set as well.
+#  - replicaCount 1, leader election off: two replicas cannot both be scheduled on a one-node pool.

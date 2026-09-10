@@ -1,0 +1,69 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Layer 2: the charts this cluster needs that EKS does not offer as an add-on.
+#
+# Jenkins is deliberately absent.  `.build/run-ci --only-setup --values-override <file>` installs it,
+# from .jenkins/k8s/jenkins-deployment.yaml plus jenkins-eks-overrides.yaml in this directory, and it
+# warns before it drops a live customisation.  A second copy of the Jenkins chart here would be a second
+# owner of the same release: whichever ran last would win, and the one that lost would be the one with
+# the warning in it.  ../Makefile runs run-ci for that half; `make platform` does both in order.
+#
+# Every value comes from the environment, which ../Makefile fills from `tofu output` in ../1-cluster.
+# requiredEnv, not env: a missing variable stops the render rather than deploying an autoscaler pointed
+# at an empty cluster name, which discovers no node group and reports nothing wrong.
+
+repositories:
+  - name: autoscaler
+    url: https://kubernetes.github.io/autoscaler
+  - name: metrics-server
+    url: https://kubernetes-sigs.github.io/metrics-server
+
+releases:
+  - name: cluster-autoscaler
+    # kube-system, because the IRSA trust policy in ../1-cluster/iam-autoscaler.tf names this namespace
+    # and this service account.  Moving either makes the role unassumable, and the symptom is an
+    # autoscaler that starts, lists nothing and scales nothing.
+    namespace: kube-system
+    chart: autoscaler/cluster-autoscaler
+    # Pinned, and the one version in this directory that is not derived from AWS: a Helm chart version is
+    # not an EKS fact.  The image tag inside it is derived, from the cluster's Kubernetes version; see
+    # cluster-autoscaler-values.yaml.gotmpl.
+    version: 9.59.0
+    values:
+      - cluster-autoscaler-values.yaml.gotmpl
+    # Wait for the Deployment to become available, so that `make platform` fails here rather than in
+    # ../3-smoke where the same failure reads as a broken smoke test.
+    wait: true
+    timeout: 600
+
+  # The Metrics API, which EKS does not install and nothing else on this cluster provides.  Without it
+  # `kubectl top node` and `kubectl top pod` answer "Metrics API not available", and the controller's own
+  # CPU and memory are unobservable: the only instrumentation left is the JVM's GC log.  That is how a
+  # question as ordinary as "how many agents can this controller drive" becomes unanswerable.
+  #
+  # It is not a replacement for a metrics store.  It holds a sliding window of about 15 minutes in memory
+  # and answers one question at a time; the Prometheus endpoint Jenkins can expose is a separate matter.
+  - name: metrics-server
+    namespace: kube-system
+    chart: metrics-server/metrics-server
+    # Pinned, like the autoscaler's chart, and for the same reason: a chart version is not an EKS fact.
+    # Unlike the autoscaler, the image inside it is not versioned against the cluster's Kubernetes minor.
+    version: 3.14.0
+    values:
+      - metrics-server-values.yaml.gotmpl
+    wait: true
+    timeout: 300

@@ -1,0 +1,59 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $label := splitList "=" (requiredEnv "EKS_CONTROLLER_NODE_LABEL") }}
+
+# Pinned to the controller node, for the reason the autoscaler is: the agent pools scale to zero between
+# builds, so an unpinned Deployment can land on a node the autoscaler then drains.  Losing the Metrics API is
+# quiet, and quiet exactly while a build is scaling the cluster, which is when it is wanted.
+#
+# Quoted; see cluster-autoscaler-values.yaml.gotmpl.
+nodeSelector:
+  {{ index $label 0 }}: {{ index $label 1 | quote }}
+
+# So the Metrics API is not what gets evicted to make room for an agent pod.  Already the chart's default,
+# written here because a chart default can change under a version bump.
+priorityClassName: system-cluster-critical
+
+# The one argument this cluster adds, and it weakens a check.
+#
+# An EKS kubelet serves metrics under a certificate it generates for itself at boot, not one signed by the
+# cluster's authority, so metrics-server's default verification refuses the connection: `x509: cannot validate
+# certificate ... it doesn't contain any IP SANs`.  The symptom is a metrics-server that starts, stays
+# unready, and leaves `kubectl top` answering what it did before.  The flag is in the upstream
+# components.yaml the EKS documentation applies, and not in the chart's defaults.
+#
+# The scrape is still TLS and still authenticated the other way by the service account token; what is given
+# up is confirming which kubelet answered.  Removing it needs the kubelet asking the cluster's authority for
+# a serving certificate, which is a node bootstrap change and belongs in ../1-cluster.
+args:
+  - --kubelet-insecure-tls
+
+# Requests and no limits, for the reason cluster-autoscaler-values.yaml.gotmpl gives: the chart sets neither,
+# and a pod with no request is BestEffort, which the kubelet evicts first on the node it shares with the
+# Jenkins controller.  That eviction lands at the top of a scale-up, the one moment these readings are wanted.
+# No limit, because memory grows with the node count and a guessed ceiling would OOM-kill it there instead.
+resources:
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+# Left at the chart's defaults, deliberately:
+#
+#  - the rest of defaultArgs: --kubelet-preferred-address-types already puts InternalIP first, which is what
+#    an EKS node reports.  The chart appends `args` above to defaultArgs rather than replacing it.
+#  - replicas 1: the controller pool is one node and this is pinned to it, so a second replica lands beside
+#    the first, doubles the scrape load and survives nothing the first would not.
