@@ -30,7 +30,7 @@ set -o pipefail
 here="$(cd -- "$(dirname -- "$0")" && pwd)"
 script="${here}/build-jenkins-values.py"
 deployment="${here}/../../jenkins-deployment.yaml"
-work="$(mktemp -d)"
+work="$(mktemp -d "${TMPDIR:-/tmp}/cassandra-eks-values-test.XXXXXX")"
 # Checked, because this script has no `set -e` and an unchecked failure here leaves ${work} empty: every
 # fixture path then resolves to /, and the suite reports its own cases as failures.
 [ -n "${work}" ] && [ -d "${work}" ] || { echo "mktemp -d failed, so there is nowhere to write the fixtures"; exit 1; }
@@ -66,19 +66,18 @@ out = yaml.safe_load(open(sys.argv[1])) or {}
 dep = yaml.safe_load(open(sys.argv[2])) or {}
 merged = dict(dep.get("agent", {}).get("podTemplates", {}))
 merged.update(out.get("agent", {}).get("podTemplates", {}))
-rows = []
-for name, body in merged.items():
-    yaml.safe_load(body)
-    size = re.search(r"cassandra\.jenkins\.agent\.([a-z0-9]+)\s*=\s*true", body).group(1)
-    cap = re.search(r"^\s*instanceCap:\s*(\d+)\s*$", body, re.M).group(1)
-    cap_str = re.search(r"^\s*instanceCapStr:\s*\"(\d+)\"\s*$", body, re.M).group(1)
-    rows.append("%s=%s,%s" % (size, cap, cap_str))
-print(" ".join(sorted(rows)))
+totals = {}
+for body in merged.values():
+    for template in yaml.safe_load(body):
+        size = re.search(r"cassandra\.jenkins\.agent\.([a-z0-9]+)\s*=\s*true", template['nodeSelector']).group(1)
+        cap, cap_str = totals.get(size, (0, 0))
+        totals[size] = (cap + template['instanceCap'], cap_str + int(template['instanceCapStr']))
+print(" ".join("%s=%s,%s" % (size, *caps) for size, caps in sorted(totals.items())))
 PY
 }
 
 run() {
-    "${script}" --base "${work}/base.yaml" --out "${work}/out.yaml" --deployment "${deployment}" "$@" \
+    python3 "${script}" --base "${work}/base.yaml" --out "${work}/out.yaml" --deployment "${deployment}" "$@" \
         > "${work}/output" 2>&1
 }
 
@@ -118,46 +117,41 @@ out = yaml.safe_load(open(sys.argv[1])) or {}
 dep = yaml.safe_load(open(sys.argv[2])) or {}
 merged = dict(dep.get("agent", {}).get("podTemplates", {}))
 merged.update(out.get("agent", {}).get("podTemplates", {}))
-print(sum(int(re.search(r"^\s*instanceCap:\s*(\d+)\s*$", b, re.M).group(1)) for b in merged.values()))
+print(sum(t['instanceCap'] for b in merged.values() for t in yaml.safe_load(b)))
 PY
 )"
 container="$(python3 -c "import sys,yaml; print(yaml.safe_load(open('${work}/out.yaml'))['agent']['containerCap'])")"
-expect "the four caps sum to containerCap" "${sum}" "${container}"
+expect "the template caps sum to containerCap" "${sum}" "${container}"
 
 # Without --pools nothing is rewritten, which is what every deploy did before the pools were scaled.
 run --container-cap 480
 expect "no --pools leaves every committed cap alone" \
     "large=306,306 medium=150,150 report=4,4 small=20,20" "$(caps "${work}/out.yaml")"
 
-# A pools file that cannot be read is the same as no pools file.  `make jenkins` builds it from tofu output
-# on the same run, so an unreadable one means the apply is stale and that is not this script's to report.
+# Refuse stale pool data instead of installing shared caps that can consume every worker slot.
 run --pools "${work}/absent.json" --container-cap 480
-expect "an unreadable pools file leaves every cap alone" \
-    "large=306,306 medium=150,150 report=4,4 small=20,20" "$(caps "${work}/out.yaml")"
-if ! grep -q 'leaving each instanceCap as committed' "${work}/output"; then
-    echo "FAIL  an unreadable pools file says so"
-    sed 's/^/        /' "${work}/output"
-    failures=$((failures + 1))
-else
-    echo "PASS  an unreadable pools file says so"
-fi
-
-# A pool missing from the output is left as committed rather than dropped to a default.  This is the shape of
-# a `tofu output` written before an agent pool was added.
+expect "an unreadable pools file stops generation" "2" "$?"
 cat > "${work}/partial.json" <<'JSON'
-{
-  "large": { "max_size": 200, "instance_types": ["m7a.2xlarge"], "node_selector_label": "cassandra.jenkins.agent.large" }
-}
+{"large": {"max_size": 200}}
 JSON
 run --pools "${work}/partial.json" --container-cap 400
-expect "a pool absent from the output keeps its committed cap" \
-    "large=200,200 medium=150,150 report=4,4 small=20,20" "$(caps "${work}/out.yaml")"
+expect "a missing small pool stops generation" "2" "$?"
+pools_file 4 34 49 1
+run --pools "${work}/pools.json" --container-cap 3
+expect "the cloud cap must leave room for a worker" "2" "$?"
+printf 'agent:\n  containerCap: 3\n' > "${work}/base.yaml"
+run --pools "${work}/pools.json"
+expect "a site cloud cap must also leave room for a worker" "2" "$?"
+printf 'controller:\n  jenkinsUrlProtocol: http\n' > "${work}/base.yaml"
+python3 "${script}" --base "${work}/base.yaml" --out "${work}/out.yaml" --pools "${work}/pools.json" \
+    > "${work}/output" 2>&1
+expect "pool sizing needs the deployment templates" "2" "$?"
 
-# A pool already at its committed cap is not rewritten at all, so the overlay stays as small as it can be.
+# Matching pool sizes still need separate pipeline and worker templates.
 pools_file 20 150 306 4
 run --pools "${work}/pools.json" --container-cap 480
 templates="$(python3 -c "import yaml; v=yaml.safe_load(open('${work}/out.yaml')); print(len(v.get('agent',{}).get('podTemplates',{})))")"
-expect "caps that already match are not emitted" "0" "${templates}"
+expect "only the two small-pool templates change when caps match" "2" "${templates}"
 
 if [ "${failures}" -ne 0 ]; then
     echo "${failures} case(s) failed."

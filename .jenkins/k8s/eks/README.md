@@ -299,6 +299,24 @@ Every target below `make plan` reads the cluster's own state, so none of them ca
 
 The variable defaults to false, which is right for a new cluster.  It exists for a cluster created before this configuration did: set it true there, and know that changing it afterwards replaces the cluster.
 
+### Builds hold small agents while their workers stay queued
+
+The outer pipeline holds a `cassandra-small` agent until it finishes.  Its JAR stage requests separate `cassandra-amd64-small` workers.  With one template for both labels, overlapping pipelines can occupy every small slot and wait indefinitely for workers.
+
+The generated values now split that template into `agent-dind-pipeline` for outer agents and `agent-dind-small` for workers.  Both use exclusive label matching and stable IDs.  With `S` applied small-node slots, global Jenkins cap `C`, and `W = small_workers_per_build` (default 3), the caps are:
+
+```text
+budget       = min(S, C)
+pipeline cap = floor(budget / (1 + W))
+worker cap   = budget - pipeline cap
+```
+
+Four small slots admit one pipeline with three workers; eight admit two with six; twelve admit three with nine.  Extra builds wait before acquiring an outer agent.  This keeps the configured worker budget per admitted build; actual throughput still depends on the profile and stage timings.  Medium and large pools keep their proportional allocations.
+
+Pool scaling preserves at least `W + 1` small slots and rejects allocations that exceed CPU, storage or per-zone subnet budgets.  This is a floor on maximum capacity; idle pools can still scale to zero.  Set `small_workers_per_build` in `1-cluster/terraform.tfvars` if the build matrix needs a different worker budget.  Keep any explicit `agent_pools.small.max_size` at least `W + 1`.
+
+For the first migration, stop stalled builds and remove their idle or offline small agents through Jenkins before `make jenkins`; existing agents retain the old labels and IDs.  Run `make plan`, `make apply`, `make jenkins`, then `make smoke` from this directory.  Start replacement builds after deployment.  Raising only the node-group maximum leaves Jenkins's template caps unchanged.
+
 ### The Jenkins controller's pod stays `Pending`
 
 `controller.resources.requests` asks for more than the controller node allocates.  `make quota` refuses this before the deploy, names both figures, and says which values file to edit; `--warn-only` does not cover it, because an unschedulable pod is not a trade anybody can accept.

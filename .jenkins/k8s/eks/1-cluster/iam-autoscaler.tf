@@ -14,17 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The cluster autoscaler's role, assumed through IRSA and not Pod Identity.
-#
-# This follows the autoscaler maintainers' documented path rather than this repository's preference.
-# cluster-autoscaler/cloudprovider/aws/README.md in kubernetes/autoscaler recommends IAM Roles for
-# Service Accounts, links a worked OIDC federation example, and does not mention EKS Pod Identity at
-# all.  Pod Identity very likely works: the autoscaler reads its credentials through the standard SDK
-# chain, which the Pod Identity agent serves.  Nobody has said so in writing.
-#
-# If it turns out to work, this whole file collapses to the same shape as iam-addons.tf, and both the
-# aws_iam_openid_connect_provider below and the tls provider in versions.tf are deleted with it.
-
 # EKS publishes an OIDC issuer per cluster, but does not register it with IAM.  Nothing federates until
 # this exists.
 resource "aws_iam_openid_connect_provider" "cluster" {
@@ -32,9 +21,6 @@ resource "aws_iam_openid_connect_provider" "cluster" {
 
   client_id_list = ["sts.amazonaws.com"]
 
-  # IAM has verified EKS issuer certificates against its own trust store since mid-2023, so this value
-  # is no longer checked.  The argument is still required, and the certificate is still the only correct
-  # thing to put in it.
   thumbprint_list = [data.tls_certificate.oidc.certificates[0].sha1_fingerprint]
 }
 

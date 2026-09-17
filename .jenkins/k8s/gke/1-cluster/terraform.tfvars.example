@@ -1,0 +1,206 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Copy to terraform.tfvars, which is gitignored, and edit:
+#
+#     cp 1-cluster/terraform.tfvars.example 1-cluster/terraform.tfvars
+#
+# Only `project` has no default, so that is the one line that must be filled in.  Everything else here has a
+# default in variables.tf, and those descriptions carry the consequence of changing it; this file carries only
+# enough to find them.  Read the variable before overriding it.
+#
+# No identifier in this file names a real thing, and none should.  A committed project id, subnetwork name,
+# address range or email address is a fact about one project that everybody who clones this repository then
+# carries.
+
+# The project.  This is the billing, quota and IAM boundary all at once, so the spend caps below are caps on
+# everything in it.  Run this cluster in a project of its own.
+project = "<your project id>"
+
+# Your closest low-carbon region.  Google publishes a carbon-free energy percentage per region, so unlike AWS
+# this is at least stated; it is still a choice rather than something to derive here.
+#region = "us-central1"
+
+# Null uses region.  For europe-north1, use europe-west1 because Cloud Scheduler is unavailable in Finland.
+#spend_scheduler_region = "europe-west1"
+
+# A name identifiable to you.  Use at most 18 characters with spend caps, 17 with external-dns, or 25
+# with neither.  Service account suffixes must fit within 30 characters.  Use lower-case, with no underscore.
+#cluster_name = "mck--jenkins"
+
+# Small workers per admitted pipeline; concurrency follows the applied pool capacity.
+#small_workers_per_build = 3
+
+# The network.  Leave both unset to take the project's `default` network and its subnetwork in this region.
+# That is right for a throwaway cluster and wrong for a long-lived one: a default subnetwork carries no
+# secondary ranges, so GKE invents its own and sizes the pod range at /14.
+#network    = "<network name>"
+#subnetwork = "<subnetwork name>"
+
+# The secondary ranges pod and service addresses come from.  The pod range is the ceiling that stops a large
+# agent fleet, and it CANNOT BE WIDENED once the cluster exists: GKE gives every node a slice of it sized for
+# twice max_pods_per_node, so a /14 at 110 pods holds 1024 nodes and no more.  `tofu output agent_node_ceiling`
+# reports what it holds and says when the figure was assumed rather than read.
+#
+#     gcloud compute networks subnets update <subnetwork> --region <region> \
+#         --add-secondary-ranges cassandra-jenkins-pods=10.4.0.0/14,cassandra-jenkins-services=10.8.0.0/20
+#
+#pod_range_name      = "cassandra-jenkins-pods"
+#services_range_name = "cassandra-jenkins-services"
+
+# Pods a node may run.  Lowering it is the one lever that buys nodes out of a pod range that cannot be
+# widened, because GKE rounds a node's slice up to a power of two: 110 pods takes a /24 and 60 takes a /25,
+# which is twice the nodes from the same range.  It also moves the kubelet's memory reservation, which
+# ../3-smoke/check-pool-fit.py models, so both figures move together and the fit check is what confirms it.
+#max_pods_per_node = 110
+
+# How many zones the node pools spread across.  Unset uses every zone the region offers.  Every zone adds one
+# node pool per agent size, and each pool's maximum is that zone's share of the pool's total, so adding a zone
+# lowers every existing pool's maximum: change it between builds, because GKE rejects a maximum below the nodes
+# a pool is running.  Unlike the sibling there is no separate control-plane zone count, and unlike the sibling
+# a zone brings no addresses with it, because a GCP subnetwork and its pod range are regional.
+#zone_count = 3
+
+# Nodes with no external address.  True by default, which a `gcloud container clusters create` is not.  It
+# needs a Cloud NAT in the region, or the agents cannot pull their images and every pod sits in
+# ImagePullBackOff; ../3-smoke/smoke-test.sh asserts one exists and ../README.md gives the two commands.
+#enable_private_nodes = true
+
+# Who may reach the Kubernetes API server.  Unset means everywhere, which is the GKE default.  Narrow it to
+# the addresses that run kubectl and .build/run-ci.  It is left unset rather than defaulted to a literal
+# because no address that belongs to a person or an office belongs in this repository.
+#master_authorized_cidrs = ["<your address>/32"]
+
+# Versions.  Unset takes the release channel's default, and a later plan then proposes an upgrade with no
+# change to this configuration.  Note this is weaker than the sibling's pin: `min_master_version` is a floor,
+# and inside a channel GKE upgrades above it on its own schedule.  UNSPECIFIED is the only way to hold a
+# version still, and it makes every upgrade yours to perform and yours to forget.
+#kubernetes_version = "1.34"
+#release_channel    = "REGULAR"
+
+# Logging and monitoring.  WORKLOADS is deliberately absent from the logging list: it ships the stdout of every
+# container on every node, and here that is a Cassandra test run whose output Jenkins already archives.
+#logging_components    = ["SYSTEM_COMPONENTS", "APISERVER", "CONTROLLER_MANAGER", "SCHEDULER"]
+#monitoring_components = ["SYSTEM_COMPONENTS"]
+#log_retention_days    = 30
+# Set null to leave the project's log retention unchanged when the applying identity cannot manage it.
+#log_retention_days    = null
+
+# Managed Prometheus, off against what the GKE console offers: it is a collector on every node, agents
+# included, and the large agent already asks for 7 of its node's 8 vCPU.
+#enable_managed_prometheus = false
+
+# The controller's node.  It cannot scale to zero; Jenkins home uses a separate 500Gi volume.
+# disk_gb uses GiB despite the API name.  `make quota` checks the controller's CPU and memory.
+#controller_pool = {
+#  machine_types = ["e2-standard-8"]
+#  disk_gb       = 107
+#  disk_type     = "pd-ssd"
+#}
+
+# The agent pools, keyed by the size word in the cassandra.jenkins.agent.<size> node label.  Each becomes one
+# node pool per zone, and max_size is divided between them, so these are the pool's totals.
+# Agent disks default to 200 GiB to cover GKE's reservations and the templates' storage requests and limits.
+#
+# No figures here, deliberately: variables.tf holds the defaults and the table of measured demand they come
+# from, and a second copy of four numbers in a commented block is a second copy to leave stale.  Overriding
+# this replaces the whole map, so copy the default out of variables.tf and edit that.
+#
+# Exactly one machine type per pool, unlike the sibling: a GKE node pool takes a single machine_type with no
+# list to choose from at launch.  Every type must be a predefined type ending in its vCPU count, and must not
+# be `t2a-` or `c4a-`, which are Arm while the agent images are amd64.
+#
+# Run ../3-smoke/check-pool-fit-test.sh and then `make smoke` after changing any type: the large pool's 17G of
+# requests is 15.83 GiB, which does not fit a node with 8 or 16 GiB.
+#
+# spot defaults to false on all four.  A preempted node is drained through the Eviction API, and
+# .jenkins/Jenkinsfile turns a drained agent into a failed branch, which failFast turns into a failed run.
+# `spot = true` on a pool opts that pool back in.
+#agent_pools = {
+#  small  = { machine_types = ["e2-highcpu-8"], max_size = <n> }
+#  medium = { machine_types = ["n2-highcpu-8"], max_size = <n> }
+#  large  = { machine_types = ["n2-standard-8"], max_size = <n> }
+#  report = { machine_types = ["n2-standard-8"], max_size = <n> }
+#}
+
+# Read the project's quotas at apply and scale every pool by the lowest ceiling they and the pod range allow,
+# so a quota increase needs no edit here and a smaller project gets a smaller cluster that works.  This is the
+# one thing in 1-cluster that needs gcloud at plan time; turn it off for a credential that cannot read quotas,
+# and the pod range ceiling still applies.  quota_headroom is the share of each quota these pools may claim.
+#size_pools_to_quotas = true
+#quota_headroom       = 0.9
+
+# GKE replaces a node it finds unhealthy, and upgrades nodes to match the control plane.  Auto-upgrade can only
+# be false when release_channel is UNSPECIFIED, because a channel is what schedules it.
+#node_auto_repair  = true
+#node_auto_upgrade = true
+
+# A public name for Jenkins, and TLS for it.  Leave all three unset and the cluster is reachable at its load
+# balancer's own address, which is what a throwaway cluster wants.  Set them together.
+#
+# READ tls.tf BEFORE SETTING THESE.  Unlike the sibling, a certificate here cannot be attached to a plain
+# LoadBalancer Service: Google terminates TLS at an Application Load Balancer, which in Kubernetes is an
+# Ingress or a Gateway, and this configuration creates neither.  What layer 1 creates is a genuine, issued
+# certificate and the map to attach it with; serving it is a step ../README.md describes and nothing here does
+# for you.  Until then Jenkins answers on plain HTTP.
+#
+# The zone must be delegated at the registrar that holds the domain, which is the one step in this directory
+# that cannot be scripted.
+#enable_external_dns = true
+#jenkins_hostname    = "ci.<your-domain>"
+#dns_managed_zone    = "<cloud dns zone name>"
+
+# Only for a cluster that serves a name in one zone and must write records in another.  dns_managed_zone is
+# already included.
+#external_dns_zones = []
+
+# What this cluster may spend, and what happens when it does.
+#
+# The three caps and the address are not here: `make caps` asks for them and writes spend-caps.auto.tfvars,
+# which OpenTofu loads on its own, so a generated file and a hand-edited one never share a line.  `make apply`
+# asks once when that file does not exist, and answering `none` to all three is an answer: it means nothing
+# watches what this cluster spends.  The rest are here because they are rarely changed.
+#
+# The price and the fixed figure are what the caps are compared against unless spend_billing_table is set.
+# That is the largest difference from the sibling, which fits both from the account's own bill within three
+# days: GCP's only per-day cost source is a BigQuery export that must be enabled on the billing account, is a
+# table this configuration cannot create, and backfills nothing.  `make spend` says which it is using on every
+# run.  Set them from what it reports rather than from a list price: GCP applies sustained-use discounts
+# automatically, so a list price over-reads a month and under-reads a day.
+#spend_price_per_vcpu_hour = 0.04
+#spend_fixed_usd_per_day   = 5
+
+# The BigQuery billing export, if the billing account has one.  Setting it turns the estimate into a fitted
+# measurement, and needs nothing else here.
+#spend_billing_table      = "<project>.<dataset>.gcp_billing_export_resource_v1_<BILLING_ACCOUNT_ID>"
+#spend_cost_refresh_hours = 6
+
+# The interval is what the overshoot is measured in: the pools at full size are a few hundred dollars an hour,
+# so a cap can be passed by an interval's worth of spend before the pools are stopped.
+#spend_guard_interval_minutes = 5
+
+# A Cloud Billing budget for the monthly cap, which enforces nothing and is where whoever pays the bill looks.
+# Empty by default, and the sibling's equivalent is on by default, because this needs a role on the billing
+# account rather than on the project.  There is no daily or weekly budget to create: Cloud Billing budgets have
+# no such period, so those two windows are the guard's alone.
+#billing_account = "<billing account id>"
+
+# GCP labels are lower-case, keys and values alike, which is why these are not the sibling's Project/ManagedBy.
+#labels = {
+#  project    = "apache-cassandra-ci"
+#  managed-by = "opentofu"
+#  owner      = "<whoami>"
+#}

@@ -14,6 +14,8 @@ CLUSTER_NAME="$(whoami)--cassandra-jenkins"
 ```
 Follow the instructions according to your cloud.
 
+The `gcloud` commands below, and their AWS equivalent, are also written as configuration that can be replayed: `gke/` and `eks/` each provision this cluster with OpenTofu, size the agent pools to what the project or account actually allows, and put a cap on what the result may spend.  Use those for anything longer-lived than a cluster you intend to delete, and read `gke/README.md` or `eks/README.md` first.  The commands here remain the quickest way to get a cluster to look at.
+
 ### GCLOUD
 
 ```

@@ -169,7 +169,9 @@ def calibrate(costs: dict, usage: dict, now: datetime,
     }
 
     if len(usable) < CALIBRATION_MIN_DAYS:
-        fallback["why"] = (f"{len(usable)} settled day(s) with a Cost Explorer figure,"
+        # "a billed figure", not "a Cost Explorer figure": this module is read by both cloud directories and
+        # names no cloud anywhere else, and on GCP the bill comes from a BigQuery export or from nothing at all.
+        fallback["why"] = (f"{len(usable)} settled day(s) with a billed figure,"
                            f" and the fit needs {CALIBRATION_MIN_DAYS}")
         return fallback
 

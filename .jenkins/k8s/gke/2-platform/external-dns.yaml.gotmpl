@@ -1,0 +1,65 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The one release layer 2 installs on GKE.  helmfile.yaml beside this file names it and says why it is a
+# separate file: helmfile expands a template action only in a state file whose name ends in .gotmpl, and
+# `installed:` below has to read an environment variable.
+#
+# A template action written out in a comment here is still expanded, and an empty one is a parse error naming a
+# line rather than a file, so do not put one in the prose.
+
+repositories:
+  - name: external-dns
+    url: https://kubernetes-sigs.github.io/external-dns/
+
+releases:
+  # external-dns, which GKE does not offer as an addon.  This is the one place the two clouds' layers disagree
+  # about which layer owns a component: on EKS external-dns is an EKS add-on, so layer 1 installs it and
+  # configures it through the add-on's configuration_values.  Here layer 1 creates only the Google service
+  # account and the Workload Identity binding, and the chart is installed from this file.
+  - name: external-dns
+    # kube-system on the sibling, `external-dns` here, and neither is a free choice.  ../1-cluster's Workload
+    # Identity member string names this namespace and the service account name in
+    # external-dns-values.yaml.gotmpl as literals, the way the sibling's IRSA trust policy named its own.
+    # Rename either and the binding no longer matches, at which point external-dns starts, lists the zone, and
+    # is refused every write with a permission error rather than failing at boot.
+    namespace: external-dns
+    chart: external-dns/external-dns
+    # Pinned, and the one version in this directory that is not derived from GCP: a Helm chart version is not a
+    # GKE fact.  Chart 1.21.1 carries external-dns 0.21.0.  The image inside it is not versioned against the
+    # cluster's Kubernetes minor, so unlike the sibling's autoscaler there is nothing to derive.
+    version: 1.21.1
+    # The namespace does not exist: nothing else in this repository puts anything in it.  helmfile creates it
+    # by default, written here because a default that changes takes the release with it.
+    createNamespace: true
+    # Installed only when ../1-cluster made the service account, which it does only for
+    # var.enable_external_dns.  Without it there is nothing for external-dns to authenticate as, and a cluster
+    # with no public name has no record for it to write either.  Installed unconditionally it would run on the
+    # node's own credentials against every zone in the project, with --policy=sync, which is exactly the
+    # posture layer 1's zone-scoped grant exists to avoid.
+    #
+    # `env`, not `requiredEnv`: this is the one variable whose emptiness is the answer rather than a fault.
+    #
+    # False here rather than absent, deliberately.  A release helmfile still knows about is a release it will
+    # uninstall on the run after `enable_external_dns` goes back to false, and it keeps the state non-empty, so
+    # `helmfile apply` does not exit 3 complaining that no release matched.  See helmfile.yaml.
+    installed: {{ ne (env "GKE_EXTERNAL_DNS_SERVICE_ACCOUNT") "" }}
+    values:
+      - external-dns-values.yaml.gotmpl
+    # Wait for the Deployment to become available, so that `make platform` fails here rather than in ../3-smoke
+    # where the same failure reads as a broken smoke test.
+    wait: true
+    timeout: 300

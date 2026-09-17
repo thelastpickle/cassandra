@@ -16,48 +16,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Does one agent pod fit on one node of its pool?
-
-`.build/run-ci` already refuses an instanceCap larger than the nodes a pool can hold.  It does not ask
-the other question: whether a single agent pod fits on a single node at all.  A pool that fits zero
-agents is not a slow pool.  Every pod requested against it stays Pending, drives the autoscaler to
-maxSize, expires at whichever deadline is shorter, and is requested again.  The cluster looks busy and no
-build runs.  That is the failure this script exists to catch, before a build finds it.
-
-The deadline is the podTemplate's own slaveConnectTimeout, and not the cloud's agent.waitForPodSec, which
-this docstring named for a year.  Measured on this cluster: 1,110 pods created and deleted in 24 minutes
-against a `[30000] milliseconds` timeout, with agent.waitForPodSec set to 180.  That is why the check on it
-below exists, and why the timeout is checked here rather than left to a reader of the values file.
-
-The comparison is one agent against one node, because the podAntiAffinity in every pod template puts one
-agent on a node.  A pool that fits two agents per node by arithmetic still runs one.
-
-What this script does not check: the account's own ceiling.  A pool can fit its agent perfectly and still
-never get a node, because the account's on-demand vCPU quota holds fewer nodes than the pools ask for.
-That is ../vcpu-quota.py, which the Makefile runs; it is not here because 2-platform needs the same answer
-and may not read it from this directory.
-
-Two modes, and every row says which produced it:
-
-  measured   A node of this pool is running.  Its `allocatable` is what the kubelet reports, and the
-             DaemonSet pods already on it are subtracted.  This is a fact about that node.
-
-  estimated  The pool is at zero nodes, which is its resting state.  Capacity is modelled from
-             `aws ec2 describe-instance-types` minus the reservations the EKS AMI applies.  It is a
-             model.  It is close, it is not authoritative, and a pool that passes it narrowly is
-             reported as marginal rather than as a pass.
-
-Usage:
-    check-pool-fit.py --pools <agent_node_groups.json> --region <region> [--values <jenkins values>]
-
-`--pools` takes what `tofu output -json agent_node_groups` prints in ../1-cluster.  ../Makefile writes
-it out; smoke-test.sh passes it.  Add `--estimate-only` to skip kubectl entirely, which is what the
-regression test in check-pool-fit-test.sh does.
-
-Exits 1 when any pool fits zero agents, when a pool named in --pools has no pod template, or when a
-deadline on a pod's wait for a node is shorter than a cold node's time to ready.
-"""
+"""Check agent pod requests and provisioning deadlines against node-pool capacity."""
 
 import argparse
 import json
@@ -80,25 +39,12 @@ from k8s_values import (GIB, MIB, cpu_millicores, human_cpu,  # noqa: E402 - aft
 # the last byte of allocatable is a pod the node evicts.
 EVICTION_MEMORY_MIB = 100
 
-# Ephemeral storage.  The same model as the node-template ASG tag in ../1-cluster/locals.tf: the kubelet
-# holds back 10% of the filesystem for image garbage collection, and the AL2023 image plus the agent
-# images already pulled take a couple of GiB more.  Both numbers are here and there; changing one
-# without the other makes the autoscaler and this check disagree about the same pool.
 EPHEMERAL_RESERVED_FRACTION = 0.10
 EPHEMERAL_RESERVED_GIB = 2
 
 # Under this much headroom on any dimension, in estimated mode, a pass is reported as marginal.
 MARGINAL_HEADROOM = 0.10
 
-# Seconds a pod may need to become ready when its node does not exist yet: an EC2 launch, an AL2023 boot, a
-# kubelet join, and two image pulls, one under alwaysPullImage.  Below this is not a slow start but a churn
-# loop; see the docstring.  A floor, not a recommendation: the templates sit well above it, because a queue
-# that waits costs nothing and a queue that churns corrupts the plugin's cap accounting.
-#
-# Measured once, small pool from zero: 54 s from Pending pod to connected agent, 17 s of it the autoscaler
-# deciding and the ASG launching.  The margin over that is deliberate, the measurement being from an idle
-# cluster: a bandwidth-starved image pull, a launch retried after VcpuLimitExceeded, or an ASG in scale-up
-# backoff all extend the path, and each is when the churn loop does its harm.
 COLD_NODE_SECONDS = 300
 
 # The kubernetes-plugin's own default, applied to a template that names no slaveConnectTimeout.  Well under
@@ -107,19 +53,7 @@ PLUGIN_CONNECT_TIMEOUT = 100
 
 
 def agent_requests(values_path: Path) -> dict:
-    """
-    The most demanding agent pod a pool must hold, keyed by the size in its template's nodeSelector.
-
-    The pod templates are opaque strings to the Helm chart, parsed only by the Kubernetes plugin, so they
-    are loaded here as the YAML they are.  This mirrors `agent_templates` in `.build/run-ci`; the two read
-    the same file for different questions, and neither can use the other's answer.
-
-    More than one template may name the same pool.  Every template has a pool to itself today, but a site
-    that has no pool to spare for `agent-dind-report` points it at one it already has, and that is a
-    supported configuration.  The question this script asks is whether a pod fits a node, so each resource
-    is taken at its maximum across the templates on a pool, and every template that contributed is named.
-    Taking the last template read would answer for whichever one Helm happened to serialise last.
-    """
+    """The most demanding agent pod a pool must hold, keyed by the size in its template's nodeSelector."""
     with values_path.open(encoding="utf-8") as handle:
         values = yaml.safe_load(handle)
 
@@ -142,12 +76,9 @@ def agent_requests(values_path: Path) -> dict:
 
         total = {"cpu": 0.0, "memory": 0, "ephemeral": 0}
         for container in template.get("containers") or []:
-            # A container declaring no request is not free: it is BestEffort for that resource, which the
-            # scheduler counts as zero and the node evicts first.  Counted as zero here for the same
-            # reason, which makes this an under-estimate of what the pod really uses.
-            total["cpu"] += cpu_millicores(container.get("resourceRequestCpu", 0))
-            total["memory"] += memory_bytes(container.get("resourceRequestMemory", 0))
-            total["ephemeral"] += memory_bytes(container.get("resourceRequestEphemeralStorage", 0))
+            total["cpu"] += cpu_millicores((container.get("resourceRequestCpu") if container.get("resourceRequestCpu") not in (None, "") else container.get("resourceLimitCpu", 0)))
+            total["memory"] += memory_bytes((container.get("resourceRequestMemory") if container.get("resourceRequestMemory") not in (None, "") else container.get("resourceLimitMemory", 0)))
+            total["ephemeral"] += memory_bytes((container.get("resourceRequestEphemeralStorage") if container.get("resourceRequestEphemeralStorage") not in (None, "") else container.get("resourceLimitEphemeralStorage", 0)))
         held = requests.setdefault(size, {"cpu": 0.0, "memory": 0, "ephemeral": 0, "templates": []})
         for resource in ("cpu", "memory", "ephemeral"):
             held[resource] = max(held[resource], total[resource])
@@ -158,17 +89,7 @@ def agent_requests(values_path: Path) -> dict:
 
 
 def connect_deadlines(values_path: Path) -> dict:
-    """
-    Every deadline that ends a pod's wait for a node, in seconds.
-
-    Two of them, and the shorter one is the one that fires.  `agent.waitForPodSec` belongs to the cloud and
-    covers every template; each template's own `slaveConnectTimeout` covers that template.  Both are read
-    here because raising one and leaving the other is how a fix for this becomes no fix at all.
-
-    A template that names no slaveConnectTimeout is reported at PLUGIN_CONNECT_TIMEOUT, which is what the
-    plugin applies to it.  Templates with no pool are read too: an unused template today is a pool's
-    template tomorrow, and the value is wrong in both cases.
-    """
+    """Every deadline that ends a pod's wait for a node, in seconds."""
     with values_path.open(encoding="utf-8") as handle:
         values = yaml.safe_load(handle)
 
@@ -235,12 +156,7 @@ def aws_instance_type(instance_type: str, region: str) -> dict:
 
 
 def eks_reserved_cpu(vcpus: int) -> float:
-    """
-    Millicores the EKS AMI reserves for the kubelet and the container runtime.
-
-    6% of the first core, 1% of the second, 0.5% of the third and fourth, 0.25% of every core after: the
-    same schedule the AL2023 bootstrap uses.  90m on the 8 vCPU instances this cluster runs.
-    """
+    """Millicores the EKS AMI reserves for the kubelet and the container runtime."""
     percentages = [6.0, 1.0, 0.5, 0.5]
     reserved = 0.0
     for core in range(vcpus):
@@ -250,14 +166,7 @@ def eks_reserved_cpu(vcpus: int) -> float:
 
 
 def eks_max_pods(interfaces: int, addresses_per_interface: int, vcpus: int) -> int:
-    """
-    The pod ceiling the EKS AMI computes, which is what its memory reservation is a function of.
-
-    (interfaces * (addresses - 1)) + 2, capped: 110 below 30 vCPUs and 250 at or above it.  One address
-    per interface goes to the interface itself, and the 2 covers the pods that run with host networking.
-    This is the default CNI behaviour; ENABLE_PREFIX_DELEGATION changes it, which is why
-    ../1-cluster/addons.tf leaves the vpc-cni add-on unconfigured.
-    """
+    """The pod ceiling the EKS AMI computes, which is what its memory reservation is a function of."""
     cap = 110 if vcpus < 30 else 250
     return min(interfaces * (addresses_per_interface - 1) + 2, cap)
 
@@ -292,13 +201,7 @@ def estimated_capacity(instance_type: str, region: str, disk_gib: int) -> dict:
 
 
 def measured_capacity(label: str, disk_gib: int, context: str = None) -> dict:
-    """
-    What a running node of this pool actually offers a pod, or None when the pool is at zero.
-
-    `allocatable` already has the kubelet's reservations and the eviction threshold taken out of it.  The
-    DaemonSet pods on the node have not been, and they are the part a model cannot know: how many
-    DaemonSets a cluster runs is a property of that cluster.
-    """
+    """What a running node of this pool actually offers a pod, or None when the pool is at zero."""
     nodes = json.loads(kubectl(["get", "nodes", "-l", f"{label}=true", "-o", "json"], context))
     ready = [node for node in nodes.get("items", [])
              if any(condition.get("type") == "Ready" and condition.get("status") == "True"
@@ -325,10 +228,6 @@ def measured_capacity(label: str, disk_gib: int, context: str = None) -> dict:
             daemon["memory"] += memory_bytes(container_requests.get("memory", 0))
             daemon["ephemeral"] += memory_bytes(container_requests.get("ephemeral-storage", 0))
 
-    # Ephemeral storage is modelled even here.  A node reports allocatable ephemeral-storage for the
-    # filesystem it booted with, which is the same volume size, so the measured value adds nothing the
-    # model does not have; keeping one source for it keeps this check and the autoscaler's node-template
-    # tag in agreement.
     ephemeral = (disk_gib * (1 - EPHEMERAL_RESERVED_FRACTION) - EPHEMERAL_RESERVED_GIB) * GIB
 
     return {
@@ -383,9 +282,6 @@ def evaluate(size: str, pool: dict, request: dict, capacity: dict) -> dict:
 def report(results: list) -> None:
     for result in results:
         pool = result["pool"]
-        # One pool is several node groups, one per availability zone, all of the same instance type.  The
-        # names are printed in full rather than counted: which zones a pool covers is the thing a reader
-        # of this output is most likely to have got wrong.
         groups = ", ".join(pool["node_group_names"])
         print(f"{result['size']}  ({groups}, {', '.join(pool['instance_types'])},"
               f" {pool['disk_gib']} GiB disk, max {pool['max_size']} nodes across them)")
@@ -422,6 +318,14 @@ def main() -> int:
     requests = agent_requests(Path(args.values))
     parsed_deadlines = connect_deadlines(Path(args.values))
     deadline_faults = check_deadlines(parsed_deadlines)
+    capacity_faults = []
+    if "small" in pools:
+        workers = int(pools["small"].get("small_workers_per_build", 3))
+        if pools["small"]["max_size"] <= workers:
+            capacity_faults.append(
+                f"the small pool needs at least {workers + 1} agent slots: one outer pipeline"
+                f" holds its agent while JAR tasks request {workers} workers. Apply the corrected pool sizes,"
+                " then run `make jenkins` to update the template caps.")
 
     results, missing = [], []
     for size, pool in sorted(pools.items()):
@@ -438,12 +342,6 @@ def main() -> int:
                 print(f"WARNING: could not read live nodes for {size}, falling back to the model: {error}",
                       file=sys.stderr)
         if capacity is None:
-            # The first instance type only.  A pool with several is as small as its smallest member, and that
-            # judgement is not made here: see ../README.md.
-            #
-            # Caught so the answer names the credential: uncaught, this printed a CalledProcessError traceback
-            # mid smoke-test, reading as a fault in this script rather than an expired session.  One EC2 call,
-            # with nothing left to fall back to.
             try:
                 capacity = estimated_capacity(pool["instance_types"][0], region, pool["disk_gib"])
             except subprocess.CalledProcessError as error:
@@ -457,9 +355,6 @@ def main() -> int:
 
     report(results)
 
-    # Printed on a pass as well as a failure.  The two deadlines are the thing a reader of this output most
-    # often has to check against a cold node, and reading them out of the values file means finding four
-    # keys in three multi-line strings.
     print("deadlines on a pod's wait for a node, the shorter of which fires:")
     print(f"  agent.waitForPodSec      {parsed_deadlines['waitForPodSec'] or 'unset'}s,"
           " for every template")
@@ -487,13 +382,12 @@ def main() -> int:
               f" {result['dimensions'][result['binding']][2](result['capacity'][result['binding']])}"
               f" on a {result['pool']['instance_types'][0]}."
               " Every agent requested for this pool will stay Pending.", file=sys.stderr)
-    for fault in deadline_faults:
+    for fault in capacity_faults + deadline_faults:
         print(f"ERROR: {fault}", file=sys.stderr)
 
-    if failed or missing or deadline_faults:
+    if failed or missing or capacity_faults or deadline_faults:
         return 1
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

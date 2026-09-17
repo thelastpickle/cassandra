@@ -15,59 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Whether the controller can hold the agents the pools are configured for, and what a bigger one costs.
-
-Every other ceiling in this directory is the account's.  This one is the cluster's own, and it is the only
-one that gets more expensive to raise while nothing is running: agent nodes are billed by the minute and
-scale to zero between builds, the controller is billed for all 730 hours of a month.
-
-## What is here and what is shared
-
-The sizing model is ../shared/controller_model.py, because it is about Jenkins rather than about AWS: memory
-follows the agent count, CPU follows the pod churn rate, and `idleMinutes` is therefore a controller-sizing
-knob.  Read that module's docstring for the model and the measurement behind each constant.
-
-What is here is everything AWS decides: what a node of a given instance type allocates, which instance sizes
-exist to be recommended, and what one costs an hour.
-
-## Usage
-
-    controller-fit.py --pools <agent_node_groups.json> --controller <controller_node_group.json> \\
-        --deployment ../jenkins-deployment.yaml [--overrides 2-platform/jenkins-eks-overrides.yaml] \\
-        --region <region> [--check]
-
-`--check` prints the sizing and the recommendation.  Without it only the export lines are printed, for the
-`Makefile` to read.
-
-`--overrides` is every values file `.build/run-ci` is given after the deployment, merged the way Helm merges
-them.  Pass it, or this models a controller nobody deploys: the heap, the requests and the limits all come
-from whichever file sets them last, and `2-platform/jenkins-eks-overrides.yaml` is after the shared one.
-
-## It refuses the deploy, and why
-
-A controller that cannot hold the agents the pools are configured for does not degrade gracefully.  It
-queues, and the queue looks exactly like the agent ceiling binding, so the operator raises the pools and
-makes it worse.  Worse still, the pods it cannot service are created anyway, wait out their
-`slaveConnectTimeout`, and are reaped, which is the churn loop this directory has already been through once.
-
-So this exits 1 when the controller lacks the headroom for the configured pools, and `make quota` therefore
-fails, and `make jenkins` and `make platform` with it.  There are three ways past it and all three are
-stated in the output: raise `controller_pool.instance_types`, lower the pools' `max_size`, or raise
-`idleMinutes`, which is the only one that is free.
-
-`--warn-only` downgrades the refusal to a warning, for an operator who has read the figures and accepts a
-marginal controller.  `make quota CONTROLLER_FIT_ARGS=--warn-only` is the form of that.
-
-## The requests are checked separately, and that refusal is not marginal
-
-The model above is about a controller that will be slow.  A `requests` figure above the node's allocatable is
-a different failure with the same inputs: the pod is never scheduled at all, the StatefulSet stays Pending,
-and nothing in the cluster says why.  `--warn-only` does not cover it, because there is nothing to accept.
-
-This is the check the committed values needed and did not have.  A `requests.cpu` of 13765m, generated for a
-1121-node account, sat in `2-platform/jenkins-eks-overrides.yaml` against a default controller of
-m7a.2xlarge, whose allocatable is 7910m.
-"""
+"""Check controller requests and modeled demand against node capacity and pod limits."""
 
 import argparse
 import json
@@ -76,18 +24,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-# The sizing model itself, and the quantity parsing, are cloud-neutral and shared with the other clouds'
-# directories; see ../shared/README.md.  What stays here is what AWS decides: node allocatable, the instance
-# ladder, and the price.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
 from controller_model import (HEADROOM,  # noqa: E402 - after the sys.path line above
                              REAP_FRACTION_MEASURED_AT_IDLE_MINUTES, idle_minutes, launches_per_burst,
                              needed_cpu_millicores, needed_memory_mib)
 from k8s_values import cpu_millicores, deep_merge, heap_mib, memory_mib  # noqa: E402 - same
 
-# What EKS holds back from a node before a pod may have any of it: the kubelet's own reservation and its
-# eviction threshold.  Measured on this cluster's m7a.2xlarge, which reports 7910m of 8000m allocatable and
-# 29.7 GiB of 32 GiB.
 NODE_CPU_OVERHEAD_MILLICORES = 90
 NODE_MEMORY_OVERHEAD_FRACTION = 0.07
 
@@ -118,12 +60,7 @@ def instance_shape(instance_type: str, region: str) -> dict:
 
 
 def hourly_price(instance_type: str, region: str) -> float:
-    """On-demand Linux price an hour, or 0.0 when the pricing API cannot be read.
-
-    The pricing API lives in us-east-1 whatever region is being priced, and needs `pricing:GetProducts`,
-    which a credential that can read EC2 and EKS may not carry.  A missing price is reported as unknown
-    rather than fatal: the sizing is the point and the cost is the annotation on it.
-    """
+    """On-demand Linux price an hour, or 0.0 when the pricing API cannot be read."""
     try:
         products = aws_json([
             "pricing", "get-products", "--region", "us-east-1", "--service-code", "AmazonEC2",
@@ -143,7 +80,6 @@ def hourly_price(instance_type: str, region: str) -> float:
         return float(next(iter(dimensions.values()))["pricePerUnit"]["USD"])
     except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError, StopIteration, ValueError):
         return 0.0
-
 
 # A CPU quantity as whole millicores, which is what this script reports and exports.  cpu_millicores()
 # returns a float, because the kubelet reports fractions of one and check-pool-fit.py compares them.
@@ -165,9 +101,6 @@ def derive(agent_nodes: int, controller: dict, deployment: dict, region: str) ->
     needed_cpu = needed_cpu_millicores(agent_nodes, idle)
     needed_memory = needed_memory_mib(agent_nodes, heap)
 
-    # The declared limits are the pod's ceiling; the node's allocatable is the real one, and on this cluster
-    # the pod's cpu limit already exceeds it.  Both are reported, because raising the limit alone buys
-    # nothing.
     current_type = max(controller["instance_types"], key=lambda t: SIZE_LADDER.index(t.split(".")[-1])
                        if t.split(".")[-1] in SIZE_LADDER else -1)
     shape = instance_shape(current_type, region)
@@ -184,18 +117,11 @@ def derive(agent_nodes: int, controller: dict, deployment: dict, region: str) ->
             recommended = candidate
             break
 
-    # Reported, not compared: what the container may actually have is the lower of its own limit and the
-    # node's allocatable, so both have to be raised together.  A bigger instance under an unchanged pod limit
-    # changes nothing, and an 8 CPU limit already exceeds an m7a.2xlarge's 7910m, so the limit is not always
-    # the binding one either.  None is unlimited, which is what Kubernetes does with an absent limit.
     limit_cpu = millicores(limits.get("cpu"))
     limit_memory = memory_mib(limits.get("memory"))
 
-    # The requests, against the same allocatable.  A separate question from everything above: a limit above
-    # allocatable makes a slow controller, a request above it makes a controller that is never scheduled.  0
-    # for an absent request, which is what Kubernetes assumes and is always schedulable.
-    request_cpu = millicores(requests.get("cpu"), 0)
-    request_memory = memory_mib(requests.get("memory"), 0)
+    request_cpu = millicores(requests.get("cpu") if requests.get("cpu") is not None else limits.get("cpu"), 0)
+    request_memory = memory_mib(requests.get("memory") if requests.get("memory") is not None else limits.get("memory"), 0)
 
     current_price = hourly_price(current_type, region)
     recommended_price = current_price if recommended and recommended["instance_type"] == current_type \
@@ -408,7 +334,6 @@ def main() -> int:
     print("Take one of the three above, or pass --warn-only to deploy anyway"
           " (`make quota CONTROLLER_FIT_ARGS=--warn-only`).", file=sys.stderr)
     return 1
-
 
 if __name__ == "__main__":
     sys.exit(main())

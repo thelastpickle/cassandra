@@ -580,7 +580,9 @@ print("2026-09-08 104.0")
 PY
 STUB_CE="${work}/ce-thin" run --report --json
 expect "two settled days are not enough to fit" "fallback" "$(json '["model"]["mode"]')"
-expect_output "and the reason is the number of days" 'settled day\(s\) with a Cost Explorer figure'
+# "a billed figure" and not "a Cost Explorer figure": ../shared/spend_model.py names no cloud, and it is read
+# by k8s/gke too, where the bill comes from a BigQuery export or from nothing at all.
+expect_output "and the reason is the number of days" 'settled day\(s\) with a billed figure'
 
 # A fortnight of an idle cluster is the case a real account found on its first evaluation, and it is the
 # dangerous one: days that differ by a few vCPU-hours are a wide relative spread over a tiny absolute one,

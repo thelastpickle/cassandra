@@ -1,0 +1,127 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Helm values applied over .jenkins/k8s/jenkins-deployment.yaml for a cluster built by ../1-cluster.  The GKE
+# counterpart of .jenkins/k8s/eks/2-platform/jenkins-eks-overrides.yaml.
+#
+#   .build/run-ci --only-setup --values-override .jenkins/k8s/gke/.gke-jenkins-values.yaml
+#
+# Not this file directly: `make jenkins` in .. runs build-jenkins-values.py, which merges this file with what
+# only the project knows (the public name, and the agent ceiling the project's vCPU quota allows) and writes
+# .gke-jenkins-values.yaml.  `make platform` does that and the helmfile half in order.
+#
+# Nothing in this file belongs in jenkins-deployment.yaml: that file is shared with EKS, and every key here is
+# either GCP-specific or a site's own.
+#
+# A long-lived site has customisations of its own, and .jenkins/k8s/README.md keeps those in
+# `~/.cassandra-ci/<site>-overrides.yaml`.  run-ci takes one --values-override, so a site copies this file to
+# its own and adds to it, rather than passing both:
+#
+#   make jenkins VALUES_BASE=~/.cassandra-ci/<site>-overrides.yaml
+#
+# Helm merges maps key by key, and replaces lists and strings wholesale.  Every key below is a scalar in a
+# map, so each one overrides exactly itself.  Do not add an `agent.podTemplates.*` entry here: each template
+# is one multi-line string, so overriding one masks every later change to it in the repository.
+# build-jenkins-values.py does rewrite two lines of those strings, and the docstring there says why that is
+# not the same thing: it reads the string from jenkins-deployment.yaml on the same run rather than holding a
+# copy here.
+
+persistence:
+  # storageclass-pd-ssd.yaml in this directory, applied by ../Makefile before `make jenkins`.
+  # jenkins-deployment.yaml carries the same key commented, with "gke can be left commented" against it, and
+  # left commented the claim takes GKE's default class: `standard-rwo`, which is pd-balanced and has
+  # `reclaimPolicy: Delete`.  Both are wrong for a 500Gi jenkins_home holding the build history; the
+  # StorageClass file gives the reasoning for each.
+  storageClass: pd-ssd
+
+controller:
+  # No `resources` and no `javaOpts` here.  Both are the controller's own sizing, they follow the agent count,
+  # and the agent count is one project's answer: `var.agent_pools` is scaled by whichever ceiling that project
+  # allows, so any figure written here is right for one cluster and wrong for the next.
+  #
+  # ../../jenkins-deployment.yaml's own values cover the pools this repository declares.  `make quota` runs
+  # ../controller-fit.py against the pools layer 1 actually created and refuses the deploy when they do not,
+  # naming the cpu, the memory and the machine type to raise.  Add the keys here when it says so, and raise
+  # `controller_pool.machine_types` in the same change: the container gets the lower of its own limit and the
+  # node's allocatable, so either one alone buys nothing.
+  #
+  # Here rather than in the shared file, when they are needed: that file is read by EKS too, and a limit
+  # raised there demands a bigger node at every site.
+
+  # The key that works.  jenkins-deployment.yaml sets `controller.node-selector`, which the chart does not
+  # read; its key is `nodeSelector`.  A GKE cluster built by hand from ../../README.md gets away with it
+  # because the agent pools sit at zero and the controller has nowhere else to land.  Here they scale to zero
+  # between builds, so an unpinned controller can be placed on a node the autoscaler then drains, taking the
+  # queue and the volume attachment with it.  GKE's autoscaler is managed and there is no flag on it to
+  # exclude a pod, which makes the pin the whole of the protection rather than half of it.
+  #
+  # Quoted, and it has to be: the chart renders this map through `toYaml`, and an unquoted `true` reaches the
+  # pod spec as a YAML boolean, which the API server rejects because a label value is a string.
+  #
+  # Confirm with:
+  #   helm template cassius jenkins/jenkins -f .jenkins/k8s/jenkins-deployment.yaml | grep -c nodeSelector
+  # which returns 4, one per agent pod-template string, and 6 with this file as a second -f: the controller's
+  # StatefulSet and the chart's test Pod, both reading this key.
+  #
+  # Fixing the shared file is a separate change.  See ../README.md.
+  nodeSelector:
+    cassandra.jenkins.controller: "true"
+
+  # The `ingress` key is commented out, not only its value: a bare `ingress:` with only comments under it is
+  # `ingress: null`, which Helm coalesces over the chart's default map rather than under it, so the map is
+  # gone and the chart fails with `nil pointer evaluating interface {}.enabled`, naming the chart and not this
+  # file.  Uncomment both lines together.
+  #
+  # hostName, with a capital N.  `hostname` is a different key: the chart ignores it, the ingress gets no
+  # host, and the only symptom is a URL that does not resolve.  .jenkins/k8s/README.md flags the same trap.
+  #
+  # Set it to the name resolving to this cluster's load balancer.  Left commented, the ingress serves on any
+  # host, which is what a throwaway cluster wants.
+  #ingress:
+  #  hostName: ci-cassandra.<your-domain>
+
+  # `serviceType: LoadBalancer` in jenkins-deployment.yaml, with no other controller installed, gets a
+  # target pool based regional external passthrough Network Load Balancer, whose address GCP chooses and
+  # changes when the Service is recreated.  GKE's own documentation advises against that kind, and the first
+  # annotation below is how to ask for the other kind.
+  #
+  # None of these terminates TLS, and none of them can: a passthrough Network Load Balancer forwards packets
+  # and has no certificate.  TLS on GKE needs an Application Load Balancer, which means a Gateway (an Ingress
+  # cannot use the Certificate Manager map ../1-cluster creates).  build-jenkins-values.py's docstring and the
+  # header of every file it generates say what the operator has to build; there is no Service annotation to
+  # add here for it, and a guessed one would be inert.
+  #
+  # Uncomment at most one of the first two, and read the note against each first.
+  #serviceAnnotations:
+  #  # An internal passthrough Network Load Balancer, reachable from the VPC and not from the internet.  Needs
+  #  # nothing else installed.  Only honoured on a Service submitted with it: adding it to a live Service does
+  #  # not convert the load balancer, so switching means deleting the Service and letting the chart recreate it.
+  #  networking.gke.io/load-balancer-type: "Internal"
+  #  # A backend service based regional external passthrough Network Load Balancer, which is the kind to
+  #  # prefer over the target pool default.  Same restriction: honoured only on submission, so an existing
+  #  # Service has to be deleted for it to take.
+  #  cloud.google.com/l4-rbs: "enabled"
+  #
+  # A fixed address, so that rebuilding the Service does not move the name.  Reserve a *regional* static
+  # external address in GOOGLE_REGION first, with `gcloud compute addresses create <name> --region ...`; a
+  # global address belongs to an Application Load Balancer and is rejected here.  Reserve it outside this
+  # repository or in ../1-cluster, not here, and delete it deliberately: an unreserved address is released the
+  # moment the load balancer goes, which is the whole problem this solves.
+  #
+  # With external-dns installed there is a cheaper answer for most sites: the record follows the address, so
+  # the name keeps working without one being pinned.  What a static address buys beyond that is a name
+  # somebody else pinned, a firewall rule elsewhere, or a DNS zone this cluster may not write to.
+  #loadBalancerIP: <reserved regional static address>

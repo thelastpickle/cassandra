@@ -20,7 +20,7 @@ limitations under the License.
 
 tl;dr: arithmetic that every `.jenkins/k8s/<cloud>` directory needs and none of them owns.  Nothing here names AWS, GCP, or any API.
 
-`eks/` was written first, and the modules here are the parts of it that would otherwise be copied into `gcp/` verbatim.  Each one was extracted because a duplicate already existed, or because it is a body of arithmetic with no cloud reference in it at all.
+`eks/` was written first, and the modules here are the parts of it that would otherwise be copied into `gke/` verbatim.  Each one was extracted because a duplicate already existed, or because it is a body of arithmetic with no cloud reference in it at all.  `gke/` now uses all three unchanged, which is the claim this directory was created to make good on.
 
 The directory is `shared` and not `lib` because the repository's root `.gitignore` carries a bare `lib/`, for Cassandra's jar directory, and a bare directory pattern matches at every depth.  Named `lib`, everything here is ignored, `git add` skips it without a word, and the first anybody knows is a clone that cannot run its own tests.
 
@@ -29,13 +29,14 @@ The directory is `shared` and not `lib` because the repository's root `.gitignor
 | `k8s_values.py` | Kubernetes quantity parsing, human formatting, the Helm merge rule, a JVM heap size | Quantities and Helm are Kubernetes and Helm, not a cloud.  Three scripts had four implementations of two of these. |
 | `controller_model.py` | how much CPU and memory a Jenkins controller needs for N agents | The model is about Jenkins.  The node it is compared against is the cloud's, and stays there. |
 | `spend_model.py` | UTC spend windows, whether a day's bill has settled, and the least-squares fit of a bill onto usage | Windows are UTC arithmetic and the fit is least squares.  What is billed and what is measured are the cloud's. |
-| `shell_exports.py` | writing `export NAME='value'` lines a shell can source | Every script does this, and quoting a value correctly is the whole of it. |
+
+A fourth row said `shell_exports.py`, for writing the `export NAME='value'` lines a shell can source.  No such module was ever written: `vcpu-quota.py` and `controller-fit.py` build those lines with an f-string, in both cloud directories, which is four copies of one quoting rule.  The row is removed rather than left as a plan, because a README describing a file that does not exist sends a reader looking for it.
 
 ## What is deliberately not here
 
 **The cloud client.**  `eks/spend-guard.py` calls AWS through boto3 in Lambda and the `aws` CLI on a laptop, keyed on one environment variable.  The shape of that will recur, and the code will not: operation names, pagination tokens and the SDK's own import path differ per cloud.  A shared client would be an interface with one implementation, which is a guess about the second.
 
-**Node allocatable, and reserved capacity.**  What a kubelet holds back before a pod may have anything is a fact about the node image, and EKS and GKE reserve differently.  `eks/3-smoke/check-pool-fit.py` models the EKS figures; the GCP equivalent will model its own.
+**Node allocatable, and reserved capacity.**  What a kubelet holds back before a pod may have anything is a fact about the node image, and EKS and GKE reserve differently.  `eks/3-smoke/check-pool-fit.py` models the EKS figures and `gke/3-smoke/check-pool-fit.py` models GKE's, which are tiered where EKS's are nearly flat, so the two share the question and none of the arithmetic.
 
 **Instance-size ladders and machine-type names.**  `m7a.4xlarge` and `n2-standard-8` do not share a grammar.
 

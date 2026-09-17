@@ -145,6 +145,25 @@ JSON
 
 expect_exit 0 "the agent_pools defaults all fit" check "${work}/defaults.json"
 
+python3 - "${work}/defaults.json" "${work}/small-two.json" "${work}/small-four.json" <<'PYTHON'
+import json, sys
+data = json.load(open(sys.argv[1]))
+data['small']['max_size'] = 2
+json.dump(data, open(sys.argv[2], 'w'))
+data['small']['max_size'] = 4
+json.dump(data, open(sys.argv[3], 'w'))
+PYTHON
+expect_exit 1 "two small slots cannot hold a pipeline and three workers" check "${work}/small-two.json"
+expect_exit 0 "four small slots hold a pipeline and three workers" check "${work}/small-four.json"
+python3 - "${work}/small-two.json" <<'PYTHON'
+import json, sys
+data = json.load(open(sys.argv[1]))
+data['small']['small_workers_per_build'] = 1
+json.dump(data, open(sys.argv[1], 'w'))
+PYTHON
+expect_exit 0 "two slots suffice with a one-worker budget" check "${work}/small-two.json"
+
+
 # A pool with no pod template selecting it: nothing would ever run on those nodes.
 cat > "${work}/orphan.json" <<'JSON'
 {

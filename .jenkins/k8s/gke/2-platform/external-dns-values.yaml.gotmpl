@@ -1,0 +1,118 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $label := splitList "=" (requiredEnv "GKE_CONTROLLER_NODE_LABEL") }}
+
+# What writes the DNS record for the Jenkins hostname.  Kubernetes creates the load balancer, so its address
+# is unknowable until the Jenkins Service exists, which is why ../1-cluster does not write the record and
+# this watches for it instead.  build-jenkins-values.py puts the annotation this reads on that Service.
+
+serviceAccount:
+  create: true
+  # Fixed, not the chart's `<release>-external-dns` fullname, and not free to change: ../1-cluster's Workload
+  # Identity member string names this literal beside the namespace in external-dns.yaml.gotmpl.  Rename either
+  # and the Google service account no longer trusts this Kubernetes one; external-dns then starts, lists the
+  # zone, and is refused every write.
+  name: external-dns
+  annotations:
+    # The Google service account external-dns acts as, which is what Workload Identity binds to the Kubernetes
+    # one above.  ../1-cluster grants it dns.admin on the named zone alone rather than on the project, so the
+    # reach of a mistake here is one zone.
+    #
+    # requiredEnv, which is safe despite the variable being one the contract permits to be empty: helmfile
+    # renders a release's values files only for a release it is installing, and external-dns.yaml.gotmpl does
+    # not install this one when the variable is empty.  So this fires on a variable the Makefile forgot rather
+    # than on a cluster that wants no external-dns.
+    iam.gke.io/gcp-service-account: {{ requiredEnv "GKE_EXTERNAL_DNS_SERVICE_ACCOUNT" | quote }}
+
+# --provider=google.  Cloud DNS, reached with the service account above.
+provider:
+  name: google
+
+# --policy=sync, not the chart's default of upsert-only.  This cluster is rebuilt, and upsert-only leaves the
+# old record pointing at a load balancer that no longer exists: the name resolves and nothing answers, which
+# reads to a user as Jenkins being down rather than as Jenkins being gone.
+#
+# sync deletes only what this cluster owns, ownership being a TXT record written beside each address record
+# and keyed by --txt-owner-id.  So two clusters serving names in one zone are safe as long as their cluster
+# names differ, and a cluster that is destroyed without external-dns running leaves records that the next
+# cluster of the same name adopts and the next cluster of a different name will not touch.
+policy: sync
+
+# --txt-owner-id, the cluster name, which is also the kubectl context name.  See the ownership record above.
+txtOwnerId: {{ requiredEnv "GKE_CLUSTER_NAME" | quote }}
+
+{{- with env "GKE_JENKINS_HOSTNAME" }}
+# --domain-filter, a suffix match against each zone's DNS name and against every record considered.
+#
+# The zone this cluster serves is named by GKE_DNS_MANAGED_ZONE, and that is a Cloud DNS zone *name* rather
+# than a DNS name: `cassandra-ci`, not `ci.example.org.`.  It cannot be a domain filter, so the filter is
+# written from the hostname, which is a suffix of the zone and admits exactly the name this cluster serves
+# plus anything under it.  That is tighter than the zone, not looser.  The zone itself is selected by
+# --zone-id-filter below, which for the google provider matches a managed zone's name.
+#
+# The IAM grant in ../1-cluster is the limit that matters; these two are the cheaper second one.
+domainFilters:
+  - {{ . | quote }}
+{{- end }}
+
+extraArgs:
+  # The project holding the zone.  Left unset the provider reads the project from the metadata server, which
+  # is this cluster's project and is the same answer today.  Written down because it need not stay so: a zone
+  # in another project is a supported arrangement, and the failure it produces is an external-dns that lists
+  # no zone and reports nothing wrong.
+  google-project: {{ requiredEnv "GOOGLE_PROJECT" | quote }}
+  {{- with env "GKE_DNS_MANAGED_ZONE" }}
+  # --zone-id-filter.  For the google provider this matches a managed zone's name or its numeric id, which is
+  # exactly what GKE_DNS_MANAGED_ZONE holds, so this is the exact expression of "only this zone" that
+  # domainFilters above can only approximate.
+  zone-id-filter: {{ . | quote }}
+  {{- end }}
+
+# Pinned to the controller node, for the reason the sibling's metrics-server and cluster-autoscaler are: the
+# agent pools scale to zero between builds, so an unpinned Deployment can land on a node the autoscaler then
+# drains.  This is a single replica holding the ownership records for every name it wrote, and it is drained
+# at the moment a build is scaling the cluster, which is when a name is most likely to be moving.
+#
+# GKE_CONTROLLER_NODE_LABEL arrives as `key=value` and is split above.  The value is quoted, because the chart
+# renders this map through `toYaml` and an unquoted `true` reaches the pod spec as a YAML boolean, which the
+# API server rejects: label values are strings.  jenkins-deployment.yaml has the unquoted form at
+# `controller.node-selector`; see ../README.md.
+nodeSelector:
+  {{ index $label 0 }}: {{ index $label 1 | quote }}
+
+# Requests and no limits, for the reason the sibling gives: the chart sets neither, and a pod with no request
+# is BestEffort, which the kubelet evicts first on the node it shares with the Jenkins controller.  A request
+# buys a QoS class and a place in the eviction order and cannot kill anything, which a guessed limit could.
+#
+# Floors for scheduling, not measurements.  external-dns holds one zone's records in memory and polls on an
+# interval; this has not been profiled, and the figures are small against the node's 8 vCPU precisely so that
+# being wrong about them costs nothing.
+resources:
+  requests:
+    cpu: 50m
+    memory: 100Mi
+
+# Left at the chart's defaults, deliberately:
+#
+#  - sources: service and ingress.  The Jenkins Service carries the annotation this reads, and the chart's
+#    ClusterRole already covers both.  Adding `gateway-httproute` is what a Gateway would need; see the TLS
+#    note in build-jenkins-values.py before adding it, because the Gateway is not created by this repository.
+#  - registry: txt.  The ownership record --policy=sync depends on.
+#  - interval, 1m.  A record that moves does so when a Service is recreated, which is rare and not urgent.
+#  - replicas 1.  A second replica would compete for the same records, and the controller pool is one node.
+#  - priorityClassName unset.  Losing external-dns delays a record, it does not stop a build, so it has no
+#    claim on the preemption ordering that the Jenkins controller and the agents are contending over.

@@ -16,44 +16,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Ask what this cluster may spend a day, a week and a month, and write the answer where OpenTofu reads it.
-
-    ./spend-caps.py --prompt            ask, and write 1-cluster/spend-caps.auto.tfvars
-    ./spend-caps.py --check             print what is configured, and the arithmetic behind it
-    ./spend-caps.py --daily 900 --weekly 3000 --monthly 9000 --email me@example.org
-
-`make caps` runs the first, and `make apply` runs it once when the file does not exist yet: a cluster that
-can hold hundreds of on-demand nodes should not be created by somebody who has not been asked what that may
-cost.  A cap of `none` is an answer, and recording it is what stops the question being asked again.
-
-The file is `spend-caps.auto.tfvars` and not `terraform.tfvars` on purpose.  OpenTofu loads every
-`*.auto.tfvars` in the directory, both are gitignored, and this way a generated file is owned entirely by
-this script: `terraform.tfvars` stays the operator's, and nothing here rewrites a file somebody hand-edited.
-The last script in this directory that wrote into a file it did not own had that half of it removed; see the
-`quota` target in ../Makefile.
-
-WHY THE PROMPT SHOWS ARITHMETIC
-
-A number typed into a spend cap with nothing to compare it against is a guess, and a cap guessed low stops
-CI on its first real build.  So the prompt states three figures first:
-
-    floor       what this cluster costs standing still, with no build running at all
-    burn        what the agent pools cost an hour at full size
-    headroom    each answer, expressed back as how many hours of that burn it holds
-
-The floor is the one that catches people out.  The Jenkins controller is one instance running all 730 hours
-of a month whether a build runs or not, and the EKS control plane is charged by the hour as well, so a
-monthly cap under the floor brakes the cluster on the first of the month and no build ever runs.  A cap that
-low is refused rather than warned about.
-
-The figures are estimates, and the prompt says so.  ../spend-guard.py fits the real ones from Cost Explorer
-once the cluster has settled days with real load on them, which an idle fortnight is not; `make spend` prints
-what it fitted, or why it refused to.  This is arithmetic for choosing a number today, not a bill.
-"""
+"""Configure USD spend caps and save them atomically as OpenTofu variables."""
 
 import argparse
 import os
+import json
+import tempfile
 import re
 import sys
 from datetime import date
@@ -67,22 +35,6 @@ from spend_model import WINDOWS  # noqa: E402 - after the sys.path line above
 # The default file, relative to this script.  Loaded automatically by every `tofu` command in 1-cluster.
 DEFAULT_OUT = "1-cluster/spend-caps.auto.tfvars"
 
-# Rough figures for the prompt's arithmetic, overridable and deliberately not precise.  The price is a
-# snapshot for the m7a and c7a instances this cluster uses, per vCPU-hour, so that it holds for any of them:
-# an m7a.2xlarge is 8 vCPU, and about $0.46 an hour, in us-west-2 in 2026.  Confirm one with
-#
-#   aws pricing get-products --service-code AmazonEC2 --region us-east-1 \
-#       --filters Type=TERM_MATCH,Field=instanceType,Value=m7a.2xlarge \
-#                 Type=TERM_MATCH,Field=regionCode,Value=us-west-2 \
-#                 Type=TERM_MATCH,Field=tenancy,Value=Shared \
-#                 Type=TERM_MATCH,Field=operatingSystem,Value=Linux \
-#                 Type=TERM_MATCH,Field=preInstalledSw,Value=NA \
-#                 Type=TERM_MATCH,Field=capacitystatus,Value=Used
-#
-# The fixed figure is everything that is charged whether or not a node exists and is not an instance: the
-# EKS control plane at $0.10 an hour, the load balancer, the controller's 500Gi volume, and the control
-# plane's CloudWatch logs.  The controller's own instance is not in it, and is added separately below,
-# because ../spend-guard.py measures that one as vCPU like any other.
 DEFAULT_PRICE_PER_VCPU_HOUR = 0.06
 DEFAULT_FIXED_USD_PER_DAY = 5.0
 DEFAULT_VCPUS_PER_NODE = 8
@@ -99,34 +51,20 @@ PERIOD = {"daily": "day", "weekly": "week", "monthly": "month"}
 CAP_VARIABLE = {window: f"spend_cap_{window}_usd" for window in WINDOWS}
 EMAIL_VARIABLE = "spend_alert_email"
 
-HEADER = """# Written by ../spend-caps.py on {today}.  `make caps` rewrites it, and `make apply` asks for it
-# once when it does not exist.  Gitignored, along with every other *.auto.tfvars here.
-#
-# OpenTofu loads this automatically, so terraform.tfvars stays yours: nothing generated is written into it.
-# A cap of `null` is no cap for that window, and it is an answer rather than an omission.
-#
-# ../spend-guard.py compares these against what the account has spent every {interval} minutes, and suspends
-# the agent pools' Launch process when one is met. See "A cap on what this cluster may spend" in ../README.md.
+HEADER = """# Written by ../spend-caps.py on {today}; edit with make caps. This file is gitignored.
+# A null cap disables that window.
 """
 
 
 def money(amount) -> str:
-    """Whole dollars, and cents only where the figure is small enough for them to matter.
-
-    A node-hour printed as `$0` reads as free, which is how a per-hour figure and a per-month one end up
-    looking like the same kind of number.
-    """
+    """Whole dollars, and cents only where the figure is small enough for them to matter."""
     if amount is None:
         return "-"
     return f"${amount:,.2f}" if abs(amount) < 10 else f"${amount:,.0f}"
 
 
 def parse_amount(answer: str):
-    """A typed cap.  `none` and `0` are no cap; `1.2k` is 1200; `$900` and `1,000` are what they look like.
-
-    Returns the number, or None for no cap, and raises ValueError on anything else.  A cap is refused
-    rather than rounded, because a typo in a spend cap is a number somebody will act on.
-    """
+    """A typed cap. `none` and `0` are no cap; `1.2k` is 1200; `$900` and `1,000` are what they look like."""
     text = answer.strip().lower().replace("$", "").replace(",", "").replace(" ", "")
     if text in ("none", "no", "off", "unlimited", "0"):
         return None
@@ -157,6 +95,7 @@ def read_existing(path: Path) -> dict:
     if not held["exists"]:
         return held
     text = path.read_text(encoding="utf-8")
+    held["valid"] = all(re.search(rf"^\s*{name}\s*=\s*(null|[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\s*$", text, re.MULTILINE) for name in CAP_VARIABLE.values())
     for window, name in CAP_VARIABLE.items():
         match = re.search(rf"^\s*{name}\s*=\s*(\S+)", text, re.MULTILINE)
         if match and match.group(1) != "null":
@@ -164,9 +103,14 @@ def read_existing(path: Path) -> dict:
                 held[window] = float(match.group(1))
             except ValueError:
                 pass
-    match = re.search(rf'^\s*{EMAIL_VARIABLE}\s*=\s*"([^"]*)"', text, re.MULTILINE)
+    match = re.search(rf'^\s*{EMAIL_VARIABLE}\s*=\s*("(?:[^"\\]|\\.)*")\s*$', text, re.MULTILINE)
     if match:
-        held["email"] = match.group(1)
+        try:
+            held["email"] = json.loads(match.group(1)).replace("$${", "${").replace("%%{", "%{")
+        except ValueError:
+            held["valid"] = False
+    else:
+        held["valid"] = False
     return held
 
 
@@ -185,12 +129,7 @@ def arithmetic(price: float, fixed_per_day: float, vcpus_per_node: int, max_agen
 
 
 def suggestions(figures: dict) -> dict:
-    """A cap to offer for each window, or None when the pools' size is not known here.
-
-    Built from the floor plus a number of hours of the pools at full size, and not from anybody's budget.
-    The operator's own figure is the one that matters; this is a starting point that is at least the right
-    order of magnitude, which a blank prompt is not.
-    """
+    """A cap to offer for each window, or None when the pools' size is not known here."""
     if figures["burn_per_hour"] is None:
         return {window: None for window in WINDOWS}
     daily = figures["floor"]["daily"] + figures["burn_per_hour"] * SUGGESTED_DAILY_HOURS
@@ -235,13 +174,7 @@ def describe(figures: dict, caps: dict, out: Path) -> str:
 
 
 def refuse_reason(window: str, cap, figures: dict):
-    """Why a cap cannot be used, or None.
-
-    One rule, and it is not a matter of taste: a cap below what the cluster costs standing still is met with
-    no build running, so the pools are braked for the whole window and the cluster is a bill that does
-    nothing.  Warning about that and accepting it would produce exactly the silent stall this directory
-    keeps recording.
-    """
+    """Why a cap cannot be used, or None."""
     if cap is None:
         return None
     floor = figures["floor"][window]
@@ -322,9 +255,20 @@ def write(path: Path, caps: dict, interval: int) -> None:
         cap = caps.get(window)
         value = "null" if cap is None else f"{cap:g}"
         lines.append(f"{CAP_VARIABLE[window]:<{width}} = {value}")
-    lines.append(f'{EMAIL_VARIABLE:<{width}} = "{caps.get("email", "")}"')
+    email = json.dumps(caps.get("email", "")).replace("${", "$${").replace("%{", "%%{")
+    lines.append(f'{EMAIL_VARIABLE:<{width}} = {email}')
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, prefix="." + path.name, delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write("\n".join(lines) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def main() -> int:
@@ -367,6 +311,9 @@ def main() -> int:
             print(f"No spend caps are set: {out} does not exist.")
             print("Nothing watches what this cluster spends until `make caps` writes it.")
             return 1
+        if not existing.get("valid"):
+            print(f"Incomplete or invalid caps file: {out}. Run make caps to repair it.", file=sys.stderr)
+            return 1
         print(f"Spend caps for this cluster, from {out}:")
         print()
         print(describe(figures, existing, out))
@@ -406,13 +353,16 @@ def main() -> int:
         parser.print_help()
         return 2
 
-    write(out, caps, args.interval_minutes)
+    try:
+        write(out, caps, args.interval_minutes)
+    except OSError as error:
+        print(f"Could not save caps to {out}: {error}", file=sys.stderr)
+        return 2
     print()
     print(describe(figures, caps, out))
     print("  `make apply` puts these where the guard reads them, and `make spend` prints what has been")
     print("  spent against them.")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

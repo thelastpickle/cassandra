@@ -39,16 +39,14 @@ of this one; copying its content here would freeze it, and each agent podTemplat
 multi-line string that a later repository change could then no longer reach.  agent.containerCap is
 a scalar under a map, so it overrides exactly itself and costs nothing.
 
-The one exception is each podTemplate's instanceCap, with --pools, and the reason above is what
-shapes how.  Layer 1 no longer creates a pool at the max_size written in var.agent_pools: it scales
-every pool by the lowest ceiling the account allows, so the caps in jenkins-deployment.yaml are one
-account's answer, and a cap above its pool's nodes is a deploy run-ci refuses.  The template string
-is therefore read from the deployment file on this same run, two of its lines are substituted, and
-the result is emitted whole.  Nothing is copied into this repository and nothing is frozen: every
-other line still comes from jenkins-deployment.yaml, and a later change to any of them arrives.
+With --pools, template caps follow the applied pool sizes. The small template is split into outer
+pipelines and workers, with separate labels and caps. Pipeline concurrency follows the available small
+slots, allowing one outer agent and small_workers_per_build workers for each admitted build. Both
+resulting templates retain the source pod configuration.
 """
 
 import argparse
+import copy
 import json
 import re
 import sys
@@ -124,12 +122,9 @@ def build_overlay(hostname, certificate_arn, target_port, container_cap=None):
     }
 
     if certificate_arn:
-        # TLS is a second port and the plain HTTP port stays, because `.build/run-ci` reaches Jenkins at
-        # `http://<load balancer>` with the scheme written in, appending `:<port>` when the Service's first
-        # port is not 80.  So moving to 443 alone does not secure run-ci, it stops it submitting builds.
-        #
-        # Port 80 answers run-ci, port 443 answers a browser.  A Classic Load Balancer cannot redirect one to
-        # the other; that needs an Application Load Balancer, and so the AWS Load Balancer Controller.
+        # run-ci prefers the public DNS name and this HTTPS listener. Keep HTTP for clients using the
+        # load balancer's own name, which the site's certificate generally does not cover.
+        # A Classic Load Balancer cannot redirect HTTP to HTTPS; that needs an Application Load Balancer.
         overlay["controller"]["extraPorts"] = [
             {"name": "https", "port": 443, "targetPort": target_port},
         ]
@@ -160,8 +155,8 @@ INSTANCE_CAP_STR_LINE = re.compile(r"^(?P<indent>[ \t]*)instanceCapStr:[ \t]*\S+
 NODE_SELECTOR_SIZE = re.compile(r"cassandra\.jenkins\.agent\.(?P<size>[a-z0-9]+)\s*=\s*true")
 
 
-def scaled_pod_templates(deployment, pools):
-    """Every podTemplate whose instanceCap does not match its pool's created size, rewritten.
+def scaled_pod_templates(deployment, pools, container_cap=None):
+    """Match template caps to pool capacity and reserve small workers for concurrent pipelines.
 
     Layer 1 no longer creates each pool at the max_size written in var.agent_pools: it scales all of them by
     the lowest ceiling the account allows, so the numbers in jenkins-deployment.yaml are one account's
@@ -169,11 +164,8 @@ def scaled_pod_templates(deployment, pools):
     pool's nodes makes run-ci refuse the deploy, correctly, because those pods could never be scheduled.
     Scaled up, the cap never moves and the extra nodes are never asked for.
 
-    The docstring above says this script does not touch the per-template values, and the reason it gave still
-    holds: a podTemplate is one opaque string to the chart, so a key inside it cannot be overridden on its
-    own.  What is done here is not the thing that reason forbade.  The string is read from the deployment file
-    run-ci passes on this same run, two of its lines are substituted, and the result is emitted whole, so
-    every other line still comes from the repository and a later change to any of them still arrives.
+    Small agents also need separate pipeline and worker caps. Both templates are rebuilt from the same
+    source pod configuration, so container, volume and affinity changes reach both.
     """
     templates = deployment.get("agent", {}).get("podTemplates", {})
     scaled = {}
@@ -193,7 +185,52 @@ def scaled_pod_templates(deployment, pools):
             lambda match: f"{match.group('indent')}instanceCapStr: \"{cap}\"", rewritten)
         if rewritten != body:
             scaled[name] = rewritten
+    if "small" in pools:
+        split_pipeline_template(deployment, scaled, pools["small"], container_cap)
     return scaled
+
+
+def small_agent_caps(pool, container_cap=None):
+    """Maximise admitted pipelines while retaining the configured worker budget for each."""
+    workers_per_build = int(pool.get("small_workers_per_build", 3))
+    if workers_per_build < 1:
+        raise ValueError("small_workers_per_build must be positive")
+    slots = int(pool["max_size"])
+    budget = min(slots, container_cap) if container_cap is not None else slots
+    concurrent = budget // (workers_per_build + 1)
+    if concurrent < 1:
+        raise ValueError(f"the small pool and container-cap need at least {workers_per_build + 1} slots "
+                         "for one pipeline and its workers; apply the pool sizes first")
+    return concurrent, budget - concurrent
+
+
+def split_pipeline_template(deployment, scaled, pool, container_cap=None):
+    """Reserve separate template caps for outer pipelines and their small workers."""
+    concurrent, workers = small_agent_caps(pool, container_cap)
+    templates = dict(deployment["agent"]["podTemplates"])
+    templates.update(scaled)
+    candidates = []
+    for key, body in templates.items():
+        for template in yaml.safe_load(body):
+            if "cassandra-small" in template.get("label", "").split():
+                candidates.append((key, template))
+    if len(candidates) != 1 or "agent-dind-pipeline" in templates:
+        raise ValueError("expected one cassandra-small template and no agent-dind-pipeline override")
+    key, worker = candidates[0]
+    selector = NODE_SELECTOR_SIZE.search(worker.get("nodeSelector", ""))
+    if (not selector or selector.group("size") != "small"
+            or "cassandra-amd64-small" not in worker["label"].split()
+            or len(yaml.safe_load(templates[key])) != 1):
+        raise ValueError("cassandra-small must share one small-pool template with cassandra-amd64-small")
+
+    pipeline = copy.deepcopy(worker)
+    pipeline.update(name="agent-dind-pipeline", id="eks-pipeline", label="cassandra-small")
+    worker.update(id="eks-small-worker",
+                  label=" ".join(label for label in worker["label"].split() if label != "cassandra-small"))
+    for name, template, cap in (("agent-dind-pipeline", pipeline, concurrent),
+                                (key, worker, workers)):
+        template.update(instanceCap=cap, instanceCapStr=str(cap), nodeUsageMode="EXCLUSIVE")
+        scaled[name] = yaml.safe_dump([template], sort_keys=False)
 
 
 def main():
@@ -217,11 +254,13 @@ def main():
                             "size. The TLS port has to reach the same container port the plain one does, and "
                             "writing that number down twice is how the two drift apart")
     parser.add_argument("--pools",
-                       help="JSON from `tofu output -json agent_node_groups` in ../1-cluster. Each "
-                            "podTemplate's instanceCap is set to its pool's max_size, which layer 1 scaled "
-                            "to the account's ceilings. Needs --deployment. Omit to leave the caps in "
-                            "jenkins-deployment.yaml alone")
+                       help="JSON from `tofu output -json agent_node_groups` in ../1-cluster. Caps follow "
+                            "the applied pool sizes; small slots are divided between outer pipelines and "
+                            "their worker budgets. Needs --deployment. Omit to leave the shared templates "
+                            "unchanged")
     args = parser.parse_args()
+    if args.pools and not args.deployment:
+        parser.error("--pools requires --deployment")
 
     base = load_yaml(args.base)
     target_port = DEFAULT_TARGET_PORT
@@ -238,17 +277,20 @@ def main():
         try:
             with open(args.pools, encoding="utf-8") as handle:
                 pools = json.load(handle)
+            if "small" not in pools:
+                raise ValueError("the small pool is missing; apply layer 1 before installing Jenkins")
+            effective = deep_merge(deep_merge(deployment, base), overlay)
+            container_cap = int(effective["agent"]["containerCap"])
+            concurrent, workers = small_agent_caps(pools["small"], container_cap)
+            scaled = scaled_pod_templates(deployment, pools, container_cap)
         except (OSError, ValueError) as error:
-            # Leave the committed caps alone rather than fail: that is this script's behaviour without
-            # --pools at all, and it is the behaviour every deploy had before the pools were scaled.
-            print("could not read %s, leaving each instanceCap as committed: %s" % (args.pools, error),
-                  file=sys.stderr)
-            pools = {}
-        scaled = scaled_pod_templates(deployment, pools)
+            parser.error(str(error))
         if scaled:
             overlay.setdefault("agent", {})["podTemplates"] = scaled
             for name in sorted(scaled):
                 print("%s: instanceCap set from the pool layer 1 created" % name, file=sys.stderr)
+            print(f"At most {concurrent} pipelines hold outer agents; "
+                  f"{workers} small worker slots remain.")
 
     values = deep_merge(base, overlay)
 

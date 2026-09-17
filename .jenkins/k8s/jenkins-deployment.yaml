@@ -26,7 +26,11 @@ persistence:
   # deleting it then takes a deliberate `kubectl delete pvc cassius-jenkins`
   annotations:
     helm.sh/resource-policy: keep
-  # aws needs gp2, gke can be left commented (add it to your override yaml)
+  # Left commented here on purpose: a storage class is one cloud's answer, and this file is read by both.
+  # Each cloud's override yaml names its own, and k8s/eks and k8s/gke both already do (gp2, and a pd-ssd class
+  # k8s/gke/2-platform creates).  Naming one here would mean the other cloud silently provisioning against a
+  # class that does not exist, and a PersistentVolumeClaim whose class is absent stays Pending with the reason
+  # only in its events.
   #storageClass: "gp2"
 controller:
   # To get URL run `kubectl describe svc cassius-jenkins | grep 'LoadBalancer Ingress'`

@@ -79,12 +79,20 @@ jobs:
               python-version: '3.x'
           - name: Install dependencies
             run: pip install pyyaml
-          # Pinned to the floor in .jenkins/k8s/eks/1-cluster/versions.tf, not to the newest release, so that
-          # this job checks the version the configuration claims to support. A feature needing a later one
-          # then fails here, where the answer is to raise the floor, rather than on an operator's machine.
+          # Pinned to a floor rather than to the newest release, so that this job checks the version the
+          # configuration claims to support. A feature needing a later one then fails here, where the answer is
+          # to raise the floor, rather than on an operator's machine.
+          #
+          # 1.10.0 is eks/1-cluster/versions.tf's floor and gke/1-cluster/versions.tf's is 1.9.0, so this
+          # satisfies both and checks neither at its own floor. It is the higher of the two deliberately: one
+          # runner cannot install two versions, and the alternative is a second job for the sake of one minor
+          # version. What that costs is that a gke/ change relying on a 1.10 feature passes here and fails for
+          # somebody on 1.9; raise gke's floor to 1.10 rather than lowering this pin if that ever happens.
           - name: OpenTofu
             uses: opentofu/setup-opentofu@v1
             with:
               tofu_version: 1.10.0
           - name: Test .jenkins/k8s/eks
             run: make -C .jenkins/k8s/eks test
+          - name: Test .jenkins/k8s/gke
+            run: make -C .jenkins/k8s/gke test

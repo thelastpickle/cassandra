@@ -30,6 +30,9 @@
 # two clusters sharing it would scale each other's pools.
 #cluster_name = "<whoami>--cassandra-jenkins"
 
+# Small workers per admitted pipeline; concurrency follows the applied pool capacity.
+#small_workers_per_build = 3
+
 # Your closest low-carbon region.  AWS publishes that per region under its carbon methodology pages
 # rather than through the API, so it cannot be derived here.
 #region = "eu-north-1"

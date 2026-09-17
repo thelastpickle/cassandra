@@ -1,0 +1,66 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The class the Jenkins controller's 500Gi jenkins_home is provisioned from, named by
+# persistence.storageClass in jenkins-gke-overrides.yaml.
+#
+# Applied by ../Makefile, with `kubectl apply -f 2-platform/storageclass-pd-ssd.yaml`, ahead of
+# `make jenkins`.  Not by helmfile.yaml in this directory: a helmfile `release` installs a chart, and this is
+# a bare manifest, so it would have to be wrapped in a chart or hung off a hook on some other release.  The
+# hook is the worse of the two, because the only release in that file is optional; see its header.  The
+# ordering matters either way, since a PVC naming a class that does not exist stays Pending with an event
+# rather than an error.
+#
+# Why a class at all.  GKE's default is `standard-rwo`, which is pd-balanced: fine for a working volume and
+# not what jenkins_home is.  jenkins_home holds the build history, and the controller's own start-up reads
+# enough of it that .jenkins/k8s/jenkins-deployment.yaml raises the startupProbe budget to 300s over it.  The
+# gcloud commands in ../../README.md ask for `--disk-type=pd-ssd` for the same reason.
+#
+# GKE's other built-in class asks for a faster disk and is still not usable here: every built-in class has
+# `reclaimPolicy: Delete`, which is a property of a class and cannot be overridden by a claim, and a
+# GKE-managed class edited in place is reconciled back to what GKE says it is.
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  # Named for the disk it asks for, and named again in jenkins-gke-overrides.yaml.  Deliberately not marked
+  # default: `storageclass.kubernetes.io/is-default-class` here would put every other claim in the cluster on
+  # pd-ssd, including ones that do not want it, and would leave the cluster with two defaults because GKE
+  # marks standard-rwo and does not stop doing so.
+  name: pd-ssd
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-ssd
+# WaitForFirstConsumer, not Immediate.  A Compute Engine persistent disk is zonal and the controller's node
+# pool pins one zone, so with Immediate the disk is created in whichever zone the provisioner picks, and when
+# that is not the controller pool's zone the pod cannot be scheduled at all: the volume node affinity the
+# provisioner wrote conflicts with the pool's own zone, reported as `volume node affinity conflict` against a
+# pod that names nothing wrong.  WaitForFirstConsumer holds the disk back until a node is chosen, then creates
+# it in that node's zone.
+volumeBindingMode: WaitForFirstConsumer
+# Retain, because this holds jenkins_home: the jobs, the credentials and the build history.  Delete, which is
+# the default and what every built-in GKE class uses, removes the disk with the claim, so one
+# `kubectl delete pvc` or one namespace deletion takes the history with it.
+#
+# jenkins-deployment.yaml already sets `helm.sh/resource-policy: keep` on the claim, which stops `helm
+# uninstall` deleting it.  That covers the release; this covers the claim.  The two together are why deleting
+# jenkins_home takes a deliberate `kubectl delete pvc cassius-jenkins` and then a deliberate disk deletion:
+# with Retain the PersistentVolume goes to Released and the disk stays until somebody removes both.
+reclaimPolicy: Retain
+# So a full jenkins_home can be grown rather than migrated.  Growing in place is the only way that keeps the
+# build history; the alternative is a second claim and a copy, with the controller down for the length of it.
+# Expansion is one-way: a Compute Engine persistent disk cannot be shrunk.
+allowVolumeExpansion: true

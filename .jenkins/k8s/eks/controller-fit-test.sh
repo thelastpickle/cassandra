@@ -125,6 +125,9 @@ deployment_file() {
 controller:
   javaOpts: -server -XX:+UseG1GC -Xms${xmx} -Xmx${xmx}
   resources:
+    requests:
+      cpu: "1"
+      memory: "1G"
     limits:
       cpu: ${cpu}
       memory: ${memory}
