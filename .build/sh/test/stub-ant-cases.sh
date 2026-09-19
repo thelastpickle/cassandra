@@ -74,7 +74,8 @@ export PATH="${STUB_DIR}/bin:${PATH}"
 
 # the project must look built, or run-tests.sh stops early
 version="$(grep 'property\s*name="base.version"' "${CASSANDRA_DIR}/build.xml" | sed -ne 's/.*value="\([^"]*\)".*/\1/p')"
-touch "${DIST_DIR}/apache-cassandra-${version}-SNAPSHOT.jar"
+project_name="$(grep '<project[[:space:]]*basedir=' "${CASSANDRA_DIR}/build.xml" | sed -ne 's/.*name="\([^"]*\)".*/\1/p')"
+touch "${DIST_DIR}/${project_name}-${version}-SNAPSHOT.jar"
 
 ################################
 #
@@ -269,7 +270,7 @@ reset_stub
 SPACED_DIR="${STUB_DIR}/spaced dist"
 SENTINEL="${STUB_DIR}/spaced"
 mkdir -p "${SPACED_DIR}/test/output" "${SPACED_DIR}/test/logs" "${SENTINEL}"
-touch "${SPACED_DIR}/apache-cassandra-${version}-SNAPSHOT.jar"
+touch "${SPACED_DIR}/${project_name}-${version}-SNAPSHOT.jar"
 touch "${SPACED_DIR}/test/output/TEST-stale.xml" "${SPACED_DIR}/test/logs/stale.log"
 touch "${SENTINEL}/keep-me"
 run_case env DIST_DIR="${SPACED_DIR}" "${CASSANDRA_DIR}/.build/run-tests.sh" -a test -t StorageServiceServerTest

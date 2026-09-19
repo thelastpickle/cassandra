@@ -58,6 +58,11 @@ git_version=''
 # Parse version from build.xml so we can verify version against release tags and use the build.xml version
 # for any branches. Truncate from snapshot suffix if needed.
 buildxml_version=`grep 'property\s*name="base.version"' build.xml |sed -ne 's/.*value="\([^"]*\)".*/\1/p'`
+
+# The artifact names follow the ant project name, which a fork may rename.
+project_name=`grep '<project[[:space:]]*basedir=' build.xml |sed -ne 's/.*name="\([^"]*\)".*/\1/p'`
+[ "x${project_name}" != "x" ] || { echo >&2 "no project name in build.xml"; exit 1; }
+
 regx_snapshot="([0-9.]+)-SNAPSHOT$"
 if [[ $buildxml_version =~ $regx_snapshot ]]; then
    buildxml_version=${BASH_REMATCH[1]}
@@ -91,16 +96,16 @@ else
 fi
 
 # Artifact will only be used internally for build process and won't be found with snapshot suffix
-rm -rf ${DIST_DIR}/apache-cassandra-*.jar # realclean fails on permissions inside docker
+rm -rf ${DIST_DIR}/${project_name}-*.jar # realclean fails on permissions inside docker
 ant clean artifacts-with-docs -Drelease=true -Djavadoc.skip=true -Dcheck.skip=true
-cp ${DIST_DIR}/apache-cassandra-*-src.tar.gz ${RPM_BUILD_DIR}/SOURCES/
+cp ${DIST_DIR}/${project_name}-*-src.tar.gz ${RPM_BUILD_DIR}/SOURCES/
 
 # if CASSANDRA_VERSION is -alphaN, -betaN, -rcN, then rpmbuild fails on the '-' char; replace with '~'
 CASSANDRA_VERSION=${CASSANDRA_VERSION/-/\~}
 CASSANDRA_REVISION=${CASSANDRA_REVISION/-/_}
 
 command -v python >/dev/null 2>&1 || alias python=/usr/bin/python3
-rpmbuild --define="version ${CASSANDRA_VERSION}" --define="revision ${CASSANDRA_REVISION}" --define="_topdir ${RPM_BUILD_DIR}" -ba redhat/cassandra.spec
+rpmbuild --define="version ${CASSANDRA_VERSION}" --define="revision ${CASSANDRA_REVISION}" --define="project_name ${project_name}" --define="_topdir ${RPM_BUILD_DIR}" -ba redhat/cassandra.spec
 cp ${RPM_BUILD_DIR}/SRPMS/*.rpm ${RPM_BUILD_DIR}/RPMS/noarch/*.rpm ${DIST_DIR}
 
 popd >/dev/null

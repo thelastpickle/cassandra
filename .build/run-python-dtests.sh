@@ -108,12 +108,14 @@ java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | awk -F. 
 
 version=$(grep 'property\s*name=\"base.version\"' ${CASSANDRA_DIR}/build.xml |sed -ne 's/.*value=\"\([^"]*\)\".*/\1/p')
 
+project_name=$(grep '<project[[:space:]]*basedir=' ${CASSANDRA_DIR}/build.xml |sed -ne 's/.*name="\([^"]*\)".*/\1/p')
+
 python_version=$(python -V 2>&1 | awk '{print $2}' | awk -F'.' '{print $1"."$2}')
 python_regx_supported_versions="^(3.8|3.9|3.10|3.11)$"
 [[ $python_version =~ $python_regx_supported_versions ]] || { echo "Python ${python_version} not supported."; exit 1; }
 
 # check project is already built. no cleaning is done, so jenkins unstash works, beware.
-[[ -f "${DIST_DIR}/apache-cassandra-${version}.jar" ]] || [[ -f "${DIST_DIR}/apache-cassandra-${version}-SNAPSHOT.jar" ]] || { echo "Project must be built first. Use \`ant jar\`. Build directory is ${DIST_DIR} with: $(ls ${DIST_DIR})"; exit 1; }
+[[ -f "${DIST_DIR}/${project_name}-${version}.jar" ]] || [[ -f "${DIST_DIR}/${project_name}-${version}-SNAPSHOT.jar" ]] || { echo "Project must be built first. Use \`ant jar\`. Build directory is ${DIST_DIR} with: $(ls ${DIST_DIR})"; exit 1; }
 
 # check if dist artifacts exist, this breaks the dtests
 [[ -d "${DIST_DIR}/dist" ]] && { echo "dtests don't work when build/dist ("${DIST_DIR}/dist") exists (from \`ant artifacts\`)"; exit 1; }

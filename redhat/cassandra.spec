@@ -30,7 +30,11 @@
 
 # input of ~alphaN, ~betaN, ~rcN package versions need to retain upstream '-alphaN, etc' version for sources
 %define upstream_version %(echo %{version} | sed -r 's/~/-/g')
-%define relname apache-cassandra-%{upstream_version}
+
+# The artifact names follow the ant project name, which a fork may rename.  _build-redhat.sh reads
+# it from build.xml and passes it in; a direct rpmbuild keeps the upstream name.
+%{!?project_name: %global project_name apache-cassandra}
+%define relname %{project_name}-%{upstream_version}
 
 # default DIST_DIR to build
 %global _get_dist_dir %(echo "${DIST_DIR:-build}")
@@ -131,7 +135,7 @@ cp -p bin/* %{buildroot}/usr/bin/
 cp -p tools/bin/* %{buildroot}/usr/bin/
 
 # copy cassandra jar
-cp %{_get_dist_dir}/apache-cassandra-%{upstream_version}.jar %{buildroot}/usr/share/%{username}/
+cp %{_get_dist_dir}/%{project_name}-%{upstream_version}.jar %{buildroot}/usr/share/%{username}/
 
 # copy HTML and manpages docs
 cp -pr %{_get_dist_dir}/html/* %{buildroot}/usr/share/doc/%{username}/html/
