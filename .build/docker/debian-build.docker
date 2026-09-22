@@ -70,6 +70,24 @@ RUN sh -c '\
 RUN update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-$(dpkg --print-architecture)/bin/java 1
 RUN update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-21-openjdk-$(dpkg --print-architecture)/bin/javac 1
 
+# Download and install Eclipse Temurin OpenJDK 25.0.2 for the current architecture
+RUN set -eux; \
+    case "$(uname -m)" in \
+        x86_64) JDK_ARCH=x64; JDK_SHA=987387933b64b9833846dee373b640440d3e1fd48a04804ec01a6dbf718e8ab8 ;; \
+        aarch64) JDK_ARCH=aarch64; JDK_SHA=a9d73e711d967dc44896d4f430f73a68fd33590dabc29a7f2fb9f593425b854c ;; \
+        *) echo "Unsupported JDK 25 architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    JDK_TAR="OpenJDK25U-jdk_${JDK_ARCH}_linux_hotspot_25.0.2_10.tar.gz"; \
+    curl -L --fail --silent --retry 2 --retry-delay 5 --max-time 3600 \
+        "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/${JDK_TAR}" -o "${JDK_TAR}"; \
+    echo "${JDK_SHA}  ${JDK_TAR}" | sha256sum -c -; \
+    JDK_DIR="/usr/lib/jvm/java-25-openjdk-$(dpkg --print-architecture)"; \
+    mkdir -p "${JDK_DIR}"; \
+    tar -C "${JDK_DIR}" --strip-components=1 -xzf "${JDK_TAR}"; \
+    rm "${JDK_TAR}"; \
+    update-alternatives --install /usr/bin/java java "${JDK_DIR}/bin/java" 1; \
+    update-alternatives --install /usr/bin/javac javac "${JDK_DIR}/bin/javac" 1
+
 RUN update-alternatives --set java /usr/lib/jvm/java-11-openjdk-$(dpkg --print-architecture)/bin/java
 RUN update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-$(dpkg --print-architecture)/bin/javac
 
