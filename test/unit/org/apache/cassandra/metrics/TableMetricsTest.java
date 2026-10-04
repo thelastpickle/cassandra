@@ -319,6 +319,24 @@ public class TableMetricsTest
         assertEquals(metrics.get().collect(Collectors.joining(",")), 0, metrics.get().count());
     }
 
+    @Test
+    public void testEstimatedPartitionCountInSSTables()
+    {
+        ColumnFamilyStore cfs = recreateTable();
+        assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+        assertEquals(0L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+        assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTablesCached.getValue().longValue());
+
+        for (int id = 0; id < 10; id++)
+            session.execute(String.format("INSERT INTO %s.%s (id, val1, val2) VALUES (%d, 'a', 'b')", KEYSPACE, TABLE, id));
+
+        assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+        assertEquals(10L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+        cfs.forceBlockingFlush(ColumnFamilyStore.FlushReason.UNIT_TESTS);
+        assertEquals(10L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+        assertEquals(10L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+    }
+
 
     @AfterClass
     public static void tearDown()
