@@ -84,6 +84,9 @@ public class TableMetrics
     private static final MetricNameFactory GLOBAL_FACTORY = new AllTableMetricNameFactory("Table");
     private static final MetricNameFactory GLOBAL_ALIAS_FACTORY = new AllTableMetricNameFactory("ColumnFamily");
 
+    @VisibleForTesting
+    static long ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS = TimeUnit.MINUTES.toSeconds(5);
+
     public final static LatencyMetrics GLOBAL_READ_LATENCY = new LatencyMetrics(GLOBAL_FACTORY, GLOBAL_ALIAS_FACTORY, "Read");
     public final static LatencyMetrics GLOBAL_WRITE_LATENCY = new LatencyMetrics(GLOBAL_FACTORY, GLOBAL_ALIAS_FACTORY, "Write");
     public final static LatencyMetrics GLOBAL_RANGE_LATENCY = new LatencyMetrics(GLOBAL_FACTORY, GLOBAL_ALIAS_FACTORY, "Range");
@@ -578,7 +581,7 @@ public class TableMetrics
                 return estimatedPartitions;
             }
         }, null);
-        estimatedPartitionCountInSSTablesCached = new CachedGauge<Long>(1, TimeUnit.SECONDS)
+        estimatedPartitionCountInSSTablesCached = new CachedGauge<Long>(ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS, TimeUnit.SECONDS)
         {
             public Long loadValue()
             {

@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.awaitility.Awaitility;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.Cluster;
@@ -322,19 +323,30 @@ public class TableMetricsTest
     @Test
     public void testEstimatedPartitionCountInSSTables()
     {
-        ColumnFamilyStore cfs = recreateTable();
-        assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
-        assertEquals(0L, cfs.metric.estimatedPartitionCount.getValue().longValue());
-        assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTablesCached.getValue().longValue());
+        long previousPeriod = TableMetrics.ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS;
+        try
+        {
+            TableMetrics.ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS = 1;
+            ColumnFamilyStore cfs = recreateTable();
+            assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+            assertEquals(0L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+            assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTablesCached.getValue().longValue());
 
-        for (int id = 0; id < 10; id++)
-            session.execute(String.format("INSERT INTO %s.%s (id, val1, val2) VALUES (%d, 'a', 'b')", KEYSPACE, TABLE, id));
+            for (int id = 0; id < 10; id++)
+                session.execute(String.format("INSERT INTO %s.%s (id, val1, val2) VALUES (%d, 'a', 'b')", KEYSPACE, TABLE, id));
 
-        assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
-        assertEquals(10L, cfs.metric.estimatedPartitionCount.getValue().longValue());
-        cfs.forceBlockingFlush(ColumnFamilyStore.FlushReason.UNIT_TESTS);
-        assertEquals(10L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
-        assertEquals(10L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+            assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+            assertEquals(10L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+            cfs.forceBlockingFlush(ColumnFamilyStore.FlushReason.UNIT_TESTS);
+            assertEquals(10L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+            assertEquals(10L, cfs.metric.estimatedPartitionCount.getValue().longValue());
+            Awaitility.await().atMost(3, TimeUnit.SECONDS)
+                      .untilAsserted(() -> assertEquals(10L, cfs.metric.estimatedPartitionCountInSSTablesCached.getValue().longValue()));
+        }
+        finally
+        {
+            TableMetrics.ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS = previousPeriod;
+        }
     }
 
 
