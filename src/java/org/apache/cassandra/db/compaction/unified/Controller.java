@@ -149,6 +149,9 @@ public class Controller
     static final Overlaps.InclusionMethod DEFAULT_OVERLAP_INCLUSION_METHOD =
         CassandraRelevantProperties.UCS_OVERLAP_INCLUSION_METHOD.getEnum(Overlaps.InclusionMethod.TRANSITIVE);
 
+    static final String MAX_SSTABLES_PER_SHARD_FACTOR_OPTION = "max_sstables_per_shard_factor";
+    static final double DEFAULT_MAX_SSTABLES_PER_SHARD_FACTOR = 10.0;
+
     protected final ColumnFamilyStore cfs;
     protected final MonotonicClock clock;
     private final int[] scalingParameters;
@@ -171,6 +174,7 @@ public class Controller
     private static final double INVERSE_LOG_2 = 1.0 / Math.log(2);
 
     protected final Overlaps.InclusionMethod overlapInclusionMethod;
+    protected final double maxSSTablesPerShardFactor;
 
     Controller(ColumnFamilyStore cfs,
                MonotonicClock clock,
@@ -184,7 +188,8 @@ public class Controller
                int baseShardCount,
                double targetSStableSize,
                double sstableGrowthModifier,
-               Overlaps.InclusionMethod overlapInclusionMethod)
+               Overlaps.InclusionMethod overlapInclusionMethod,
+               double maxSSTablesPerShardFactor)
     {
         this.cfs = cfs;
         this.clock = clock;
@@ -197,6 +202,7 @@ public class Controller
         this.baseShardCount = baseShardCount;
         this.targetSSTableSize = targetSStableSize;
         this.overlapInclusionMethod = overlapInclusionMethod;
+        this.maxSSTablesPerShardFactor = maxSSTablesPerShardFactor;
         this.sstableGrowthModifier = sstableGrowthModifier;
 
         if (maxSSTablesToCompact <= 0)
@@ -445,6 +451,10 @@ public class Controller
                 ? Overlaps.InclusionMethod.valueOf(options.get(OVERLAP_INCLUSION_METHOD_OPTION).toUpperCase())
                 : DEFAULT_OVERLAP_INCLUSION_METHOD;
 
+        double maxSSTablesPerShardFactor = options.containsKey(MAX_SSTABLES_PER_SHARD_FACTOR_OPTION)
+                                          ? Double.parseDouble(options.get(MAX_SSTABLES_PER_SHARD_FACTOR_OPTION))
+                                          : DEFAULT_MAX_SSTABLES_PER_SHARD_FACTOR;
+
         return new Controller(cfs,
                               MonotonicClock.Global.preciseTime,
                               Ws,
@@ -457,7 +467,8 @@ public class Controller
                               baseShardCount,
                               targetSStableSize,
                               sstableGrowthModifier,
-                              inclusionMethod);
+                              inclusionMethod,
+                              maxSSTablesPerShardFactor);
     }
 
     public static Map<String, String> validateOptions(Map<String, String> options) throws ConfigurationException
@@ -599,6 +610,22 @@ public class Controller
             }
         }
 
+        s = options.remove(MAX_SSTABLES_PER_SHARD_FACTOR_OPTION);
+        if (s != null)
+        {
+            try
+            {
+                if (!(Double.parseDouble(s) >= 1))
+                    throw new ConfigurationException(String.format("%s must be at least 1: %s",
+                                                                   MAX_SSTABLES_PER_SHARD_FACTOR_OPTION, s));
+            }
+            catch (NumberFormatException e)
+            {
+                throw new ConfigurationException(String.format("%s is not a number: %s",
+                                                               MAX_SSTABLES_PER_SHARD_FACTOR_OPTION, s), e);
+            }
+        }
+
         s = options.remove(MIN_SSTABLE_SIZE_OPTION);
         if (s != null)
         {
@@ -686,6 +713,11 @@ public class Controller
     public int maxSSTablesToCompact()
     {
         return maxSSTablesToCompact;
+    }
+
+    public double getMaxSSTablesPerShardFactor()
+    {
+        return maxSSTablesPerShardFactor;
     }
 
     /**

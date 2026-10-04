@@ -66,6 +66,7 @@ import org.mockito.MockitoAnnotations;
 
 import static org.apache.cassandra.io.sstable.format.SSTableReader.UNIQUE_IDENTIFIER_FACTORY;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -906,6 +907,102 @@ public class UnifiedCompactionStrategyTest
         assertTrue("Background selection never consumed " + missed.size() + " of " + tinyCount +
                    " tiny near-point-coverage sstables: " + missed,
                    missed.isEmpty());
+    }
+
+    @Test
+    public void testNonOverlappingSSTablesCompactWhenOneShardExceedsLimit()
+    {
+        setUp(2);
+        Controller controller = Mockito.mock(Controller.class);
+        when(controller.getScalingParameter(anyInt())).thenReturn(2); // T4
+        when(controller.getFanout(anyInt())).thenCallRealMethod();
+        when(controller.getThreshold(anyInt())).thenCallRealMethod();
+        when(controller.getMaxLevelDensity(anyInt(), anyDouble())).thenCallRealMethod();
+        when(controller.getSurvivalFactor(anyInt())).thenReturn(1.0);
+        when(controller.getNumShards(anyDouble())).thenReturn(2);
+        when(controller.getBaseSstableSize(anyInt())).thenReturn((double) (4 << 20));
+        when(controller.getMaxSSTablesPerShardFactor()).thenReturn(2.0);
+        when(controller.maxConcurrentCompactions()).thenReturn(1000);
+        when(controller.maxThroughput()).thenReturn(Double.MAX_VALUE);
+        when(controller.maxSSTablesToCompact()).thenReturn(8);
+        when(controller.overlapInclusionMethod()).thenReturn(Overlaps.InclusionMethod.TRANSITIVE);
+
+        UnifiedCompactionStrategy strategy = new UnifiedCompactionStrategy(cfs, new HashMap<>(), controller);
+        Token min = partitioner.getMinimumToken();
+        Token max = partitioner.getMaximumToken();
+        ByteBuffer empty = ByteBuffer.allocate(0);
+        List<SSTableReader> firstShard = new ArrayList<>();
+        List<SSTableReader> secondShard = new ArrayList<>();
+        long timestamp = System.currentTimeMillis();
+        for (int i = 0; i < 12; i++)
+        {
+            double start = i < 9 ? 0.02 + i * 0.04 : 0.60 + (i - 9) * 0.04;
+            DecoratedKey first = new BufferDecoratedKey(partitioner.split(min, max, start), empty);
+            DecoratedKey last = new BufferDecoratedKey(partitioner.split(min, max, start + 0.01), empty);
+            SSTableReader sstable = mockSSTable(0, 1 << 20, timestamp + i, 0, first, last);
+            (i < 9 ? firstShard : secondShard).add(sstable);
+        }
+        List<SSTableReader> all = new ArrayList<>(firstShard);
+        SSTableReader ninth = all.remove(all.size() - 1);
+        all.addAll(secondShard);
+        strategy.addSSTables(all);
+        dataTracker.addInitialSSTables(all);
+
+        assertNull(strategy.getNextCompactionPick(0)); // Eight SSTables equal the per-shard limit.
+        strategy.addSSTables(ImmutableList.of(ninth));
+        dataTracker.addInitialSSTables(ImmutableList.of(ninth));
+
+        UnifiedCompactionStrategy.CompactionPick pick = strategy.getNextCompactionPick(0);
+        assertNotNull(pick);
+        assertEquals(8, pick.size());
+        assertTrue(firstShard.containsAll(pick));
+        assertFalse(pick.contains(ninth));
+
+        UnifiedCompactionStrategy.Level level = strategy.getLevels().stream()
+                                                        .filter(candidate -> candidate.getSSTables().contains(ninth))
+                                                        .findFirst().get();
+        ShardManager partialCoverage = Mockito.mock(ShardManager.class);
+        when(partialCoverage.shardSetCoverage()).thenReturn(0.5);
+        when(partialCoverage.calculateCombinedDensity(any())).thenReturn(42.0);
+        when(partialCoverage.splitSSTablesInShards(any(), anyInt()))
+            .thenReturn(ImmutableList.of(new HashSet<>(firstShard)));
+        assertNotNull(level.getCompactionPick(new UnifiedCompactionStrategy.SelectionContext(controller), partialCoverage));
+        Mockito.verify(controller, Mockito.atLeastOnce()).getNumShards(21.0);
+
+        when(controller.getMaxSSTablesPerShardFactor()).thenReturn(Double.POSITIVE_INFINITY);
+        assertNull(strategy.getNextCompactionPick(0));
+    }
+
+    @Test
+    public void testSparseSSTablesUseCombinedDensityForShardCount()
+    {
+        Controller controller = Mockito.mock(Controller.class);
+        when(controller.getScalingParameter(0)).thenReturn(2);
+        when(controller.getFanout(0)).thenReturn(4);
+        when(controller.getThreshold(0)).thenReturn(4);
+        when(controller.getSurvivalFactor(0)).thenReturn(1.0);
+        when(controller.getMaxSSTablesPerShardFactor()).thenReturn(10.0);
+        when(controller.maxSSTablesToCompact()).thenReturn(32);
+        when(controller.getNumShards(anyDouble())).thenAnswer(invocation ->
+            ((Double) invocation.getArgument(0)) >= 64 * ONE_MB ? 4 : 1);
+
+        UnifiedCompactionStrategy.Level level = new UnifiedCompactionStrategy.Level(controller, 0, 0, 256 * ONE_MB);
+        Token min = partitioner.getMinimumToken();
+        Token max = partitioner.getMaximumToken();
+        ByteBuffer empty = ByteBuffer.allocate(0);
+        for (int i = 0; i < 41; i++)
+        {
+            double start = 0.01 + i * 0.02;
+            DecoratedKey first = new BufferDecoratedKey(partitioner.split(min, max, start), empty);
+            DecoratedKey last = new BufferDecoratedKey(partitioner.split(min, max, start + 0.005), empty);
+            level.add(mockSSTable(0, ONE_MB, i, 0, first, last));
+        }
+
+        ShardManager shardManager = new ShardManagerNoDisks(localRanges, 10000L);
+        UnifiedCompactionStrategy.CompactionPick pick = level.getCompactionPick(new UnifiedCompactionStrategy.SelectionContext(controller),
+                                                                                shardManager);
+        assertNotNull(pick);
+        assertEquals(32, pick.size());
     }
 
     SSTableReader mockSSTable(int level, long bytesOnDisk, long timestamp, double hotness, DecoratedKey first, DecoratedKey last)

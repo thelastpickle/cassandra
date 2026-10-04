@@ -349,6 +349,28 @@ public class TableMetricsTest
         }
     }
 
+    @Test
+    public void testEstimatedPartitionCountSampleIsRetained()
+    {
+        long previousPeriod = TableMetrics.ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS;
+        try
+        {
+            TableMetrics.ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS = TimeUnit.HOURS.toSeconds(1);
+            ColumnFamilyStore cfs = recreateTable();
+            assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTablesCached.getValue().longValue());
+
+            session.execute(String.format("INSERT INTO %s.%s (id, val1, val2) VALUES (1, 'a', 'b')", KEYSPACE, TABLE));
+            cfs.forceBlockingFlush(ColumnFamilyStore.FlushReason.UNIT_TESTS);
+
+            assertEquals(1L, cfs.metric.estimatedPartitionCountInSSTables.getAsLong());
+            assertEquals(0L, cfs.metric.estimatedPartitionCountInSSTablesCached.getValue().longValue());
+        }
+        finally
+        {
+            TableMetrics.ESTIMATED_PARTITION_COUNT_CACHE_PERIOD_SECONDS = previousPeriod;
+        }
+    }
+
 
     @AfterClass
     public static void tearDown()

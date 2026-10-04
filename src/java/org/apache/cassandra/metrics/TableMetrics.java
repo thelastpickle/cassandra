@@ -553,22 +553,27 @@ public class TableMetrics
 
             public long getAsLong()
             {
-                View currentView = cfs.getTracker().getView();
-                Pair<WeakReference<View>, Long> currentCollected = collected.get();
-                if (currentView != currentCollected.left.get())
+                while (true)
                 {
+                    View currentView = cfs.getTracker().getView();
+                    Pair<WeakReference<View>, Long> currentCollected = collected.get();
+                    if (currentView == currentCollected.left.get())
+                        return currentCollected.right;
+
                     Refs<SSTableReader> refs = Refs.tryRef(currentView.select(SSTableSet.CANONICAL));
-                    if (refs != null)
+                    if (refs == null)
+                        continue;
+
+                    try (refs)
                     {
-                        try (refs)
-                        {
-                            long count = SSTableReader.getApproximateKeyCount(refs);
+                        long count = SSTableReader.getApproximateKeyCount(refs);
+                        // Return the referenced snapshot's estimate even if the view changed, so view churn
+                        // cannot force repeated scans. Only retain it for reuse while the view is unchanged.
+                        if (cfs.getTracker().getView() == currentView)
                             collected.compareAndSet(currentCollected, Pair.create(new WeakReference<>(currentView), count));
-                            return count;
-                        }
+                        return count;
                     }
                 }
-                return currentCollected.right;
             }
         };
         estimatedPartitionCount = createTableGauge("EstimatedPartitionCount", "EstimatedRowCount", new Gauge<Long>()

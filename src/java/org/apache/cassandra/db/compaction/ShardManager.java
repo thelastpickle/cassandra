@@ -18,6 +18,11 @@
 
 package org.apache.cassandra.db.compaction;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -129,6 +134,40 @@ public interface ShardManager
      * arise, see {@link CompactionSimulationTest} for a possible implementation.
      */
     ShardTracker boundaries(int shardCount);
+
+    /** Group SSTables by every output shard that intersects them. */
+    default List<Set<SSTableReader>> splitSSTablesInShards(Collection<SSTableReader> sstables, int shardCount)
+    {
+        List<SSTableReader> sorted = new ArrayList<>(sstables);
+        sorted.sort(SSTableReader.firstKeyComparator);
+        List<Set<SSTableReader>> groups = new ArrayList<>();
+        PriorityQueue<SSTableReader> active = new PriorityQueue<>(SSTableReader.lastKeyComparator);
+        ShardTracker tracker = boundaries(shardCount);
+        int next = 0;
+
+        while (next < sorted.size() || !active.isEmpty())
+        {
+            if (active.isEmpty())
+            {
+                tracker.advanceTo(sorted.get(next).getFirst().getToken());
+                active.add(sorted.get(next++));
+            }
+
+            Token end = tracker.shardEnd();
+            while (next < sorted.size() &&
+                   (end == null || sorted.get(next).getFirst().getToken().compareTo(end) <= 0))
+                active.add(sorted.get(next++));
+
+            groups.add(new HashSet<>(active));
+
+            while (!active.isEmpty() && (end == null || active.peek().getLast().getToken().compareTo(end) <= 0))
+                active.poll();
+
+            if (!active.isEmpty())
+                tracker.advanceTo(end.nextValidToken());
+        }
+        return groups;
+    }
 
     static Range<Token> coveringRange(SSTableReader sstable)
     {

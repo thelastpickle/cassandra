@@ -377,9 +377,9 @@ public class UnifiedCompactionStrategy extends AbstractCompactionStrategy
         CompactionPick selected = null;
         for (Level level : formLevels(suitable))
         {
-            CompactionPick pick = level.getCompactionPick(context);
+            CompactionPick pick = level.getCompactionPick(context, shardManager);
             int levelOverlap = level.maxOverlap;
-            if (levelOverlap > maxOverlap)
+            if (pick != null && (selected == null || levelOverlap > maxOverlap))
             {
                 maxOverlap = levelOverlap;
                 selected = pick;
@@ -599,13 +599,18 @@ public class UnifiedCompactionStrategy extends AbstractCompactionStrategy
          */
         CompactionPick getCompactionPick(SelectionContext context)
         {
+            return getCompactionPick(context, null);
+        }
+
+        CompactionPick getCompactionPick(SelectionContext context, ShardManager shardManager)
+        {
             List<Bucket> buckets = getBuckets(context);
             if (buckets == null)
             {
                 if (logger.isDebugEnabled())
                     logger.debug("Level {} sstables {} max overlap {} buckets with compactions {} tasks {}",
                                  index, sstables.size(), maxOverlap, 0, 0);
-                return null;    // nothing crosses the threshold in this level, nothing to do
+                return shardManager == null ? null : getOversizeShardPick(context, shardManager);
             }
 
             int estimatedRemainingTasks = 0;
@@ -637,6 +642,36 @@ public class UnifiedCompactionStrategy extends AbstractCompactionStrategy
                 logger.trace("Returning compaction pick with selected compaction {}",
                              selected);
             return selected;
+        }
+
+        private CompactionPick getOversizeShardPick(SelectionContext context, ShardManager shardManager)
+        {
+            double shardThreshold = fanout * context.controller.getMaxSSTablesPerShardFactor();
+            if (shardThreshold < fanout || sstables.size() <= shardThreshold)
+                return null;
+
+            double density = shardManager.calculateCombinedDensity(new HashSet<>(sstables));
+            List<Set<SSTableReader>> groups = shardManager.splitSSTablesInShards(sstables,
+                                                                                  context.controller.getNumShards(density * shardManager.shardSetCoverage()));
+            Set<SSTableReader> selected = null;
+            int oversized = 0;
+            for (Set<SSTableReader> group : groups)
+            {
+                if (group.size() > shardThreshold)
+                {
+                    oversized++;
+                    if (selected == null || group.size() > selected.size())
+                        selected = group;
+                }
+            }
+            if (selected == null)
+                return null;
+
+            int limit = Math.max(fanout, context.controller.maxSSTablesToCompact());
+            List<SSTableReader> oldest = new ArrayList<>(selected);
+            oldest.sort(SSTableReader.maxTimestampDescending);
+            context.estimatedRemainingTasks += oversized;
+            return new CompactionPick(index, maxOverlap, oldest.subList(Math.max(0, oldest.size() - limit), oldest.size()));
         }
 
         /**

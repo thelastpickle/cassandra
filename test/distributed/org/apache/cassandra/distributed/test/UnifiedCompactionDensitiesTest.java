@@ -194,13 +194,16 @@ public class UnifiedCompactionDensitiesTest extends TestBaseImpl
                                                    pair[k], makeRandomString(100));
                 cluster.get(1).flush(KEYSPACE);
 
+                cluster.get(2).runOnInstance(() -> Keyspace.open(KEYSPACE)
+                                                       .getColumnFamilyStore("tbl")
+                                                       .disableAutoCompaction());
                 repair(cluster, incremental, pair[2] - 1, pair[3]);
 
                 // The repair must have actually streamed the missing rows to node2.
                 for (int k = 0; k < 2; k++)
                     assertEquals(1, cluster.get(2).executeInternal(withKeyspace("select id from %s.tbl where id = ?"), pair[k]).length);
 
-                // Count the tiny sstables before compaction gets a chance to run, to prove the repair
+                // Count the tiny sstables while background compaction is disabled, to prove the repair
                 // actually produced the files this test is about.
                 tinyStreamed[round] = cluster.get(2).callOnInstance(() -> {
                     ColumnFamilyStore cfs = Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl");

@@ -319,6 +319,12 @@ on the number of overlapping sources we compact; in that case we use the collect
 select at most limit-many in any included overlap set, making sure that if an sstable is included in this compaction,
 all older ones are also included to maintain time order.
 
+When a level has no normal compaction pick, UCS checks the number of sstables crossing each output shard. If that
+number exceeds the configured per-shard limit, UCS selects the largest affected shard. It compacts that shard's
+oldest sstables, subject to `max_sstables_to_compact`. This also reduces the count of small sstables whose token
+ranges never overlap enough to trigger the normal compaction rule. The shard count uses the combined density of the
+level's sstables, adjusted for local token coverage.
+
 ## Selecting the compaction to run
 
 Compaction strategies aim to minimize the read amplification of queries, which is defined by the number of sstables
@@ -443,6 +449,9 @@ UCS accepts these compaction strategy parameters:
   The default value is 100MiB.
 * **expired_sstable_check_frequency_seconds**. Determines how often to check for expired SSTables.  
   The default value is 10 minutes.
+* **max_sstables_per_shard_factor**. A shard with more than this factor times the level fanout in sstables triggers a
+  compaction when the level has no normal compaction pick. The default is 10. Set it to `Infinity` to disable this
+  trigger.
 
 In **cassandra.yaml**:
 

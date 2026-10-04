@@ -18,6 +18,10 @@
 
 package org.apache.cassandra.db.compaction;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.cassandra.db.PartitionPosition;
@@ -149,5 +153,11 @@ public class ShardManagerTrivial implements ShardManager
     public ShardTracker boundaries(int shardCount)
     {
         return iterator;
+    }
+
+    @Override
+    public List<Set<SSTableReader>> splitSSTablesInShards(Collection<SSTableReader> sstables, int shardCount)
+    {
+        return sstables.isEmpty() ? Collections.emptyList() : Collections.singletonList(new HashSet<>(sstables));
     }
 }

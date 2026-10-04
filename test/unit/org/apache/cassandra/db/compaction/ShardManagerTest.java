@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -213,6 +214,32 @@ public class ShardManagerTest
         Mockito.when(narrowB.onDiskLength()).thenReturn(1L << 20);
         expected = (2L << 20) / 1e-5;
         assertEquals(expected, shardManager.calculateCombinedDensity(ImmutableSet.of(narrowA, narrowB)), expected * 1e-6);
+    }
+
+    @Test
+    public void testSplitSSTablesInShardsIncludesBoundaryCrossingSSTable()
+    {
+        weightedRanges.add(new Splitter.WeightedRange(1.0, new Range<>(minimumToken, minimumToken)));
+        ShardManager shardManager = new ShardManagerNoDisks(weightedRanges, 10000L);
+        SSTableReader left = mockedTable(0.1, 0.2, Double.NaN);
+        SSTableReader crossing = mockedTable(0.45, 0.55, Double.NaN);
+        SSTableReader right = mockedTable(0.7, 0.8, Double.NaN);
+
+        List<Set<SSTableReader>> groups = shardManager.splitSSTablesInShards(ImmutableList.of(left, crossing, right), 2);
+        assertEquals(2, groups.size());
+        assertEquals(ImmutableSet.of(left, crossing), groups.get(0));
+        assertEquals(ImmutableSet.of(crossing, right), groups.get(1));
+    }
+
+    @Test
+    public void testTrivialShardManagerGroupsAllSSTables()
+    {
+        ShardManager shardManager = new ShardManagerTrivial(partitioner);
+        SSTableReader left = mockedTable(0.1, 0.2, Double.NaN);
+        SSTableReader right = mockedTable(0.7, 0.8, Double.NaN);
+
+        assertEquals(ImmutableList.of(ImmutableSet.of(left, right)),
+                     shardManager.splitSSTablesInShards(ImmutableList.of(left, right), 2));
     }
 
     Token tokenAt(double pos)

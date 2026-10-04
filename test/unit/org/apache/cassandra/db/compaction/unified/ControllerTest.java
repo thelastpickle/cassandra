@@ -559,6 +559,26 @@ public class ControllerTest
     }
 
     @Test
+    public void testMaxSSTablesPerShardFactor()
+    {
+        Map<String, String> options = new HashMap<>();
+        assertEquals(10.0, testFromOptions(options).getMaxSSTablesPerShardFactor(), 0.0);
+
+        options.put(Controller.MAX_SSTABLES_PER_SHARD_FACTOR_OPTION, "2.5");
+        assertEquals(2.5, testFromOptions(options).getMaxSSTablesPerShardFactor(), 0.0);
+
+        options.put(Controller.MAX_SSTABLES_PER_SHARD_FACTOR_OPTION, "Infinity");
+        assertEquals(Double.POSITIVE_INFINITY, testFromOptions(options).getMaxSSTablesPerShardFactor(), 0.0);
+
+        for (String invalid : new String[] { "0.9", "NaN", "invalid" })
+        {
+            options.put(Controller.MAX_SSTABLES_PER_SHARD_FACTOR_OPTION, invalid);
+            assertThatExceptionOfType(ConfigurationException.class)
+            .isThrownBy(() -> Controller.validateOptions(new HashMap<>(options)));
+        }
+    }
+
+    @Test
     public void testExpiredSSTableCheckFrequency()
     {
         Map<String, String> options = new HashMap<>();
