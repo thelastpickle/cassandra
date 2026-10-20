@@ -23,12 +23,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.pager.PagingState;
 import org.apache.cassandra.tcm.ClusterMetadata;
@@ -63,14 +66,23 @@ public class BytePagingUpgradeTest extends CQLTester
     @Parameterized.Parameter
     public String oldVersion;
 
+    private PageSize previousSubPageSize;
 
     @Before
     public void setupUpgrade()
     {
+        previousSubPageSize = DatabaseDescriptor.getAggregationSubPageSize();
+        DatabaseDescriptor.setAggregationSubPageSize(PageSize.inBytes(1));
         createTable("CREATE TABLE %s (pk int, ck int, PRIMARY KEY (pk, ck))");
         for (int i = 0; i < 5; i++)
             execute("INSERT INTO %s (pk, ck) VALUES (0, ?)", i);
         requireNetwork();
+    }
+
+    @After
+    public void restoreSubPageSize()
+    {
+        DatabaseDescriptor.setAggregationSubPageSize(previousSubPageSize);
     }
 
     @Test
@@ -151,6 +163,53 @@ public class BytePagingUpgradeTest extends CQLTester
             assertThat(ByteBufferUtil.toInt(ByteBuffer.wrap(last.result.rows.get(0).get(1)))).isEqualTo(10000);
             assertThat(last.result.metadata.getPagingState()).isNull();
         }
+    }
+
+    @Test
+    public void testAggregationUsesRowSubpagesDuringUpgrade() throws Exception
+    {
+        // TRIGGER: byte-sized aggregation subpages are configured during a rolling upgrade.
+        setPeerVersion(NodeVersion.fromCassandraVersion(new CassandraVersion(oldVersion)));
+        try (SimpleClient client = newSimpleClient(ProtocolVersion.CURRENT))
+        {
+            for (String query : new String[]{ "SELECT count(*) FROM %s WHERE pk = 0",
+                                             "SELECT pk, count(*) FROM %s WHERE pk = 0 GROUP BY pk" })
+            {
+                // HARNESS: actual reads count the subpages while checking the aggregate result.
+                assertThat(aggregationReads(client, query, PageSize.inRows(2))).isEqualTo(3);
+                assertThat(aggregationReads(client, query, PageSize.NONE)).isEqualTo(1);
+            }
+        }
+    }
+
+    @Test
+    public void testAggregationUsesClientPageSizeBeforeServerDefault() throws Exception
+    {
+        setPeerVersion(NodeVersion.CURRENT);
+        try (SimpleClient client = newSimpleClient(ProtocolVersion.CURRENT))
+        {
+            for (String query : new String[]{ "SELECT count(*) FROM %s WHERE pk = 0",
+                                             "SELECT pk, count(*) FROM %s WHERE pk = 0 GROUP BY pk" })
+            {
+                // ORACLE: the client size wins; omitted sizes use the configured byte subpages.
+                assertThat(aggregationReads(client, query, PageSize.inRows(2))).isEqualTo(3);
+                assertThat(aggregationReads(client, query, PageSize.NONE)).isGreaterThanOrEqualTo(5);
+            }
+        }
+    }
+
+    private long aggregationReads(SimpleClient client, String query, PageSize pageSize)
+    {
+        long before = readCount();
+        ResultMessage.Rows result = rows(client.execute(new QueryMessage(formatQuery(query), options(pageSize))));
+        assertThat(result.result.rows).hasSize(1);
+        assertThat(ByteBufferUtil.toLong(ByteBuffer.wrap(result.result.rows.get(0).get(result.result.rows.get(0).size() - 1)))).isEqualTo(5);
+        return readCount() - before;
+    }
+
+    private long readCount()
+    {
+        return Keyspace.open(keyspace()).getColumnFamilyStore(currentTable()).metric.coordinatorReadLatency.getCount();
     }
 
     private static void setPeerVersion(NodeVersion version)
