@@ -21,26 +21,37 @@ package org.apache.cassandra.service.pager;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.SchemaLoader;
 import org.apache.cassandra.ServerTestUtils;
 import org.apache.cassandra.Util;
 import org.apache.cassandra.cql3.ColumnIdentifier;
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.cql3.QueryProcessor;
 import org.apache.cassandra.cql3.statements.schema.CreateTableStatement;
 import org.apache.cassandra.db.AbstractReadCommandBuilder;
+import org.apache.cassandra.db.AbstractReadCommandBuilder.PartitionRangeBuilder;
+import org.apache.cassandra.db.AbstractReadCommandBuilder.SinglePartitionBuilder;
 import org.apache.cassandra.db.ColumnFamilyStore;
+import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.ReadExecutionController;
@@ -51,7 +62,6 @@ import org.apache.cassandra.db.Slices;
 import org.apache.cassandra.db.filter.ClusteringIndexFilter;
 import org.apache.cassandra.db.filter.ClusteringIndexSliceFilter;
 import org.apache.cassandra.db.filter.ColumnFilter;
-import org.apache.cassandra.db.filter.DataLimits;
 import org.apache.cassandra.db.marshal.AsciiType;
 import org.apache.cassandra.db.marshal.Int32Type;
 import org.apache.cassandra.db.partitions.FilteredPartition;
@@ -67,13 +77,17 @@ import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 
 import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public abstract class QueryPagerTest
 {
+    private final static Logger logger = LoggerFactory.getLogger(QueryPagerTest.class);
+
     public static final String KEYSPACE1 = "QueryPagerTest";
     public static final String CF_STANDARD = "Standard1";
     public static final String CF_STANDARD2 = "Standard2";
@@ -83,9 +97,16 @@ public abstract class QueryPagerTest
     public static final long nowInSec = FBUtilities.nowInSeconds();
     public static List<String> tokenOrderedKeys;
 
-    int pageSizeInRows(int n)
+    static final int ROW_SIZE_IN_BYTES = 43;
+
+    PageSize pageSizeInRows(int n)
     {
-        return n;
+        return PageSize.inRows(n);
+    }
+
+    PageSize pageSizeInBytes(int n)
+    {
+        return PageSize.inBytes(ROW_SIZE_IN_BYTES * n);
     }
 
     public ProtocolVersion protocolVersion = ProtocolVersion.CURRENT;
@@ -181,7 +202,7 @@ public abstract class QueryPagerTest
         return Keyspace.open(ks).getColumnFamilyStore(cf);
     }
 
-    static List<FilteredPartition> query(QueryPager pager, int pageSize, int expectedRows)
+    static List<FilteredPartition> query(QueryPager pager, PageSize pageSize, int expectedRows)
     {
         StringBuilder sb = new StringBuilder();
         List<FilteredPartition> partitionList = new ArrayList<>();
@@ -204,42 +225,91 @@ public abstract class QueryPagerTest
         return partitionList;
     }
 
-    static SinglePartitionReadCommand namesQuery(ColumnFamilyStore cfs, String key, String... names)
+    static Map<DecoratedKey, List<Row>> fetchPage(QueryPager pager, PageSize pageSize)
     {
-        return namesQuery(-1, -1, cfs, key, names);
+        logger.info("----------------------------------------------------------------");
+        Map<DecoratedKey, List<Row>> ret = Maps.newHashMap();
+        try (ReadExecutionController ec = pager.executionController();
+             PartitionIterator iterator = pager.fetchPageInternal(pageSize, ec))
+        {
+            while (iterator.hasNext())
+            {
+                try (RowIterator partition = iterator.next())
+                {
+                    logger.info("Partition {}", partition.partitionKey());
+                    List<Row> rows = new ArrayList<>();
+                    Row staticRow = partition.staticRow();
+                    if (!partition.hasNext() && !staticRow.isEmpty())
+                    {
+                        rows.add(staticRow);
+                        logger.info("\tStatic row {}", staticRow.toString(partition.metadata()));
+                    }
+
+                    while (partition.hasNext())
+                    {
+                        Row row = partition.next();
+                        rows.add(row);
+                        logger.info("\tRow {}", row.toString(partition.metadata()));
+                    }
+
+                    ret.put(partition.partitionKey(), rows);
+                }
+            }
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace();
+            throw t;
+        }
+        return ret;
     }
 
-    static SinglePartitionReadCommand namesQuery(int limit, int perPartitionLimit, ColumnFamilyStore cfs, String key, String... names)
+    static SinglePartitionBuilder namesQuery(ColumnFamilyStore cfs, String key, String... names)
+    {
+        return namesQuery(-1, -1, null, cfs, key, names);
+    }
+
+    static SinglePartitionBuilder namesQuery(int limit, int perPartitionLimit, PageSize pageSize, ColumnFamilyStore cfs, String key, String... names)
     {
         AbstractReadCommandBuilder builder = Util.cmd(cfs, key).withNowInSeconds(nowInSec);
         for (String name : names)
             builder.includeRow(name);
+        if (limit > 0)
+            builder.withLimit(limit);
+        if (perPartitionLimit > 0)
+            builder.withPerPartitionLimit(perPartitionLimit);
+        if (pageSize != null && !pageSize.equals(PageSize.NONE))
+            builder.withPageSize(pageSize);
 
-        return (SinglePartitionReadCommand) builder.build().withUpdatedLimit(DataLimits.cqlLimits(limit > 0 ? limit : Integer.MAX_VALUE,
-                                                                                                perPartitionLimit > 0 ? perPartitionLimit : Integer.MAX_VALUE));
+        return (SinglePartitionBuilder) builder;
     }
 
-    static SinglePartitionReadCommand sliceQuery(ColumnFamilyStore cfs, String key, String start, String end)
+    static SinglePartitionBuilder sliceQuery(ColumnFamilyStore cfs, String key, String start, String end)
     {
-        return sliceQuery(-1, -1, cfs, key, start, end, false);
+        return sliceQuery(-1, -1, PageSize.NONE, cfs, key, start, end, false);
     }
 
-    static SinglePartitionReadCommand sliceQuery(ColumnFamilyStore cfs, String key, String start, String end, boolean reversed)
+    static SinglePartitionBuilder sliceQuery(ColumnFamilyStore cfs, String key, String start, String end, boolean reversed)
     {
-        return sliceQuery(-1, -1, cfs, key, start, end, reversed);
+        return sliceQuery(-1, -1, PageSize.NONE, cfs, key, start, end, reversed);
     }
 
-    static SinglePartitionReadCommand sliceQuery(int limit, int perPartitionLimit, ColumnFamilyStore cfs, String key, String start, String end, boolean reversed)
+    static SinglePartitionBuilder sliceQuery(int limit, int perPartitionLimit, PageSize pageSize, ColumnFamilyStore cfs, String key, String start, String end, boolean reversed)
     {
         AbstractReadCommandBuilder builder = Util.cmd(cfs, key).fromIncl(start).toExcl(end).withNowInSeconds(nowInSec);
         if (reversed)
             builder.reverse();
+        if (limit > 0)
+            builder.withLimit(limit);
+        if (perPartitionLimit > 0)
+            builder.withPerPartitionLimit(perPartitionLimit);
+        if (pageSize != null && !pageSize.equals(PageSize.NONE))
+            builder.withPageSize(pageSize);
 
-        return (SinglePartitionReadCommand) builder.build().withUpdatedLimit(DataLimits.cqlLimits(limit > 0 ? limit : Integer.MAX_VALUE,
-                                                                                                perPartitionLimit > 0 ? perPartitionLimit : Integer.MAX_VALUE));
+        return (SinglePartitionBuilder) builder;
     }
 
-    static ReadCommand rangeNamesQuery(int limit, int perPartitionLimit, ColumnFamilyStore cfs, String keyStart, String keyEnd, String... names)
+    static ReadCommand rangeNamesQuery(int limit, int perPartitionLimit, PageSize pageSize, ColumnFamilyStore cfs, String keyStart, String keyEnd, String... names)
     {
         AbstractReadCommandBuilder builder = Util.cmd(cfs)
                                                  .fromKeyIncl(keyStart)
@@ -247,12 +317,17 @@ public abstract class QueryPagerTest
                                                  .withNowInSeconds(nowInSec);
         for (String name : names)
             builder.includeRow(name);
+        if (limit > 0)
+            builder.withLimit(limit);
+        if (perPartitionLimit > 0)
+            builder.withPerPartitionLimit(perPartitionLimit);
+        if (pageSize != null && !pageSize.equals(PageSize.NONE))
+            builder.withPageSize(pageSize);
 
-        return builder.build().withUpdatedLimit(DataLimits.cqlLimits(limit > 0 ? limit : Integer.MAX_VALUE,
-                                                                    perPartitionLimit > 0 ? perPartitionLimit : Integer.MAX_VALUE));
+        return builder.build();
     }
 
-    static ReadCommand rangeSliceQuery(int limit, int perPartitionLimit, ColumnFamilyStore cfs, String keyStart, String keyEnd, String start, String end)
+    static PartitionRangeBuilder rangeSliceQuery(int limit, int perPartitionLimit, PageSize pageSize, ColumnFamilyStore cfs, String keyStart, String keyEnd, String start, String end)
     {
         AbstractReadCommandBuilder builder = Util.cmd(cfs)
                                                  .fromKeyIncl(keyStart)
@@ -260,9 +335,14 @@ public abstract class QueryPagerTest
                                                  .fromIncl(start)
                                                  .toExcl(end)
                                                  .withNowInSeconds(nowInSec);
+        if (limit > 0)
+            builder.withLimit(limit);
+        if (perPartitionLimit > 0)
+            builder.withPerPartitionLimit(perPartitionLimit);
+        if (pageSize != null && !pageSize.equals(PageSize.NONE))
+            builder.withPageSize(pageSize);
 
-        return builder.build().withUpdatedLimit(DataLimits.cqlLimits(limit > 0 ? limit : Integer.MAX_VALUE,
-                                                                    perPartitionLimit > 0 ? perPartitionLimit : Integer.MAX_VALUE));
+        return (PartitionRangeBuilder) builder;
     }
 
     void assertRow(FilteredPartition p, String key, String... names)
@@ -296,7 +376,12 @@ public abstract class QueryPagerTest
         return command.getPager(state, protocolVersion);
     }
 
-    QueryPager checkNextPage(QueryPager pager, ReadQuery command, boolean testPagingState, int pageSize, int expectedRows, Consumer<List<FilteredPartition>> assertion)
+    QueryPager checkNextPage(QueryPager pager, ReadQuery command, boolean testPagingState, PageSize pageSize, int expectedRows, Consumer<List<FilteredPartition>> assertion)
+    {
+        return checkNextPage(pager, command, testPagingState, pageSize, PageSize.NONE, expectedRows, assertion);
+    }
+
+    QueryPager checkNextPage(QueryPager pager, ReadQuery command, boolean testPagingState, PageSize pageSize, PageSize subPageSize, int expectedRows, Consumer<List<FilteredPartition>> assertion)
     {
         if (pager == null)
         {
@@ -307,9 +392,92 @@ public abstract class QueryPagerTest
             assertFalse(pager.isExhausted());
             pager = maybeRecreate(pager, command, testPagingState);
         }
+        if (pager.limits().isGroupByLimit() && !(pager instanceof AggregationQueryPager))
+            pager = new AggregationQueryPager(pager, subPageSize, command.limits());
         List<FilteredPartition> partition = query(pager, pageSize, expectedRows);
         assertion.accept(partition);
         return pager;
+    }
+
+    void checkRows(ReadQuery command, int allRows, PageSize.PageUnit pageUnit, int... pageSizesToTest)
+    {
+        for (int pageSize : pageSizesToTest)
+        {
+            checkRows(command, new PageSize(pageSize, pageUnit), allRows);
+        }
+    }
+
+    void checkRows(ReadQuery command, PageSize pageSize, int allRows)
+    {
+        Map<DecoratedKey, Set<Row>> allRowsMap = Maps.newHashMap();
+        int readRowsUntilThisPage = 0;
+        QueryPager pager = command.getPager(null, protocolVersion);
+        assertFalse(String.format("Failed due to exhausted pager with %s", pageSize), pager.isExhausted());
+
+        logger.info("Testing with page size: {}", pageSize);
+        while (!pager.isExhausted())
+        {
+            Map<DecoratedKey, List<Row>> pageRowsMap = fetchPage(pager, pageSize);
+
+            if (pageRowsMap.size() > 0)
+            {
+                int pageRows = pageRowsMap.values().stream().mapToInt(List::size).sum();
+                int pageBytes = pageRowsMap.values().stream().flatMap(Collection::stream).mapToInt(Row::dataSize).sum();
+
+                for (Map.Entry<DecoratedKey, List<Row>> entry : pageRowsMap.entrySet())
+                    allRowsMap.merge(entry.getKey(), new HashSet<>(entry.getValue()), ((rows1, rows2) -> {
+                        rows1.addAll(rows2);
+                        return rows1;
+                    }));
+
+                if (pageSize.getUnit() == PageSize.PageUnit.ROWS)
+                {
+                    int expectedSize = Math.min(pageSize.rows(), allRows - readRowsUntilThisPage);
+                    assertThat(pageRows).withFailMessage("Failed after %d rows with %s and current number of rows %d;\n%s",
+                                                         readRowsUntilThisPage, pageSize, pageRows, formatRows(allRowsMap))
+                                        .isEqualTo(expectedSize);
+                }
+                else
+                {
+                    int oneRowSize = pageBytes / pageRows;
+                    assertThat(pageBytes).withFailMessage("Failed after %d rows with %s and current number of rows %d due to bytes read %d;\n%s",
+                                                          readRowsUntilThisPage, pageSize, pageRows, pageBytes, formatRows(allRowsMap))
+                                         .isLessThan(pageSize.bytes() + oneRowSize);
+                }
+
+                readRowsUntilThisPage += pageRows;
+
+                if (!pager.isExhausted())
+                    pager = maybeRecreate(pager, command, true);
+            }
+            else
+            {
+                assertTrue(String.format("Failed due to non-exhausted pager with %s", pageSize),
+                           pager.isExhausted());
+            }
+        }
+
+        assertEquals(String.format("Failed with %s - expected %d rows in total but got %d:\n%s",
+                                   pageSize, allRows, allRowsMap.values().stream().mapToInt(Set::size).sum(), formatRows(allRowsMap)),
+                     allRows, (long) allRowsMap.values().stream().map(Set::size).reduce(0, Integer::sum));
+    }
+
+    private String formatRows(Map<DecoratedKey, Set<Row>> rows)
+    {
+        TableMetadata metadata = cfs(KEYSPACE1, CF_STANDARD).metadata();
+
+        StringBuilder str = new StringBuilder();
+        for (Map.Entry<DecoratedKey, Set<Row>> entry : rows.entrySet())
+        {
+            for (Row row : entry.getValue())
+            {
+                str.append(entry.getKey().toString());
+                str.append(' ');
+                str.append(row.toString(metadata));
+                str.append('\n');
+            }
+        }
+        return str.toString();
     }
 
     void queryAndVerifyCells(TableMetadata table, boolean reversed, String key)
@@ -324,7 +492,7 @@ public abstract class QueryPagerTest
         for (int i = 0; i < 5; i++)
         {
             try (ReadExecutionController controller = pager.executionController();
-                 PartitionIterator partitions = pager.fetchPageInternal(1, controller))
+                 PartitionIterator partitions = pager.fetchPageInternal(PageSize.inRows(1), controller))
             {
                 try (RowIterator partition = partitions.next())
                 {
@@ -345,7 +513,7 @@ public abstract class QueryPagerTest
 
         // After processing the 5 rows there should be no more rows to return
         try (ReadExecutionController controller = pager.executionController();
-             PartitionIterator partitions = pager.fetchPageInternal(1, controller))
+             PartitionIterator partitions = pager.fetchPageInternal(PageSize.inRows(1), controller))
         {
             assertFalse(partitions.hasNext());
         }
