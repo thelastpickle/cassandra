@@ -20,6 +20,7 @@ package org.apache.cassandra.service.pager;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.db.Clustering;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.DecoratedKey;
@@ -55,11 +56,12 @@ public final class AggregationQueryPager implements QueryPager
     }
 
     @Override
-    public PartitionIterator fetchPage(int pageSize,
+    public PartitionIterator fetchPage(PageSize requestedPageSize,
                                        ConsistencyLevel consistency,
                                        ClientState clientState,
                                        Dispatcher.RequestTime requestTime)
     {
+        int pageSize = requestedPageSize.rows();
         if (limits.isGroupByLimit())
             return new GroupByPartitionIterator(pageSize, consistency, clientState, requestTime);
 
@@ -73,8 +75,9 @@ public final class AggregationQueryPager implements QueryPager
     }
 
     @Override
-    public PartitionIterator fetchPageInternal(int pageSize, ReadExecutionController executionController)
+    public PartitionIterator fetchPageInternal(PageSize requestedPageSize, ReadExecutionController executionController)
     {
+        int pageSize = requestedPageSize.rows();
         if (limits.isGroupByLimit())
             return new GroupByPartitionIterator(pageSize, executionController, Dispatcher.RequestTime.forImmediateExecution());
 
@@ -298,8 +301,8 @@ public final class AggregationQueryPager implements QueryPager
          */
         private final PartitionIterator fetchSubPage(int subPageSize)
         {
-            return consistency != null ? subPager.fetchPage(subPageSize, consistency, clientState, requestTime)
-                                       : subPager.fetchPageInternal(subPageSize, executionController);
+            return consistency != null ? subPager.fetchPage(PageSize.inRows(subPageSize), consistency, clientState, requestTime)
+                                       : subPager.fetchPageInternal(PageSize.inRows(subPageSize), executionController);
         }
 
         public final RowIterator next()

@@ -55,6 +55,7 @@ import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.cql3.ColumnSpecification;
 import org.apache.cassandra.cql3.CqlBuilder;
 import org.apache.cassandra.cql3.Ordering;
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.cql3.QualifiedName;
 import org.apache.cassandra.cql3.QueryOptions;
 import org.apache.cassandra.cql3.QueryProcessor;
@@ -372,7 +373,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
         long nowInSec = options.getNowInSeconds(state);
         int userLimit = getLimit(options);
         int userPerPartitionLimit = getPerPartitionLimit(options);
-        int pageSize = options.getPageSize();
+        int pageSize = (options.getPageSize().isDefined() ? options.getPageSize().rows() : -1);
         boolean unmask = !table.hasMaskedColumns() || state.getClientState().hasTablePermission(table, Permission.UNMASK);
 
         Selectors selectors = selection.newSelectors(options);
@@ -408,7 +409,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
                 int oldPageSize = pageSize;
                 pageSize = limit.count();
                 limit = getDataLimits(userLimit, userPerPartitionLimit, pageSize, aggregationSpec);
-                options = QueryOptions.withPageSize(options, pageSize);
+                options = QueryOptions.withPageSize(options, PageSize.inRows(pageSize));
                 ClientWarn.instance.warn(String.format(TOPK_PAGE_SIZE_WARNING, oldPageSize, limit.count(), pageSize));
             }
         }
@@ -463,7 +464,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
                         nowInSec,
                         getLimit(options),
                         getPerPartitionLimit(options),
-                        options.getPageSize(),
+                        (options.getPageSize().isDefined() ? options.getPageSize().rows() : -1),
                         getAggregationSpec(options),
                         PotentialTxnConflicts.DISALLOW);
     }
@@ -574,7 +575,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
 
             public PartitionIterator fetchPage(int pageSize, Dispatcher.RequestTime requestTime)
             {
-                return pager.fetchPage(pageSize, consistency, clientState, requestTime);
+                return pager.fetchPage(pageSize > 0 ? PageSize.inRows(pageSize) : PageSize.NONE, consistency, clientState, requestTime);
             }
         }
 
@@ -590,7 +591,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
 
             public PartitionIterator fetchPage(int pageSize, Dispatcher.RequestTime requestTime)
             {
-                return pager.fetchPageInternal(pageSize, executionController);
+                return pager.fetchPageInternal(pageSize > 0 ? PageSize.inRows(pageSize) : PageSize.NONE, executionController);
             }
         }
     }
@@ -676,7 +677,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
     {
         int userLimit = getLimit(options);
         int userPerPartitionLimit = getPerPartitionLimit(options);
-        int pageSize = options.getPageSize();
+        int pageSize = (options.getPageSize().isDefined() ? options.getPageSize().rows() : -1);
         boolean unmask = state.getClientState().hasTablePermission(table, Permission.UNMASK);
 
         Selectors selectors = selection.newSelectors(options);
@@ -730,7 +731,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
     {
         int userLimit = getLimit(options);
         int userPerPartitionLimit = getPerPartitionLimit(options);
-        if (options.getPageSize() > 0)
+        if ((options.getPageSize().isDefined() ? options.getPageSize().rows() : -1) > 0)
             throw new IllegalStateException();
         if (aggregationSpecFactory != null)
             throw new IllegalStateException();
@@ -2064,7 +2065,7 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
                 builder.append(" AND ").append(filterString);
         }
 
-        DataLimits limits = getDataLimits(getLimit(options), getPerPartitionLimit(options), options.getPageSize(), getAggregationSpec(options));
+        DataLimits limits = getDataLimits(getLimit(options), getPerPartitionLimit(options), (options.getPageSize().isDefined() ? options.getPageSize().rows() : -1), getAggregationSpec(options));
         if (limits != DataLimits.NONE)
             builder.append(' ').append(limits);
         return builder.toString();

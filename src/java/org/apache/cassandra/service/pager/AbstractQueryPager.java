@@ -17,6 +17,7 @@
  */
 package org.apache.cassandra.service.pager;
 
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.db.Clustering;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.DecoratedKey;
@@ -70,8 +71,9 @@ abstract class AbstractQueryPager<T extends ReadQuery> implements QueryPager
         return query.executionController();
     }
 
-    public PartitionIterator fetchPage(int pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime)
+    public PartitionIterator fetchPage(PageSize requestedPageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime)
     {
+        int pageSize = requestedPageSize.rows();
         if (isExhausted())
             return EmptyIterators.partition();
 
@@ -86,8 +88,9 @@ abstract class AbstractQueryPager<T extends ReadQuery> implements QueryPager
         return Transformation.apply(readQuery.execute(consistency, clientState, requestTime), pager);
     }
 
-    public PartitionIterator fetchPageInternal(int pageSize, ReadExecutionController executionController)
+    public PartitionIterator fetchPageInternal(PageSize requestedPageSize, ReadExecutionController executionController)
     {
+        int pageSize = requestedPageSize.rows();
         if (isExhausted())
             return EmptyIterators.partition();
 
@@ -102,8 +105,9 @@ abstract class AbstractQueryPager<T extends ReadQuery> implements QueryPager
         return Transformation.apply(readQuery.executeInternal(executionController), pager);
     }
 
-    public UnfilteredPartitionIterator fetchPageUnfiltered(TableMetadata metadata, int pageSize, ReadExecutionController executionController)
+    public UnfilteredPartitionIterator fetchPageUnfiltered(TableMetadata metadata, PageSize requestedPageSize, ReadExecutionController executionController)
     {
+        int pageSize = requestedPageSize.rows();
         if (isExhausted())
             return EmptyIterators.unfilteredPartition(metadata);
 

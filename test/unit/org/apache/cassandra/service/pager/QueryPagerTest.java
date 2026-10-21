@@ -37,6 +37,7 @@ import org.apache.cassandra.SchemaLoader;
 import org.apache.cassandra.ServerTestUtils;
 import org.apache.cassandra.Util;
 import org.apache.cassandra.cql3.ColumnIdentifier;
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.cql3.QueryProcessor;
 import org.apache.cassandra.cql3.statements.schema.CreateTableStatement;
 import org.apache.cassandra.db.AbstractReadCommandBuilder;
@@ -187,7 +188,7 @@ public abstract class QueryPagerTest
         List<FilteredPartition> partitionList = new ArrayList<>();
         int rows = 0;
         try (ReadExecutionController executionController = pager.executionController();
-             PartitionIterator iterator = pager.fetchPageInternal(pageSize, executionController))
+             PartitionIterator iterator = pager.fetchPageInternal(PageSize.inRows(pageSize), executionController))
         {
             while (iterator.hasNext())
             {
@@ -324,7 +325,7 @@ public abstract class QueryPagerTest
         for (int i = 0; i < 5; i++)
         {
             try (ReadExecutionController controller = pager.executionController();
-                 PartitionIterator partitions = pager.fetchPageInternal(1, controller))
+                 PartitionIterator partitions = pager.fetchPageInternal(PageSize.inRows(1), controller))
             {
                 try (RowIterator partition = partitions.next())
                 {
@@ -345,7 +346,7 @@ public abstract class QueryPagerTest
 
         // After processing the 5 rows there should be no more rows to return
         try (ReadExecutionController controller = pager.executionController();
-             PartitionIterator partitions = pager.fetchPageInternal(1, controller))
+             PartitionIterator partitions = pager.fetchPageInternal(PageSize.inRows(1), controller))
         {
             assertFalse(partitions.hasNext());
         }

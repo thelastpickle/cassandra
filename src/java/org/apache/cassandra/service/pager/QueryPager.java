@@ -17,6 +17,7 @@
  */
 package org.apache.cassandra.service.pager;
 
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.EmptyIterators;
 import org.apache.cassandra.db.ReadExecutionController;
@@ -55,12 +56,12 @@ public interface QueryPager
             return ReadExecutionController.empty();
         }
 
-        public PartitionIterator fetchPage(int pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException
+        public PartitionIterator fetchPage(PageSize pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException
         {
             return EmptyIterators.partition();
         }
 
-        public PartitionIterator fetchPageInternal(int pageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException
+        public PartitionIterator fetchPageInternal(PageSize pageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException
         {
             return EmptyIterators.partition();
         }
@@ -95,7 +96,7 @@ public interface QueryPager
      * {@code consistency} is a serial consistency.
      * @return the page of result.
      */
-    public PartitionIterator fetchPage(int pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException;
+    public PartitionIterator fetchPage(PageSize pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException;
 
     /**
      * Starts a new read operation.
@@ -115,7 +116,7 @@ public interface QueryPager
      * @param executionController the {@code ReadExecutionController} protecting the read.
      * @return the page of result.
      */
-    public PartitionIterator fetchPageInternal(int pageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException;
+    public PartitionIterator fetchPageInternal(PageSize pageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException;
 
     /**
      * Whether or not this pager is exhausted, i.e. whether or not a call to

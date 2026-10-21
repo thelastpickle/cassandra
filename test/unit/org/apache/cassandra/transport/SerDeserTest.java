@@ -37,6 +37,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.cql3.ColumnSpecification;
 import org.apache.cassandra.cql3.FieldIdentifier;
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.cql3.QueryOptions;
 import org.apache.cassandra.cql3.ResultSet;
 import org.apache.cassandra.cql3.terms.Constants;
@@ -383,7 +384,7 @@ public class SerDeserTest
                 QueryOptions.create(ConsistencyLevel.ALL,
                                     Collections.singletonList(ByteBuffer.wrap(new byte[] { 0x00, 0x01, 0x02 })),
                                     false,
-                                    5000,
+                                    PageSize.inRows(5000),
                                     Util.makeSomePagingState(version),
                                     ConsistencyLevel.SERIAL,
                                     version,
@@ -399,7 +400,7 @@ public class SerDeserTest
                                     Arrays.asList(ByteBuffer.wrap(new byte[] { 0x00, 0x01, 0x02 }),
                                                   ByteBuffer.wrap(new byte[] { 0x03, 0x04, 0x05, 0x03, 0x04, 0x05 })),
                                     true,
-                                    10,
+                                    PageSize.inRows(10),
                                     Util.makeSomePagingState(version),
                                     ConsistencyLevel.SERIAL,
                                     version,
@@ -415,7 +416,7 @@ public class SerDeserTest
                                     Arrays.asList(ByteBuffer.wrap(new byte[] { 0x00, 0x01, 0x02 }),
                                                   ByteBuffer.wrap(new byte[] { 0x03, 0x04, 0x05, 0x03, 0x04, 0x05 })),
                                     true,
-                                    10,
+                                    PageSize.inRows(10),
                                     Util.makeSomePagingState(version),
                                     ConsistencyLevel.SERIAL,
                                     version,

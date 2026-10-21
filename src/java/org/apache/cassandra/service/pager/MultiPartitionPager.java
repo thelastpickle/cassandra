@@ -19,6 +19,7 @@ package org.apache.cassandra.service.pager;
 
 import java.util.Arrays;
 
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.ReadExecutionController;
 import org.apache.cassandra.db.SinglePartitionReadQuery;
@@ -151,14 +152,16 @@ public class MultiPartitionPager<T extends SinglePartitionReadQuery> implements 
 
     @SuppressWarnings("resource") // iter closed via countingIter
     @Override
-    public PartitionIterator fetchPage(int pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException
+    public PartitionIterator fetchPage(PageSize requestedPageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException
     {
+        int pageSize = requestedPageSize.rows();
         int toQuery = Math.min(remaining, pageSize);
         return new PagersIterator(toQuery, consistency, clientState, null, requestTime);
     }
 
-    public PartitionIterator fetchPageInternal(int pageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException
+    public PartitionIterator fetchPageInternal(PageSize requestedPageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException
     {
+        int pageSize = requestedPageSize.rows();
         int toQuery = Math.min(remaining, pageSize);
         return new PagersIterator(toQuery, null, null, executionController, Dispatcher.RequestTime.forImmediateExecution());
     }
@@ -214,8 +217,8 @@ public class MultiPartitionPager<T extends SinglePartitionReadQuery> implements 
                 pagerMaxRemaining = pagers[current].maxRemaining();
                 int toQuery = pageSize - counted;
                 result = consistency == null
-                       ? pagers[current].fetchPageInternal(toQuery, executionController)
-                       : pagers[current].fetchPage(toQuery, consistency, clientState, requestTime);
+                       ? pagers[current].fetchPageInternal(PageSize.inRows(toQuery), executionController)
+                       : pagers[current].fetchPage(PageSize.inRows(toQuery), consistency, clientState, requestTime);
             }
             return result.next();
         }
