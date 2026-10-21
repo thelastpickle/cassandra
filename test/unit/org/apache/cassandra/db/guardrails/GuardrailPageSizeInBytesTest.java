@@ -29,11 +29,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.cassandra.config.DataStorageSpec;
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.CQLStatement;
 import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.cql3.QueryOptions;
 import org.apache.cassandra.cql3.QueryProcessor;
 import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.ClientState;
 import org.apache.cassandra.service.QueryState;
@@ -64,6 +66,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class GuardrailPageSizeInBytesTest extends ThresholdTester
 {
+    private PageSize previousSubPageSize;
     private int previousRowWarn;
     private int previousRowFail;
     private Directory previousDirectory;
@@ -83,8 +86,10 @@ public class GuardrailPageSizeInBytesTest extends ThresholdTester
     {
         previousRowWarn = guardrails().getPageSizeWarnThreshold();
         previousRowFail = guardrails().getPageSizeFailThreshold();
+        previousSubPageSize = DatabaseDescriptor.getAggregationSubPageSize();
         previousDirectory = ClusterMetadata.current().directory;
         guardrails().setPageSizeThreshold(-1, -1);
+        DatabaseDescriptor.setAggregationSubPageSize(PageSize.inBytes(1));
         createTable("CREATE TABLE %s (k int, c int, v text, PRIMARY KEY (k, c))");
         for (int c = 0; c < 5; c++)
             execute("INSERT INTO %s (k, c, v) VALUES (0, ?, 'value larger than the byte page')", c);
@@ -95,6 +100,7 @@ public class GuardrailPageSizeInBytesTest extends ThresholdTester
     {
         guardrails().setPageSizeThreshold(previousRowWarn, previousRowFail);
         guardrails().setPageSizeInBytesThreshold(null, null);
+        DatabaseDescriptor.setAggregationSubPageSize(previousSubPageSize);
         ClusterMetadata metadata = ClusterMetadata.current();
         if (!metadata.directory.equals(previousDirectory))
             ClusterMetadataService.instance().commit(new ForceSnapshot(metadata.transformer().with(previousDirectory).build().metadata));
@@ -253,6 +259,25 @@ public class GuardrailPageSizeInBytesTest extends ThresholdTester
         finally
         {
             userClientState.resumeGuardrails();
+        }
+    }
+
+    @Test
+    public void testAggregationFallbackUsesRowCap() throws Exception
+    {
+        guardrails().setPageSizeThreshold(-1, 2);
+        guardrails().setPageSizeInBytesThreshold(null, "0B");
+        setPeerVersion(NodeVersion.fromCassandraVersion(new CassandraVersion("5.0.8")));
+        try (SimpleClient client = newSimpleClient(ProtocolVersion.CURRENT))
+        {
+            authenticate(client);
+            String query = formatQuery("SELECT count(*) FROM %s WHERE k = 0");
+            long before = Keyspace.open(keyspace()).getColumnFamilyStore(currentTable()).metric.coordinatorReadLatency.getCount();
+            ResultMessage.Rows result = rows(client.execute(new QueryMessage(query, options(PageSize.NONE, null))));
+            assertThat(result.result.rows).hasSize(1);
+            assertThat(ByteBufferUtil.toLong(ByteBuffer.wrap(result.result.rows.get(0).get(0)))).isEqualTo(5);
+            long reads = Keyspace.open(keyspace()).getColumnFamilyStore(currentTable()).metric.coordinatorReadLatency.getCount() - before;
+            assertThat(reads).isEqualTo(3);
         }
     }
 
