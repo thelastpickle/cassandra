@@ -51,39 +51,52 @@ public interface QueryPager
 {
     QueryPager EMPTY = new QueryPager()
     {
+        @Override
         public ReadExecutionController executionController()
         {
             return ReadExecutionController.empty();
         }
 
+        @Override
         public PartitionIterator fetchPage(PageSize pageSize, ConsistencyLevel consistency, ClientState clientState, Dispatcher.RequestTime requestTime) throws RequestValidationException, RequestExecutionException
         {
             return EmptyIterators.partition();
         }
 
+        @Override
         public PartitionIterator fetchPageInternal(PageSize pageSize, ReadExecutionController executionController) throws RequestValidationException, RequestExecutionException
         {
             return EmptyIterators.partition();
         }
 
+        @Override
         public boolean isExhausted()
         {
             return true;
         }
 
+        @Override
         public int maxRemaining()
         {
             return 0;
         }
 
+        @Override
         public PagingState state()
         {
             return null;
         }
 
+        @Override
         public QueryPager withUpdatedLimit(DataLimits newLimits)
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public DataLimits limits()
+        {
+            return DataLimits.NONE;
         }
     };
 
@@ -101,8 +114,8 @@ public interface QueryPager
     /**
      * Starts a new read operation.
      * <p>
-     * This must be called before {@link fetchPageInternal} and passed to it to protect the read.
-     * The returned object <b>must</b> be closed on all path and it is thus strongly advised to
+     * This must be called before {@link #fetchPageInternal(PageSize, ReadExecutionController)} and passed to it
+     * to protect the read. The returned object <b>must</b> be closed on all path and it is thus strongly advised to
      * use it in a try-with-ressource construction.
      *
      * @return a newly started order group for this {@code QueryPager}.
@@ -146,7 +159,7 @@ public interface QueryPager
     /**
      * Creates a new <code>QueryPager</code> that use the new limits.
      *
-     * @param newLimits the new limits
+     * @param newLimits                the new limits
      * @return a new <code>QueryPager</code> that use the new limits
      */
     public QueryPager withUpdatedLimit(DataLimits newLimits);
@@ -159,4 +172,9 @@ public interface QueryPager
     {
         return false;
     }
+
+    /**
+     * Returns the limits of this pager.
+     */
+    public DataLimits limits();
 }

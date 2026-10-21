@@ -21,31 +21,43 @@ package org.apache.cassandra.service.pager;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 import org.apache.cassandra.Util;
+import org.apache.cassandra.cql3.PageSize;
+import org.apache.cassandra.db.Clustering;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.SinglePartitionReadCommand;
+import org.apache.cassandra.db.SinglePartitionReadQuery;
 import org.apache.cassandra.db.Slice;
+import org.apache.cassandra.db.filter.DataLimits;
+import org.apache.cassandra.db.marshal.Int32Type;
+import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.schema.TableMetadata;
+import org.apache.cassandra.transport.ProtocolVersion;
+import org.apache.cassandra.utils.ByteBufferUtil;
 
 import static org.apache.cassandra.cql3.QueryProcessor.executeInternal;
 import static org.apache.cassandra.db.filter.DataLimits.NO_LIMIT;
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SinglePartitionPagerTest extends QueryPagerTest
 {
     protected ReadCommand makeSliceQuery(int limit, int perPartitionLimit, boolean isReversed)
     {
-        return sliceQuery(limit, perPartitionLimit, cfs(KEYSPACE1, CF_STANDARD), "k0", "c1", "c9", isReversed);
+        return sliceQuery(limit, perPartitionLimit, PageSize.NONE, cfs(KEYSPACE1, CF_STANDARD), "k0", "c1", "c9", isReversed).build();
     }
 
     protected ReadCommand makeNamesQuery(int limit, int perPartitionLimit)
     {
-        return namesQuery(limit, perPartitionLimit, cfs(KEYSPACE1, CF_STANDARD),
-                          "k0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8");
+        return namesQuery(limit, perPartitionLimit, PageSize.NONE, cfs(KEYSPACE1, CF_STANDARD),
+                          "k0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8").build();
     }
 
     @Test
@@ -67,9 +79,9 @@ public class SinglePartitionPagerTest extends QueryPagerTest
     public void queryTest(boolean testPagingState, ReadCommand cmd)
     {
         QueryPager pager = null;
-        pager = checkNextPage(pager, cmd, testPagingState, 3, 3, p -> assertRow(p.get(0), "k0", "c1", "c2", "c3"));
-        pager = checkNextPage(pager, cmd, testPagingState, 3, 3, p -> assertRow(p.get(0), "k0", "c4", "c5", "c6"));
-        pager = checkNextPage(pager, cmd, testPagingState, 3, 2, p -> assertRow(p.get(0), "k0", "c7", "c8"));
+        pager = checkNextPage(pager, cmd, testPagingState, PageSize.inRows(3), 3, p -> assertRow(p.get(0), "k0", "c1", "c2", "c3"));
+        pager = checkNextPage(pager, cmd, testPagingState, PageSize.inRows(3), 3, p -> assertRow(p.get(0), "k0", "c4", "c5", "c6"));
+        pager = checkNextPage(pager, cmd, testPagingState, PageSize.inRows(3), 2, p -> assertRow(p.get(0), "k0", "c7", "c8"));
         assertTrue(pager.isExhausted());
     }
 
@@ -97,7 +109,7 @@ public class SinglePartitionPagerTest extends QueryPagerTest
         int limit = 1;
         int perPartitionLimit = 2;
         cmd = cmdSupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, cmd, testPagingState, Integer.MAX_VALUE, 1, p -> assertRow(p.get(0), "k0", "c1"));
+        pager = checkNextPage(null, cmd, testPagingState, PageSize.NONE, 1, p -> assertRow(p.get(0), "k0", "c1"));
         assertTrue(pager.isExhausted());
 
         // Test with count > partitionCount
@@ -105,7 +117,7 @@ public class SinglePartitionPagerTest extends QueryPagerTest
         limit = 2;
         perPartitionLimit = 1;
         cmd = cmdSupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, cmd, testPagingState, Integer.MAX_VALUE, 1, p -> assertRow(p.get(0), "k0", "c1"));
+        pager = checkNextPage(null, cmd, testPagingState, PageSize.NONE, 1, p -> assertRow(p.get(0), "k0", "c1"));
         assertTrue(pager.isExhausted());
     }
 
@@ -123,7 +135,21 @@ public class SinglePartitionPagerTest extends QueryPagerTest
         queryWithPagingTest(true, this::makeNamesQuery, this::pageSizeInRows);
     }
 
-    public void queryWithPagingTest(boolean testPagingState, BiFunction<Integer, Integer, ReadCommand> cmdSupplier, IntFunction<Integer> pageSizeSupplier)
+    @Test
+    public void sliceQueryWithPagingInBytesTest()
+    {
+        queryWithPagingTest(false, (limit, perPartitionLimit) -> makeSliceQuery(limit, perPartitionLimit, false), this::pageSizeInBytes);
+        queryWithPagingTest(true, (limit, perPartitionLimit) -> makeSliceQuery(limit, perPartitionLimit, false), this::pageSizeInBytes);
+    }
+
+    @Test
+    public void namesQueryWithPagingInBytesTest()
+    {
+        queryWithPagingTest(false, this::makeNamesQuery, this::pageSizeInBytes);
+        queryWithPagingTest(true, this::makeNamesQuery, this::pageSizeInBytes);
+    }
+
+    public void queryWithPagingTest(boolean testPagingState, BiFunction<Integer, Integer, ReadCommand> cmdSupplier, IntFunction<PageSize> pageSizeSupplier)
     {
         ReadCommand cmd;
         QueryPager pager;
@@ -155,9 +181,9 @@ public class SinglePartitionPagerTest extends QueryPagerTest
     {
         QueryPager pager;
 
-        pager = checkNextPage(null, cmd, testPagingState, 3, 3, p -> assertRow(p.get(0), "k0", "c6", "c7", "c8"));
-        pager = checkNextPage(pager, cmd, testPagingState, 3, 3, p -> assertRow(p.get(0), "k0", "c3", "c4", "c5"));
-        pager = checkNextPage(pager, cmd, testPagingState, 3, 2, p -> assertRow(p.get(0), "k0", "c1", "c2"));
+        pager = checkNextPage(null, cmd, testPagingState, PageSize.inRows(3), 3, p -> assertRow(p.get(0), "k0", "c6", "c7", "c8"));
+        pager = checkNextPage(pager, cmd, testPagingState, PageSize.inRows(3), 3, p -> assertRow(p.get(0), "k0", "c3", "c4", "c5"));
+        pager = checkNextPage(pager, cmd, testPagingState, PageSize.inRows(3), 2, p -> assertRow(p.get(0), "k0", "c1", "c2"));
         assertTrue(pager.isExhausted());
     }
 
@@ -183,7 +209,7 @@ public class SinglePartitionPagerTest extends QueryPagerTest
         {
             String c = "c" + i;
             // The only live cell we should have each time is the row marker
-            pager = checkNextPage(pager, cmd, testPagingState, 1, 1, p -> assertRow(p.get(0), "k0", c));
+            pager = checkNextPage(pager, cmd, testPagingState, PageSize.inRows(1), 1, p -> assertRow(p.get(0), "k0", c));
         }
     }
 
@@ -204,4 +230,36 @@ public class SinglePartitionPagerTest extends QueryPagerTest
         queryAndVerifyCells(table, true, "k0");
     }
 
+    @Test
+    public void toStringTest()
+    {
+        TableMetadata metadata = TableMetadata.builder("ks", "tab")
+                                              .addPartitionKeyColumn("k", Int32Type.instance)
+                                              .addClusteringColumn("c", Int32Type.instance)
+                                              .addRegularColumn("v", Int32Type.instance)
+                                              .build();
+
+        DataLimits limits = DataLimits.cqlLimits(31, 29);
+
+        Clustering clustering = Clustering.make(bytes(11));
+        Row row = mock(Row.class);
+        when(row.clustering()).thenReturn(clustering);
+        when(row.isRow()).thenReturn(true);
+
+        PagingState state = new PagingState(ByteBufferUtil.bytes(1), PagingState.RowMark.create(metadata, row, ProtocolVersion.CURRENT), 19, 17);
+
+        SinglePartitionReadQuery singlePartitionReadQuery = mock(SinglePartitionReadQuery.class);
+        when(singlePartitionReadQuery.metadata()).thenReturn(metadata);
+        when(singlePartitionReadQuery.limits()).thenReturn(limits);
+        when(singlePartitionReadQuery.partitionKey()).thenReturn(metadata.partitioner.decorateKey(ByteBufferUtil.bytes(1)));
+        QueryPager singlePartitionPager = new SinglePartitionPager(singlePartitionReadQuery, state, ProtocolVersion.CURRENT);
+        Assertions.assertThat(singlePartitionPager.toString())
+                  .contains(limits.toString())
+                  .contains("remaining=19")
+                  .contains("remainingInPartition=17")
+                  .contains("lastReturned=c=11")
+                  .contains("lastCounter=null")
+                  .contains("lastKey=DecoratedKey(00000001, 00000001)")
+                  .contains("exhausted=false");
+    }
 }

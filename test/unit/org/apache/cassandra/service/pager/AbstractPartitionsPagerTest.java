@@ -24,6 +24,7 @@ import java.util.function.IntFunction;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.ReadQuery;
 
@@ -36,6 +37,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
     protected abstract ReadQuery makePartitionsSliceQuery(int limit, int perPartitionLimit, ColumnFamilyStore cfs, String startKeyInc, String endKeyExcl, String startClustInc, String endClustExcl);
 
     protected abstract ReadQuery makePartitionsNamesQuery(int limit, int perPartitionLimit, ColumnFamilyStore cfs, String startKeyInc, String endKeyExcl, String... clusts);
+
 
     private ReadQuery makePartitionsSliceQuery(int limit, int perPartitionLimit)
     {
@@ -56,18 +58,34 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
     {
         for (boolean restoreState : new boolean[]{ false, true })
         {
-            int pageSize = 2;
-            ReadQuery query = makePartitionsSliceQuery(6, 3);
-            QueryPager pager = checkNextPage(null, query, restoreState, pageSize, 2, partitions -> {
-                assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2");
-            });
-            int largerPage = pageSize * 2;
-            pager = checkNextPage(pager, query, restoreState, largerPage, 4, partitions -> {
-                assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c3");
-                assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1", "c2", "c3");
-            });
-            assertTrue(pager.isExhausted());
+            for (PageSize pageSize : new PageSize[]{ pageSizeInRows(2), pageSizeInBytes(2) })
+            {
+                ReadQuery query = makePartitionsSliceQuery(6, 3);
+                QueryPager pager = checkNextPage(null, query, restoreState, pageSize, 2, partitions -> {
+                    assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2");
+                });
+                PageSize largerPage = new PageSize(pageSize.getSize() * 2, pageSize.getUnit());
+                pager = checkNextPage(pager, query, restoreState, largerPage, 4, partitions -> {
+                    assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c3");
+                    assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1", "c2", "c3");
+                });
+                assertTrue(pager.isExhausted());
+            }
         }
+    }
+
+    @Test
+    public void partitionsSliceQueryWithPagingInBytesTest()
+    {
+        partitionsQueryWithPagingInRowsTest(this::makePartitionsSliceQuery, false, this::pageSizeInBytes);
+        partitionsQueryWithPagingInRowsTest(this::makePartitionsSliceQuery, true, this::pageSizeInBytes);
+    }
+
+    @Test
+    public void partitionsNamesQueryWithPagingInBytesTest()
+    {
+        partitionsQueryWithPagingInRowsTest(this::makePartitionsNamesQuery, false, this::pageSizeInBytes);
+        partitionsQueryWithPagingInRowsTest(this::makePartitionsNamesQuery, true, this::pageSizeInBytes);
     }
 
     @Test
@@ -84,7 +102,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         partitionsQueryWithPagingInRowsTest(this::makePartitionsNamesQuery, true, this::pageSizeInRows);
     }
 
-    public void partitionsQueryWithPagingInRowsTest(BiFunction<Integer, Integer, ReadQuery> querySupplier, boolean testPagingState, IntFunction<Integer> pageSizeSupplier)
+    public void partitionsQueryWithPagingInRowsTest(BiFunction<Integer, Integer, ReadQuery> querySupplier, boolean testPagingState, IntFunction<PageSize> pageSizeSupplier)
     {
         int limit = NO_LIMIT;
         int perPartitionLimit = NO_LIMIT;
@@ -155,7 +173,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         int limit = 3;
         int perPartitionLimit = NO_LIMIT;
         ReadQuery query = querySupplier.apply(limit, perPartitionLimit);
-        QueryPager pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 3, partitions -> {
+        QueryPager pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 3, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3");
         });
         assertTrue(pager.isExhausted());
@@ -165,7 +183,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = 7;
         perPartitionLimit = NO_LIMIT;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 7, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 7, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
         });
         assertTrue(pager.isExhausted());
@@ -175,7 +193,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = 11;
         perPartitionLimit = NO_LIMIT;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 11, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 11, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
             assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1", "c2", "c3", "c4");
         });
@@ -186,7 +204,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = NO_LIMIT;
         perPartitionLimit = 3;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 12, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 12, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3");
             assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1", "c2", "c3");
             assertRow(partitions.get(2), tokenOrderedKeys.get(3), "c1", "c2", "c3");
@@ -199,7 +217,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = NO_LIMIT;
         perPartitionLimit = 7;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 28, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 28, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
             assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
             assertRow(partitions.get(2), tokenOrderedKeys.get(3), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
@@ -212,7 +230,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = NO_LIMIT;
         perPartitionLimit = 11;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 28, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 28, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
             assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
             assertRow(partitions.get(2), tokenOrderedKeys.get(3), "c1", "c2", "c3", "c4", "c5", "c6", "c7");
@@ -225,7 +243,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = 3;
         perPartitionLimit = 4;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 3, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 3, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3");
         });
         assertTrue(pager.isExhausted());
@@ -235,7 +253,7 @@ public abstract class AbstractPartitionsPagerTest extends QueryPagerTest
         limit = 4;
         perPartitionLimit = 3;
         query = querySupplier.apply(limit, perPartitionLimit);
-        pager = checkNextPage(null, query, testPagingState, Integer.MAX_VALUE, 4, partitions -> {
+        pager = checkNextPage(null, query, testPagingState, PageSize.NONE, 4, partitions -> {
             assertRow(partitions.get(0), tokenOrderedKeys.get(1), "c1", "c2", "c3");
             assertRow(partitions.get(1), tokenOrderedKeys.get(2), "c1");
         });
