@@ -416,7 +416,7 @@ public class SerDeserTest
                                     Arrays.asList(ByteBuffer.wrap(new byte[] { 0x00, 0x01, 0x02 }),
                                                   ByteBuffer.wrap(new byte[] { 0x03, 0x04, 0x05, 0x03, 0x04, 0x05 })),
                                     true,
-                                    PageSize.inRows(10),
+                                    PageSize.inBytes(10),
                                     Util.makeSomePagingState(version),
                                     ConsistencyLevel.SERIAL,
                                     version,
@@ -424,6 +424,37 @@ public class SerDeserTest
                                     FBUtilities.timestampMicros(),
                                     FBUtilities.nowInSeconds())
             );
+        }
+    }
+
+    @Test
+    public void bytePagingAndArtificialLatencyFlagsAreIndependent()
+    {
+        for (ProtocolVersion version : ProtocolVersion.supportedVersionsStartingWith(ProtocolVersion.V5))
+        {
+            for (boolean inBytes : new boolean[] { false, true })
+            {
+                for (boolean artificialLatency : new boolean[] { false, true })
+                {
+                    ByteBuf buf = Unpooled.buffer();
+                    try
+                    {
+                        CBUtil.writeConsistencyLevel(ConsistencyLevel.ONE, buf);
+                        // Wire flag positions: PAGE_SIZE=2, ELIGIBLE_FOR_ARTIFICIAL_LATENCY=9, PAGE_SIZE_IN_BYTES=10.
+                        buf.writeInt((1 << 2) | (artificialLatency ? 1 << 9 : 0) | (inBytes ? 1 << 10 : 0));
+                        buf.writeInt(13);
+
+                        QueryOptions options = QueryOptions.codec.decode(buf, version);
+                        assertEquals(inBytes ? PageSize.inBytes(13) : PageSize.inRows(13), options.getPageSize());
+                        assertEquals(artificialLatency, options.isEligibleForArtificialLatency());
+                        assertEquals(0, buf.readableBytes());
+                    }
+                    finally
+                    {
+                        buf.release();
+                    }
+                }
+            }
         }
     }
 

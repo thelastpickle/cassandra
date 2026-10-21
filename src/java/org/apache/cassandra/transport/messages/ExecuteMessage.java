@@ -214,8 +214,11 @@ public class ExecuteMessage extends Message.Request
     private void traceQuery(QueryState state, QueryHandler.Prepared prepared)
     {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
-        if (options.getPageSize().isDefined() && options.getPageSize().rows() > 0)
-            builder.put("page_size", Integer.toString(options.getPageSize().rows()));
+        if (options.getPageSize().isDefined())
+        {
+            builder.put("page_size", Integer.toString(options.getPageSize().getSize()));
+            builder.put("page_size_unit", options.getPageSize().getUnit().name());
+        }
         if (options.getConsistency() != null)
             builder.put("consistency_level", options.getConsistency().name());
         if (options.getSerialConsistency() != null)

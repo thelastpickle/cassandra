@@ -691,7 +691,7 @@ public abstract class QueryOptions implements RealTimeFunctionContext
             KEYSPACE,
             NOW_IN_SECONDS,
             ELIGIBLE_FOR_ARTIFICIAL_LATENCY,
-            ;
+            PAGE_SIZE_IN_BYTES;
 
             private final int mask;
 
@@ -758,8 +758,11 @@ public abstract class QueryOptions implements RealTimeFunctionContext
             SpecificOptions options = SpecificOptions.DEFAULT;
             if (!Flag.isEmpty(flags))
             {
-                int rows = Flag.contains(flags, Flag.PAGE_SIZE) ? body.readInt() : -1;
-                PageSize pageSize = rows < 0 ? PageSize.NONE : PageSize.inRows(rows);
+                PageSize pageSize = Flag.contains(flags, Flag.PAGE_SIZE)
+                                          ? Flag.contains(flags, Flag.PAGE_SIZE_IN_BYTES)
+                                            ? PageSize.inBytes(body.readInt())
+                                            : PageSize.inRows(body.readInt())
+                                          : PageSize.NONE;
                 PagingState pagingState = Flag.contains(flags, Flag.PAGING_STATE) ? PagingState.deserialize(CBUtil.readValueNoCopy(body), version) : null;
                 ConsistencyLevel serialConsistency = Flag.contains(flags, Flag.SERIAL_CONSISTENCY) ? CBUtil.readConsistencyLevel(body) : ConsistencyLevel.SERIAL;
                 long timestamp = Long.MIN_VALUE;
@@ -860,6 +863,8 @@ public abstract class QueryOptions implements RealTimeFunctionContext
                     flags = Flag.add(flags, Flag.KEYSPACE);
                 if (options.getSpecificOptions().nowInSeconds != UNSET_NOWINSEC)
                     flags = Flag.add(flags, Flag.NOW_IN_SECONDS);
+                if (options.getPageSize().getUnit() == PageSize.PageUnit.BYTES)
+                    flags = Flag.add(flags, Flag.PAGE_SIZE_IN_BYTES);
             }
 
             return flags;

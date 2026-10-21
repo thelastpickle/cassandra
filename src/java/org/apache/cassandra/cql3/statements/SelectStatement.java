@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.audit.AuditLogContext;
 import org.apache.cassandra.audit.AuditLogEntryType;
 import org.apache.cassandra.auth.Permission;
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.CQLStatement;
 import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.cql3.ColumnSpecification;
@@ -131,6 +132,7 @@ import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.pager.AggregationQueryPager;
 import org.apache.cassandra.service.pager.PagingState;
 import org.apache.cassandra.service.pager.QueryPager;
+import org.apache.cassandra.tcm.ClusterMetadata;
 import org.apache.cassandra.transport.Dispatcher;
 import org.apache.cassandra.transport.ProtocolVersion;
 import org.apache.cassandra.transport.messages.ResultMessage;
@@ -385,6 +387,14 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
         int userPerPartitionLimit = getPerPartitionLimit(options);
         PageSize pageSize = options.getPageSize();
 
+        if (!hasAggregation() && pageSize.isDefined() && pageSize.getUnit() == PageSize.PageUnit.BYTES && !isBytePagingSupported())
+        {
+            pageSize = rowPagingFallback(state.getClientState());
+
+            ClientWarn.instance.warn(String.format("Paging in bytes requires all nodes in the cluster to run Cassandra 6.0 or later. " +
+                                                   "Using pages of %s rows instead.", pageSize.rows()));
+        }
+
         boolean unmask = !table.hasMaskedColumns() || state.getClientState().hasTablePermission(table, Permission.UNMASK);
 
         Selectors selectors = selection.newSelectors(options);
@@ -621,8 +631,15 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
                                        Dispatcher.RequestTime requestTime,
                                        boolean unmask)
     {
-        if (pageSize.isDefined() && pageSize.getUnit() == PageSize.PageUnit.ROWS)
-            Guardrails.pageSize.guard(pageSize.rows(), table(), false, state.getClientState());
+        // Guard the client request in its original unit, even after a compatibility fallback.
+        PageSize requestedPageSize = options.getPageSize();
+        if (requestedPageSize.isDefined())
+        {
+            if (requestedPageSize.getUnit() == PageSize.PageUnit.ROWS)
+                Guardrails.pageSize.guard(requestedPageSize.rows(), table(), false, state.getClientState());
+            else
+                Guardrails.pageSizeInBytes.guard(requestedPageSize.bytes(), table(), false, state.getClientState());
+        }
 
         if (aggregationSpecFactory != null)
         {
@@ -746,6 +763,18 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
                             ? options.getPageSize() : PageSize.inRows(DEFAULT_PAGE_SIZE);
 
         return new AggregationQueryPager(pager, pageSize, query.limits());
+    }
+
+    private static PageSize rowPagingFallback(ClientState state)
+    {
+        long rowLimit = Guardrails.pageSize.enabled(state) ? Guardrails.pageSize.failValue(state) : Long.MAX_VALUE;
+        // A zero threshold rejects client row requests, but must not prevent a byte request from making progress.
+        return PageSize.inRows(rowLimit > 0 ? (int) Math.min(DEFAULT_PAGE_SIZE, rowLimit) : DEFAULT_PAGE_SIZE);
+    }
+
+    private static boolean isBytePagingSupported()
+    {
+        return ClusterMetadata.current().directory.clusterMinVersion.cassandraVersion.major >= 6;
     }
 
     public Map<DecoratedKey, List<Row>> executeRawInternal(QueryOptions options, ClientState state, long nowInSec) throws RequestExecutionException, RequestValidationException

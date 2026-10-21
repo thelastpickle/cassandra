@@ -137,8 +137,11 @@ public class QueryMessage extends Message.Request
     {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
         builder.put("query", query);
-        if (options.getPageSize().isDefined() && options.getPageSize().rows() > 0)
-            builder.put("page_size", Integer.toString(options.getPageSize().rows()));
+        if (options.getPageSize().isDefined())
+        {
+            builder.put("page_size", Integer.toString(options.getPageSize().getSize()));
+            builder.put("page_size_unit", options.getPageSize().getUnit().name());
+        }
         if (options.getConsistency() != null)
             builder.put("consistency_level", options.getConsistency().name());
         if (options.getSerialConsistency() != null)
@@ -150,7 +153,7 @@ public class QueryMessage extends Message.Request
     @Override
     public String toString()
     {
-        return String.format("QUERY %s [pageSize = %d] at consistency %s", 
-                             query, options.getPageSize().isDefined() ? options.getPageSize().rows() : -1, options.getConsistency());
+        return String.format("QUERY %s [pageSize = %s] at consistency %s",
+                             query, options.getPageSize(), options.getConsistency());
     }
 }
