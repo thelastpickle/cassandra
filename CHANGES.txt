@@ -1,5 +1,5 @@
 5.0.10
- * InMemoryTrie reads the row overhead property for its size limit (CASSANDRA-21699)
+ * Fix InMemoryTrie to read its size limit from cassandra.trie_size_limit_mb instead of the row overhead property (CASSANDRA-21699)
  * Let the commit log allocator observe the shutdown state (CASSANDRA-21616)
  * Unwrap LongType properly when calculating min/max terms in V1SSTableIndex (CASSANDRA-21635)
  * Force repair should ignore min_repair_interval (CASSANDRA-21552)

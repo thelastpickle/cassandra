@@ -18,6 +18,7 @@
 
 package org.apache.cassandra.db.tries;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.cassandra.distributed.shared.WithProperties;
@@ -32,6 +33,16 @@ public class InMemoryTrieSizeLimitTest
 {
     /** The size limit the trie uses when the property is unset, in megabytes. */
     private static final int DEFAULT_LIMIT_IN_MB = 2048 * 10 / 11;
+
+    @BeforeClass
+    public static void initializeTrie()
+    {
+        // Initialize the class before any test sets an invalid size limit.
+        try (WithProperties properties = new WithProperties().set(MEMTABLE_TRIE_SIZE_LIMIT, DEFAULT_LIMIT_IN_MB))
+        {
+            InMemoryTrie.allocatedSizeThreshold();
+        }
+    }
 
     @Test
     public void testTheTrieSizeLimitPropertySetsTheThreshold()
