@@ -219,11 +219,17 @@ Row paging specifies the number of rows per page. Cassandra 6.0 also supports by
 
 The byte budget uses Cassandra's internal row-data size. A page can exceed that budget when it includes its last row, allowing a row larger than the budget to remain readable. The serialized response size and heap usage can differ from this measurement. Clients must use the returned paging state to continue, rather than infer completion from the size of a page.
 
+==== Aggregation subpages
+
+Aggregation queries, including `COUNT(*)` and `GROUP BY`, read their input in internal subpages. When the client omits a page size, `aggregation_subpage_size` controls the byte budget for those subpages and defaults to `2MiB`. Setting it to `0B` removes that configured byte limit.
+
+An explicit client row page size takes precedence over `aggregation_subpage_size`, subject to configured guardrails. Aggregation queries currently reject explicit client byte page sizes; their internal subpages can still use bytes when the client omits a page size.
+
 ==== Rolling upgrades and downgrades
 
 Byte paging becomes active only when all cluster members run Cassandra 6.0 or later. An older node that is down still prevents activation until it is upgraded or removed from membership.
 
-While a 4.x or 5.0 node remains, a 6.0 coordinator accepts byte page requests and uses row pages instead. The fallback is 10,000 rows, reduced to the client's applicable positive `page_size_fail_threshold` when that threshold is smaller. For client byte requests, the coordinator returns a warning.
+While a 4.x or 5.0 node remains, a 6.0 coordinator accepts byte page requests and uses row pages instead. The fallback is 10,000 rows, reduced to the client's applicable positive `page_size_fail_threshold` when that threshold is smaller. For client byte requests, the coordinator returns a warning. Aggregation queries that would use configured byte subpages also fall back to rows and log a warning on the coordinator.
 
 The same fallback applies if an older node is recorded between page requests. The client can continue with its existing paging state. A zero row failure threshold does not create a zero-row fallback or reject an otherwise valid byte request; it continues to reject explicit client row page requests. The original byte request remains subject to the byte page-size guardrails.
 

@@ -19,6 +19,8 @@
 package org.apache.cassandra.cql3;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +33,10 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.statements.SelectStatement;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.ReadExecutionController;
@@ -54,9 +59,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(Parameterized.class)
 public class PagingQueryTest extends CQLTester
 {
     final int ROW_SIZE = 53; // internal representation, including the 64-bit cell deletion time
+
+    @Parameterized.Parameters(name = "aggregation_sub_page_size={0}")
+    public static Collection<Object[]> generateParameters()
+    {
+        return Arrays.asList(new Object[]{ PageSize.inBytes(1024) }, new Object[]{ PageSize.NONE });
+    }
+
+    public PagingQueryTest(PageSize subPageSize)
+    {
+        DatabaseDescriptor.setAggregationSubPageSize(subPageSize);
+    }
 
     @Test
     public void pagingOnRegularColumn() throws Throwable

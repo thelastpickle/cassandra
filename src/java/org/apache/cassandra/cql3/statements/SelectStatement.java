@@ -760,8 +760,16 @@ public class SelectStatement implements CQLStatement.SingleKeyspaceCqlStatement,
             return pager;
 
         PageSize pageSize = options.getPageSize().isDefined()
-                            ? options.getPageSize() : PageSize.inRows(DEFAULT_PAGE_SIZE);
+                            ? options.getPageSize() : DatabaseDescriptor.getAggregationSubPageSize();
 
+        if (pageSize.isDefined() && pageSize.getUnit() == PageSize.PageUnit.BYTES && !isBytePagingSupported())
+        {
+            // Preserve row-based aggregation paging while older nodes remain in the cluster.
+            pageSize = rowPagingFallback(state);
+
+            noSpamLogger.warn("Byte paging requires all nodes to run Cassandra 6.0 or later; using a row limit of {} for {}.{}",
+                              pageSize.rows(), keyspace(), table());
+        }
         return new AggregationQueryPager(pager, pageSize, query.limits());
     }
 
