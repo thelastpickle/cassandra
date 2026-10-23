@@ -62,6 +62,7 @@ import org.apache.cassandra.concurrent.ExecutorPlus;
 import org.apache.cassandra.concurrent.FutureTask;
 import org.apache.cassandra.concurrent.ImmediateExecutor;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.cql3.PageSize;
 import org.apache.cassandra.db.Clustering;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.DecoratedKey;
@@ -1110,7 +1111,7 @@ public class SecondaryIndexManager implements IndexRegistry, INotificationConsum
             {
                 UnfilteredRowIterator partition;
                 try (ReadExecutionController controller = cmd.executionController();
-                     UnfilteredPartitionIterator page = pager.fetchPageUnfiltered(baseCfs.metadata(), pageSize, controller))
+                     UnfilteredPartitionIterator page = pager.fetchPageUnfiltered(baseCfs.metadata(), PageSize.inRows(pageSize), controller))
                 {
                     if (!page.hasNext())
                         break;
