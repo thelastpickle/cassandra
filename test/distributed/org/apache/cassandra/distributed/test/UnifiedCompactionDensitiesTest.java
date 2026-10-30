@@ -22,12 +22,13 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -313,8 +314,8 @@ public class UnifiedCompactionDensitiesTest extends TestBaseImpl
      * high, otherwise empty levels where no overlap set of size >= 2 forms, and are never selected
      * by background compaction, so every repair round grows the live sstable count.
      * <p>
-     * The desired behaviour asserted here: once background compaction has had the opportunity to
-     * run, repair-streamed tiny sstables do not accumulate without bound across repair rounds.
+     * Hold background compaction until all repair rounds finish, then verify that it replaces every
+     * tiny sstable on the receiving node.
      */
     private void testRepairStreamedTinySSTables(boolean incremental) throws IOException
     {
@@ -332,6 +333,7 @@ public class UnifiedCompactionDensitiesTest extends TestBaseImpl
 
             cluster.schemaChange(withKeyspace("create table %s.tbl (id bigint primary key, value text) with compaction = " +
                                               "{'class':'UnifiedCompactionStrategy', 'scaling_parameters':'T4'}"));
+            cluster.get(2).runOnInstance(() -> Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl").disableAutoCompaction());
 
             // Base data on both replicas, so the table has realistic wide-coverage sstables.
             for (long id = 0; id < 5000; id++)
@@ -343,12 +345,9 @@ public class UnifiedCompactionDensitiesTest extends TestBaseImpl
             // sliver of the ring, and far enough from each other that no two slivers ever overlap.
             List<long[]> pairs = closeTokenPairs(rounds, 1L << 28, 1L << 36);
 
-            int[] tinyStreamed = new int[rounds];
-            int[] tinyPerRound = new int[rounds];
             for (int round = 0; round < rounds; round++)
             {
-                // Ordinary write activity continues on both replicas between repairs, so that level 0
-                // keeps receiving flushed sstables and background compaction keeps running on it.
+                // Wide flushes provide overlapping inputs for the eventual background compaction.
                 for (long id = 10000 + round * 1000; id < 10500 + round * 1000; id++)
                     cluster.coordinator(1).execute(withKeyspace("insert into %s.tbl (id, value) values (?, ?)"),
                                                    ConsistencyLevel.ALL, id, makeRandomString(200));
@@ -361,42 +360,32 @@ public class UnifiedCompactionDensitiesTest extends TestBaseImpl
                                                    pair[k], makeRandomString(100));
                 cluster.get(1).flush(KEYSPACE);
 
+                Set<String> beforeRepair = cluster.get(2).callOnInstance(UnifiedCompactionDensitiesTest::tinySSTableNames);
                 repair(cluster, incremental, pair[2] - 1, pair[3]);
 
                 // The repair must have actually streamed the missing rows to node2.
                 for (int k = 0; k < 2; k++)
                     assertEquals(1, cluster.get(2).executeInternal(withKeyspace("select id from %s.tbl where id = ?"), pair[k]).length);
 
-                // Count the tiny sstables before compaction gets a chance to run, to prove the repair
-                // actually produced the files this test is about.
-                tinyStreamed[round] = cluster.get(2).callOnInstance(() -> {
-                    ColumnFamilyStore cfs = Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl");
-                    return (int) cfs.getLiveSSTables().stream().filter(t -> t.onDiskLength() < 8 * 1024).count();
-                });
-
-                // Give background compaction on the receiving node ample opportunity to run. Under
-                // incremental repair some passes are consumed by pending-to-repaired promotion tasks.
-                cluster.get(2).runOnInstance(() -> {
-                    ColumnFamilyStore cfs = Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl");
-                    for (int i = 0; i < 5; i++)
-                        cfs.enableAutoCompaction(true);
-                });
-
-                // Repair-streamed two-key sstables are a few hundred bytes; the smallest legitimate
-                // sstables in this workload (flush shards) are tens of KiB, so 8KiB separates them.
-                tinyPerRound[round] = cluster.get(2).callOnInstance(() -> {
-                    ColumnFamilyStore cfs = Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl");
-                    return (int) cfs.getLiveSSTables().stream().filter(t -> t.onDiskLength() < 8 * 1024).count();
-                });
-                LoggerFactory.getLogger(getClass()).info("Round {}: node2 has {} tiny sstables", round, tinyPerRound[round]);
+                Set<String> streamed = cluster.get(2).callOnInstance(UnifiedCompactionDensitiesTest::tinySSTableNames);
+                streamed.removeAll(beforeRepair);
+                assertTrue("Repair round " + round + " produced no new tiny sstable", !streamed.isEmpty());
             }
 
-            assertTrue("Repair never produced a tiny sstable on the receiving node, so this test exercised " +
-                       "nothing. Tiny sstable count after each repair: " + Arrays.toString(tinyStreamed),
-                       Arrays.stream(tinyStreamed).max().getAsInt() >= 1);
-            assertTrue("Background compaction never consumed any repair-streamed tiny sstable. " +
-                       "Tiny sstable count per repair round on the receiving node: " + Arrays.toString(tinyPerRound),
-                       tinyPerRound[rounds - 1] < rounds);
+            cluster.get(2).runOnInstance(() -> {
+                ColumnFamilyStore cfs = Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl");
+                Set<String> originalTinySSTables = tinySSTableNames();
+                assertTrue("No tiny sstables left to compact", !originalTinySSTables.isEmpty());
+                Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+                    // Incremental repair may need pending-to-repaired promotion before compaction.
+                    cfs.enableAutoCompaction(true);
+                    Set<String> remaining = cfs.getLiveSSTables().stream()
+                                               .map(sstable -> sstable.descriptor.toString())
+                                               .filter(originalTinySSTables::contains)
+                                               .collect(Collectors.toSet());
+                    assertTrue("Background compaction left repair-streamed sstables: " + remaining, remaining.isEmpty());
+                });
+            });
 
             // Compacting the repair-streamed sstables must not lose or corrupt their data.
             for (long[] pair : pairs)
@@ -406,6 +395,15 @@ public class UnifiedCompactionDensitiesTest extends TestBaseImpl
             for (long id = 10000; id < 10500; id++)
                 assertEquals(1, cluster.get(2).executeInternal(withKeyspace("select id from %s.tbl where id = ?"), id).length);
         }
+    }
+
+    private static Set<String> tinySSTableNames()
+    {
+        // Two-key repair streams are a few hundred bytes; ordinary flush shards are tens of KiB.
+        return Keyspace.open(KEYSPACE).getColumnFamilyStore("tbl").getLiveSSTables().stream()
+                       .filter(sstable -> sstable.onDiskLength() < 8 * 1024)
+                       .map(sstable -> sstable.descriptor.toString())
+                       .collect(Collectors.toSet());
     }
 
     private static void repair(Cluster cluster, boolean incremental, long startToken, long endToken)

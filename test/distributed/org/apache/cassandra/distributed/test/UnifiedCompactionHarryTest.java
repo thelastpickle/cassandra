@@ -32,7 +32,9 @@ import org.apache.cassandra.harry.SchemaSpec;
 import org.apache.cassandra.harry.dsl.ReplayingHistoryBuilder;
 import org.apache.cassandra.harry.execution.InJvmDTestVisitExecutor;
 import org.apache.cassandra.harry.op.Operations;
+import org.apache.cassandra.harry.util.BitSet;
 
+import static org.apache.cassandra.harry.MagicConstants.UNSET_IDX;
 import static org.junit.Assert.assertEquals;
 
 public class UnifiedCompactionHarryTest extends TestBaseImpl
@@ -71,15 +73,15 @@ public class UnifiedCompactionHarryTest extends TestBaseImpl
                 {
                     if (visit == 0)
                     {
-                        history.insert(pd, 0);
-                        history.insert(pd, 1);
+                        for (int row = 0; row < 4; ++row)
+                            history.insert(pd, row);
                     }
                     else
                     {
-                        switch (pd % 4)
+                        switch (pd % 12)
                         {
                             case 0:
-                                history.insert(pd, 2);
+                                history.insert(pd, 4);
                                 history.deleteRow(pd, 1);
                                 break;
                             case 1:
@@ -88,11 +90,36 @@ public class UnifiedCompactionHarryTest extends TestBaseImpl
                                 break;
                             case 2:
                                 history.update(pd, 1);
-                                history.update(pd, 2);
+                                history.update(pd, 4);
+                                break;
+                            case 3:
+                                history.insert(pd, 1);
+                                history.insert(pd, 4);
+                                break;
+                            case 4:
+                                history.deleteColumns(pd, 1, BitSet.create(1L, 2), BitSet.allUnset(1));
+                                break;
+                            case 5:
+                                history.deleteColumns(pd, 1, BitSet.create(2L, 2), BitSet.allSet(1));
+                                break;
+                            case 6:
+                                history.deleteRowRange(pd, 1, 2, 0, true, true);
+                                break;
+                            case 7:
+                                history.deleteRowSliceByLowerBound(pd, 1, 0, false);
+                                break;
+                            case 8:
+                                history.deleteRowSliceByUpperBound(pd, 2, 0, false);
+                                break;
+                            case 9:
+                                // Update one cell without overwriting the other regular cell or the statics.
+                                history.update(pd, 1, new int[]{ pd, UNSET_IDX }, new int[]{ UNSET_IDX });
+                                break;
+                            case 10:
+                                history.insert(pd, 1, new int[]{ UNSET_IDX, pd }, new int[]{ UNSET_IDX });
                                 break;
                             default:
-                                history.insert(pd, 1);
-                                history.insert(pd, 2);
+                                history.deleteColumns(pd, 1, BitSet.allUnset(2), BitSet.allSet(1));
                         }
                     }
                     cluster.get(1).flush(KEYSPACE);
