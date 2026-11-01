@@ -527,7 +527,7 @@ public abstract class AbstractCommitLogSegmentManager
         // Remove before discard, as archiveAndDiscard does, so a segment is never deleted twice
         CommitLogSegment segment;
         while ((segment = activeSegments.poll()) != null)
-            closeAndDeleteSegmentUnsafe(segment, deleteSegments);
+            discard(segment, deleteSegments);
 
         size.set(0L);
 
@@ -543,21 +543,6 @@ public abstract class AbstractCommitLogSegmentManager
         if (availableSegment == null && !atSegmentBufferLimit())
         {
             awaitAvailableSegment(allocatingFrom);
-        }
-    }
-
-    /**
-     * Explicitly for use only during resets in unit testing.
-     */
-    private void closeAndDeleteSegmentUnsafe(CommitLogSegment segment, boolean delete)
-    {
-        try
-        {
-            discard(segment, delete);
-        }
-        catch (AssertionError ignored)
-        {
-            // segment file does not exist
         }
     }
 
