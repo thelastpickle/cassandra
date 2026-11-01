@@ -21,12 +21,15 @@ package org.apache.cassandra.db.commitlog;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 
@@ -35,6 +38,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.MockedStatic;
 
 import org.apache.cassandra.ServerTestUtils;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -45,10 +49,14 @@ import org.apache.cassandra.db.RowUpdateBuilder;
 import org.apache.cassandra.db.commitlog.CommitLogSegment.CDCState;
 import org.apache.cassandra.db.lifecycle.LifecycleTransaction;
 import org.apache.cassandra.exceptions.CDCWriteException;
+import org.apache.cassandra.io.FSWriteError;
 import org.apache.cassandra.io.util.File;
 import org.apache.cassandra.io.util.FileReader;
 import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.schema.TableMetadata;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
 public class CommitLogSegmentManagerCDCTest extends CQLTester
 {
@@ -94,6 +102,124 @@ public class CommitLogSegmentManagerCDCTest extends CQLTester
             LifecycleTransaction.waitForDeletions();
         }
         super.afterTest();
+    }
+
+    @Test
+    public void testConcurrentCDCLinkDeletion() throws IOException
+    {
+        assertConcurrentCDCDeletion(false);
+    }
+
+    @Test
+    public void testConcurrentCDCIndexDeletion() throws IOException
+    {
+        assertConcurrentCDCDeletion(true);
+    }
+
+    private void assertConcurrentCDCDeletion(boolean deleteIndex) throws IOException
+    {
+        CommitLogDescriptor descriptor = new CommitLogDescriptor(1, null, DatabaseDescriptor.getEncryptionContext());
+        Path link = new File(DatabaseDescriptor.getCDCLogLocation(), descriptor.fileName()).toPath();
+        Path index = new File(DatabaseDescriptor.getCDCLogLocation(), descriptor.cdcIndexFileName()).toPath();
+        Files.write(link, new byte[]{ 1 });
+        Files.write(index, new byte[]{ 1 });
+        Path target = deleteIndex ? index : link;
+        AtomicBoolean deletedByConsumer = new AtomicBoolean();
+
+        try (MockedStatic<Files> files = mockStatic(Files.class, invocation -> {
+            if ("delete".equals(invocation.getMethod().getName())
+                && target.equals(invocation.getArgument(0))
+                && deletedByConsumer.compareAndSet(false, true))
+            {
+                invocation.callRealMethod();
+            }
+            return invocation.callRealMethod();
+        }))
+        {
+
+            CommitLogSegmentManagerCDC manager = (CommitLogSegmentManagerCDC) CommitLog.instance.segmentManager;
+            manager.deleteOldLinkedCDCCommitLogSegment(1);
+
+            Assert.assertTrue("Consumer deletion was not exercised", deletedByConsumer.get());
+            Assert.assertFalse(Files.exists(link));
+            Assert.assertFalse(Files.exists(index));
+        }
+        finally
+        {
+            Files.deleteIfExists(link);
+            Files.deleteIfExists(index);
+        }
+    }
+
+    @Test
+    public void testCDCDeletionPropagatesIOFailure() throws IOException
+    {
+        CommitLogDescriptor descriptor = new CommitLogDescriptor(1, null, DatabaseDescriptor.getEncryptionContext());
+        Path link = new File(DatabaseDescriptor.getCDCLogLocation(), descriptor.fileName()).toPath();
+        Files.write(link, new byte[]{ 1 });
+        AccessDeniedException denied = new AccessDeniedException(link.toString());
+
+        try (MockedStatic<Files> files = mockStatic(Files.class, invocation -> {
+            if ("delete".equals(invocation.getMethod().getName()) && link.equals(invocation.getArgument(0)))
+                throw denied;
+            return invocation.callRealMethod();
+        }))
+        {
+            CommitLogSegmentManagerCDC manager = (CommitLogSegmentManagerCDC) CommitLog.instance.segmentManager;
+
+            assertThatThrownBy(() -> manager.deleteOldLinkedCDCCommitLogSegment(1))
+            .isInstanceOf(FSWriteError.class)
+            .hasCause(denied);
+
+            Assert.assertTrue(Files.exists(link));
+        }
+        finally
+        {
+            Files.deleteIfExists(link);
+        }
+    }
+
+    @Test
+    public void testStopUnsafeRacingWithArchiveAndDiscard() throws Exception
+    {
+        File directory = new File(Files.createTempDirectory("commitlog-discard-race"));
+        AtomicBoolean archived = new AtomicBoolean();
+        AtomicInteger discards = new AtomicInteger();
+        CommitLogSegmentManagerStandard manager = new CommitLogSegmentManagerStandard(CommitLog.instance, directory.path())
+        {
+            @Override
+            public void discard(CommitLogSegment segment, boolean delete)
+            {
+                discards.incrementAndGet();
+                if (archived.compareAndSet(false, true))
+                    archiveAndDiscard(segment);
+                super.discard(segment, delete);
+            }
+        };
+
+        manager.start();
+        CommitLogSegment segment = manager.allocatingFrom();
+        try
+        {
+            manager.stopUnsafe(true);
+
+            Assert.assertTrue("Competing cleanup was not exercised", archived.get());
+            Assert.assertEquals(1, discards.get());
+            Assert.assertFalse(segment.logFile.exists());
+            Assert.assertTrue(manager.getActiveSegments().isEmpty());
+        }
+        finally
+        {
+            manager.shutdown();
+            try
+            {
+                Assert.assertTrue(manager.awaitTermination(1, TimeUnit.MINUTES));
+            }
+            finally
+            {
+                directory.deleteRecursive();
+            }
+        }
     }
 
     @Test
